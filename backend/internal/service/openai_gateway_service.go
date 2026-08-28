@@ -66,29 +66,31 @@ var ErrNoAvailableCompactAccounts = errors.New("no available OpenAI accounts sup
 
 // OpenAI allowed headers whitelist (for non-passthrough).
 var openaiAllowedHeaders = map[string]bool{
-	"accept-language":       true,
-	"content-type":          true,
-	"conversation_id":       true,
-	"user-agent":            true,
-	"originator":            true,
-	"session_id":            true,
-	"x-codex-turn-state":    true,
-	"x-codex-turn-metadata": true,
+	"accept-language":                        true,
+	"content-type":                           true,
+	"conversation_id":                        true,
+	"user-agent":                             true,
+	"originator":                             true,
+	"session_id":                             true,
+	"x-codex-turn-state":                     true,
+	"x-codex-turn-metadata":                  true,
+	"x-openai-internal-codex-responses-lite": true,
 }
 
 // OpenAI passthrough allowed headers whitelist.
 // 透传模式下仅放行这些低风险请求头，避免将非标准/环境噪声头传给上游触发风控。
 var openaiPassthroughAllowedHeaders = map[string]bool{
-	"accept":                true,
-	"accept-language":       true,
-	"content-type":          true,
-	"conversation_id":       true,
-	"openai-beta":           true,
-	"user-agent":            true,
-	"originator":            true,
-	"session_id":            true,
-	"x-codex-turn-state":    true,
-	"x-codex-turn-metadata": true,
+	"accept":                                 true,
+	"accept-language":                        true,
+	"content-type":                           true,
+	"conversation_id":                        true,
+	"openai-beta":                            true,
+	"user-agent":                             true,
+	"originator":                             true,
+	"session_id":                             true,
+	"x-codex-turn-state":                     true,
+	"x-codex-turn-metadata":                  true,
+	"x-openai-internal-codex-responses-lite": true,
 }
 
 // codex_cli_only 拒绝时记录的请求头白名单（仅用于诊断日志，不参与上游透传）
@@ -2148,6 +2150,22 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		model, stream, _ := extractOpenAIRequestMetaFromBody(body)
 		return s.forwardGrokResponses(ctx, c, account, body, model, stream, time.Now())
 	}
+	if account != nil && account.IsOpenAI() && c != nil && isOpenAIResponsesLiteHeader(c.GetHeader(responsesLiteHeader)) {
+		normalized, _, err := normalizeOpenAIResponsesLitePayloadForAccount(body, account)
+		if err != nil {
+			param := "tools"
+			var validationErr *openAIResponsesLiteValidationError
+			if errors.As(err, &validationErr) && validationErr != nil && validationErr.param != "" {
+				param = validationErr.param
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"type": "invalid_request_error", "message": err.Error(), "param": param}})
+			return nil, err
+		}
+		body = normalized
+		// The handler cache was decoded before Lite normalization and may contain
+		// float64 values. Force a UseNumber decode from the rewritten wire body.
+		c.Set(OpenAIParsedRequestBodyKey, nil)
+	}
 	if s == nil || s.pipeline == nil || s.cfg == nil || !s.cfg.Gateway.Pipeline.OpenAIResponsesEnabled {
 		result, err := s.forwardLegacy(ctx, c, account, body)
 		return finalizeOpenAIResponseImageBilling(result), err
@@ -2713,6 +2731,7 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 	}
 
 	httpInvalidEncryptedContentRetryTried := false
+	rejectedStatusRetryState := openAIResponsesRejectedStatusRetryStateForRequest(c, body)
 	for {
 		// Build upstream request
 		upstreamCtx, releaseUpstreamCtx := detachStreamUpstreamContext(ctx, reqStream)
@@ -2770,6 +2789,18 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 			upstreamMsg := strings.TrimSpace(extractUpstreamErrorMessage(respBody))
 			upstreamMsg = sanitizeUpstreamErrorMessage(upstreamMsg)
 			upstreamCode := extractUpstreamErrorCode(respBody)
+			retryBody, changed, retryErr := normalizeOpenAIResponsesRejectedStatusRetryBody(resp.StatusCode, body, respBody)
+			if retryErr != nil {
+				return nil, retryErr
+			}
+			if changed && rejectedStatusRetryState.Allow(retryBody) {
+				body = retryBody
+				if decodeErr := decodeOpenAIJSONUseNumber(body, &reqBody); decodeErr != nil {
+					return nil, fmt.Errorf("decode rejected-status retry body: %w", decodeErr)
+				}
+				setOpsUpstreamRequestBody(c, body)
+				continue
+			}
 			if !httpInvalidEncryptedContentRetryTried && resp.StatusCode == http.StatusBadRequest && upstreamCode == "invalid_encrypted_content" {
 				if trimOpenAIEncryptedReasoningItems(reqBody) {
 					body, err = json.Marshal(reqBody)
@@ -2969,13 +3000,6 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		return nil, err
 	}
 
-	upstreamCtx, releaseUpstreamCtx := detachStreamUpstreamContext(ctx, reqStream)
-	upstreamReq, err := s.buildUpstreamRequestOpenAIPassthrough(upstreamCtx, c, account, body, token)
-	releaseUpstreamCtx()
-	if err != nil {
-		return nil, err
-	}
-
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
 		proxyURL = account.Proxy.URL()
@@ -2987,7 +3011,8 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	}
 
 	upstreamStart := time.Now()
-	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
+	resp, retriedBody, err := s.doOpenAIPassthroughRequestWithStatusRetry(ctx, c, account, body, token, proxyURL, reqStream)
+	body = retriedBody
 	SetOpsLatencyMs(c, OpsUpstreamLatencyMsKey, time.Since(upstreamStart).Milliseconds())
 	if err == nil && resp != nil && c != nil {
 		c.Set(openAIRawUpstreamHTTPStatusKey, resp.StatusCode)
@@ -3069,6 +3094,45 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		FirstTokenMs:    firstTokenMs,
 		ImageCount:      imageCount,
 	}, nil
+}
+
+func (s *OpenAIGatewayService) doOpenAIPassthroughRequestWithStatusRetry(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	body []byte,
+	token string,
+	proxyURL string,
+	stream bool,
+) (*http.Response, []byte, error) {
+	state := openAIResponsesRejectedStatusRetryStateForRequest(c, body)
+	for {
+		upstreamCtx, releaseUpstreamCtx := detachStreamUpstreamContext(ctx, stream)
+		request, err := s.buildUpstreamRequestOpenAIPassthrough(upstreamCtx, c, account, body, token)
+		releaseUpstreamCtx()
+		if err != nil {
+			return nil, body, err
+		}
+		resp, err := s.httpUpstream.Do(request, proxyURL, account.ID, account.Concurrency)
+		if err != nil || resp == nil || resp.StatusCode != http.StatusBadRequest {
+			return resp, body, err
+		}
+		respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, body, readErr
+		}
+		retryBody, changed, normalizeErr := normalizeOpenAIResponsesRejectedStatusRetryBody(resp.StatusCode, body, respBody)
+		if normalizeErr != nil {
+			return nil, body, normalizeErr
+		}
+		if !changed || !state.Allow(retryBody) {
+			resp.Body = io.NopCloser(bytes.NewReader(respBody))
+			return resp, body, nil
+		}
+		body = retryBody
+		setOpsUpstreamRequestBody(c, body)
+	}
 }
 
 // shouldFailoverOpenAITransportError reports whether an outbound transport
@@ -6586,7 +6650,7 @@ func getOpenAIRequestBodyMap(c *gin.Context, body []byte) (map[string]any, error
 	}
 
 	var reqBody map[string]any
-	if err := json.Unmarshal(body, &reqBody); err != nil {
+	if err := decodeOpenAIJSONUseNumber(body, &reqBody); err != nil {
 		return nil, fmt.Errorf("parse request: %w", err)
 	}
 	if c != nil {

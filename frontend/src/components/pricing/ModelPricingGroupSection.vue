@@ -436,9 +436,8 @@ function formatPrice(v: number | null | undefined): string {
 
 .pricing-group__context-pricing,
 .pricing-group__time-pricing {
-  padding: 0.875rem 1.25rem;
   border-top: 1px solid #e5e7eb;
-  background: #fafafa;
+  background: #ffffff;
   color: #6b7280;
   font-size: 0.75rem;
 }
@@ -448,6 +447,8 @@ function formatPrice(v: number | null | undefined): string {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: #f9fafb;
 }
 
 .pricing-group__detail-title {
@@ -465,16 +466,17 @@ function formatPrice(v: number | null | undefined): string {
 .pricing-group__context-list,
 .pricing-group__time-list {
   display: grid;
-  gap: 0.625rem;
-  margin-top: 0.75rem;
+  gap: 0;
 }
 
 .pricing-group__context-row,
 .pricing-group__time-model {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0.75rem;
+  display: grid;
+  grid-template-columns: minmax(190px, 0.75fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #f3f4f6;
 }
 
 .pricing-group__context-row > strong,
@@ -487,8 +489,7 @@ function formatPrice(v: number | null | undefined): string {
 .pricing-group__tier-list,
 .pricing-group__time-tier-list {
   display: grid;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 0.4rem;
 }
 
 .pricing-group__tier-pill,
@@ -497,9 +498,8 @@ function formatPrice(v: number | null | undefined): string {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem 0.75rem;
-  border-radius: 8px;
-  background: #f9fafb;
-  padding: 0.5rem 0.625rem;
+  min-height: 1.75rem;
+  padding: 0.15rem 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -507,6 +507,10 @@ function formatPrice(v: number | null | undefined): string {
 .pricing-group__time-range {
   color: #374151;
   font-weight: 700;
+}
+
+.pricing-group__tier-threshold {
+  min-width: 8.5rem;
 }
 
 .pricing-group__time-model-title {
@@ -520,19 +524,20 @@ function formatPrice(v: number | null | undefined): string {
   display: inline-flex;
   min-width: 3rem;
   justify-content: center;
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
+  color: #374151;
   font-weight: 700;
 }
 
-.pricing-group__time-badge.is-peak {
-  background: #fff7ed;
-  color: #c2410c;
+.pricing-group__time-badge.is-valley {
+  color: #4f46e5;
 }
 
-.pricing-group__time-badge.is-valley {
-  background: #ecfdf5;
-  color: #047857;
+@media (max-width: 760px) {
+  .pricing-group__context-row,
+  .pricing-group__time-model {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
 }
 
 .pricing-group__table {

@@ -209,13 +209,22 @@ describe('ModelPricingGroupSection', () => {
           models: [{
             model: 'gpt-5.6-sol', input_price: 10, output_price: 60,
             cache_write_price: null, cache_read_price: 1,
-            context_intervals: [{
-              min_tokens: 0, max_tokens: 272000,
-              input_price: 8, output_price: 40, cache_write_price: null, cache_read_price: 0.8
-            }],
+            context_intervals: [
+              {
+                min_tokens: 0, max_tokens: 272000,
+                input_price: 8, output_price: 40, cache_write_price: null, cache_read_price: 0.8
+              },
+              {
+                min_tokens: 272000, max_tokens: 1000000,
+                input_price: 16, output_price: 60, cache_write_price: null, cache_read_price: 1.6
+              }
+            ],
             time_pricing: {
               timezone: 'Asia/Shanghai', weekdays_only: true,
-              periods: [{ start_time: '09:00', end_time: '12:00', multiplier: 1.5 }]
+              periods: [
+                { start_time: '00:00:00', end_time: '08:00:00', multiplier: 0.5 },
+                { start_time: '22:00:00', end_time: '00:00:00', multiplier: 0.5 }
+              ]
             }
           }]
         }
@@ -223,8 +232,12 @@ describe('ModelPricingGroupSection', () => {
     })
 
     expect(wrapper.findAll('tbody tr')).toHaveLength(1)
-    expect(wrapper.findAll('tbody tr')[0].text()).toContain('gpt-5.6-sol · modelPricing.contextPricing.range')
+    expect(wrapper.findAll('tbody tr')[0].text()).toContain('gpt-5.6-sol')
+    expect(wrapper.get('.pricing-group__context-pricing').text()).toContain('modelPricing.contextPricing.aboveThreshold')
+    expect(wrapper.get('.pricing-group__context-pricing').text()).toContain('¥16.00')
     expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('Asia/Shanghai')
-    expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('09:00–12:00 ×1.5')
+    expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('08:00–22:00')
+    expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('¥4.00')
+    expect(wrapper.get('.pricing-group__time-pricing').text()).not.toContain('×0.5')
   })
 })

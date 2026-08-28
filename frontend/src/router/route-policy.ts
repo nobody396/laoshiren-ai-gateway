@@ -21,7 +21,7 @@ export interface RoutePolicyDecision {
   preserveIntent?: boolean
 }
 
-export const BACKEND_MODE_ALLOWED_PREFIXES = ['/login', '/key-usage', '/setup', '/docs', '/legal', '/changelog']
+export const BACKEND_MODE_ALLOWED_PREFIXES = ['/login', '/key-usage', '/setup', '/legal', '/changelog']
 export const BACKEND_MODE_EXACT_PATHS = ['/', '/home']
 export const SIMPLE_MODE_RESTRICTED_PREFIXES = [
   '/admin/groups', '/admin/subscriptions', '/admin/redeem', '/admin/billing',

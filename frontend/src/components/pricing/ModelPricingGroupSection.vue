@@ -58,17 +58,53 @@
       </table>
     </div>
 
+    <div v-if="contextPricingRows.length > 0" class="pricing-group__context-pricing">
+      <div class="pricing-group__detail-heading">
+        <div>
+          <p class="pricing-group__detail-title">{{ t('modelPricing.contextPricing.title') }}</p>
+          <p class="pricing-group__detail-note">{{ t('modelPricing.contextPricing.summaryNote') }}</p>
+        </div>
+      </div>
+      <div class="pricing-group__context-list">
+        <div v-for="row in contextPricingRows" :key="row.model" class="pricing-group__context-row">
+          <strong>{{ row.model }}</strong>
+          <div class="pricing-group__tier-list">
+            <div v-for="tier in row.tiers" :key="`${row.model}-${tier.min_tokens}`" class="pricing-group__tier-pill">
+              <span class="pricing-group__tier-threshold">
+                {{ t('modelPricing.contextPricing.aboveThreshold', { threshold: formatTokenThreshold(tier.min_tokens) }) }}
+              </span>
+              <span>{{ compactPriceLabel(tier) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="timePricingRows.length > 0" class="pricing-group__time-pricing">
-      <p class="pricing-group__time-title">{{ t('modelPricing.timePricing.title') }}</p>
-      <p v-for="row in timePricingRows" :key="row.key" class="pricing-group__time-row">
-        <strong>{{ row.model }}</strong>
-        <span>{{ row.timezone }}</span>
-        <span v-if="row.weekdaysOnly">{{ t('modelPricing.timePricing.weekdaysOnly') }}</span>
-        <span v-for="period in row.periods" :key="`${period.start_time}-${period.end_time}`">
-          {{ period.start_time }}–{{ period.end_time }} ×{{ period.multiplier }}
-        </span>
-      </p>
-      <p class="pricing-group__time-note">{{ t('modelPricing.timePricing.basePriceNote') }}</p>
+      <div class="pricing-group__detail-heading">
+        <div>
+          <p class="pricing-group__detail-title">{{ t('modelPricing.timePricing.title') }}</p>
+          <p class="pricing-group__detail-note">{{ t('modelPricing.timePricing.explicitPriceNote') }}</p>
+        </div>
+      </div>
+      <div class="pricing-group__time-list">
+        <div v-for="row in timePricingRows" :key="row.key" class="pricing-group__time-model">
+          <div class="pricing-group__time-model-title">
+            <strong>{{ row.model }}</strong>
+            <span>{{ row.timezone }}</span>
+            <span v-if="row.weekdaysOnly">{{ t('modelPricing.timePricing.weekdaysOnly') }}</span>
+          </div>
+          <div class="pricing-group__time-tier-list">
+            <div v-for="period in row.periods" :key="`${period.startTime}-${period.endTime}-${period.multiplier}`" class="pricing-group__time-tier">
+              <span :class="['pricing-group__time-badge', period.multiplier < 1 ? 'is-valley' : 'is-peak']">
+                {{ period.multiplier < 1 ? t('modelPricing.timePricing.valley') : t('modelPricing.timePricing.peak') }}
+              </span>
+              <span class="pricing-group__time-range">{{ period.label }}</span>
+              <span>{{ compactPriceLabel(period) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </section>
@@ -166,50 +202,151 @@ const imagePricingRows = computed<PricingRow[]>(() => {
   ]
 })
 
+type ModelPrice = NonNullable<PublicPricingGroup['models']>[number]
+type ContextTier = NonNullable<ModelPrice['context_intervals']>[number]
+type PriceShape = Pick<ContextTier, 'input_price' | 'output_price' | 'cache_write_price' | 'cache_read_price'>
+
+function displayBasePrice(model: ModelPrice): PriceShape {
+  return model.context_intervals?.find((interval) => interval.min_tokens === 0) ?? model
+}
+
 const pricingRows = computed<PricingRow[]>(() => [
-  ...models.value.flatMap((model) => {
-    const base: PricingRow = {
+  ...models.value.map((model) => {
+    const price = displayBasePrice(model)
+    return {
       key: `model-${model.model}`,
-      label: model.context_intervals?.length ? `${model.model} · ${t('modelPricing.contextPricing.base')}` : model.model,
-      input: model.input_price,
-      output: model.output_price,
-      cacheWrite: model.cache_write_price,
-      cacheRead: model.cache_read_price,
+      label: model.model,
+      input: price.input_price,
+      output: price.output_price,
+      cacheWrite: price.cache_write_price,
+      cacheRead: price.cache_read_price,
       disabled: model.disabled
     }
-    const intervals = (model.context_intervals || []).map((interval, index): PricingRow => ({
-      key: `model-${model.model}-interval-${index}`,
-      label: `${model.model} · ${formatContextRange(interval.min_tokens, interval.max_tokens)}`,
-      input: interval.input_price,
-      output: interval.output_price,
-      cacheWrite: interval.cache_write_price,
-      cacheRead: interval.cache_read_price,
-      disabled: model.disabled
-    }))
-    // A first interval starting at zero is the complete base tier, not an
-    // override. Do not render a duplicate generic "base" row above it.
-    const intervalsCoverBase = model.context_intervals?.some(interval => interval.min_tokens === 0) === true
-    return intervalsCoverBase ? intervals : [base, ...intervals]
   }),
   // 生图行固定排在文本模型之后
   ...imagePricingRows.value
 ])
 
+const contextPricingRows = computed(() => models.value.flatMap((model) => {
+  const tiers = [...(model.context_intervals ?? [])]
+    .filter((interval) => interval.min_tokens > 0)
+    .sort((a, b) => a.min_tokens - b.min_tokens)
+  return tiers.length > 0 ? [{ model: model.model, tiers }] : []
+}))
+
+interface TimePricePeriod extends PriceShape {
+  startTime: number
+  endTime: number
+  multiplier: number
+  wrapsMidnight: boolean
+  label: string
+}
+
+const SECONDS_PER_DAY = 24 * 60 * 60
+
+function timeToSeconds(value: string, isEnd = false): number {
+  const [hours = 0, minutes = 0, seconds = 0] = value.split(':').map(Number)
+  if (isEnd && hours === 0 && minutes === 0 && seconds === 0) return SECONDS_PER_DAY
+  return hours * 3600 + minutes * 60 + seconds
+}
+
+function formatClock(seconds: number): string {
+  const normalized = seconds === SECONDS_PER_DAY ? 0 : seconds
+  const hours = Math.floor(normalized / 3600).toString().padStart(2, '0')
+  const minutes = Math.floor((normalized % 3600) / 60).toString().padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+function multiplyPrice(value: number | null | undefined, multiplier: number): number | null {
+  return value === null || value === undefined ? null : value * multiplier
+}
+
+function withPeriodPrices(base: PriceShape, startTime: number, endTime: number, multiplier: number, wrapsMidnight = false): TimePricePeriod {
+  const endLabel = wrapsMidnight
+    ? `${t('modelPricing.timePricing.nextDay')}${formatClock(endTime)}`
+    : formatClock(endTime)
+  return {
+    startTime,
+    endTime,
+    multiplier,
+    wrapsMidnight,
+    label: `${formatClock(startTime)}–${endLabel}`,
+    input_price: multiplyPrice(base.input_price, multiplier),
+    output_price: multiplyPrice(base.output_price, multiplier),
+    cache_write_price: multiplyPrice(base.cache_write_price, multiplier),
+    cache_read_price: multiplyPrice(base.cache_read_price, multiplier)
+  }
+}
+
+function explicitTimePrices(model: ModelPrice): TimePricePeriod[] {
+  const configured = (model.time_pricing?.periods ?? [])
+    .map((period) => ({
+      startTime: timeToSeconds(period.start_time),
+      endTime: timeToSeconds(period.end_time, true),
+      multiplier: period.multiplier
+    }))
+    .sort((a, b) => a.startTime - b.startTime)
+  if (configured.length === 0) return []
+
+  const segments: Array<{ startTime: number; endTime: number; multiplier: number }> = []
+  let cursor = 0
+  for (const period of configured) {
+    if (period.startTime > cursor) segments.push({ startTime: cursor, endTime: period.startTime, multiplier: 1 })
+    segments.push(period)
+    cursor = period.endTime
+  }
+  if (cursor < SECONDS_PER_DAY) segments.push({ startTime: cursor, endTime: SECONDS_PER_DAY, multiplier: 1 })
+
+  const merged: typeof segments = []
+  for (const segment of segments) {
+    const previous = merged[merged.length - 1]
+    if (previous && previous.endTime === segment.startTime && previous.multiplier === segment.multiplier) {
+      previous.endTime = segment.endTime
+    } else {
+      merged.push({ ...segment })
+    }
+  }
+
+  const first = merged[0]
+  const last = merged[merged.length - 1]
+  const wraps = merged.length > 1 && first.startTime === 0 && last.endTime === SECONDS_PER_DAY && first.multiplier === last.multiplier
+  const normalized: Array<{ startTime: number; endTime: number; multiplier: number; wrapsMidnight: boolean }> = wraps
+    ? [
+        ...merged.slice(1, -1).map((period) => ({ ...period, wrapsMidnight: false })),
+        { startTime: last.startTime, endTime: first.endTime, multiplier: first.multiplier, wrapsMidnight: true }
+      ]
+    : merged.map((period) => ({ ...period, wrapsMidnight: false }))
+
+  const base = displayBasePrice(model)
+  return normalized
+    .map((period) => withPeriodPrices(base, period.startTime, period.endTime, period.multiplier, period.wrapsMidnight))
+    .sort((a, b) => b.multiplier - a.multiplier || a.startTime - b.startTime)
+}
+
 const timePricingRows = computed(() => models.value
-  .filter(model => model.time_pricing?.periods?.length)
-  .map(model => ({
+  .filter((model) => model.time_pricing?.periods?.length)
+  .map((model) => ({
     key: model.model,
     model: model.model,
     timezone: model.time_pricing!.timezone,
     weekdaysOnly: model.time_pricing!.weekdays_only === true,
-    periods: model.time_pricing!.periods
+    periods: explicitTimePrices(model)
   })))
 
-function formatContextRange(min: number, max?: number): string {
-  const lower = min.toLocaleString()
-  return max == null
-    ? t('modelPricing.contextPricing.above', { min: lower })
-    : t('modelPricing.contextPricing.range', { min: lower, max: max.toLocaleString() })
+function formatTokenThreshold(tokens: number): string {
+  if (tokens >= 1_000_000 && tokens % 1_000_000 === 0) return `${tokens / 1_000_000}M`
+  if (tokens >= 1024 && tokens % 1024 === 0) return `${tokens / 1024}K`
+  return tokens.toLocaleString()
+}
+
+function compactPriceLabel(price: PriceShape): string {
+  const parts = [
+    price.input_price == null ? '' : `${t('modelPricing.table.input')} ${formatPrice(price.input_price)}`,
+    price.output_price == null ? '' : `${t('modelPricing.table.output')} ${formatPrice(price.output_price)}`,
+    price.cache_write_price == null ? '' : `${t('modelPricing.table.cacheWrite')} ${formatPrice(price.cache_write_price)}`,
+    price.cache_read_price == null ? '' : `${t('modelPricing.table.cacheRead')} ${formatPrice(price.cache_read_price)}`
+  ]
+  return parts.filter(Boolean).join(' · ')
 }
 
 function formatPrice(v: number | null | undefined): string {
@@ -297,28 +434,105 @@ function formatPrice(v: number | null | undefined): string {
   overflow-x: auto;
 }
 
+.pricing-group__context-pricing,
 .pricing-group__time-pricing {
   padding: 0.875rem 1.25rem;
-  border-top: 1px solid rgb(var(--color-muted) / 0.25);
-  color: rgb(var(--color-muted));
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: #6b7280;
   font-size: 0.75rem;
 }
 
-.pricing-group__time-title {
-  margin: 0 0 0.375rem;
-  color: rgb(var(--color-ink));
+.pricing-group__detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pricing-group__detail-title {
+  margin: 0;
+  color: #111827;
   font-weight: 700;
 }
 
-.pricing-group__time-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem 0.75rem;
-  margin: 0.25rem 0;
+.pricing-group__detail-note {
+  margin: 0.25rem 0 0;
+  color: #6b7280;
+  line-height: 1.5;
 }
 
-.pricing-group__time-note {
-  margin: 0.5rem 0 0;
+.pricing-group__context-list,
+.pricing-group__time-list {
+  display: grid;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+}
+
+.pricing-group__context-row,
+.pricing-group__time-model {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.75rem;
+}
+
+.pricing-group__context-row > strong,
+.pricing-group__time-model-title strong {
+  color: #111827;
+  font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+  font-size: 0.75rem;
+}
+
+.pricing-group__tier-list,
+.pricing-group__time-tier-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.pricing-group__tier-pill,
+.pricing-group__time-tier {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  border-radius: 8px;
+  background: #f9fafb;
+  padding: 0.5rem 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-group__tier-threshold,
+.pricing-group__time-range {
+  color: #374151;
+  font-weight: 700;
+}
+
+.pricing-group__time-model-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+}
+
+.pricing-group__time-badge {
+  display: inline-flex;
+  min-width: 3rem;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-weight: 700;
+}
+
+.pricing-group__time-badge.is-peak {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.pricing-group__time-badge.is-valley {
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .pricing-group__table {

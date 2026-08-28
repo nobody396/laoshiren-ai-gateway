@@ -841,9 +841,18 @@ export default {
     searchGroup: 'Search groups...',
     noGroupFound: 'No groups found',
     groupSections: {
-      monthly: 'Monthly plans',
+      monthly: 'Monthly',
       payg: 'Pay as you go',
       monthlyOnly: 'Monthly plan'
+    },
+    groupFamilies: {
+      openai: 'OpenAI',
+      claude: 'Claude',
+      grok: 'Grok',
+      gemini: 'Gemini',
+      domestic: 'Domestic models',
+      image: 'Image generation',
+      other: 'Other'
     },
     cacheHitRate: '{days}d cache {rate}%',
     created: 'Created',
@@ -6524,13 +6533,19 @@ export default {
     },
 	contextPricing: {
 	  base: 'Base price',
+	  title: 'Long-context tier prices',
+	  summaryNote: 'The table shows one lowest-context price per model. Requests above a threshold use the corresponding tier below.',
+	  aboveThreshold: 'Input above {threshold}',
 	  range: 'Context ({min}, {max}]',
 	  above: 'Context > {min}'
 	},
 	timePricing: {
-	  title: 'Time multiplier',
+	  title: 'Peak and off-peak prices',
 	  weekdaysOnly: 'Weekdays only',
-	  basePriceNote: 'The table shows base prices. Matching periods multiply input, output, and cache charges by the listed factor.'
+	  explicitPriceNote: 'Shows the actual unit price for each period instead of an ambiguous multiplier.',
+	  peak: 'Peak',
+	  valley: 'Off-peak',
+	  nextDay: 'next day '
 	},
     image: {
       title: 'Image generation pricing',

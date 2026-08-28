@@ -214,6 +214,7 @@ import {
 import { usePermissionStore } from '@/stores/permission'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { useChangelogFreshness } from '@/composables/useChangelogFreshness'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 import { getAffiliateOperationsSummary } from '@/api/admin/agents'
 
 interface NavItem {
@@ -1037,7 +1038,7 @@ const adminNavItems = computed((): NavItem[] => {
     const filtered = baseItems.filter(item => !item.hideInSimpleMode)
     filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
     filtered.push(createModelPricingNavItem())
-    filtered.push(createDocsNavItem())
+    if (PUBLIC_DOCS_ENABLED) filtered.push(createDocsNavItem())
     filtered.push({
       path: '/admin/settings',
       label: resolveAdminMenuLabel('/admin/settings', t('nav.settings')),

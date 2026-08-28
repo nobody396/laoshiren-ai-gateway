@@ -1268,27 +1268,49 @@
               @click.stop
             />
           </div>
+          <div class="mt-2 flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-dark-900">
+            <button
+              v-for="section in groupOptionSections"
+              :key="section.id"
+              type="button"
+              :class="[
+                'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                activeGroupBillingSection === section.id
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+              ]"
+              @click.stop="selectGroupBillingSection(section.id)"
+            >
+              {{ getGroupSectionLabel(section.id) }}
+              <span class="ml-1 opacity-60">{{ section.options.length }}</span>
+            </button>
+          </div>
+          <div v-if="activeGroupFamilies.length > 1" class="mt-2 flex gap-1 overflow-x-auto pb-0.5">
+            <button
+              v-for="family in activeGroupFamilies"
+              :key="family.id"
+              type="button"
+              :class="[
+                'shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                activeGroupFamily === family.id
+                  ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-800 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-400 dark:hover:text-gray-200'
+              ]"
+              @click.stop="selectGroupFamily(family.id)"
+            >
+              {{ getGroupFamilyLabel(family.id) }}
+              <span class="ml-1 opacity-60">{{ family.options.length }}</span>
+            </button>
+          </div>
         </div>
         <!-- Group list -->
         <div
           class="overflow-y-auto bg-gray-50/60 p-2 dark:bg-dark-900/40"
           :style="{ maxHeight: dropdownPosition.listMaxHeight + 'px' }"
         >
-          <section
-            v-for="section in filteredGroupOptionSections"
-            :key="section.id"
-            class="mb-2 last:mb-0"
-          >
-            <div class="sticky top-0 z-10 rounded-xl bg-gray-100/95 px-3 py-2 backdrop-blur dark:bg-dark-900/95">
-              <GroupSectionHeader
-                :section="section.id"
-                :label="getGroupSectionLabel(section.id)"
-                :count="section.options.length"
-              />
-            </div>
-            <div class="mt-1 space-y-1">
+          <div class="space-y-1">
               <button
-                v-for="option in section.options"
+                v-for="option in visibleGroupOptions"
                 :key="option.value"
                 @click="changeGroup(selectedKeyForGroup!, option.value)"
                 :class="[
@@ -1312,8 +1334,7 @@
                   :selected="selectedKeyForGroup?.group_id === option.value"
                 />
               </button>
-            </div>
-          </section>
+          </div>
           <!-- Empty state when search has no results -->
           <div v-if="filteredGroupOptionCount === 0" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
             {{ t('keys.noGroupFound') }}
@@ -1325,7 +1346,7 @@
 </template>
 
 <script setup lang="ts">
-	import { ref, computed, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue'
+	import { ref, computed, onMounted, onUnmounted, watch, type ComponentPublicInstance } from 'vue'
 	import { useRoute, useRouter } from 'vue-router'
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
@@ -1375,8 +1396,11 @@ import {
   type ClientAutoConfigTarget
 } from '@/utils/clientAutoConfig'
 import {
+  buildGroupOptionFamilies,
   buildGroupOptionSections,
+  classifyGroupOptionFamily,
   isMonthlyGroupOption,
+  type GroupOptionFamilyId,
   type GroupOptionSectionId
 } from '@/utils/groupOptionSections'
 
@@ -1399,6 +1423,7 @@ interface GroupOption {
   cacheHitRatePct: number | null
   cacheWindowDays: number
   groupKey: GroupOptionSectionId
+  familyKey: GroupOptionFamilyId
 }
 
 interface GroupHeaderOption {
@@ -1672,9 +1697,10 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
   groups.value.map((group) => {
     const cacheStats = groupCacheStats.value[group.id]
     const subscriptionType = group.subscription_type
+    const label = publicGroupDisplayName(group.name)
     return {
       value: group.id,
-      label: publicGroupDisplayName(group.name),
+      label,
       description: group.description,
       rate: group.rate_multiplier,
       userRate: userGroupRates.value[group.id] ?? null,
@@ -1684,7 +1710,8 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
       cacheWindowDays: groupCacheWindowDays.value,
       groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit'
         ? 'monthly'
-        : 'payg'
+        : 'payg',
+      familyKey: classifyGroupOptionFamily({ label, platform: group.platform })
     }
   })
 )
@@ -1702,18 +1729,24 @@ const getGroupSectionLabel = (section: GroupOptionSectionId): string => {
     : t('keys.groupSections.payg')
 }
 
+const getGroupFamilyLabel = (family: GroupOptionFamilyId): string => {
+  return t(`keys.groupFamilies.${family}`)
+}
+
 const groupSelectOptions = computed<GroupSelectOption[]>(() => {
-  return groupOptionSections.value.flatMap((section) => [
-    {
-      value: `group:${section.id}`,
-      label: getGroupSectionLabel(section.id),
-      kind: 'group' as const,
-      groupKey: section.id,
-      count: section.options.length,
-      disabled: true as const
-    },
-    ...section.options
-  ])
+  return groupOptionSections.value.flatMap((section) =>
+    buildGroupOptionFamilies(section.options).flatMap((family) => [
+      {
+        value: `group:${section.id}:${family.id}`,
+        label: `${getGroupSectionLabel(section.id)} · ${getGroupFamilyLabel(family.id)}`,
+        kind: 'group' as const,
+        groupKey: section.id,
+        count: family.options.length,
+        disabled: true as const
+      },
+      ...family.options
+    ])
+  )
 })
 
 const isGroupHeaderOption = (option: GroupSelectOption): option is GroupHeaderOption => {
@@ -1738,25 +1771,56 @@ const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
 
 // Group dropdown search
 const groupSearchQuery = ref('')
-const filteredGroupOptionSections = computed(() => {
-  const query = groupSearchQuery.value.trim().toLowerCase()
-  if (!query) return groupOptionSections.value
+const activeGroupBillingSection = ref<GroupOptionSectionId>('payg')
+const activeGroupFamily = ref<GroupOptionFamilyId>('openai')
 
-  return groupOptionSections.value.flatMap((section) => {
-    const options = section.options.filter((option) => {
+const activeBillingSection = computed(() => {
+  return groupOptionSections.value.find((section) => section.id === activeGroupBillingSection.value) ?? groupOptionSections.value[0]
+})
+
+const activeGroupFamilies = computed(() => {
+  return buildGroupOptionFamilies(activeBillingSection.value?.options ?? [])
+})
+
+const visibleGroupOptions = computed(() => {
+  const query = groupSearchQuery.value.trim().toLowerCase()
+  const options = activeBillingSection.value?.options ?? []
+  if (query) {
+    return options.filter((option) => {
       return option.label.toLowerCase().includes(query) ||
         (option.description && option.description.toLowerCase().includes(query))
     })
-    return options.length > 0 ? [{ ...section, options }] : []
-  })
+  }
+  return activeGroupFamilies.value.find((family) => family.id === activeGroupFamily.value)?.options ?? []
 })
 
 const filteredGroupOptionCount = computed(() => {
-  return filteredGroupOptionSections.value.reduce(
-    (total, section) => total + section.options.length,
-    0
-  )
+  return visibleGroupOptions.value.length
 })
+
+const selectGroupBillingSection = (section: GroupOptionSectionId) => {
+  activeGroupBillingSection.value = section
+  const families = buildGroupOptionFamilies(
+    groupOptionSections.value.find((candidate) => candidate.id === section)?.options ?? []
+  )
+  activeGroupFamily.value = families[0]?.id ?? 'openai'
+}
+
+const selectGroupFamily = (family: GroupOptionFamilyId) => {
+  activeGroupFamily.value = family
+}
+
+watch(groupOptionSections, (sections) => {
+  if (!sections.some((section) => section.id === activeGroupBillingSection.value)) {
+    activeGroupBillingSection.value = sections[0]?.id ?? 'payg'
+  }
+  const families = buildGroupOptionFamilies(
+    sections.find((section) => section.id === activeGroupBillingSection.value)?.options ?? []
+  )
+  if (!families.some((family) => family.id === activeGroupFamily.value)) {
+    activeGroupFamily.value = families[0]?.id ?? 'openai'
+  }
+}, { immediate: true })
 
 const maskKey = (key: string): string => {
   if (key.length <= 12) return key
@@ -2035,7 +2099,7 @@ const openGroupSelector = (key: ApiKey) => {
       const spaceAbove = rect.top
       const openUpward = spaceBelow < 460 && spaceAbove > spaceBelow
       const availableHeight = openUpward ? spaceAbove : spaceBelow
-      const listMaxHeight = Math.max(160, Math.min(480, availableHeight - 68))
+      const listMaxHeight = Math.max(160, Math.min(480, availableHeight - 156))
 
       if (openUpward) {
         dropdownPosition.value = {
@@ -2053,6 +2117,13 @@ const openGroupSelector = (key: ApiKey) => {
     }
     groupSelectorKeyId.value = key.id
     groupSearchQuery.value = ''
+    const selectedOption = baseGroupOptions.value.find((option) => option.value === key.group_id)
+    if (selectedOption) {
+      activeGroupBillingSection.value = selectedOption.groupKey
+      activeGroupFamily.value = selectedOption.familyKey
+    } else {
+      selectGroupBillingSection(groupOptionSections.value[0]?.id ?? 'payg')
+    }
   }
 }
 

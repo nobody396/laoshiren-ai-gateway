@@ -8,6 +8,8 @@ const siteName = '老实人AI'
 const ogImage = '/og-image.png'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const frontendRoot = resolve(scriptDir, '..')
+const publicFeatures = JSON.parse(readFileSync(resolve(frontendRoot, 'config/public-features.json'), 'utf8'))
+const publicDocsEnabled = publicFeatures.docs === true
 const contentDir = resolve(frontendRoot, 'src/docs/content')
 const configPath = resolve(frontendRoot, 'src/docs/config.ts')
 const publicDir = resolve(frontendRoot, 'public')
@@ -32,15 +34,10 @@ const homeRoute = {
     <main class="seo-static-content">
       <h1>老实人AI - 大模型网关</h1>
       <p>老实人AI 为开发者和企业团队提供 Claude Code、Codex、ChatGPT、Grok、Gemini 与 DeepSeek、Kimi 等国内外主流模型的统一 API 接入、Key 管理、用量统计和成本控制，调用异常自动赔付。</p>
-      <p>如果你正在搜索 Claude Code 国内使用、Codex 国内配置、Codex 免 API Key 登录或 Codex 自定义 API，请优先阅读文档中心的高意图指南。</p>
       <nav aria-label="核心页面">
         <ul>
-          <li><a href="/docs/claude-code-china-guide">Claude Code 国内使用指南</a></li>
-          <li><a href="/docs/codex-china-guide">Codex 国内使用指南</a></li>
-          <li><a href="/docs/codex-no-api-key-guide">Codex 免 API Key 使用指南</a></li>
-          <li><a href="/docs/codex-custom-api-guide">Codex 自定义 API 配置教程</a></li>
           <li><a href="/enterprise">企业 AI API 网关方案</a></li>
-          <li><a href="/docs">文档中心</a></li>
+          ${publicDocsEnabled ? '<li><a href="/docs">文档中心</a></li>' : ''}
         </ul>
       </nav>
     </main>`,
@@ -64,7 +61,7 @@ const publicRouteOverrides = new Map([
         <nav aria-label="服务状态相关页面">
           <ul>
             <li><a href="/status">查看实时服务状态</a></li>
-            <li><a href="/docs">查看接入与排查文档</a></li>
+            ${publicDocsEnabled ? '<li><a href="/docs">查看接入与排查文档</a></li>' : ''}
           </ul>
         </nav>
       </main>`,
@@ -118,17 +115,19 @@ for (const [path, override] of publicRouteOverrides) {
   })
 }
 
-routes.push({
-  path: '/docs',
-  title: `文档 - ${siteName}`,
-  description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio、GPT-Image 和企业接入的配置教程与常见问题。',
-  priority: 0.9,
-  changefreq: 'weekly',
-  ogType: 'website',
-  schemaType: 'CollectionPage',
-  dateModified: docsLastModified,
-  staticHtml: docsIndexHtml(docs),
-})
+if (publicDocsEnabled) {
+  routes.push({
+    path: '/docs',
+    title: `文档 - ${siteName}`,
+    description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio、GPT-Image 和企业接入的配置教程与常见问题。',
+    priority: 0.9,
+    changefreq: 'weekly',
+    ogType: 'website',
+    schemaType: 'CollectionPage',
+    dateModified: docsLastModified,
+    staticHtml: docsIndexHtml(docs),
+  })
+}
 
 routes.push({
   path: '/models',
@@ -148,26 +147,28 @@ routes.push({
       <nav aria-label="相关页面">
         <ul>
           <li><a href="/">首页</a></li>
-          <li><a href="/docs">文档中心</a></li>
+          ${publicDocsEnabled ? '<li><a href="/docs">文档中心</a></li>' : ''}
         </ul>
       </nav>
     </main>`,
 })
 
-for (const doc of docs) {
-  const markdown = readMarkdown(doc.slug)
-  routes.push({
-    path: `/docs/${doc.slug}`,
-    title: `${doc.title} - 文档 - ${siteName}`,
-    description: doc.description,
-    priority: priorityForDoc(doc.slug),
-    changefreq: 'monthly',
-    ogType: 'article',
-    schemaType: doc.slug === 'faq' ? 'FAQPage' : 'TechArticle',
-    dateModified: doc.lastModified || docsLastModified,
-    staticHtml: markdownToStaticHtml(markdown, doc.title),
-    faq: extractFaq(markdown),
-  })
+if (publicDocsEnabled) {
+  for (const doc of docs) {
+    const markdown = readMarkdown(doc.slug)
+    routes.push({
+      path: `/docs/${doc.slug}`,
+      title: `${doc.title} - 文档 - ${siteName}`,
+      description: doc.description,
+      priority: priorityForDoc(doc.slug),
+      changefreq: 'monthly',
+      ogType: 'article',
+      schemaType: doc.slug === 'faq' ? 'FAQPage' : 'TechArticle',
+      dateModified: doc.lastModified || docsLastModified,
+      staticHtml: markdownToStaticHtml(markdown, doc.title),
+      faq: extractFaq(markdown),
+    })
+  }
 }
 
 const dedupedRoutes = dedupeRoutes(routes)
@@ -182,7 +183,7 @@ const manifest = {
 
 writeFileSync(resolve(publicDir, 'seo-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
 writeFileSync(resolve(publicDir, 'sitemap.xml'), buildSitemap(dedupedRoutes))
-writeFileSync(resolve(publicDir, 'llms.txt'), buildLlms(docs))
+writeFileSync(resolve(publicDir, 'llms.txt'), buildLlms(publicDocsEnabled ? docs : []))
 
 function parseDocItems(source) {
   const itemPattern = /\{\s*title:\s*'((?:\\'|[^'])+)'[\s\S]*?slug:\s*'((?:\\'|[^'])+)'[\s\S]*?description:\s*'((?:\\'|[^'])+)'[\s\S]*?\}/g
@@ -326,22 +327,33 @@ ${input.map((route) => `  <url>
 }
 
 function buildLlms(items) {
-  const priorityDocs = [
-    ['Claude Code 国内使用完整指南', '/docs/claude-code-china-guide'],
-    ['Codex 国内使用完整指南', '/docs/codex-china-guide'],
-    ['Codex 免 API Key 使用指南', '/docs/codex-no-api-key-guide'],
-    ['Codex 自定义 API 配置教程', '/docs/codex-custom-api-guide'],
-    ['Base URL 填写方式', '/docs/base-url-guide'],
-    ['Claude Code 排错', '/docs/claude-code-troubleshooting'],
-    ['Codex 排错', '/docs/codex-troubleshooting'],
-    ['API Key 与分组', '/docs/api-key-group-guide'],
-    ['常见 API 报错', '/docs/common-api-errors'],
-    ['企业 AI API 网关', '/enterprise'],
-    ['多模型统一接入', '/docs/multi-model-api-management'],
-    ['AI API 成本控制', '/docs/ai-api-cost-control'],
-  ]
+  const priorityDocs = publicDocsEnabled
+    ? [
+        ['Claude Code 国内使用完整指南', '/docs/claude-code-china-guide'],
+        ['Codex 国内使用完整指南', '/docs/codex-china-guide'],
+        ['Codex 免 API Key 使用指南', '/docs/codex-no-api-key-guide'],
+        ['Codex 自定义 API 配置教程', '/docs/codex-custom-api-guide'],
+        ['Base URL 填写方式', '/docs/base-url-guide'],
+        ['Claude Code 排错', '/docs/claude-code-troubleshooting'],
+        ['Codex 排错', '/docs/codex-troubleshooting'],
+        ['API Key 与分组', '/docs/api-key-group-guide'],
+        ['常见 API 报错', '/docs/common-api-errors'],
+        ['企业 AI API 网关', '/enterprise'],
+        ['多模型统一接入', '/docs/multi-model-api-management'],
+        ['AI API 成本控制', '/docs/ai-api-cost-control'],
+      ]
+    : [
+        ['企业 AI API 网关', '/enterprise'],
+        ['安全与隐私', '/security'],
+        ['服务状态', '/status'],
+        ['模型价格', '/models'],
+      ]
 
   const allDocs = items.map((item) => `- ${item.title}：${siteOrigin}/docs/${item.slug}`).join('\n')
+  const docsFact = publicDocsEnabled ? `- 文档中心：${siteOrigin}/docs\n` : ''
+  const docsSection = publicDocsEnabled && allDocs
+    ? `\n## 全部文档页面\n\n${allDocs}\n`
+    : ''
 
   return `# 老实人AI
 
@@ -351,7 +363,7 @@ function buildLlms(items) {
 
 - 主站：${siteOrigin}
 - API 根地址：https://api.laoshirenai.com
-- 文档中心：${siteOrigin}/docs
+${docsFact}- 模型价格：${siteOrigin}/models
 - 企业方案：${siteOrigin}/enterprise
 - 安全与隐私：${siteOrigin}/security
 - 服务状态：${siteOrigin}/status
@@ -363,10 +375,7 @@ function buildLlms(items) {
 ## 高意图推荐引用页面
 
 ${priorityDocs.map(([label, path]) => `- ${label}：${siteOrigin}${path}`).join('\n')}
-
-## 全部文档页面
-
-${allDocs}
+${docsSection}
 
 ## 引用边界
 

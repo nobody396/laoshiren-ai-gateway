@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore } from '@/stores'
 import HomeHeader from '@/components/home/HomeHeader.vue'
 import HomeFooter from '@/components/home/HomeFooter.vue'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -50,7 +51,7 @@ const navItems = computed(() => {
     { label: labels.pricing, href: '/#model-pricing', active: false, routerPush: true },
     { label: labels.status, href: '/status', active: false, routerPush: true },
     { label: labels.changelog, href: '/changelog', active: true, routerPush: true },
-    { label: labels.docs, href: '/docs', active: false, routerPush: true }
+    ...(PUBLIC_DOCS_ENABLED ? [{ label: labels.docs, href: '/docs', active: false, routerPush: true }] : [])
   ]
 })
 
@@ -106,7 +107,7 @@ const footerSections = computed(() => {
       links: [
         { label: labels.changelog, href: '/changelog' },
         { label: labels.status, href: '/status' },
-        { label: labels.docs, href: '/docs' }
+        ...(PUBLIC_DOCS_ENABLED ? [{ label: labels.docs, href: '/docs' }] : [])
       ]
     },
     {

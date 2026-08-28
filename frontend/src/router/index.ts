@@ -13,6 +13,7 @@ import {useRoutePrefetch} from '@/composables/useRoutePrefetch'
 import {getSetupStatus, type SetupStatus} from '@/api/setup'
 import {updateRouteSeo} from '@/utils/seo'
 import {trackPageView} from '@/utils/analytics'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 import {evaluateRoutePolicy} from './route-policy'
 
 /**
@@ -69,26 +70,33 @@ const routes: RouteRecordRaw[] = [
   },
 
   // ==================== Documentation Routes ====================
-  {
-    path: '/docs',
-    name: 'Docs',
-    component: () => import('@/views/docs/DocsView.vue'),
-    meta: {
-      requiresAuth: false,
-      title: '文档',
-      description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
-    }
-  },
-  {
-    path: '/docs/:slug',
-    name: 'DocsPage',
-    component: () => import('@/views/docs/DocsView.vue'),
-    meta: {
-      requiresAuth: false,
-      title: '文档',
-      description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
-    }
-  },
+  ...(PUBLIC_DOCS_ENABLED
+    ? [
+        {
+          path: '/docs',
+          name: 'Docs',
+          component: () => import('@/views/docs/DocsView.vue'),
+          meta: {
+            requiresAuth: false,
+            title: '文档',
+            description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+          }
+        },
+        {
+          path: '/docs/:slug',
+          name: 'DocsPage',
+          component: () => import('@/views/docs/DocsView.vue'),
+          meta: {
+            requiresAuth: false,
+            title: '文档',
+            description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+          }
+        }
+      ] satisfies RouteRecordRaw[]
+    : [
+        { path: '/docs', redirect: '/' },
+        { path: '/docs/:pathMatch(.*)*', redirect: '/' }
+      ] satisfies RouteRecordRaw[]),
   {
     path: '/enterprise',
     name: 'Enterprise',

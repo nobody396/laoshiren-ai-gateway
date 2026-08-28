@@ -840,9 +840,18 @@ export default {
     searchGroup: '搜索分组...',
     noGroupFound: '未找到匹配的分组',
     groupSections: {
-      monthly: '月卡分组',
+      monthly: '月卡',
       payg: '按量付费',
       monthlyOnly: '月卡专享'
+    },
+    groupFamilies: {
+      openai: 'OpenAI',
+      claude: 'Claude',
+      grok: 'Grok',
+      gemini: 'Gemini',
+      domestic: '国产模型',
+      image: '生图',
+      other: '其他'
     },
     cacheHitRate: '{days}日缓存 {rate}%',
     created: '创建时间',
@@ -6710,13 +6719,19 @@ export default {
     },
 	contextPricing: {
 	  base: '默认价格',
+	  title: '长上下文阶梯价',
+	  summaryNote: '上方表格每个模型只展示最低上下文档价格；输入超过阈值后，按下方对应阶梯价格计费。',
+	  aboveThreshold: '输入超过 {threshold}',
 	  range: '上下文 ({min}, {max}]',
 	  above: '上下文 > {min}'
 	},
 	timePricing: {
-	  title: '分时倍率',
+	  title: '峰谷分时价格',
 	  weekdaysOnly: '仅工作日',
-	  basePriceNote: '表格展示基础价格；命中时段后，输入、输出和缓存费用统一乘以上述倍率。'
+	  explicitPriceNote: '直接展示各时段的实际成交单价，不再使用容易混淆的倍率表达。',
+	  peak: '峰时',
+	  valley: '谷时',
+	  nextDay: '次日'
 	},
     image: {
       title: '生图计费',

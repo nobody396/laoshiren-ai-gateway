@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
@@ -21,6 +23,34 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/lib/pq"
 )
+
+const normalizedUserEmailAliasSQL = `CASE
+    WHEN rtrim(split_part(lower(btrim(email)), '@', 2), '.') IN ('gmail.com', 'googlemail.com') THEN
+        coalesce(
+            nullif(
+                replace(
+                    CASE
+                        WHEN strpos(split_part(lower(btrim(email)), '@', 1), '+') > 1 THEN
+                            left(split_part(lower(btrim(email)), '@', 1), strpos(split_part(lower(btrim(email)), '@', 1), '+') - 1)
+                        ELSE split_part(lower(btrim(email)), '@', 1)
+                    END,
+                    '.',
+                    ''
+                ),
+                ''
+            ),
+            CASE
+                WHEN strpos(split_part(lower(btrim(email)), '@', 1), '+') > 1 THEN
+                    left(split_part(lower(btrim(email)), '@', 1), strpos(split_part(lower(btrim(email)), '@', 1), '+') - 1)
+                ELSE split_part(lower(btrim(email)), '@', 1)
+            END
+        ) || '@gmail.com'
+    ELSE split_part(lower(btrim(email)), '@', 1) || '@' || rtrim(split_part(lower(btrim(email)), '@', 2), '.')
+END`
+
+const emailAliasAdvisoryLockNamespace int32 = 148623451
+
+var emailAliasLockStripes [64]sync.Mutex
 
 type userRepository struct {
 	client *dbent.Client
@@ -58,6 +88,15 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 			defer func() { _ = tx.Rollback() }()
 			txClient = tx.Client()
 		}
+	}
+
+	releaseAliasLock, err := lockEmailAliasForMutation(ctx, sqlExecutorFromContext(ctx, nil), userIn.Email)
+	if err != nil {
+		return err
+	}
+	defer releaseAliasLock()
+	if err := ensureEmailAliasAvailable(ctx, sqlExecutorFromContext(ctx, r.sql), txClient, userIn.Email, 0); err != nil {
+		return err
 	}
 
 	created, err := txClient.User.Create().
@@ -180,6 +219,21 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		if tx != nil {
 			defer func() { _ = tx.Rollback() }()
 			txClient = tx.Client()
+		}
+	}
+
+	current, err := txClient.User.Query().Where(dbuser.IDEQ(userIn.ID)).Select(dbuser.FieldEmail).Only(ctx)
+	if err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	if service.NormalizeEmailForAliasDedup(current.Email) != service.NormalizeEmailForAliasDedup(userIn.Email) || current.Email != userIn.Email {
+		releaseAliasLock, lockErr := lockEmailAliasForMutation(ctx, sqlExecutorFromContext(ctx, nil), userIn.Email)
+		if lockErr != nil {
+			return lockErr
+		}
+		defer releaseAliasLock()
+		if aliasErr := ensureEmailAliasAvailable(ctx, sqlExecutorFromContext(ctx, r.sql), txClient, userIn.Email, userIn.ID); aliasErr != nil {
+			return aliasErr
 		}
 	}
 
@@ -461,6 +515,108 @@ func (r *userRepository) UpdateConcurrency(ctx context.Context, id int64, amount
 
 func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	return clientFromContext(ctx, r.client).User.Query().Where(dbuser.EmailEQ(email)).Exist(ctx)
+}
+
+// ExistsByEmailAlias checks the provider-aware mailbox identity while allowing
+// callers to exclude the current user during an email change.
+func (r *userRepository) ExistsByEmailAlias(ctx context.Context, email string, excludeUserID int64) (bool, error) {
+	client := clientFromContext(ctx, r.client)
+	if client == nil {
+		return false, errors.New("user repository client is not configured")
+	}
+	alias := service.NormalizeEmailForAliasDedup(email)
+	if alias == "" {
+		return false, nil
+	}
+	return emailAliasExistsWithQuery(ctx, sqlExecutorFromContext(ctx, r.sql), client, alias, excludeUserID)
+}
+
+func emailAliasExistsWithQuery(ctx context.Context, queryer sqlQueryer, fallbackClient *dbent.Client, alias string, excludeUserID int64) (bool, error) {
+	if queryer == nil {
+		return emailAliasExistsByEnt(ctx, fallbackClient, alias, excludeUserID)
+	}
+	var exists bool
+	err := scanSingleRow(ctx, queryer, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM users
+			WHERE deleted_at IS NULL
+			  AND id <> $2
+			  AND (`+normalizedUserEmailAliasSQL+`) = $1
+		)`, []any{alias, excludeUserID}, &exists)
+	if err == nil {
+		return exists, nil
+	}
+	lowerErr := strings.ToLower(err.Error())
+	if !strings.Contains(lowerErr, "no such function: split_part") && !strings.Contains(lowerErr, "no such function: btrim") {
+		return false, err
+	}
+
+	// SQLite-only unit test fallback. Production PostgreSQL must always use the
+	// indexed expression above and fails closed on any other SQL error.
+	return emailAliasExistsByEnt(ctx, fallbackClient, alias, excludeUserID)
+}
+
+func emailAliasExistsByEnt(ctx context.Context, client *dbent.Client, alias string, excludeUserID int64) (bool, error) {
+	if client == nil {
+		return false, errors.New("user repository client is not configured")
+	}
+	candidates, queryErr := client.User.Query().Select(dbuser.FieldID, dbuser.FieldEmail).All(ctx)
+	if queryErr != nil {
+		return false, queryErr
+	}
+	for _, candidate := range candidates {
+		if candidate.ID != excludeUserID && service.NormalizeEmailForAliasDedup(candidate.Email) == alias {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func ensureEmailAliasAvailable(ctx context.Context, queryer sqlQueryer, fallbackClient *dbent.Client, email string, excludeUserID int64) error {
+	if queryer == nil && fallbackClient == nil {
+		return errors.New("user repository client is not configured")
+	}
+	alias := service.NormalizeEmailForAliasDedup(email)
+	if alias == "" {
+		return nil
+	}
+	exists, err := emailAliasExistsWithQuery(ctx, queryer, fallbackClient, alias, excludeUserID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return service.ErrEmailExists
+	}
+	return nil
+}
+
+func lockEmailAliasForMutation(ctx context.Context, txExecutor sqlExecutor, email string) (func(), error) {
+	alias := service.NormalizeEmailForAliasDedup(email)
+	sum := sha256.Sum256([]byte(alias))
+	stripe := &emailAliasLockStripes[int(sum[0])%len(emailAliasLockStripes)]
+	stripe.Lock()
+	release := stripe.Unlock
+
+	// Repository-owned Ent transactions do not expose a raw transaction
+	// executor. In that path the bounded in-process lock improves error
+	// determinism and the unique expression index is the cross-instance guard.
+	// When a UnitOfWork supplies its *sql.Tx, also take a transaction-scoped
+	// advisory lock before probing.
+	if txExecutor == nil {
+		return release, nil
+	}
+	lockID := int32(binary.BigEndian.Uint32(sum[:4]))
+	if _, err := txExecutor.ExecContext(ctx, `SELECT pg_advisory_xact_lock($1, $2)`, emailAliasAdvisoryLockNamespace, lockID); err != nil {
+		// SQLite is used only by isolated unit tests and has no cross-process
+		// concurrency. Keep the bounded in-process stripe there; fail closed for
+		// every other database error so production never silently loses the guard.
+		if !strings.Contains(strings.ToLower(err.Error()), "no such function: pg_advisory_xact_lock") {
+			release()
+			return nil, fmt.Errorf("lock email alias identity: %w", err)
+		}
+	}
+	return release, nil
 }
 
 func (r *userRepository) AddGroupToAllowedGroups(ctx context.Context, userID int64, groupID int64) error {

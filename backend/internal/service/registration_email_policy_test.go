@@ -34,3 +34,8 @@ func TestNormalizeRegistrationEmailAddressOnlyFoldsGmailAliases(t *testing.T) {
 	require.Equal(t, "username@gmail.com", NormalizeRegistrationEmailAddress("User.Name+team@googlemail.com"))
 	require.Equal(t, "member+team@corp.example", NormalizeRegistrationEmailAddress("Member+team@corp.example"))
 }
+
+func TestNormalizeEmailForAliasDedupPreservesNonGmailPlusAddressing(t *testing.T) {
+	require.Equal(t, "username@gmail.com", NormalizeEmailForAliasDedup("User.Name+team@googlemail.com."))
+	require.Equal(t, "member+team@corp.example", NormalizeEmailForAliasDedup(" Member+team@Corp.Example "))
+}

@@ -19,10 +19,19 @@ import (
 type mockUserRepo struct {
 	updateBalanceErr error
 	updateBalanceFn  func(ctx context.Context, id int64, amount float64) error
+	user             *User
+	aliasExists      bool
+	aliasExistsErr   error
 }
 
-func (m *mockUserRepo) Create(context.Context, *User) error               { return nil }
-func (m *mockUserRepo) GetByID(context.Context, int64) (*User, error)     { return &User{}, nil }
+func (m *mockUserRepo) Create(context.Context, *User) error { return nil }
+func (m *mockUserRepo) GetByID(context.Context, int64) (*User, error) {
+	if m.user != nil {
+		clone := *m.user
+		return &clone, nil
+	}
+	return &User{}, nil
+}
 func (m *mockUserRepo) GetByEmail(context.Context, string) (*User, error) { return &User{}, nil }
 func (m *mockUserRepo) GetFirstAdmin(context.Context) (*User, error)      { return &User{}, nil }
 func (m *mockUserRepo) Update(context.Context, *User) error               { return nil }
@@ -45,6 +54,9 @@ func (m *mockUserRepo) UpdateBalance(ctx context.Context, id int64, amount float
 func (m *mockUserRepo) DeductBalance(context.Context, int64, float64) error { return nil }
 func (m *mockUserRepo) UpdateConcurrency(context.Context, int64, int) error { return nil }
 func (m *mockUserRepo) ExistsByEmail(context.Context, string) (bool, error) { return false, nil }
+func (m *mockUserRepo) ExistsByEmailAlias(context.Context, string, int64) (bool, error) {
+	return m.aliasExists, m.aliasExistsErr
+}
 func (m *mockUserRepo) RemoveGroupFromAllowedGroups(context.Context, int64) (int64, error) {
 	return 0, nil
 }
@@ -222,4 +234,18 @@ func TestNewUserService_FieldsAssignment(t *testing.T) {
 	require.Equal(t, repo, svc.userRepo)
 	require.Equal(t, auth, svc.authCacheInvalidator)
 	require.Equal(t, cache, svc.billingCache)
+}
+
+func TestUpdateProfileRejectsAliasOwnedByAnotherUser(t *testing.T) {
+	repo := &mockUserRepo{
+		user:        &User{ID: 7, Email: "current@example.com"},
+		aliasExists: true,
+	}
+	svc := NewUserService(repo, nil, nil)
+	email := "user.name+new@googlemail.com"
+
+	updated, err := svc.UpdateProfile(context.Background(), 7, UpdateProfileRequest{Email: &email})
+
+	require.Nil(t, updated)
+	require.ErrorIs(t, err, ErrEmailExists)
 }

@@ -146,6 +146,13 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID int64, req Updat
 		if exists && *req.Email != user.Email {
 			return nil, ErrEmailExists
 		}
+		aliasExists, err := emailAliasExistsForAnotherUser(ctx, s.userRepo, *req.Email, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("check email alias exists: %w", err)
+		}
+		if aliasExists {
+			return nil, ErrEmailExists
+		}
 		user.Email = *req.Email
 	}
 

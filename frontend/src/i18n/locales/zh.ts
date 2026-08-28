@@ -6712,6 +6712,9 @@ export default {
     empty: '暂无可用模型',
     table: {
       model: '模型',
+      tier: '计费档位',
+      standard: '标准',
+      perImage: '按成功图片',
       input: '输入',
       output: '输出',
       cacheWrite: '缓存创建',

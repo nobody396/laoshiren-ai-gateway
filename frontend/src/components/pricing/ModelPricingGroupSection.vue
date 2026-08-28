@@ -19,15 +19,16 @@
       </div>
     </header>
 
-    <div v-if="pricingRows.length === 0" class="pricing-group__empty">
+    <div v-if="pricingModelGroups.length === 0" class="pricing-group__empty">
       {{ t('modelPricing.noModels') }}
     </div>
 
-    <div v-if="pricingRows.length > 0" class="pricing-group__table-wrap">
+    <div v-if="pricingModelGroups.length > 0" class="pricing-group__table-wrap">
       <table class="pricing-group__table">
         <thead>
           <tr>
             <th>{{ t('modelPricing.table.model') }}</th>
+            <th>{{ t('modelPricing.table.tier') }}</th>
             <th>{{ t('modelPricing.table.input') }}</th>
             <th>{{ t('modelPricing.table.output') }}</th>
             <th>{{ t('modelPricing.table.cacheWrite') }}</th>
@@ -35,76 +36,33 @@
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="row in pricingRows"
-            :key="row.key"
-            :class="{ 'pricing-group__row--disabled': row.disabled }"
-          >
-            <td class="pricing-group__model">
-              <span class="pricing-group__value">{{ row.label }}</span>
-              <span v-if="row.disabled" class="pricing-group__disabled-badge">
-                {{ t('modelPricing.disabled') }}
-              </span>
-            </td>
-            <td><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
-            <td>
-              <span class="pricing-group__value">{{ formatPrice(row.output) }}</span>
-              <span v-if="row.outputUnit" class="pricing-group__unit">{{ row.outputUnit }}</span>
-            </td>
-            <td><span class="pricing-group__value">{{ formatPrice(row.cacheWrite) }}</span></td>
-            <td><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
-          </tr>
+          <template v-for="modelGroup in pricingModelGroups" :key="modelGroup.key">
+            <tr
+              v-for="(row, rowIndex) in modelGroup.rows"
+              :key="`${modelGroup.key}-${rowIndex}`"
+              :class="[
+                { 'pricing-group__row--disabled': modelGroup.disabled },
+                rowIndex > 0 ? 'pricing-group__subrow' : ''
+              ]"
+            >
+              <td v-if="rowIndex === 0" :rowspan="modelGroup.rows.length" class="pricing-group__model">
+                <span class="pricing-group__value">{{ modelGroup.label }}</span>
+                <span v-if="modelGroup.disabled" class="pricing-group__disabled-badge">
+                  {{ t('modelPricing.disabled') }}
+                </span>
+              </td>
+              <td class="pricing-group__tier-label">{{ row.tierLabel }}</td>
+              <td><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
+              <td>
+                <span class="pricing-group__value">{{ formatPrice(row.output) }}</span>
+                <span v-if="row.outputUnit" class="pricing-group__unit">{{ row.outputUnit }}</span>
+              </td>
+              <td><span class="pricing-group__value">{{ formatPrice(row.cacheWrite) }}</span></td>
+              <td><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
+            </tr>
+          </template>
         </tbody>
       </table>
-    </div>
-
-    <div v-if="contextPricingRows.length > 0" class="pricing-group__context-pricing">
-      <div class="pricing-group__detail-heading">
-        <div>
-          <p class="pricing-group__detail-title">{{ t('modelPricing.contextPricing.title') }}</p>
-          <p class="pricing-group__detail-note">{{ t('modelPricing.contextPricing.summaryNote') }}</p>
-        </div>
-      </div>
-      <div class="pricing-group__context-list">
-        <div v-for="row in contextPricingRows" :key="row.model" class="pricing-group__context-row">
-          <strong>{{ row.model }}</strong>
-          <div class="pricing-group__tier-list">
-            <div v-for="tier in row.tiers" :key="`${row.model}-${tier.min_tokens}`" class="pricing-group__tier-pill">
-              <span class="pricing-group__tier-threshold">
-                {{ t('modelPricing.contextPricing.aboveThreshold', { threshold: formatTokenThreshold(tier.min_tokens) }) }}
-              </span>
-              <span>{{ compactPriceLabel(tier) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="timePricingRows.length > 0" class="pricing-group__time-pricing">
-      <div class="pricing-group__detail-heading">
-        <div>
-          <p class="pricing-group__detail-title">{{ t('modelPricing.timePricing.title') }}</p>
-          <p class="pricing-group__detail-note">{{ t('modelPricing.timePricing.explicitPriceNote') }}</p>
-        </div>
-      </div>
-      <div class="pricing-group__time-list">
-        <div v-for="row in timePricingRows" :key="row.key" class="pricing-group__time-model">
-          <div class="pricing-group__time-model-title">
-            <strong>{{ row.model }}</strong>
-            <span>{{ row.timezone }}</span>
-            <span v-if="row.weekdaysOnly">{{ t('modelPricing.timePricing.weekdaysOnly') }}</span>
-          </div>
-          <div class="pricing-group__time-tier-list">
-            <div v-for="period in row.periods" :key="`${period.startTime}-${period.endTime}-${period.multiplier}`" class="pricing-group__time-tier">
-              <span :class="['pricing-group__time-badge', period.multiplier < 1 ? 'is-valley' : 'is-peak']">
-                {{ period.multiplier < 1 ? t('modelPricing.timePricing.valley') : t('modelPricing.timePricing.peak') }}
-              </span>
-              <span class="pricing-group__time-range">{{ period.label }}</span>
-              <span>{{ compactPriceLabel(period) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
   </section>
@@ -153,53 +111,61 @@ const protocolLabelText = computed(() => {
   return GROUP_PROTOCOL[props.group.platform] ?? ''
 })
 
-interface PricingRow {
-  key: string
-  label: string
+interface PricingValueRow {
+  tierLabel: string
   input: number | null | undefined
   output: number | null | undefined
   cacheWrite: number | null | undefined
   cacheRead: number | null | undefined
   outputUnit?: string
+}
+
+interface PricingModelGroup {
+  key: string
+  label: string
+  rows: PricingValueRow[]
   disabled?: boolean
 }
 
-const imagePricingRows = computed<PricingRow[]>(() => {
+const imagePricingGroup = computed<PricingModelGroup | null>(() => {
   const image = props.group.image_generation
-  if (!image) return []
+  if (!image) return null
 
   if (image.mode === 'fixed_per_image') {
-    return [
-      {
-        key: 'image-fixed',
-        label: 'GPT Image 2',
+    return {
+      key: 'image-fixed',
+      label: 'GPT Image 2',
+      rows: [{
+        tierLabel: t('modelPricing.table.perImage'),
         input: null,
         output: image.price_per_image,
         outputUnit: t('modelPricing.image.perImageUnit'),
         cacheWrite: null,
         cacheRead: null
+      }]
+    }
+  }
+
+  return {
+    key: 'image-token',
+    label: 'GPT Image 2',
+    rows: [
+      {
+        tierLabel: t('modelPricing.image.textModality'),
+        input: image.text_input_price,
+        output: null,
+        cacheWrite: null,
+        cacheRead: image.text_cached_input_price
+      },
+      {
+        tierLabel: t('modelPricing.image.imageModality'),
+        input: image.image_input_price,
+        output: image.image_output_price,
+        cacheWrite: null,
+        cacheRead: image.image_cached_input_price
       }
     ]
   }
-
-  return [
-    {
-      key: 'image-token-text',
-      label: `GPT Image 2 · ${t('modelPricing.image.textModality')}`,
-      input: image.text_input_price,
-      output: null,
-      cacheWrite: null,
-      cacheRead: image.text_cached_input_price
-    },
-    {
-      key: 'image-token-image',
-      label: `GPT Image 2 · ${t('modelPricing.image.imageModality')}`,
-      input: image.image_input_price,
-      output: image.image_output_price,
-      cacheWrite: null,
-      cacheRead: image.image_cached_input_price
-    }
-  ]
 })
 
 type ModelPrice = NonNullable<PublicPricingGroup['models']>[number]
@@ -209,30 +175,6 @@ type PriceShape = Pick<ContextTier, 'input_price' | 'output_price' | 'cache_writ
 function displayBasePrice(model: ModelPrice): PriceShape {
   return model.context_intervals?.find((interval) => interval.min_tokens === 0) ?? model
 }
-
-const pricingRows = computed<PricingRow[]>(() => [
-  ...models.value.map((model) => {
-    const price = displayBasePrice(model)
-    return {
-      key: `model-${model.model}`,
-      label: model.model,
-      input: price.input_price,
-      output: price.output_price,
-      cacheWrite: price.cache_write_price,
-      cacheRead: price.cache_read_price,
-      disabled: model.disabled
-    }
-  }),
-  // 生图行固定排在文本模型之后
-  ...imagePricingRows.value
-])
-
-const contextPricingRows = computed(() => models.value.flatMap((model) => {
-  const tiers = [...(model.context_intervals ?? [])]
-    .filter((interval) => interval.min_tokens > 0)
-    .sort((a, b) => a.min_tokens - b.min_tokens)
-  return tiers.length > 0 ? [{ model: model.model, tiers }] : []
-}))
 
 interface TimePricePeriod extends PriceShape {
   startTime: number
@@ -323,31 +265,64 @@ function explicitTimePrices(model: ModelPrice): TimePricePeriod[] {
     .sort((a, b) => b.multiplier - a.multiplier || a.startTime - b.startTime)
 }
 
-const timePricingRows = computed(() => models.value
-  .filter((model) => model.time_pricing?.periods?.length)
-  .map((model) => ({
-    key: model.model,
-    model: model.model,
-    timezone: model.time_pricing!.timezone,
-    weekdaysOnly: model.time_pricing!.weekdays_only === true,
-    periods: explicitTimePrices(model)
-  })))
-
 function formatTokenThreshold(tokens: number): string {
   if (tokens >= 1_000_000 && tokens % 1_000_000 === 0) return `${tokens / 1_000_000}M`
   if (tokens >= 1024 && tokens % 1024 === 0) return `${tokens / 1024}K`
   return tokens.toLocaleString()
 }
 
-function compactPriceLabel(price: PriceShape): string {
-  const parts = [
-    price.input_price == null ? '' : `${t('modelPricing.table.input')} ${formatPrice(price.input_price)}`,
-    price.output_price == null ? '' : `${t('modelPricing.table.output')} ${formatPrice(price.output_price)}`,
-    price.cache_write_price == null ? '' : `${t('modelPricing.table.cacheWrite')} ${formatPrice(price.cache_write_price)}`,
-    price.cache_read_price == null ? '' : `${t('modelPricing.table.cacheRead')} ${formatPrice(price.cache_read_price)}`
-  ]
-  return parts.filter(Boolean).join(' · ')
+function contextTierLabel(tier: ContextTier): string {
+  const max = tier.max_tokens == null ? '' : formatTokenThreshold(tier.max_tokens)
+  if (tier.min_tokens === 0) return `≤${max}`
+  const min = formatTokenThreshold(tier.min_tokens)
+  return max ? `>${min}–${max}` : `>${min}`
 }
+
+function valueRow(label: string, price: PriceShape, outputUnit?: string): PricingValueRow {
+  return {
+    tierLabel: label,
+    input: price.input_price,
+    output: price.output_price,
+    cacheWrite: price.cache_write_price,
+    cacheRead: price.cache_read_price,
+    outputUnit
+  }
+}
+
+const pricingModelGroups = computed<PricingModelGroup[]>(() => {
+  const textGroups = models.value.map((model): PricingModelGroup => {
+    const timePrices = explicitTimePrices(model)
+    if (timePrices.length > 0) {
+      return {
+        key: `model-${model.model}`,
+        label: model.model,
+        disabled: model.disabled,
+        rows: timePrices.map((period) => valueRow(
+          `${period.multiplier < 1 ? t('modelPricing.timePricing.valley') : t('modelPricing.timePricing.peak')} · ${period.label}`,
+          period
+        ))
+      }
+    }
+
+    const contextPrices = [...(model.context_intervals ?? [])].sort((a, b) => a.min_tokens - b.min_tokens)
+    if (contextPrices.length > 0) {
+      return {
+        key: `model-${model.model}`,
+        label: model.model,
+        disabled: model.disabled,
+        rows: contextPrices.map((tier) => valueRow(contextTierLabel(tier), tier))
+      }
+    }
+
+    return {
+      key: `model-${model.model}`,
+      label: model.model,
+      disabled: model.disabled,
+      rows: [valueRow(t('modelPricing.table.standard'), model)]
+    }
+  })
+  return imagePricingGroup.value ? [...textGroups, imagePricingGroup.value] : textGroups
+})
 
 function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
@@ -434,115 +409,9 @@ function formatPrice(v: number | null | undefined): string {
   overflow-x: auto;
 }
 
-.pricing-group__context-pricing,
-.pricing-group__time-pricing {
-  border-top: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-.pricing-group__detail-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  background: #f9fafb;
-}
-
-.pricing-group__detail-title {
-  margin: 0;
-  color: #111827;
-  font-weight: 700;
-}
-
-.pricing-group__detail-note {
-  margin: 0.25rem 0 0;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.pricing-group__context-list,
-.pricing-group__time-list {
-  display: grid;
-  gap: 0;
-}
-
-.pricing-group__context-row,
-.pricing-group__time-model {
-  display: grid;
-  grid-template-columns: minmax(190px, 0.75fr) minmax(0, 2fr);
-  gap: 1rem;
-  align-items: start;
-  padding: 0.75rem 1.25rem;
-  border-top: 1px solid #f3f4f6;
-}
-
-.pricing-group__context-row > strong,
-.pricing-group__time-model-title strong {
-  color: #111827;
-  font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
-  font-size: 0.75rem;
-}
-
-.pricing-group__tier-list,
-.pricing-group__time-tier-list {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.pricing-group__tier-pill,
-.pricing-group__time-tier {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.75rem;
-  min-height: 1.75rem;
-  padding: 0.15rem 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.pricing-group__tier-threshold,
-.pricing-group__time-range {
-  color: #374151;
-  font-weight: 700;
-}
-
-.pricing-group__tier-threshold {
-  min-width: 8.5rem;
-}
-
-.pricing-group__time-model-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.375rem 0.75rem;
-}
-
-.pricing-group__time-badge {
-  display: inline-flex;
-  min-width: 3rem;
-  justify-content: center;
-  color: #374151;
-  font-weight: 700;
-}
-
-.pricing-group__time-badge.is-valley {
-  color: #4f46e5;
-}
-
-@media (max-width: 760px) {
-  .pricing-group__context-row,
-  .pricing-group__time-model {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-}
-
 .pricing-group__table {
   width: 100%;
-  min-width: 560px;
+  min-width: 720px;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
@@ -558,7 +427,9 @@ function formatPrice(v: number | null | undefined): string {
 }
 
 .pricing-group__table th:first-child,
-.pricing-group__table td:first-child {
+.pricing-group__table td:first-child,
+.pricing-group__table th:nth-child(2),
+.pricing-group__table td:nth-child(2) {
   text-align: left;
 }
 
@@ -570,6 +441,17 @@ function formatPrice(v: number | null | undefined): string {
   font-variant-numeric: tabular-nums;
 }
 
+.pricing-group__subrow td {
+  border-top: 1px dashed #f3f4f6;
+}
+
+.pricing-group__tier-label {
+  color: #4b5563;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .pricing-group__table tr:last-child td {
   border-bottom: none;
 }
@@ -577,6 +459,7 @@ function formatPrice(v: number | null | undefined): string {
 .pricing-group__model {
   font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
   font-size: 0.8125rem;
+  vertical-align: middle;
   word-break: break-all;
 }
 

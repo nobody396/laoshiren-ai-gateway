@@ -6526,6 +6526,9 @@ export default {
     empty: 'No models available',
     table: {
       model: 'Model',
+      tier: 'Pricing tier',
+      standard: 'Standard',
+      perImage: 'Per successful image',
       input: 'Input',
       output: 'Output',
       cacheWrite: 'Cache write',

@@ -45,6 +45,32 @@ func TestCalculateCostUnifiedAppliesChannelTimeMultiplierToTokenBuckets(t *testi
 	want := (100*5e-6 + 10*15e-6) * 2
 	require.InDelta(t, want, cost.TotalCost, 1e-12)
 	require.InDelta(t, want*3, cost.ActualCost, 1e-12)
+	require.Contains(t, cost.BillingTier, "time=Asia/Shanghai,09:00-12:00,x2")
+	require.Contains(t, cost.BillingTier, "at=2026-06-29T01:00:00Z")
+}
+
+func TestUsagePricingAtUsesRequestStart(t *testing.T) {
+	settled := time.Date(2026, 8, 28, 10, 0, 0, 0, time.UTC)
+	require.Equal(t, settled.Add(-2*time.Minute), usagePricingAt(func() time.Time { return settled }, 2*time.Minute))
+}
+
+func TestCalculateCostUnifiedRecordsContextTierEvidence(t *testing.T) {
+	maxTokens := 100000
+	resolved := &ResolvedPricing{
+		Mode:        BillingModeToken,
+		BasePricing: &ModelPricing{InputPricePerToken: 2e-6, OutputPricePerToken: 10e-6},
+		Intervals: []PricingInterval{{
+			MinTokens: 0, MaxTokens: &maxTokens,
+			InputPrice: channelTimePricingFloat(3e-6), OutputPrice: channelTimePricingFloat(12e-6),
+		}},
+	}
+	service := newTestBillingService()
+	cost, err := service.CalculateCostUnified(CostInput{
+		Ctx: context.Background(), Model: "model", Tokens: UsageTokens{InputTokens: 90000},
+		RateMultiplier: 1, Resolver: NewModelPricingResolver(nil, service), Resolved: resolved,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "context=(0,100000]", cost.BillingTier)
 }
 
 func TestCalculateCostUnifiedDoesNotApplyChannelTimeMultiplierToPerRequest(t *testing.T) {

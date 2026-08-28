@@ -76,6 +76,7 @@ describe('TimePricingSection', () => {
     expect(timeInputs.every(input => input.attributes('placeholder') === 'HH:mm:ss')).toBe(true)
     const multiplier = wrapper.get('input[type="number"]')
     expect(multiplier.attributes('min')).toBe('0.01')
+		expect(multiplier.attributes('max')).toBe('100')
     expect(multiplier.attributes('step')).toBe('0.01')
   })
 

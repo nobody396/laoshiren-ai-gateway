@@ -11,16 +11,25 @@ import (
 
 var channelTimePricingLocations sync.Map
 
+const (
+	maxChannelTimePricingPeriods    = 48
+	maxChannelTimePricingMultiplier = 100.0
+)
+
 type parsedChannelTimePeriod struct {
 	start      int
 	end        int
 	multiplier float64
+	source     ChannelTimePricingPeriod
 }
 
 // validateChannelTimePricing 校验分时倍率配置；nil 或空 periods 表示未启用。
 func validateChannelTimePricing(config *ChannelTimePricing) error {
 	if config == nil || len(config.Periods) == 0 {
 		return nil
+	}
+	if len(config.Periods) > maxChannelTimePricingPeriods {
+		return fmt.Errorf("period count must not exceed %d", maxChannelTimePricingPeriods)
 	}
 	if _, err := loadChannelTimePricingLocation(config.Timezone); err != nil {
 		return fmt.Errorf("timezone: %w", err)
@@ -31,32 +40,38 @@ func validateChannelTimePricing(config *ChannelTimePricing) error {
 
 // MultiplierAt 返回 at 对应的分时倍率；无配置或脏配置安全降级为 1。
 func (config *ChannelTimePricing) MultiplierAt(at time.Time) float64 {
+	multiplier, _ := config.matchAt(at)
+	return multiplier
+}
+
+func (config *ChannelTimePricing) matchAt(at time.Time) (float64, *ChannelTimePricingPeriod) {
 	if config == nil || len(config.Periods) == 0 || at.IsZero() {
-		return 1.0
+		return 1.0, nil
 	}
 	if err := validateChannelTimePricing(config); err != nil {
-		return 1.0
+		return 1.0, nil
 	}
 	location, err := loadChannelTimePricingLocation(config.Timezone)
 	if err != nil {
-		return 1.0
+		return 1.0, nil
 	}
 	periods, err := parseChannelTimePeriods(config.Periods)
 	if err != nil {
-		return 1.0
+		return 1.0, nil
 	}
 
 	local := at.In(location)
 	if config.WeekdaysOnly && (local.Weekday() == time.Saturday || local.Weekday() == time.Sunday) {
-		return 1.0
+		return 1.0, nil
 	}
 	second := local.Hour()*60*60 + local.Minute()*60 + local.Second()
 	for _, period := range periods {
 		if second >= period.start && second < period.end {
-			return period.multiplier
+			matched := period.source
+			return period.multiplier, &matched
 		}
 	}
-	return 1.0
+	return 1.0, nil
 }
 
 func loadChannelTimePricingLocation(name string) (*time.Location, error) {
@@ -109,6 +124,9 @@ func parseChannelTimePeriods(periods []ChannelTimePricingPeriod) ([]parsedChanne
 		if period.Multiplier < 0.01 {
 			return nil, fmt.Errorf("multiplier must be at least 0.01")
 		}
+		if period.Multiplier > maxChannelTimePricingMultiplier {
+			return nil, fmt.Errorf("multiplier must not exceed %.0f", maxChannelTimePricingMultiplier)
+		}
 		scaled := period.Multiplier * 100
 		if math.IsNaN(scaled) || math.IsInf(scaled, 0) {
 			return nil, fmt.Errorf("multiplier must remain finite when scaled")
@@ -128,7 +146,7 @@ func parseChannelTimePeriods(periods []ChannelTimePricingPeriod) ([]parsedChanne
 		if period.StartTime == period.EndTime || start >= end {
 			return nil, fmt.Errorf("start time must be before end time")
 		}
-		parsed = append(parsed, parsedChannelTimePeriod{start: start, end: end, multiplier: period.Multiplier})
+		parsed = append(parsed, parsedChannelTimePeriod{start: start, end: end, multiplier: period.Multiplier, source: period})
 	}
 
 	sort.Slice(parsed, func(i, j int) bool { return parsed[i].start < parsed[j].start })

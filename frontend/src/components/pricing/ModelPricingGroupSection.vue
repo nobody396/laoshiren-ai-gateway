@@ -296,7 +296,7 @@ function formatPrice(v: number | null | undefined): string {
 
 .pricing-group__time-pricing {
   padding: 0.875rem 1.25rem;
-  border-top: 1px solid rgb(var(--color-gray-200));
+  border-top: 1px solid rgb(var(--color-muted) / 0.25);
   color: rgb(var(--color-muted));
   font-size: 0.75rem;
 }

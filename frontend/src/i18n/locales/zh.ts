@@ -2683,7 +2683,8 @@ export default {
 		timezone: '请选择有效的 IANA 时区',
 		format: '时间必须使用 HH:mm:ss 格式',
 		range: '开始时间必须早于结束时间；跨午夜请拆成两段',
-		multiplier: '分时倍率必须不小于 0.01，且最多两位小数',
+		multiplier: '分时倍率必须在 0.01～100 之间，且最多两位小数',
+		periodCount: '分时时段最多允许 48 段',
 		overlap: '分时时段不能重叠'
 	  },
       loadError: '加载渠道失败',

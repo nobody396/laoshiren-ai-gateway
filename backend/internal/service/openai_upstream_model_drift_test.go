@@ -78,3 +78,17 @@ func TestInspectOpenAIModelDriftRejectsOversizedResponse(t *testing.T) {
 	require.Error(t, err)
 	require.NotContains(t, err.Error(), "secret")
 }
+
+func TestBuildOpenAIOAuthModelManifestUsesPairedCodexIdentity(t *testing.T) {
+	svc := &AccountTestService{}
+	account := &Account{
+		Platform: PlatformOpenAI, Type: AccountTypeOAuth,
+		Credentials: map[string]any{"access_token": "owned-test-token", "chatgpt_account_id": "acct-test"},
+	}
+	req, err := svc.buildOpenAIModelManifestRequest(context.Background(), account)
+	require.NoError(t, err)
+	require.Equal(t, "Bearer owned-test-token", req.Header.Get("Authorization"))
+	require.Equal(t, codexCLIUserAgent, req.Header.Get("User-Agent"))
+	require.Equal(t, "codex_cli_rs", req.Header.Get("Originator"))
+	require.Equal(t, codexCLIVersion, req.Header.Get("Version"))
+}

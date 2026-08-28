@@ -525,6 +525,7 @@ func (h *GrokOAuthHandler) QueryQuota(c *gin.Context) {
 	response.Success(c, result)
 }
 
+//nolint:staticcheck // ResetQuota currently returns a typed unsupported error; preserve the success-shaped handler for future provider support.
 func (h *GrokOAuthHandler) ResetQuota(c *gin.Context) {
 	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -535,10 +536,12 @@ func (h *GrokOAuthHandler) ResetQuota(c *gin.Context) {
 		response.BadRequest(c, "grok quota service is not enabled")
 		return
 	}
-	// xAI currently exposes no quota-reset endpoint. Keep the route for client
-	// compatibility but return the service's typed not-implemented error.
-	_, err = h.quotaService.ResetQuota(c.Request.Context(), accountID)
-	response.ErrorFrom(c, err)
+	result, err := h.quotaService.ResetQuota(c.Request.Context(), accountID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 func (h *GrokOAuthHandler) RuntimeSanity(c *gin.Context) {

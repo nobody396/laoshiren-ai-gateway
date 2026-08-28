@@ -90,7 +90,7 @@ export function formTimePricingToAPI(value: TimePricingFormEntry | null | undefi
 export function isValidTimePricingMultiplier(value: number | string): boolean {
   const raw = String(value)
   const numeric = Number(raw)
-  return TWO_DECIMAL_MULTIPLIER.test(raw) && Number.isFinite(numeric) && numeric >= 0.01
+  return TWO_DECIMAL_MULTIPLIER.test(raw) && Number.isFinite(numeric) && numeric >= 0.01 && numeric <= 100
 }
 
 function timeToSeconds(value: string, end: boolean): number {
@@ -101,6 +101,7 @@ function timeToSeconds(value: string, end: boolean): number {
 
 export function validateTimePricing(value: TimePricingFormEntry, t: TranslateFn): string | null {
   if (!value?.periods?.length) return null
+	if (value.periods.length > 48) return t('admin.channels.timePricingValidation.periodCount')
   const timezone = value.timezone.trim()
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: timezone })

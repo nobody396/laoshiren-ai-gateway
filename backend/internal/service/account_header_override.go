@@ -55,6 +55,7 @@ var headerOverrideBlockedNames = map[string]struct{}{
 	"sec-websocket-protocol":   {},
 	"sec-websocket-accept":     {},
 	"session_id":               {},
+	"session-id":               {},
 	"conversation_id":          {},
 	"x-codex-turn-state":       {},
 	"x-codex-turn-metadata":    {},

@@ -220,6 +220,16 @@ func TestResolveOpenAIWSSessionHeadersPrefersOfficialSessionIDHeader(t *testing.
 	require.Equal(t, "conversation", resolved.ConversationID)
 }
 
+func TestResolveOpenAICompactSessionIDPrefersOfficialSessionIDHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/openai/v1/responses/compact", nil)
+	c.Request.Header.Set("session-id", "official-codex-session")
+	c.Request.Header.Set("session_id", "legacy-session")
+	require.Equal(t, "official-codex-session", resolveOpenAICompactSessionID(c))
+}
+
 func TestOpenAIGatewayService_GenerateSessionHash_UsesXXHash64(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()

@@ -127,6 +127,80 @@ func TestGatewayServiceRecordUsage_BillingUsesDetachedContext(t *testing.T) {
 	require.NoError(t, quotaSvc.lastQuotaCtxErr)
 }
 
+func TestGatewayServiceRecordUsage_PAYGChannelTimePricingFlowsIntoAccountingCommand(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, userRepo, &openAIRecordUsageSubRepoStub{})
+	groupID := int64(12)
+	channelSvc := &ChannelService{}
+	channelSvc.cache.Store(populateChannelCache([]Channel{{
+		ID: 19, Status: StatusActive, GroupIDs: []int64{groupID},
+		ModelPricing: []ChannelModelPricing{{
+			Platform: PlatformAnthropic, Models: []string{"claude-sonnet-priced"}, BillingMode: BillingModeToken,
+			InputPrice: ptr(2e-6), OutputPrice: ptr(10e-6),
+			TimePricing: &ChannelTimePricing{
+				Timezone: "UTC",
+				Periods:  []ChannelTimePricingPeriod{{StartTime: "09:00:00", EndTime: "12:00:00", Multiplier: 1.5}},
+			},
+		}},
+	}}, map[int64]string{groupID: PlatformAnthropic}))
+	svc.channelService = channelSvc
+	svc.resolver = NewModelPricingResolver(channelSvc, svc.billingService)
+	svc.usageBillingNow = func() time.Time { return time.Date(2026, 8, 28, 10, 0, 0, 0, time.UTC) }
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID: "claude_payg_time_price", Usage: ClaudeUsage{InputTokens: 100, OutputTokens: 10},
+			Model: "claude-sonnet-priced", Duration: time.Second,
+		},
+		APIKey: &APIKey{ID: 1501, GroupID: &groupID, Group: &Group{ID: groupID, Platform: PlatformAnthropic, RateMultiplier: 1}},
+		User:   &User{ID: 1601}, Account: &Account{ID: 1701}, Subscription: nil,
+		ChannelUsageFields: ChannelUsageFields{ChannelID: 19, OriginalModel: "claude-sonnet-priced", BillingModelSource: BillingModelSourceRequested},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, BillingTypeBalance, usageRepo.lastLog.BillingType)
+	require.InDelta(t, (100*2e-6+10*10e-6)*1.5, usageRepo.lastLog.ActualCost, 1e-12)
+	require.NotNil(t, usageRepo.lastLog.AccountingCommand)
+	require.InDelta(t, usageRepo.lastLog.ActualCost, usageRepo.lastLog.AccountingCommand.BalanceCost, 1e-12)
+	require.Equal(t, int64(19), *usageRepo.lastLog.ChannelID)
+	require.NotNil(t, usageRepo.lastLog.BillingTier)
+	require.Contains(t, *usageRepo.lastLog.BillingTier, "time=UTC,09:00:00-12:00:00,x1.5")
+	require.Contains(t, *usageRepo.lastLog.BillingTier, "at=2026-08-28T09:59:59Z")
+	require.Equal(t, 1, userRepo.deductCalls)
+}
+
+func TestGatewayServiceRecordUsageWithLongContext_PAYGChannelTimePricing(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
+	groupID := int64(13)
+	channelSvc := &ChannelService{}
+	channelSvc.cache.Store(populateChannelCache([]Channel{{
+		ID: 20, Status: StatusActive, GroupIDs: []int64{groupID},
+		ModelPricing: []ChannelModelPricing{{
+			Platform: PlatformGemini, Models: []string{"gemini-priced"}, BillingMode: BillingModeToken,
+			InputPrice: ptr(1e-6), OutputPrice: ptr(4e-6),
+			TimePricing: &ChannelTimePricing{Timezone: "Asia/Shanghai", Periods: []ChannelTimePricingPeriod{{StartTime: "09:00:00", EndTime: "12:00:00", Multiplier: 2}}},
+		}},
+	}}, map[int64]string{groupID: PlatformGemini}))
+	svc.channelService = channelSvc
+	svc.resolver = NewModelPricingResolver(channelSvc, svc.billingService)
+	svc.usageBillingNow = func() time.Time { return time.Date(2026, 8, 28, 2, 0, 0, 0, time.UTC) }
+
+	err := svc.RecordUsageWithLongContext(context.Background(), &RecordUsageLongContextInput{
+		Result: &ForwardResult{RequestID: "gemini_payg_time_price", Usage: ClaudeUsage{InputTokens: 100, OutputTokens: 10}, Model: "gemini-priced", Duration: time.Second},
+		APIKey: &APIKey{ID: 1502, GroupID: &groupID, Group: &Group{ID: groupID, Platform: PlatformGemini, RateMultiplier: 1}},
+		User:   &User{ID: 1602}, Account: &Account{ID: 1702},
+		LongContextThreshold: 200000, LongContextMultiplier: 2,
+		ChannelUsageFields: ChannelUsageFields{OriginalModel: "gemini-priced", BillingModelSource: BillingModelSourceRequested},
+	})
+	require.NoError(t, err)
+	require.InDelta(t, (100*1e-6+10*4e-6)*2, usageRepo.lastLog.ActualCost, 1e-12)
+	require.NotNil(t, usageRepo.lastLog.BillingTier)
+	require.Contains(t, *usageRepo.lastLog.BillingTier, "time=Asia/Shanghai")
+}
+
 func TestGatewayServiceRecordUsage_BillingFingerprintIncludesRequestPayloadHash(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{}
 	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}

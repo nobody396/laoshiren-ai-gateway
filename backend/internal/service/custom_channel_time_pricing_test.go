@@ -41,8 +41,9 @@ func TestValidateChannelTimePricing(t *testing.T) {
 		), wantErr: "overlap"},
 		{name: "zero multiplier", config: channelTimePricingTestConfig(ChannelTimePricingPeriod{StartTime: "09:00", EndTime: "12:00", Multiplier: 0}), wantErr: "greater than 0"},
 		{name: "minimum multiplier", config: channelTimePricingTestConfig(ChannelTimePricingPeriod{StartTime: "09:00", EndTime: "12:00", Multiplier: 0.01})},
+		{name: "multiplier too large", config: channelTimePricingTestConfig(ChannelTimePricingPeriod{StartTime: "09:00", EndTime: "12:00", Multiplier: 100.01}), wantErr: "must not exceed"},
 		{name: "too many decimals", config: channelTimePricingTestConfig(ChannelTimePricingPeriod{StartTime: "09:00", EndTime: "12:00", Multiplier: 1.001}), wantErr: "decimal"},
-		{name: "overflow", config: channelTimePricingTestConfig(ChannelTimePricingPeriod{StartTime: "09:00", EndTime: "12:00", Multiplier: math.MaxFloat64}), wantErr: "finite"},
+		{name: "overflow", config: channelTimePricingTestConfig(ChannelTimePricingPeriod{StartTime: "09:00", EndTime: "12:00", Multiplier: math.MaxFloat64}), wantErr: "must not exceed"},
 	}
 
 	for _, tt := range tests {
@@ -56,6 +57,8 @@ func TestValidateChannelTimePricing(t *testing.T) {
 			require.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
+	manyPeriods := make([]ChannelTimePricingPeriod, maxChannelTimePricingPeriods+1)
+	require.ErrorContains(t, validateChannelTimePricing(&ChannelTimePricing{Timezone: "UTC", Periods: manyPeriods}), "period count")
 }
 
 func TestChannelTimePricingMultiplierAt(t *testing.T) {

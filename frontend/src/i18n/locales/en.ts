@@ -2609,7 +2609,8 @@ export default {
 		timezone: 'Select a valid IANA timezone',
 		format: 'Time must use HH:mm:ss format',
 		range: 'Start must be before end; split periods that cross midnight',
-		multiplier: 'Multiplier must be at least 0.01 with at most two decimals',
+		multiplier: 'Multiplier must be between 0.01 and 100 with at most two decimals',
+		periodCount: 'Time pricing supports at most 48 periods',
 		overlap: 'Time pricing periods cannot overlap'
 	  },
       loadError: 'Failed to load channels',

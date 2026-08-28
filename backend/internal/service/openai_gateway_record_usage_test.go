@@ -1309,6 +1309,8 @@ func TestOpenAIGatewayServiceRecordUsage_PAYGTimePricingFlowsIntoAccountingComma
 	require.InDelta(t, (100*2e-6+10*10e-6)*2, usageRepo.lastLog.ActualCost, 1e-12)
 	require.NotNil(t, usageRepo.lastLog.AccountingCommand)
 	require.InDelta(t, usageRepo.lastLog.ActualCost, usageRepo.lastLog.AccountingCommand.BalanceCost, 1e-12)
+	require.NotNil(t, usageRepo.lastLog.BillingTier)
+	require.Contains(t, *usageRepo.lastLog.BillingTier, "time=UTC")
 	require.Equal(t, 1, userRepo.deductCalls)
 	require.InDelta(t, usageRepo.lastLog.ActualCost, userRepo.lastAmount, 1e-12)
 }

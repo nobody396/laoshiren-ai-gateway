@@ -134,6 +134,7 @@ type CostBreakdown struct {
 	TotalCost         float64
 	ActualCost        float64 // 应用倍率后的实际费用
 	BillingMode       string  // 计费模式（"token"/"per_request"/"image"），由 CalculateCostUnified 填充
+	BillingTier       string  // 命中的上下文/分时定价证据，可持久化到 usage_logs.billing_tier
 }
 
 // BillingService 计费服务
@@ -666,7 +667,16 @@ func (s *BillingService) calculateTokenCost(resolved *ResolvedPricing, input Cos
 	applyLongCtx := len(resolved.Intervals) == 0
 
 	breakdown := s.computeTokenBreakdown(pricing, input.Tokens, input.RateMultiplier, input.ServiceTier, applyLongCtx)
-	applyCostBreakdownMultiplier(breakdown, resolvedChannelTimeMultiplier(resolved, input.PricingAt))
+	tierParts := make([]string, 0, 2)
+	if interval := FindMatchingInterval(resolved.Intervals, totalContext); interval != nil {
+		tierParts = append(tierParts, formatContextBillingTier(interval))
+	}
+	timeMultiplier, timeTier := resolvedChannelTimeSelection(resolved, input.PricingAt)
+	applyCostBreakdownMultiplier(breakdown, timeMultiplier)
+	if timeTier != "" {
+		tierParts = append(tierParts, timeTier)
+	}
+	breakdown.BillingTier = strings.Join(tierParts, ";")
 	return breakdown, nil
 }
 
@@ -683,11 +693,40 @@ func applyCostBreakdownMultiplier(cost *CostBreakdown, multiplier float64) {
 	cost.ActualCost *= multiplier
 }
 
-func resolvedChannelTimeMultiplier(resolved *ResolvedPricing, at time.Time) float64 {
+func resolvedChannelTimeSelection(resolved *ResolvedPricing, at time.Time) (float64, string) {
 	if resolved == nil || resolved.Source != PricingSourceChannel || resolved.channelPricing == nil {
-		return 1
+		return 1, ""
 	}
-	return resolved.channelPricing.TimePricing.MultiplierAt(at)
+	pricing := resolved.channelPricing.TimePricing
+	multiplier, period := pricing.matchAt(at)
+	if period == nil {
+		return 1, ""
+	}
+	return multiplier, fmt.Sprintf("time=%s,%s-%s,x%g,at=%s", pricing.Timezone, period.StartTime, period.EndTime, multiplier, at.UTC().Format(time.RFC3339))
+}
+
+func formatContextBillingTier(interval *PricingInterval) string {
+	if interval == nil {
+		return ""
+	}
+	if interval.MaxTokens == nil {
+		return fmt.Sprintf("context=(%d,inf]", interval.MinTokens)
+	}
+	return fmt.Sprintf("context=(%d,%d]", interval.MinTokens, *interval.MaxTokens)
+}
+
+func usagePricingAt(now func() time.Time, duration time.Duration) time.Time {
+	at := time.Now()
+	if now != nil {
+		at = now()
+	}
+	// Duration is measured from request start through upstream completion. Use
+	// that instant rather than settlement time so a long stream crossing a
+	// tariff boundary keeps the price selected when the request began.
+	if duration > 0 {
+		at = at.Add(-duration)
+	}
+	return at
 }
 
 // computeTokenBreakdown 是 token 计费的核心逻辑，由 calculateTokenCost 和 calculateCostInternal 共用。

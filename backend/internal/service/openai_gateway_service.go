@@ -3239,7 +3239,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 		}
 		apiKeyID := getAPIKeyIDFromContext(c)
 		// 先保存客户端原始值，再做 compact 补充，避免后续统一隔离时读到已处理的值。
-		clientSessionID := strings.TrimSpace(req.Header.Get("session_id"))
+		clientSessionID := explicitOpenAIHeaderSessionID(c)
 		clientConversationID := strings.TrimSpace(req.Header.Get("conversation_id"))
 		if isOpenAIResponsesCompactPath(c) {
 			req.Header.Set("accept", "application/json")
@@ -4026,6 +4026,8 @@ func (s *OpenAIGatewayService) buildUpstreamRequest(ctx context.Context, c *gin.
 		req.Header.Del("conversation_id")
 		req.Header.Del("session_id")
 
+		clientSessionID := explicitOpenAIHeaderSessionID(c)
+		clientConversationID := strings.TrimSpace(c.GetHeader("conversation_id"))
 		req.Header.Set("OpenAI-Beta", "responses=experimental")
 		req.Header.Set("originator", resolveOpenAIUpstreamOriginator(c, isCodexCLI))
 		apiKeyID := getAPIKeyIDFromContext(c)
@@ -4038,11 +4040,21 @@ func (s *OpenAIGatewayService) buildUpstreamRequest(ctx context.Context, c *gin.
 			req.Header.Set("session_id", isolateOpenAISessionID(apiKeyID, compactSession))
 		} else {
 			req.Header.Set("accept", "text/event-stream")
+			if clientSessionID != "" {
+				req.Header.Set("session_id", isolateOpenAISessionID(apiKeyID, clientSessionID))
+			}
+			if clientConversationID != "" {
+				req.Header.Set("conversation_id", isolateOpenAISessionID(apiKeyID, clientConversationID))
+			}
 		}
 		if promptCacheKey != "" {
 			isolated := isolateOpenAISessionID(apiKeyID, promptCacheKey)
-			req.Header.Set("conversation_id", isolated)
-			req.Header.Set("session_id", isolated)
+			if req.Header.Get("conversation_id") == "" {
+				req.Header.Set("conversation_id", isolated)
+			}
+			if req.Header.Get("session_id") == "" {
+				req.Header.Set("session_id", isolated)
+			}
 		}
 	}
 
@@ -5489,6 +5501,9 @@ func normalizeOpenAICompactRequestBody(body []byte) ([]byte, bool, error) {
 
 func resolveOpenAICompactSessionID(c *gin.Context) string {
 	if c != nil {
+		if sessionID := strings.TrimSpace(c.GetHeader("session-id")); sessionID != "" {
+			return sessionID
+		}
 		if sessionID := strings.TrimSpace(c.GetHeader("session_id")); sessionID != "" {
 			return sessionID
 		}
@@ -5711,10 +5726,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			cost = s.billingService.CalculateGPTImageCallCost(apiKey.Group.GPTImageCallPrice, result.ImageCount, imageMultiplier)
 		}
 	} else if s.resolver != nil && apiKey.Group != nil {
-		pricingAt := time.Now()
-		if s.usageBillingNow != nil {
-			pricingAt = s.usageBillingNow()
-		}
+		pricingAt := usagePricingAt(s.usageBillingNow, result.Duration)
 		gid := apiKey.Group.ID
 		cost, err = s.billingService.CalculateCostUnified(CostInput{
 			Ctx:            ctx,
@@ -5811,6 +5823,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		usageLog.CacheReadCost = cost.CacheReadCost
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
+		usageLog.BillingTier = optionalTrimmedStringPtr(cost.BillingTier)
 	}
 	usageLog.RateMultiplier = multiplier
 	usageLog.AccountRateMultiplier = &accountRateMultiplier

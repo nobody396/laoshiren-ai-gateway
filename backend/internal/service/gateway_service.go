@@ -696,6 +696,7 @@ type GatewayService struct {
 	// Anthropic fallbacks wait on a buffered upstream response. Production uses
 	// the configured stream keepalive interval or the safe default below.
 	anthropicBufferedUsageKeepaliveInterval time.Duration
+	usageBillingNow                         func() time.Time
 }
 
 // NewGatewayService creates a new GatewayService
@@ -8245,6 +8246,7 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 	}
 
 	var cost *CostBreakdown
+	billingModel := resolveGatewayUsageBillingModel(result, input.ChannelUsageFields)
 
 	// 根据请求类型选择计费方式
 	if result.MediaType == "image" || result.MediaType == "video" {
@@ -8273,7 +8275,16 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 			CacheCreation1hTokens: result.Usage.CacheCreation1hTokens,
 		}
 		var err error
-		cost, err = s.billingService.CalculateCost(result.Model, tokens, multiplier)
+		if s.resolver != nil && apiKey.Group != nil {
+			pricingAt := usagePricingAt(s.usageBillingNow, result.Duration)
+			gid := apiKey.Group.ID
+			cost, err = s.billingService.CalculateCostUnified(CostInput{
+				Ctx: ctx, Model: billingModel, GroupID: &gid, Tokens: tokens,
+				RateMultiplier: multiplier, PricingAt: pricingAt, Resolver: s.resolver,
+			})
+		} else {
+			cost, err = s.billingService.CalculateCost(billingModel, tokens, multiplier)
+		}
 		if err != nil {
 			logger.LegacyPrintf("service.gateway", "Calculate cost failed: %v", err)
 			cost = &CostBreakdown{ActualCost: 0}
@@ -8305,7 +8316,7 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 		AccountID:             account.ID,
 		RequestID:             requestID,
 		Model:                 result.Model,
-		RequestedModel:        result.Model,
+		RequestedModel:        gatewayUsageRequestedModel(result, input.ChannelUsageFields),
 		UpstreamModel:         optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
 		ReasoningEffort:       result.ReasoningEffort,
 		InboundEndpoint:       optionalTrimmedStringPtr(input.InboundEndpoint),
@@ -8337,6 +8348,15 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 		BillingMode:           InferUsageBillingMode(result.ImageCount, mediaType),
 		CacheTTLOverridden:    cacheTTLOverridden,
 		CreatedAt:             time.Now(),
+	}
+	usageLog.ChannelID = optionalInt64Ptr(input.ChannelUsageFields.ChannelID)
+	usageLog.ModelMappingChain = optionalTrimmedStringPtr(input.ChannelUsageFields.ModelMappingChain)
+	if cost != nil && cost.BillingMode != "" {
+		billingMode := cost.BillingMode
+		usageLog.BillingMode = &billingMode
+	}
+	if cost != nil {
+		usageLog.BillingTier = optionalTrimmedStringPtr(cost.BillingTier)
 	}
 
 	// 添加 UserAgent
@@ -8390,6 +8410,38 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 	return nil
 }
 
+func resolveGatewayUsageBillingModel(result *ForwardResult, fields ChannelUsageFields) string {
+	if result == nil {
+		return ""
+	}
+	model := strings.TrimSpace(result.Model)
+	switch strings.TrimSpace(fields.BillingModelSource) {
+	case BillingModelSourceRequested:
+		if requested := strings.TrimSpace(fields.OriginalModel); requested != "" {
+			model = requested
+		}
+	case BillingModelSourceUpstream:
+		if upstream := strings.TrimSpace(result.UpstreamModel); upstream != "" {
+			model = upstream
+		}
+	case BillingModelSourceChannelMapped:
+		if mapped := strings.TrimSpace(fields.ChannelMappedModel); mapped != "" {
+			model = mapped
+		}
+	}
+	return model
+}
+
+func gatewayUsageRequestedModel(result *ForwardResult, fields ChannelUsageFields) string {
+	if requested := strings.TrimSpace(fields.OriginalModel); requested != "" {
+		return requested
+	}
+	if result == nil {
+		return ""
+	}
+	return result.Model
+}
+
 // RecordUsageLongContextInput 记录使用量的输入参数（支持长上下文双倍计费）
 type RecordUsageLongContextInput struct {
 	Result                *ForwardResult
@@ -8406,6 +8458,7 @@ type RecordUsageLongContextInput struct {
 	LongContextMultiplier float64            // 超出阈值部分的倍率（如 2.0）
 	ForceCacheBilling     bool               // 强制缓存计费：将 input_tokens 转为 cache_read 计费（用于粘性会话切换）
 	APIKeyService         APIKeyQuotaUpdater // API Key 配额服务（可选）
+	ChannelUsageFields    ChannelUsageFields
 }
 
 // RecordUsageWithLongContext 记录使用量并扣费，支持长上下文双倍计费（用于 Gemini）
@@ -8443,6 +8496,7 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 	}
 
 	var cost *CostBreakdown
+	billingModel := resolveGatewayUsageBillingModel(result, input.ChannelUsageFields)
 
 	// 根据请求类型选择计费方式
 	if result.ImageCount > 0 {
@@ -8467,7 +8521,21 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 			CacheCreation1hTokens: result.Usage.CacheCreation1hTokens,
 		}
 		var err error
-		cost, err = s.billingService.CalculateCostWithLongContext(result.Model, tokens, multiplier, input.LongContextThreshold, input.LongContextMultiplier)
+		if s.resolver != nil && apiKey.Group != nil {
+			gid := apiKey.Group.ID
+			resolved := s.resolver.Resolve(ctx, PricingInput{Model: billingModel, GroupID: &gid})
+			if resolved.Source == PricingSourceChannel {
+				cost, err = s.billingService.CalculateCostUnified(CostInput{
+					Ctx: ctx, Model: billingModel, GroupID: &gid, Tokens: tokens,
+					RateMultiplier: multiplier, PricingAt: usagePricingAt(s.usageBillingNow, result.Duration),
+					Resolver: s.resolver, Resolved: resolved,
+				})
+			} else {
+				cost, err = s.billingService.CalculateCostWithLongContext(billingModel, tokens, multiplier, input.LongContextThreshold, input.LongContextMultiplier)
+			}
+		} else {
+			cost, err = s.billingService.CalculateCostWithLongContext(billingModel, tokens, multiplier, input.LongContextThreshold, input.LongContextMultiplier)
+		}
 		if err != nil {
 			logger.LegacyPrintf("service.gateway", "Calculate cost failed: %v", err)
 			cost = &CostBreakdown{ActualCost: 0}
@@ -8495,6 +8563,7 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 		AccountID:             account.ID,
 		RequestID:             requestID,
 		Model:                 result.Model,
+		RequestedModel:        gatewayUsageRequestedModel(result, input.ChannelUsageFields),
 		UpstreamModel:         optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
 		ReasoningEffort:       result.ReasoningEffort,
 		InboundEndpoint:       optionalTrimmedStringPtr(input.InboundEndpoint),
@@ -8525,6 +8594,15 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 		BillingMode:           InferUsageBillingMode(result.ImageCount, nil),
 		CacheTTLOverridden:    cacheTTLOverridden,
 		CreatedAt:             time.Now(),
+	}
+	usageLog.ChannelID = optionalInt64Ptr(input.ChannelUsageFields.ChannelID)
+	usageLog.ModelMappingChain = optionalTrimmedStringPtr(input.ChannelUsageFields.ModelMappingChain)
+	if cost != nil && cost.BillingMode != "" {
+		billingMode := cost.BillingMode
+		usageLog.BillingMode = &billingMode
+	}
+	if cost != nil {
+		usageLog.BillingTier = optionalTrimmedStringPtr(cost.BillingTier)
 	}
 
 	// 添加 UserAgent

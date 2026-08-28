@@ -145,9 +145,13 @@ func (s *AccountTestService) buildOpenAIModelManifestRequest(ctx context.Context
 	if account.IsOpenAIOAuth() {
 		ensureCodexIdentityHeaders(req.Header)
 		setOpenAIChatGPTAccountHeaders(req.Header, account)
-		enforceCodexIdentityHeaders(req.Header)
 	}
 	account.ApplyHeaderOverrides(req.Header)
+	if account.IsOpenAIOAuth() {
+		// Header overrides may change User-Agent. Re-pair the official Codex
+		// originator/version only after every account-level mutation.
+		enforceCodexIdentityHeaders(req.Header)
+	}
 	return req, nil
 }
 

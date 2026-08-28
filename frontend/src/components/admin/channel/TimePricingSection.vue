@@ -96,6 +96,7 @@
             :value="period.multiplier"
             type="number"
             min="0.01"
+			max="100"
             step="0.01"
             class="input mt-1 w-full text-sm"
             @input="updatePeriod(index, 'multiplier', ($event.target as HTMLInputElement).value)"

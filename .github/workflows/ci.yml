@@ -153,6 +153,11 @@ jobs:
     env:
       CI: "true"
       GIT_SHA: ${{ github.sha }}
+      # Docker Desktop 28 can leave HostPort="0" unresolved for Ryuk after a
+      # cross-platform Buildx job. Disable only the reaper sidecar and perform
+      # an explicit label-scoped cleanup below; test modules still own normal
+      # container termination.
+      TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -167,10 +172,29 @@ jobs:
           cache: false
       - name: Verify Docker integration runtime
         run: |
+          # Reset Docker Desktop's dynamic-port allocator after the preceding
+          # linux/amd64 Buildx job. Without this, Docker 28 may retain a
+          # HostPort="0" binding and Testcontainers cannot discover PostgreSQL.
+          docker desktop restart
+          for attempt in {1..60}; do
+            if docker info >/dev/null 2>&1; then break; fi
+            if [[ "$attempt" == "60" ]]; then
+              echo "Docker Desktop did not recover after restart" >&2
+              exit 1
+            fi
+            sleep 2
+          done
           docker version
           docker info --format 'docker_server_version={{.ServerVersion}}'
       - name: Run deterministic backend integration gate
         run: make test-backend-integration
+      - name: Remove Testcontainers leftovers
+        if: always()
+        run: |
+          ids="$(docker ps -aq --filter 'label=org.testcontainers=true')"
+          if [[ -n "$ids" ]]; then
+            docker rm -f -v $ids
+          fi
 
   frontend-tests:
     name: Frontend tests and boundaries

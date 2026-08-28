@@ -25,14 +25,22 @@
 
     <div v-if="pricingModelGroups.length > 0" class="pricing-group__table-wrap">
       <table class="pricing-group__table">
+        <colgroup>
+          <col class="pricing-group__col-model" />
+          <col class="pricing-group__col-tier" />
+          <col class="pricing-group__col-price" />
+          <col class="pricing-group__col-price" />
+          <col class="pricing-group__col-price" />
+          <col class="pricing-group__col-price" />
+        </colgroup>
         <thead>
           <tr>
-            <th>{{ t('modelPricing.table.model') }}</th>
-            <th>{{ t('modelPricing.table.tier') }}</th>
-            <th>{{ t('modelPricing.table.input') }}</th>
-            <th>{{ t('modelPricing.table.output') }}</th>
-            <th>{{ t('modelPricing.table.cacheWrite') }}</th>
-            <th>{{ t('modelPricing.table.cacheRead') }}</th>
+            <th class="pricing-group__model-header">{{ t('modelPricing.table.model') }}</th>
+            <th class="pricing-group__tier-header">{{ t('modelPricing.table.tier') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.input') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.output') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.cacheWrite') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.cacheRead') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -52,13 +60,13 @@
                 </span>
               </td>
               <td class="pricing-group__tier-label">{{ row.tierLabel }}</td>
-              <td><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
-              <td>
+              <td class="pricing-group__price-cell"><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
+              <td class="pricing-group__price-cell">
                 <span class="pricing-group__value">{{ formatPrice(row.output) }}</span>
                 <span v-if="row.outputUnit" class="pricing-group__unit">{{ row.outputUnit }}</span>
               </td>
-              <td><span class="pricing-group__value">{{ formatPrice(row.cacheWrite) }}</span></td>
-              <td><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
+              <td class="pricing-group__price-cell"><span class="pricing-group__value">{{ formatPrice(row.cacheWrite) }}</span></td>
+              <td class="pricing-group__price-cell"><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
             </tr>
           </template>
         </tbody>
@@ -411,14 +419,24 @@ function formatPrice(v: number | null | undefined): string {
 
 .pricing-group__table {
   width: 100%;
-  min-width: 720px;
+  min-width: 880px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
 
+.pricing-group__col-model,
+.pricing-group__col-tier {
+  width: 25%;
+}
+
+.pricing-group__col-price {
+  width: 12.5%;
+}
+
 .pricing-group__table th {
   padding: 0.625rem 1.25rem;
-  text-align: right;
+  text-align: left;
   color: #6b7280;
   font-size: 0.75rem;
   font-weight: 600;
@@ -426,16 +444,21 @@ function formatPrice(v: number | null | undefined): string {
   background: #ffffff;
 }
 
-.pricing-group__table th:first-child,
-.pricing-group__table td:first-child,
-.pricing-group__table th:nth-child(2),
-.pricing-group__table td:nth-child(2) {
+.pricing-group__model-header,
+.pricing-group__tier-header,
+.pricing-group__model,
+.pricing-group__tier-label {
+  text-align: left;
+}
+
+.pricing-group__price-header,
+.pricing-group__price-cell {
   text-align: left;
 }
 
 .pricing-group__table td {
   padding: 0.625rem 1.25rem;
-  text-align: right;
+  text-align: left;
   color: #111827;
   border-bottom: 1px solid #f3f4f6;
   font-variant-numeric: tabular-nums;

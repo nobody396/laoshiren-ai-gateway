@@ -39,6 +39,12 @@ export const docsConfig: DocsConfig = [
         description: '汇总老实人AI 账号、充值、模型额度、API Key、Claude Code 和 Codex 使用中的常见问题。'
       },
       {
+        title: '新手总览',
+        slug: 'newcomer-overview',
+        description: '从注册、按量与月卡选择、充值兑换、创建API Key、选择分组到第一次成功调用的老实人AI新手总览。',
+        lastModified: '2026-08-29'
+      },
+      {
         title: '老实人AI 使用指南',
         slug: 'laoshirenai-guide',
         description: '从注册、充值、创建 API Key 到配置 Claude Code 和 Codex 的老实人AI 完整使用指南。'

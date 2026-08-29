@@ -27,7 +27,30 @@ const { financeSummary, costOverview, summary, getOverview, replace, route } = v
     legacy_monthly_card_group_count: 1,
     legacy_monthly_card_real_usage: { available: true, observed_request_count: 10, observed_real_cost_cny: 20 },
     monthly_cards: [{ real_usage: { observed_request_count: 20, observed_real_cost_cny: 30 } }],
-    pay_as_you_go: [{ real_usage: { observed_request_count: 40, observed_real_cost_cny: 50 } }]
+    pay_as_you_go: [{ real_usage: { observed_request_count: 40, observed_real_cost_cny: 50 } }],
+    upstream_routing: [{
+      group_id: 59,
+      group_name: 'CodeX 企业级分组',
+      group_rate_multiplier: 1,
+      platform: 'openai',
+      accounts: [{
+        account_id: 76,
+        account_name: 'icodeeasy-gpt-enterprise-jp-0.3',
+        priority: 1,
+        configured_multiplier: 0.3,
+        observed_multiplier: 0.303,
+        multiplier_drift_percent: 1,
+        multiplier_audit_status: 'ok',
+        balance_value: 107.8,
+        balance_currency: 'CNY',
+        balance_status: 'ok',
+        audit_sampled_at: '2026-08-29T12:17:35+08:00',
+        base_url: 'https://jp.icodeeasy.cc',
+        models: ['gpt-5.5'],
+        schedulable: true,
+        status: 'active'
+      }]
+    }]
   },
   summary: vi.fn(),
   getOverview: vi.fn(),
@@ -86,6 +109,10 @@ describe('admin BusinessFinanceView', () => {
     expect(wrapper.text()).toContain('¥1,519.52')
     expect(wrapper.text()).toContain('¥100.00')
     expect(wrapper.text()).toContain('70 次真实计费请求')
+    expect(wrapper.get('[data-test="upstream-routing-finance"]').text()).toContain('icodeeasy-gpt-enterprise-jp-0.3')
+    expect(wrapper.get('[data-test="upstream-routing-finance"]').text()).toContain('107.8 CNY')
+    expect(wrapper.get('[data-test="upstream-routing-finance"]').text()).toContain('账单/余额差实测')
+    expect(wrapper.get('[data-test="upstream-routing-finance"]').text()).toContain('实时余额')
   })
 
   it('switches modules without leaving the unified page', async () => {

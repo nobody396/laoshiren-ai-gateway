@@ -136,6 +136,85 @@
             </aside>
           </section>
 
+          <section class="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-dark-700 dark:bg-dark-800 sm:p-6" data-test="upstream-routing-finance">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="section-kicker">上游路由与资金</p>
+                <h2 class="mt-1 text-lg font-semibold text-stone-950 dark:text-white">生产分组、优先级、倍率与余额</h2>
+                <p class="mt-1 text-sm text-stone-500 dark:text-dark-400">按真实调度顺序展示；同一模型不支持的账号会被跳过。观测倍率或余额未采集时明确显示待审计。</p>
+              </div>
+              <RouterLink to="/admin/suppliers" class="text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                供应商探针 →
+              </RouterLink>
+            </div>
+
+            <div class="mt-5 space-y-4">
+              <article
+                v-for="group in upstreamRouting"
+                :key="group.group_id"
+                class="overflow-hidden rounded-xl border border-stone-200 dark:border-dark-700"
+              >
+                <header class="flex flex-wrap items-center justify-between gap-3 bg-stone-50 px-4 py-3 dark:bg-dark-900/60">
+                  <div>
+                    <strong class="text-sm text-stone-950 dark:text-white">{{ group.group_name }}</strong>
+                    <span class="ml-2 font-mono text-xs text-stone-500">#{{ group.group_id }}</span>
+                  </div>
+                  <div class="text-xs text-stone-500">
+                    分组倍率 <strong class="font-mono text-stone-900 dark:text-white">{{ multiplier(group.group_rate_multiplier) }}</strong>
+                  </div>
+                </header>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-stone-200 text-left text-xs dark:divide-dark-700">
+                    <thead class="bg-white text-stone-500 dark:bg-dark-800">
+                      <tr>
+                        <th class="px-4 py-2 font-medium">优先级 / 账号</th>
+                        <th class="px-4 py-2 font-medium">配置倍率</th>
+                        <th class="px-4 py-2 font-medium">实际倍率</th>
+                        <th class="px-4 py-2 font-medium">上游余额</th>
+                        <th class="px-4 py-2 font-medium">模型</th>
+                        <th class="px-4 py-2 font-medium">状态</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100 dark:divide-dark-700">
+                      <tr v-for="account in group.accounts" :key="account.account_id" :class="account.schedulable ? '' : 'opacity-55'">
+                        <td class="px-4 py-3">
+                          <span class="mr-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-stone-900 px-1.5 font-mono text-white dark:bg-white dark:text-stone-950">{{ account.priority }}</span>
+                          <strong class="text-stone-900 dark:text-white">{{ account.account_name }}</strong>
+                          <div class="mt-1 max-w-72 truncate font-mono text-[10px] text-stone-400" :title="account.base_url">{{ account.base_url || '—' }}</div>
+                        </td>
+                        <td class="px-4 py-3 font-mono">{{ multiplier(account.configured_multiplier) }}</td>
+                        <td class="px-4 py-3">
+                          <span v-if="account.observed_multiplier != null" class="font-mono">{{ multiplier(account.observed_multiplier) }}</span>
+                          <span v-else class="text-stone-400">待审计</span>
+                          <span
+                            v-if="account.multiplier_drift_percent != null"
+                            class="ml-1 rounded px-1.5 py-0.5 text-[10px]"
+                            :class="Math.abs(account.multiplier_drift_percent) >= 2 ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300'"
+                          >{{ signedPercent(account.multiplier_drift_percent) }}</span>
+                          <div class="mt-1 text-[10px] text-stone-400">{{ auditStatusLabel(account.multiplier_audit_status) }}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                          <span class="font-mono">{{ upstreamBalance(account) }}</span>
+                          <div class="mt-1 text-[10px] text-stone-400">{{ balanceStatusLabel(account.balance_status) }}</div>
+                        </td>
+                        <td class="max-w-96 px-4 py-3 text-stone-500 dark:text-dark-300">{{ account.models.join('、') || '—' }}</td>
+                        <td class="px-4 py-3">
+                          <span class="rounded-full px-2 py-1 text-[10px] font-semibold" :class="account.schedulable ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' : 'bg-stone-100 text-stone-500 dark:bg-dark-700 dark:text-dark-300'">
+                            {{ account.schedulable ? '可调度' : '已暂停' }}
+                          </span>
+                          <div class="mt-1 whitespace-nowrap text-[10px] text-stone-400">{{ auditTime(account.audit_sampled_at) }}</div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+              <div v-if="upstreamRouting.length === 0" class="rounded-lg border border-dashed border-stone-200 px-4 py-8 text-center text-sm text-stone-500 dark:border-dark-700">
+                暂无上游路由数据
+              </div>
+            </div>
+          </section>
+
           <section class="grid gap-5 lg:grid-cols-3">
             <button type="button" class="module-card text-left" @click="selectTab('ledger')">
               <span class="module-icon bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"><Icon name="dollar" /></span>
@@ -180,6 +259,7 @@ import FinanceTransactionsView from '@/views/admin/FinanceTransactionsView.vue'
 import CostAccountingView from '@/views/admin/CostAccountingView.vue'
 import { adminAPI } from '@/api/admin'
 import type { CostAccountingOverview } from '@/api/admin/costAccounting'
+import type { CostAccountingUpstreamAccount } from '@/api/admin/costAccounting'
 import type { FinanceTransactionSummary } from '@/types'
 
 type BusinessTab = 'overview' | 'ledger' | 'cost'
@@ -239,6 +319,7 @@ const usageRequestCount = computed(() => {
 })
 
 const upstreamPrepaidDeltaCNY = computed(() => upstreamTopupCNY.value - observedUpstreamCostCNY.value)
+const upstreamRouting = computed(() => costOverview.value?.upstream_routing || [])
 const costCoveragePercent = computed(() => {
   if (cashIncomeCNY.value <= 0) return 0
   return Math.min(100, Math.max(0, observedUpstreamCostCNY.value / cashIncomeCNY.value * 100))
@@ -292,6 +373,38 @@ function money(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(Number.isFinite(value) ? value : 0)
+}
+
+function multiplier(value: number): string {
+  return Number.isFinite(value) ? Number(value).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') : '—'
+}
+
+function upstreamBalance(account: CostAccountingUpstreamAccount): string {
+  if (account.balance_value == null) return '待采集'
+  const value = Number(account.balance_value).toLocaleString('zh-CN', { maximumFractionDigits: 4 })
+  return account.balance_currency ? `${value} ${account.balance_currency}` : value
+}
+
+function signedPercent(value: number): string {
+  const prefix = value > 0 ? '+' : ''
+  return `${prefix}${value.toFixed(1)}%`
+}
+
+function auditStatusLabel(status: string): string {
+  return ({ ok: '账单/余额差实测', published: '供应商报价待账单复核', drift: '倍率漂移告警', manual: '人工核对', unobserved: '未观测' } as Record<string, string>)[status] || status
+}
+
+function balanceStatusLabel(status: string): string {
+  return ({ ok: '实时余额', manual: '人工读取', stale: '余额已过期', unobserved: '余额待采集' } as Record<string, string>)[status] || status
+}
+
+function auditTime(value?: string): string {
+  if (!value) return '未采集'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+  }).format(date)
 }
 
 watch(() => route.query.tab, (value) => {

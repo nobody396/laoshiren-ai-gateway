@@ -2,9 +2,12 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func costAccountingFloatPtr(value float64) *float64 { return &value }
 
 func TestCostAccountingCurrentMonthlyCatalogContainsOnlyV3Plans(t *testing.T) {
 	require.Equal(t, []string{"plus", "pro", "max"}, costAccountingMonthlyCardPlanOrder)
@@ -67,6 +70,35 @@ func TestPayAsYouGoTopupScenarioRequiresObservedCustomerCharges(t *testing.T) {
 			require.Empty(t, basis)
 		})
 	}
+}
+
+func TestCostAccountingUpstreamRoutesExposePriorityAuditAndBalance(t *testing.T) {
+	sampled := "2026-08-29T11:00:00+08:00"
+	groups := []Group{{ID: 59, Name: "Enterprise", Platform: PlatformOpenAI, RateMultiplier: 1}}
+	accounts := map[int64][]Account{59: {
+		{
+			ID: 76, Name: "primary", Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+			Credentials: map[string]any{"base_url": "https://jp.example", "model_mapping": map[string]any{"gpt-5.5": "gpt-5.5"}},
+			Extra: map[string]any{"upstream_finance_audit": map[string]any{
+				"observed_multiplier": 0.303, "balance_value": 107.8, "balance_currency": "CNY",
+				"multiplier_status": "ok", "balance_status": "ok", "sampled_at": sampled,
+			}},
+			RateMultiplier: costAccountingFloatPtr(0.3), Status: StatusActive, Schedulable: true,
+			AccountGroups: []AccountGroup{{AccountID: 76, GroupID: 59, Priority: 1}},
+		},
+	}}
+
+	routes := costAccountingUpstreamRoutes(groups, accounts)
+	require.Len(t, routes, 1)
+	require.Len(t, routes[0].Accounts, 1)
+	account := routes[0].Accounts[0]
+	require.Equal(t, 1, account.Priority)
+	require.Equal(t, []string{"gpt-5.5"}, account.Models)
+	require.Equal(t, 0.303, *account.ObservedMultiplier)
+	require.Equal(t, 1.0, *account.MultiplierDriftPercent)
+	require.Equal(t, 107.8, *account.BalanceValue)
+	require.Equal(t, "CNY", account.BalanceCurrency)
+	require.True(t, account.AuditSampledAt.Equal(time.Date(2026, 8, 29, 3, 0, 0, 0, time.UTC)))
 }
 
 func mapKeys[T any](items map[string]T) []string {

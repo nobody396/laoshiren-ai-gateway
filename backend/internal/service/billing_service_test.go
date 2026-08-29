@@ -141,8 +141,25 @@ func TestGetModelPricing_GLM53UsesCatalogPricing(t *testing.T) {
 	require.NoError(t, err)
 	require.InDelta(t, 8e-6, pricing.InputPricePerToken, 1e-12)
 	require.InDelta(t, 28e-6, pricing.OutputPricePerToken, 1e-12)
-	require.InDelta(t, 0.0, pricing.CacheReadPricePerToken, 1e-12)
+	require.InDelta(t, 2e-6, pricing.CacheReadPricePerToken, 1e-12)
 	require.Zero(t, pricing.LongContextInputThreshold)
+}
+
+func TestGetModelPricing_GeneratedCatalogAndRuntimeStayInSync(t *testing.T) {
+	svc := newTestBillingService()
+
+	for model, catalogPricing := range generatedCatalogBillingPrices {
+		model := model
+		catalogPricing := catalogPricing
+		t.Run(model, func(t *testing.T) {
+			runtimePricing, err := svc.GetModelPricing(model)
+			require.NoError(t, err)
+			require.Equal(t, catalogPricing, runtimePricing,
+				"catalog-managed model %s must use the generated rate card", model)
+			require.Equal(t, catalogPricing, svc.fallbackPrices[model],
+				"catalog-managed model %s must replace any stale fallback rate card", model)
+		})
+	}
 }
 
 func TestGetModelPricing_GLM53FlashUsesSupplierRateCard(t *testing.T) {

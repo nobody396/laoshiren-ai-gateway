@@ -104,5 +104,6 @@ describe('DocsModelCatalog', () => {
     expect(wrapper.get('h2').text()).toBe('gpt-image-2')
     expect(wrapper.text()).toContain('Images API')
     expect(wrapper.text()).toContain('GPT Image 2 生图分组')
+    expect(wrapper.text()).toContain('文本输入 ¥20/M · 图片输入 ¥32/M · 图片输出 ¥120/M')
   })
 })

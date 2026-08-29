@@ -70,12 +70,19 @@ for (const required of [
   'laoshirenai-imagegen',
   '127.0.0.1',
   '/v1/models',
+  'multipart/form-data',
+  '计费与排查',
+  'X-Request-ID',
   'SSE',
   'file_id',
 ]) {
   if (!imagesDoc.includes(required)) failures.push(`api-images: missing verified boundary ${required}`)
 }
-for (const stale of ['图片编辑目前不对客户开放', '当前公网网关尚不能解析图片编辑']) {
+for (const stale of [
+  '图片编辑目前不对客户开放',
+  '当前公网网关尚不能解析图片编辑',
+  '已验证：图片生成、单图编辑、遮罩编辑和多图编辑',
+]) {
   if (imagesDoc.includes(stale)) failures.push(`api-images: stale pre-release statement ${stale}`)
 }
 

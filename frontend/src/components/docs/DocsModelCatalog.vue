@@ -56,7 +56,12 @@
             :key="`${model.id}-${plan.groupId}`"
             class="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-dark-800"
           >
-            <span class="min-w-0 truncate text-gray-700 dark:text-dark-200">{{ plan.name }}</span>
+            <span class="min-w-0 text-gray-700 dark:text-dark-200">
+              <span class="block truncate">{{ plan.name }}</span>
+              <span v-if="plan.imageGeneration" class="mt-1 block text-[11px] text-gray-500 dark:text-dark-400">
+                {{ formatImagePricing(plan.imageGeneration) }}
+              </span>
+            </span>
             <span class="shrink-0 font-mono text-gray-500 dark:text-dark-400">{{ formatMultiplier(plan.multiplier) }}</span>
           </li>
         </ul>
@@ -107,13 +112,14 @@
 import { computed, onMounted, ref } from 'vue'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import { getPublicModelPricing } from '@/api/publicPricing'
-import type { PublicModelPricingCatalog } from '@/api/publicPricing'
+import type { PublicImageGenerationPricing, PublicModelPricingCatalog } from '@/api/publicPricing'
 import { monthlyCreditCardPlans } from '@/constants/monthlyCreditCards'
 
 interface AvailabilityPlan {
   groupId: number
   name: string
   multiplier: number
+  imageGeneration?: PublicImageGenerationPricing
 }
 
 interface LogicalModel {
@@ -139,6 +145,7 @@ const models = computed<LogicalModel[]>(() => {
           groupId: group.group_id,
           name: group.name,
           multiplier: group.rate_multiplier,
+          imageGeneration: group.image_generation,
         })
       }
       byID.set(modelID, current)
@@ -196,6 +203,22 @@ function recommendedTool(model: string): string {
 
 function formatMultiplier(value: number): string {
   return `${Number(value.toFixed(4))}×`
+}
+
+function formatImagePricing(pricing: PublicImageGenerationPricing): string {
+  if (pricing.mode === 'fixed_per_image' && typeof pricing.price_per_image === 'number') {
+    return `¥${Number(pricing.price_per_image.toFixed(4))}/张`
+  }
+
+  const parts: string[] = []
+  const addPrice = (label: string, value?: number) => {
+    if (typeof value === 'number') parts.push(`${label} ¥${Number(value.toFixed(4))}/M`)
+  }
+  addPrice('文本输入', pricing.text_input_price)
+  addPrice('图片输入', pricing.image_input_price)
+  addPrice('图片输出', pricing.image_output_price)
+
+  return parts.join(' · ') || '价格以实时目录为准'
 }
 
 function formatUpdatedAt(value: string): string {

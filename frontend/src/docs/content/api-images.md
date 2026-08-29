@@ -1,7 +1,5 @@
 # Images
 
-> 已验证：图片生成、单图编辑、遮罩编辑和多图编辑均已通过老实人AI公网网关生产 E2E；Codex 也已通过自然语言自动调用生成与编辑能力。
-
 ## 接入信息
 
 ```text
@@ -30,6 +28,14 @@ curl https://api.laoshirenai.com/v1/models \
 
 ## 2. 图片生成
 
+| 参数 | 必填 | 当前文档范围 |
+| --- | --- | --- |
+| `model` | 是 | 固定 `gpt-image-2` |
+| `prompt` | 是 | 图片内容、构图、风格和限制条件 |
+| `size` | 是 | `1024x1024` |
+| `quality` | 是 | `low` |
+| `n` | 是 | `1` |
+
 ```bash
 curl https://api.laoshirenai.com/v1/images/generations \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -47,21 +53,36 @@ curl https://api.laoshirenai.com/v1/images/generations \
 
 ## 3. 图片编辑
 
+图片编辑使用 `multipart/form-data`。让 SDK 或 cURL 自动生成 `Content-Type` 的 boundary，不要手写该请求头。
+
+| 参数 | 必填 | 当前文档范围 |
+| --- | --- | --- |
+| `model` | 是 | 固定 `gpt-image-2` |
+| `prompt` | 是 | 编辑内容以及必须保持不变的部分 |
+| `image` | 是 | 已验证为 PNG；多图时传入多个文件 |
+| `mask` | 否 | PNG，格式和尺寸必须与第一张图片一致 |
+| `size` | 是 | `1024x1024` |
+| `quality` | 是 | `low` |
+| `n` | 是 | `1` |
+
 安装 OpenAI Python SDK：
 
 ```bash
 python3 -m pip install openai
 ```
 
+运行时从系统 Secret 注入 `LAOSHIRENAI_IMAGE_API_KEY`，不要把真实 Key 写进源码或项目 `.env`。
+
 下面三种编辑请求形状已经验证。所有示例均固定 `gpt-image-2`、`quality="low"` 和 `n=1`。
 
 ### 单图编辑
 
 ```python
+import os
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="YOUR_API_KEY",
+    api_key=os.environ["LAOSHIRENAI_IMAGE_API_KEY"],
     base_url="https://api.laoshirenai.com/v1",
 )
 
@@ -120,6 +141,24 @@ from pathlib import Path
 Path("result.png").write_bytes(base64.b64decode(result.data[0].b64_json))
 ```
 
+成功响应是 OpenAI Images JSON 结构：
+
+```json
+{
+  "created": 1780000000,
+  "data": [
+    { "b64_json": "iVBORw0KGgoAAAANSUhEUg..." }
+  ],
+  "usage": {
+    "input_tokens": 10,
+    "output_tokens": 20,
+    "total_tokens": 30
+  }
+}
+```
+
+`usage` 的具体明细取决于上游实际返回。程序只应把 `data[0].b64_json` 解码为图片，不要把 Base64 正文写入日志。
+
 ## 4. 在 Codex 中自动生图
 
 安装公开 Skill：
@@ -162,7 +201,17 @@ https://github.com/nobody396/laoshirenai-skills/tree/main/skills/laoshirenai-ima
 - 异步任务接口；
 - Variations 接口；
 - Files API 的 `file_id` 输入；
-- 未在上表列出的高级参数。
+- URL、Data URL 等 JSON 图片编辑输入；
+- JPEG、WebP、GIF 等非 PNG 上传；
+- `output_format`、`background`、`style`、`input_fidelity`、`moderation`、`output_compression`、`partial_images` 等高级参数。
+
+## 计费与排查
+
+- 生图分组按图片请求的实际 Usage 计费，当前单价查看[模型目录](models)，不要在代码中写死价格。
+- 调用后到“使用记录”核对模型、分组、状态和费用。
+- 保存响应头 `X-Request-ID`、北京时间、端点和 HTTP 状态码；联系客服时提供这些信息，不要发送 Key、完整提示词、上传图片或 Base64 结果。
+- 图片请求通常比文本请求慢。客户端总超时建议至少设置为 120 秒。
+- 图片生成和编辑不是幂等操作。超时或连接中断时，先查使用记录，确认没有成功结果和扣费后再决定是否重试。
 
 ## 成功标准
 
@@ -171,15 +220,16 @@ https://github.com/nobody396/laoshirenai-skills/tree/main/skills/laoshirenai-ima
 3. 网关生成一条完成状态的 Usage；
 4. 余额变化与该 Usage 的实际费用一致。
 
-非幂等图片任务超时后，不要立即自动重试；先确认前一次是否已经生成并计费。
-
 ## 常见错误
 
+- `400`：模型、提示词、参数、图片或遮罩不符合要求；按错误信息修正，不自动重试。
 - `400 images endpoint requires an image model`：使用了文本模型名。
 - `401`：Key 缺失、无效或已停用。
+- `402`：余额或可用额度不足。
 - `403`：当前 Key 不属于 GPT Image 2 生图分组。
 - `413`：上传图片或请求体过大。
+- `408` / `504`：等待超时；先查使用记录，不要直接重复提交。
 - `429`：并发或请求频率达到限制。
-- `500`–`504`：网关或上游暂时失败；确认没有成功图片后再决定是否重试。
+- `500` / `502` / `503`：网关或上游暂时失败；确认没有成功图片后再决定是否重试。
 
 不要把 Key 写入项目 `.env`、仓库、截图、聊天记录、URL 或命令参数。

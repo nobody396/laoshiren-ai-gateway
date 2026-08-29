@@ -112,6 +112,17 @@ export const docsConfig: DocsConfig = [
     ],
   },
   {
+    title: 'API 参考',
+    items: [
+      {
+        title: 'API 参考总览',
+        slug: 'api-reference',
+        description: '老实人AI API 的鉴权、Base URL、Models、Responses、Chat Completions、Anthropic Messages、Gemini、流式、图片、参数和错误处理参考。',
+        lastModified: '2026-08-29'
+      },
+    ],
+  },
+  {
     title: '排错与运维',
     items: [
       {

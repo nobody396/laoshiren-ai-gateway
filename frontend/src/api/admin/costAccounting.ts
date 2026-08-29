@@ -73,6 +73,32 @@ export interface CostAccountingPayAsYouGoGroup {
   warning?: string
 }
 
+export interface CostAccountingUpstreamAccount {
+  account_id: number
+  account_name: string
+  priority: number
+  configured_multiplier: number
+  observed_multiplier?: number
+  multiplier_drift_percent?: number
+  multiplier_audit_status: string
+  balance_value?: number
+  balance_currency?: string
+  balance_status: string
+  audit_sampled_at?: string
+  base_url: string
+  models: string[]
+  schedulable: boolean
+  status: string
+}
+
+export interface CostAccountingUpstreamGroup {
+  group_id: number
+  group_name: string
+  group_rate_multiplier: number
+  platform: string
+  accounts: CostAccountingUpstreamAccount[]
+}
+
 export interface CostAccountingOverview {
   generated_at: string
   shop_channel_fee_percent: number
@@ -84,6 +110,7 @@ export interface CostAccountingOverview {
   legacy_monthly_card_real_usage: CostAccountingRealUsage
   monthly_cards: CostAccountingMonthlyPlan[]
   pay_as_you_go: CostAccountingPayAsYouGoGroup[]
+  upstream_routing: CostAccountingUpstreamGroup[]
 }
 
 export async function getOverview(): Promise<CostAccountingOverview> {

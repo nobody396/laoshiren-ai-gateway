@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -129,6 +131,32 @@ type CostAccountingPayAsYouGoGroup struct {
 	Warning                      string                  `json:"warning,omitempty"`
 }
 
+type CostAccountingUpstreamAccount struct {
+	AccountID              int64      `json:"account_id"`
+	AccountName            string     `json:"account_name"`
+	Priority               int        `json:"priority"`
+	ConfiguredMultiplier   float64    `json:"configured_multiplier"`
+	ObservedMultiplier     *float64   `json:"observed_multiplier,omitempty"`
+	MultiplierDriftPercent *float64   `json:"multiplier_drift_percent,omitempty"`
+	MultiplierAuditStatus  string     `json:"multiplier_audit_status"`
+	BalanceValue           *float64   `json:"balance_value,omitempty"`
+	BalanceCurrency        string     `json:"balance_currency,omitempty"`
+	BalanceStatus          string     `json:"balance_status"`
+	AuditSampledAt         *time.Time `json:"audit_sampled_at,omitempty"`
+	BaseURL                string     `json:"base_url"`
+	Models                 []string   `json:"models"`
+	Schedulable            bool       `json:"schedulable"`
+	Status                 string     `json:"status"`
+}
+
+type CostAccountingUpstreamGroup struct {
+	GroupID             int64                           `json:"group_id"`
+	GroupName           string                          `json:"group_name"`
+	GroupRateMultiplier float64                         `json:"group_rate_multiplier"`
+	Platform            string                          `json:"platform"`
+	Accounts            []CostAccountingUpstreamAccount `json:"accounts"`
+}
+
 type CostAccountingOverview struct {
 	GeneratedAt                 time.Time                       `json:"generated_at"`
 	ShopChannelFeePercent       float64                         `json:"shop_channel_fee_percent"`
@@ -140,6 +168,114 @@ type CostAccountingOverview struct {
 	LegacyMonthlyCardRealUsage  CostAccountingRealUsage         `json:"legacy_monthly_card_real_usage"`
 	MonthlyCards                []CostAccountingMonthlyPlan     `json:"monthly_cards"`
 	PayAsYouGo                  []CostAccountingPayAsYouGoGroup `json:"pay_as_you_go"`
+	UpstreamRouting             []CostAccountingUpstreamGroup   `json:"upstream_routing"`
+}
+
+func auditFloat(value any) *float64 {
+	switch raw := value.(type) {
+	case float64:
+		v := raw
+		return &v
+	case float32:
+		v := float64(raw)
+		return &v
+	case int:
+		v := float64(raw)
+		return &v
+	case int64:
+		v := float64(raw)
+		return &v
+	case json.Number:
+		if parsed, err := raw.Float64(); err == nil {
+			return &parsed
+		}
+	case string:
+		if parsed, err := strconv.ParseFloat(strings.TrimSpace(raw), 64); err == nil {
+			return &parsed
+		}
+	}
+	return nil
+}
+
+func auditString(value any) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+func upstreamFinanceAudit(account *Account) (observed, balance *float64, currency, multiplierStatus, balanceStatus string, sampledAt *time.Time) {
+	if account == nil || account.Extra == nil {
+		return nil, nil, "", "unobserved", "unobserved", nil
+	}
+	raw, ok := account.Extra["upstream_finance_audit"].(map[string]any)
+	if !ok {
+		return nil, nil, "", "unobserved", "unobserved", nil
+	}
+	observed = auditFloat(raw["observed_multiplier"])
+	balance = auditFloat(raw["balance_value"])
+	currency = auditString(raw["balance_currency"])
+	multiplierStatus = auditString(raw["multiplier_status"])
+	balanceStatus = auditString(raw["balance_status"])
+	if multiplierStatus == "" {
+		multiplierStatus = "unobserved"
+	}
+	if balanceStatus == "" {
+		balanceStatus = "unobserved"
+	}
+	if value := auditString(raw["sampled_at"]); value != "" {
+		if parsed, err := time.Parse(time.RFC3339, value); err == nil {
+			sampledAt = &parsed
+		}
+	}
+	return
+}
+
+func costAccountingUpstreamRoutes(groups []Group, accountsByGroup map[int64][]Account) []CostAccountingUpstreamGroup {
+	out := make([]CostAccountingUpstreamGroup, 0, len(groups))
+	for _, group := range groups {
+		accounts := accountsByGroup[group.ID]
+		row := CostAccountingUpstreamGroup{
+			GroupID: group.ID, GroupName: group.Name, GroupRateMultiplier: group.RateMultiplier,
+			Platform: group.Platform, Accounts: make([]CostAccountingUpstreamAccount, 0, len(accounts)),
+		}
+		for index := range accounts {
+			account := &accounts[index]
+			mapping := account.GetModelMapping()
+			models := make([]string, 0, len(mapping))
+			for model := range mapping {
+				models = append(models, model)
+			}
+			sort.Strings(models)
+			observed, balance, currency, multiplierStatus, balanceStatus, sampledAt := upstreamFinanceAudit(account)
+			var drift *float64
+			configured := account.BillingRateMultiplier()
+			if observed != nil && configured > 0 {
+				value := round2(((*observed - configured) / configured) * 100)
+				drift = &value
+			}
+			row.Accounts = append(row.Accounts, CostAccountingUpstreamAccount{
+				AccountID: account.ID, AccountName: account.Name,
+				Priority: account.EffectivePriorityForGroup(&group.ID), ConfiguredMultiplier: configured,
+				ObservedMultiplier: observed, MultiplierDriftPercent: drift,
+				MultiplierAuditStatus: multiplierStatus, BalanceValue: balance,
+				BalanceCurrency: currency, BalanceStatus: balanceStatus, AuditSampledAt: sampledAt,
+				BaseURL: strings.TrimSpace(account.GetCredential("base_url")), Models: models,
+				Schedulable: account.IsSchedulable(), Status: account.Status,
+			})
+		}
+		sort.Slice(row.Accounts, func(i, j int) bool {
+			if row.Accounts[i].Schedulable != row.Accounts[j].Schedulable {
+				return row.Accounts[i].Schedulable
+			}
+			if row.Accounts[i].Priority != row.Accounts[j].Priority {
+				return row.Accounts[i].Priority < row.Accounts[j].Priority
+			}
+			return row.Accounts[i].AccountID < row.Accounts[j].AccountID
+		})
+		out = append(out, row)
+	}
+	return out
 }
 
 type CostAccountingUsageRow struct {
@@ -496,11 +632,13 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		})
 	}
 
+	accountsByPayAsYouGoGroup := make(map[int64][]Account, len(payAsYouGoTargets))
 	for _, group := range payAsYouGoTargets {
 		accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
 		if err != nil {
 			return nil, fmt.Errorf("cost accounting: load pay-as-you-go group %d accounts: %w", group.ID, err)
 		}
+		accountsByPayAsYouGoGroup[group.ID] = accounts
 		primary, worst, schedulable := accountRateSummary(group.ID, accounts)
 		row := CostAccountingPayAsYouGoGroup{
 			GroupID:                      group.ID,
@@ -541,6 +679,7 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		}
 		overview.PayAsYouGo = append(overview.PayAsYouGo, row)
 	}
+	overview.UpstreamRouting = costAccountingUpstreamRoutes(payAsYouGoTargets, accountsByPayAsYouGoGroup)
 
 	return overview, nil
 }

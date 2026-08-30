@@ -94,8 +94,7 @@ func IsInternalOnlyModel(model string) bool {
 }
 
 type disabledPublicModelRule struct {
-	model   string
-	anchors []string
+	model string
 	// allowedGroupIDs lists groups that intentionally re-open the retired
 	// model (e.g. the enterprise line). Requests and price rows scoped to one
 	// of these groups bypass the retirement gate.
@@ -111,12 +110,11 @@ func (rule disabledPublicModelRule) allowsGroup(groupID int64) bool {
 	return false
 }
 
-// Disabled models remain visible as struck-through rows when a related active
-// model is present. This tells users they were intentionally retired instead
-// of making them look accidentally omitted from the price catalog.
+// Disabled models are rejected at the request boundary and omitted from public
+// model catalogs. A model that cannot be routed must never look selectable.
 var disabledPublicModelRules = []disabledPublicModelRule{
-	{model: "gpt-5.6-luna", anchors: []string{"gpt-5.6-sol", "gpt-5.6-terra"}, allowedGroupIDs: []int64{52, 59}},
-	{model: "gpt-5.4-mini", anchors: []string{"gpt-5.4"}, allowedGroupIDs: []int64{52, 59}},
+	{model: "gpt-5.6-luna", allowedGroupIDs: []int64{52, 59}},
+	{model: "gpt-5.4-mini", allowedGroupIDs: []int64{52, 59}},
 }
 
 // GPT Image 2 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套
@@ -329,11 +327,10 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 				continue
 			}
 			if IsDisabledPublicModelForGroup(model, g.ID) {
-				price.Disabled = true
+				continue
 			}
 			prices = append(prices, price)
 		}
-		prices = s.withDisabledModels(ctx, g.ID, prices, g.RateMultiplier)
 		if len(prices) == 0 && imagePricing == nil {
 			continue
 		}
@@ -382,43 +379,6 @@ func IsDisabledPublicModelForGroup(model string, groupID int64) bool {
 	}
 	for _, rule := range disabledPublicModelRules {
 		if name == rule.model && !rule.allowsGroup(groupID) {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *ModelPricingService) withDisabledModels(ctx context.Context, groupID int64, prices []PublicModelPrice, rateMultiplier float64) []PublicModelPrice {
-	present := make(map[string]bool, len(prices))
-	for i := range prices {
-		name := strings.ToLower(strings.TrimSpace(prices[i].Model))
-		present[name] = true
-		if IsDisabledPublicModelForGroup(name, groupID) {
-			prices[i].Disabled = true
-		}
-	}
-	for _, rule := range disabledPublicModelRules {
-		// Exempted groups treat the model as available: never synthesize a
-		// struck-through row for them.
-		if rule.allowsGroup(groupID) || present[rule.model] || !containsAnyModelName(present, rule.anchors) {
-			continue
-		}
-		disabled, ok := s.priceForModel(ctx, groupID, rule.model, rateMultiplier)
-		if !ok {
-			// A retired model can disappear from the provider price source before
-			// the public notice is removed. Keep an empty disabled row in that case.
-			disabled = PublicModelPrice{Model: rule.model}
-		}
-		disabled.Disabled = true
-		prices = append(prices, disabled)
-		present[rule.model] = true
-	}
-	return prices
-}
-
-func containsAnyModelName(present map[string]bool, models []string) bool {
-	for _, model := range models {
-		if present[model] {
 			return true
 		}
 	}

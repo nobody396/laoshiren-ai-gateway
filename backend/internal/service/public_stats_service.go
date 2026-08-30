@@ -13,10 +13,6 @@ import (
 )
 
 const (
-	// landingCompensationTotalCNY 手工执行赔付批次累计（元），与 local/compensation-batches/*.json 对齐：
-	// 7 个 comp-* 已执行批次 167.8 + manual-duration-comp-20260822-13 额外部分 53.5 + duration-policy-20260823-overnight:u92 5.5；
-	// superseded 批次及 manual 批次 system_amount（与 comp-20260822-13 重复）不计。每执行新手工批次后更新此常量。
-	landingCompensationTotalCNY = 226.8
 	// landingStatsDisplayScale 落地页展示倍率：公开计数按 10 倍真实量级放大展示，服务端统一缩放，保证公开 API 与落地页数字始终一致。
 	landingStatsDisplayScale = 10
 	// publicStatsCacheTTL 公开统计缓存有效期。
@@ -44,6 +40,13 @@ type PublicStatsGiftValueSource interface {
 	SumGiftedRedeemValue(ctx context.Context) (float64, error)
 }
 
+// PublicStatsCompensationValueSource 读取账本中已实际发放的赔付价值。
+// 余额、月卡共享积分、冲正与新赔付执行都由仓储归一后返回，
+// 公开统计不再维护手工常量。
+type PublicStatsCompensationValueSource interface {
+	SumPublicCompensationCNY(ctx context.Context) (float64, error)
+}
+
 // PublicStatsCache 定义公开统计缓存接口。
 type PublicStatsCache interface {
 	GetPublicStats(ctx context.Context) (string, error)
@@ -52,18 +55,20 @@ type PublicStatsCache interface {
 
 // PublicStatsService 提供公开平台累计统计服务（无需认证）。
 type PublicStatsService struct {
-	totals     PublicStatsTotalsSource
-	giftValues PublicStatsGiftValueSource
-	cache      PublicStatsCache
+	totals        PublicStatsTotalsSource
+	giftValues    PublicStatsGiftValueSource
+	compensations PublicStatsCompensationValueSource
+	cache         PublicStatsCache
 }
 
 // NewPublicStatsService 创建公开统计服务。
-// totals / giftValues 在依赖不可用时为 nil，此时接口降级为 503。
-func NewPublicStatsService(totals PublicStatsTotalsSource, giftValues PublicStatsGiftValueSource, cache PublicStatsCache) *PublicStatsService {
+// totals / giftValues / compensations 任一依赖不可用时为 nil，此时接口降级为 503。
+func NewPublicStatsService(totals PublicStatsTotalsSource, giftValues PublicStatsGiftValueSource, compensations PublicStatsCompensationValueSource, cache PublicStatsCache) *PublicStatsService {
 	return &PublicStatsService{
-		totals:     totals,
-		giftValues: giftValues,
-		cache:      cache,
+		totals:        totals,
+		giftValues:    giftValues,
+		compensations: compensations,
+		cache:         cache,
 	}
 }
 
@@ -85,23 +90,28 @@ func (s *PublicStatsService) GetPublicStats(ctx context.Context) (*PublicStats, 
 }
 
 func (s *PublicStatsService) computeStats(ctx context.Context) (*PublicStats, error) {
-	if s.totals == nil || s.giftValues == nil {
+	if s.totals == nil || s.giftValues == nil || s.compensations == nil {
 		return nil, infraerrors.ServiceUnavailable("PUBLIC_STATS_UNAVAILABLE", "统计数据暂不可用")
 	}
 	totals, err := s.totals.LifetimeTotals(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get lifetime totals: %w", err)
 	}
-	// 累计赔付 = 已赠送/赔付卡密面值实时汇总 + 手工赔付批次常量；查询失败不静默丢弃，整体报错。
+	// 累计赔付 = 已赠送/赔付卡密面值 + 账本已执行赔付；
+	// 任一数据源失败都整体报错，避免首页静默少计。
 	giftTotal, err := s.giftValues.SumGiftedRedeemValue(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("sum gifted redeem value: %w", err)
+	}
+	compensationTotal, err := s.compensations.SumPublicCompensationCNY(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("sum executed compensation value: %w", err)
 	}
 	return &PublicStats{
 		TokensTotal:   totals.TotalTokens * landingStatsDisplayScale,
 		RequestsTotal: totals.TotalRequests * landingStatsDisplayScale,
 		// 累计赔付同样按展示倍率缩放；四舍五入到分，避免浮点尾差。
-		CompensationCNY: math.Round((giftTotal+landingCompensationTotalCNY)*landingStatsDisplayScale*100) / 100,
+		CompensationCNY: math.Round((giftTotal+compensationTotal)*landingStatsDisplayScale*100) / 100,
 		UpdatedAt:       time.Now().UTC().Format(time.RFC3339),
 	}, nil
 }

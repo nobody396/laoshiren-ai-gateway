@@ -67,8 +67,10 @@ Choose checks based on the change, but prefer:
 
 `GET /api/v1/public/stats` feeds the landing page counters (token 处理量、累计赔付金额). Both are displayed at a server-side ×10 scale (`landingStatsDisplayScale` in `internal/service/public_stats_service.go`).
 
-- 赠送/赔付卡密部分是 DB 实时 SUM(`redeem_codes` 中 `purpose IN ('gift','compensation') AND sales_status='gifted'`),发卡即自动计入,无需维护。
-- **执行手工赔付批次后(`local/compensation-batches/` 新增 executed 批次,直接调余额、不走卡密),必须在同一变更里把 `landingCompensationTotalCNY` 常量累加对应金额**;否则落地页计数器会静默失真。常量注释里有与批次文件的对账口径,superseded 批次与 manual 批次的 system_amount 部分不得重复计入。
+- 赠送/赔付卡密实时汇总 `redeem_codes` 中 `purpose IN ('gift','compensation') AND sales_status='gifted'` 的面值。
+- 已执行赔付实时汇总 `account_change_records`：结构化 `reason='compensation'` 是新流程的首选口径；历史手工余额赔付通过已审计的赔付/补偿/goodwill 备注兼容纳入。
+- 月卡共享积分按 `monthly-comp-*` run 先冲正、再跨订阅去重，将 raw credit 按 10 还原为用户可见价值；内部用户 2 不进公开统计。
+- 新赔付优先走正式 Compensation Execution；仍需手工发放时，备注必须明确包含 `赔付`、`补偿` 或 `goodwill`，并使用稳定幂等参考号。公开计数不再维护代码常量。
 
 ## Frontend theming
 

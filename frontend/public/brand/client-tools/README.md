@@ -11,6 +11,7 @@ These marks identify third-party clients in the CC Switch import UI. They are no
 | `openclaw.svg` | [OpenClaw official site favicon](https://openclaw.ai/favicon.svg) |
 | `hermes.png` | [`NousResearch/hermes-agent` official desktop icon](https://github.com/NousResearch/hermes-agent/blob/main/apps/desktop/assets/icon.png) |
 | `gemini.svg` | [Google Gemini official site icon](https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg) |
+| `antigravity.png` | [Google Antigravity official full-color press icon](https://antigravity.google/press?app=antigravity) |
 | `deepseek.svg`, `qwen.svg`, `doubao.svg`, `minimax.svg`, `openai.svg` | MIT-licensed [`@lobehub/icons-static-svg`](https://www.npmjs.com/package/@lobehub/icons-static-svg) v1.94.0 (`deepseek-color`, `qwen-color`, `doubao-color`, `minimax-color`, `openai`), renamed for local use |
 | `glm.svg`, `kimi.svg` | Same `@lobehub/icons-static-svg` source — `zhipu-color` (current Z.ai mark) and monochrome `kimi` (black Moonshot mark, legible on white) |
 

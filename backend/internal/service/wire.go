@@ -191,7 +191,8 @@ func ProvideDashboardAggregationService(repo DashboardAggregationRepository, tim
 // ProvidePublicStatsService 创建公开平台统计服务。
 // 聚合仓储在非 PostgreSQL 环境下为 nil，服务会降级为 503。
 func ProvidePublicStatsService(repo DashboardAggregationRepository, redeemRepo RedeemCodeRepository, cache PublicStatsCache) *PublicStatsService {
-	return NewPublicStatsService(repo, redeemRepo, cache)
+	compensations, _ := repo.(PublicStatsCompensationValueSource)
+	return NewPublicStatsService(repo, redeemRepo, compensations, cache)
 }
 
 // ProvideUsageCleanupService 创建并启动使用记录清理任务服务

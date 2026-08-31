@@ -2,6 +2,7 @@
   <span class="payment-method-icon" :class="`payment-method-icon--${kind}`" aria-hidden="true">
     <img v-if="kind === 'alipay'" :src="alipayIcon" alt="" />
     <img v-else-if="kind === 'wechat'" :src="wechatIcon" alt="" />
+    <img v-else-if="kind === 'commission_wallet'" :src="commissionWalletIcon" alt="" />
     <Icon v-else name="gift" size="sm" />
   </span>
 </template>
@@ -9,10 +10,11 @@
 <script setup lang="ts">
 import Icon from '@/components/icons/Icon.vue'
 import alipayIcon from '@/assets/payment-methods/alipay.svg'
+import commissionWalletIcon from '@/assets/payment-methods/commission-wallet.svg'
 import wechatIcon from '@/assets/payment-methods/wechat.svg'
 
 defineProps<{
-  kind: 'alipay' | 'wechat' | 'backup'
+  kind: 'alipay' | 'wechat' | 'commission_wallet' | 'backup'
 }>()
 </script>
 
@@ -41,6 +43,11 @@ defineProps<{
 
 .payment-method-icon--wechat {
   background: rgb(var(--color-laurel) / 0.1);
+}
+
+.payment-method-icon--commission_wallet {
+  border-color: rgb(217 119 6 / 0.2);
+  background: rgb(245 158 11 / 0.11);
 }
 
 .payment-method-icon--backup {

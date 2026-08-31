@@ -53,12 +53,31 @@ var (
 		"AFFILIATE_PURCHASE_IDEMPOTENCY_CONFLICT",
 		"affiliate commission purchase idempotency key was already used with different purchase details",
 	)
+	ErrAffiliateConversionDisabled = infraerrors.Conflict(
+		"AFFILIATE_CONVERSION_DISABLED",
+		"commission conversion is no longer available; use commission-wallet checkout or withdrawal",
+	)
+	ErrAffiliateWalletCheckoutDisabled = infraerrors.Conflict(
+		"AFFILIATE_WALLET_CHECKOUT_DISABLED",
+		"commission-wallet checkout is not available",
+	)
 )
 
 const (
 	AffiliateCommissionPurchaseKindMonthlyCard = "monthly_card"
+	AffiliateCommissionPurchaseKindBalance     = "balance"
 	AffiliateCommissionMachineOperatorID       = int64(-1)
 )
+
+type AffiliateBalancePurchase struct {
+	LedgerEntryID       int64     `json:"ledger_entry_id"`
+	AgentID             int64     `json:"agent_id"`
+	CashAmountMicros    int64     `json:"cash_amount_micros"`
+	CreditAmountMicros  int64     `json:"credit_amount_micros"`
+	RateBPS             int32     `json:"rate_bps"`
+	RemainingCashMicros int64     `json:"remaining_cash_micros"`
+	CreatedAt           time.Time `json:"created_at"`
+}
 
 type AffiliateWalletSummary struct {
 	AgentID                    int64  `json:"agent_id"`
@@ -68,6 +87,9 @@ type AffiliateWalletSummary struct {
 	WithdrawalMinimumMicros    int64  `json:"withdrawal_minimum_micros"`
 	WithdrawalSLAHours         int32  `json:"withdrawal_sla_hours"`
 	ConversionMultiplierMillis int32  `json:"conversion_multiplier_millis"`
+	WalletCheckoutEnabled      bool   `json:"wallet_checkout_enabled"`
+	WalletPurchaseRateBPS      int32  `json:"wallet_purchase_rate_bps"`
+	ConversionEnabled          bool   `json:"conversion_enabled"`
 	PaymentProfileVerified     bool   `json:"payment_profile_verified"`
 	CanWithdraw                bool   `json:"can_withdraw"`
 	CashAssetSymbol            string `json:"cash_asset_symbol"`
@@ -140,6 +162,7 @@ type AffiliateWalletRepository interface {
 	ListAdminAffiliateWithdrawals(ctx context.Context, status string, limit int) ([]AffiliateWithdrawal, error)
 	ConvertAffiliateCommission(ctx context.Context, agentID, amountMicros int64, idempotencyKey string) (*AffiliateCommissionConversion, error)
 	PurchaseWithAffiliateCommission(ctx context.Context, agentID, amountMicros, operatorID int64, purchaseKind, productCode, externalReference, note, idempotencyKey string) (*AffiliateCommissionPurchase, error)
+	PurchaseBalanceWithAffiliateCommission(ctx context.Context, agentID, creditAmountCNYFen int64, idempotencyKey string) (*AffiliateBalancePurchase, error)
 	ListAffiliateAgentNotices(ctx context.Context, agentID int64, limit int) ([]AffiliateAgentNotice, error)
 	MarkAffiliateAgentNoticeRead(ctx context.Context, agentID, noticeID int64) error
 }
@@ -279,6 +302,31 @@ func (s *AffiliateWalletService) Purchase(
 		note,
 		strings.TrimSpace(idempotencyKey),
 	)
+}
+
+func (s *AffiliateWalletService) PurchaseBalance(
+	ctx context.Context,
+	agentID, creditAmountCNYFen int64,
+	idempotencyKey string,
+) (*AffiliateBalancePurchase, error) {
+	if err := validateAffiliateIdempotencyKey(idempotencyKey); err != nil {
+		return nil, err
+	}
+	if agentID <= 0 || creditAmountCNYFen < 2_000 || creditAmountCNYFen > 300_000 {
+		return nil, ErrInvalidInput
+	}
+	result, err := s.repo.PurchaseBalanceWithAffiliateCommission(
+		ctx, agentID, creditAmountCNYFen, strings.TrimSpace(idempotencyKey),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if s.balanceCache != nil {
+		if err := s.balanceCache.InvalidateUserBalance(ctx, agentID); err != nil {
+			slog.Error("invalidate commission-wallet balance purchase failed", "agent_id", agentID, "error", err)
+		}
+	}
+	return result, nil
 }
 
 func (s *AffiliateWalletService) ListProcessing(

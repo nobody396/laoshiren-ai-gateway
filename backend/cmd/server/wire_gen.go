@@ -253,7 +253,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	opsSystemLogSink := service.ProvideOpsSystemLogSink(opsRepository)
 	opsService := service.ProvideOpsService(opsRepository, settingRepository, configConfig, accountRepository, userRepository, concurrencyService, gatewayService, openAIGatewayService, geminiMessagesCompatService, antigravityGatewayService, opsSystemLogSink, groupRepository, openAIRouteAuditService, reliabilityEvidenceService)
 	settingHandler := admin.NewSettingHandler(settingService, emailService, turnstileService, opsService)
-	opsHandler := admin.NewOpsHandler(opsService)
+	monthlyCommercialCutoverService := service.ProvideMonthlyCommercialCutoverService(db, billingCacheService, apiKeyService)
+	opsHandler := handler.ProvideOpsHandler(opsService, monthlyCommercialCutoverService)
 	updateCache := repository.NewUpdateCache(redisClient)
 	gitHubReleaseClient := repository.ProvideGitHubReleaseClient(configConfig)
 	serviceBuildInfo := provideServiceBuildInfo(buildInfo)
@@ -315,7 +316,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	nativeCheckoutProvider := repository.NewLDXPCheckoutClient()
 	easyPayCheckoutClient := repository.NewEasyPayCheckoutClient(easyPayClient, settingService)
 	nativeCheckoutProviderResolver := repository.ProvideNativeCheckoutProviderResolver(nativeCheckoutProvider, easyPayCheckoutClient)
-	nativeCheckoutService, err := service.ProvideNativeCheckoutService(nativeCheckoutRepository, nativeCheckoutProviderResolver, userRepository, redeemService, configConfig)
+	nativeCheckoutService, err := service.ProvideNativeCheckoutService(nativeCheckoutRepository, nativeCheckoutProviderResolver, userRepository, redeemService, affiliateWalletService, configConfig)
 	if err != nil {
 		return nil, err
 	}

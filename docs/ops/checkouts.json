@@ -41,6 +41,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-09-03T00:00:00+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-monthly-wallet-midnight-20260831",
+      "owner": "codex-monthly-wallet-midnight",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-09-02T12:00:00+08:00"
     }
   ]
 }

@@ -196,6 +196,9 @@ export interface AffiliateWallet {
   withdrawal_minimum_micros: number
   withdrawal_sla_hours: number
   conversion_multiplier_millis: number
+  wallet_checkout_enabled: boolean
+  wallet_purchase_rate_bps: number
+  conversion_enabled: boolean
   payment_profile_verified: boolean
   can_withdraw: boolean
   cash_asset_symbol: string
@@ -220,6 +223,16 @@ export interface AffiliateCommissionConversion {
   cash_amount_micros: number
   credit_amount_micros: number
   multiplier_millis: number
+  created_at: string
+}
+
+export interface AffiliateBalancePurchase {
+  ledger_entry_id: number
+  agent_id: number
+  cash_amount_micros: number
+  credit_amount_micros: number
+  rate_bps: number
+  remaining_cash_micros: number
   created_at: string
 }
 
@@ -395,7 +408,7 @@ export async function listAffiliateWithdrawals(): Promise<AffiliateWithdrawal[]>
   return data.items ?? []
 }
 
-function affiliateIdempotencyKey(action: string): string {
+export function affiliateIdempotencyKey(action: string): string {
   const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -416,6 +429,18 @@ export async function convertAffiliateCommission(amountMicros: number): Promise<
     '/agent/affiliate/wallet/convert',
     { amount_micros: amountMicros },
     { headers: { 'Idempotency-Key': affiliateIdempotencyKey('convert') } }
+  )
+  return data
+}
+
+export async function purchaseBalanceWithAffiliateCommission(
+  creditAmountCNYFen: number,
+  idempotencyKey: string,
+): Promise<AffiliateBalancePurchase> {
+  const { data } = await apiClient.post<AffiliateBalancePurchase>(
+    '/agent/affiliate/wallet/balance-purchases',
+    { credit_amount_cny_fen: creditAmountCNYFen },
+    { headers: { 'Idempotency-Key': idempotencyKey } },
   )
   return data
 }

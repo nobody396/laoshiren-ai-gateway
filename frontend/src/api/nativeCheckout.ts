@@ -10,8 +10,9 @@ export type NativeCheckoutStatus =
   | 'manual_review'
 
 export type NativeCheckoutPaymentMethod = 'wechat' | 'alipay'
+export type NativeCheckoutOrderPaymentMethod = NativeCheckoutPaymentMethod | 'commission_wallet'
 
-export type NativeCheckoutProvider = 'ldxp' | 'easypay'
+export type NativeCheckoutProvider = 'ldxp' | 'easypay' | 'affiliate_wallet'
 
 export interface NativeCheckoutOrder {
   order_no: string
@@ -22,7 +23,7 @@ export interface NativeCheckoutOrder {
   benefit_amount_cny_fen: number
   redeem_validity_days?: number
   payment_url?: string
-  payment_method?: NativeCheckoutPaymentMethod
+  payment_method?: NativeCheckoutOrderPaymentMethod
   direct_qr_url?: string
   created_at: string
 }
@@ -75,6 +76,22 @@ export async function createNativeCheckoutOrder(
     // 仅 easypay 通道需要指定支付方式；缺省时后端按支付宝处理。
     ...(payType ? { pay_type: payType } : {}),
   })
+  return data
+}
+
+export async function createCommissionWalletCheckoutOrder(
+  offerCode: string,
+  expectedPayAmountCNYFen: number,
+  idempotencyKey: string,
+): Promise<NativeCheckoutOrder> {
+  const { data } = await apiClient.post<NativeCheckoutOrder>(
+    '/native-checkout/commission-wallet/orders',
+    {
+      offer_code: offerCode,
+      expected_pay_amount_cny_fen: expectedPayAmountCNYFen,
+    },
+    { headers: { 'Idempotency-Key': idempotencyKey } },
+  )
   return data
 }
 

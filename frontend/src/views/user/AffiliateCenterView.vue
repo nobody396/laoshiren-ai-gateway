@@ -251,7 +251,7 @@
                     最低 {{ formatMicros(wallet?.withdrawal_minimum_micros, '¥') }}；提交即显示“处理中”，预计 {{ wallet?.withdrawal_sla_hours ?? 24 }} 小时内到账（北京时间）。
                   </p>
 
-                  <label class="block">
+                  <label v-if="wallet?.conversion_enabled" class="block">
                     <span class="mb-1 block text-xs text-gray-600 dark:text-dark-300">转为 ⚡平台额度</span>
                     <div class="flex gap-2">
                       <input v-model.number="convertAmount" min="0" step="0.01" type="number" class="input min-w-0 flex-1">

@@ -345,3 +345,50 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 	require.Contains(t, notices[0].Message, "¥255.00")
 	require.Contains(t, notices[0].Message, "¥45.00")
 }
+
+func TestAffiliateWalletRepository_BalancePurchaseUsesConfiguredRateAndCreditsExactlyOnce(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateWalletRepository(integrationDB)
+	walletService := service.NewAffiliateWalletService(repo)
+	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "wallet-balance-purchase-agent")
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET commission_wallet_checkout_enabled=TRUE,
+		    commission_wallet_purchase_rate_bps=8500
+		WHERE id=1
+	`)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id,entry_type,amount_micros,posting_status,source_type,idempotency_key
+		) VALUES ($1,'earned',100000000,'posted','integration',$2)
+	`, agent.ID, fmt.Sprintf("wallet-balance-earned:%d", agent.ID))
+	require.NoError(t, err)
+	var balanceBefore float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT balance FROM users WHERE id=$1`, agent.ID).Scan(&balanceBefore))
+
+	purchase, err := walletService.PurchaseBalance(ctx, agent.ID, 10_000, "wallet-balance-purchase-100")
+	require.NoError(t, err)
+	require.Equal(t, int64(85_000_000), purchase.CashAmountMicros)
+	require.Equal(t, int64(100_000_000), purchase.CreditAmountMicros)
+	require.Equal(t, int64(15_000_000), purchase.RemainingCashMicros)
+	require.Equal(t, int32(8500), purchase.RateBPS)
+	replayed, err := walletService.PurchaseBalance(ctx, agent.ID, 10_000, "wallet-balance-purchase-100")
+	require.NoError(t, err)
+	require.Equal(t, purchase.LedgerEntryID, replayed.LedgerEntryID)
+
+	var balanceAfter float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT balance FROM users WHERE id=$1`, agent.ID).Scan(&balanceAfter))
+	require.InDelta(t, balanceBefore+100, balanceAfter, 0.000001)
+	var lotAmount int64
+	var eligible bool
+	var policy string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT original_amount_micros,affiliate_eligible,affiliate_policy
+		FROM balance_lots WHERE source_type='commission_purchase' AND source_id=$1
+	`, purchase.LedgerEntryID).Scan(&lotAmount, &eligible, &policy))
+	require.Equal(t, int64(100_000_000), lotAmount)
+	require.False(t, eligible)
+	require.Equal(t, "NONE", policy)
+}

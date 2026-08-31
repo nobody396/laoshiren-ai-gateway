@@ -61,6 +61,56 @@ func TestNativeCheckoutListDoesNotCallProviderWhileRenderingCatalog(t *testing.T
 	require.Len(t, offers, 1)
 }
 
+func TestNativeCheckoutCommissionWalletUsesLivePriceAndFulfillsOnce(t *testing.T) {
+	offer := NativeCheckoutOffer{
+		Code: "plus", Provider: NativeCheckoutProviderEasyPay, ProviderGoodsKey: "plus",
+		Name: "Plus 月卡", ProductKind: "subscription", PayAmountCNYFen: 29_900,
+		BenefitAmountCNYFen: 29_900, RedeemType: RedeemTypeSubscription, RedeemValue: 299,
+		RedeemPurpose: RedeemCodePurposeSaleRecharge, RedeemSalesStatus: RedeemCodeSalesStatusSold,
+		RedeemGroupIDs: []int64{40, 41, 48}, RedeemValidityDays: 31, Enabled: true,
+	}
+	repo := newNativeCheckoutRepoFake(offer)
+	orderNo := commissionWalletOrderNo(42, "wallet-plus-test")
+	codeValue := "0123456789abcdef0123456789abcdef"
+	repo.mintedCodes = map[string]string{orderNo: codeValue}
+	redeem := &nativeCheckoutRedeemerFake{code: &RedeemCode{
+		ID: 91, Code: codeValue, Type: RedeemTypeSubscription, Value: 299,
+		PaidValue: 0, Status: StatusUnused, Purpose: RedeemCodePurposeSaleRecharge,
+		SalesStatus: RedeemCodeSalesStatusSold, ValidityDays: 31, GroupIDs: []int64{40, 41, 48},
+	}}
+	walletRepo := &nativeCheckoutAffiliateWalletRepoFake{wallet: AffiliateWalletSummary{
+		AgentID: 42, AvailableCashMicros: 300_000_000,
+		WalletCheckoutEnabled: true, WalletPurchaseRateBPS: 8500,
+	}}
+	walletService := NewAffiliateWalletService(walletRepo)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(&nativeCheckoutProviderFake{}), &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
+	svc.SetAffiliateWalletService(walletService)
+
+	order, err := svc.CreateCommissionWalletOrder(context.Background(), 42, "plus", 29_900, "wallet-plus-test")
+	require.NoError(t, err)
+	require.Equal(t, NativeCheckoutStatusCompleted, order.Status)
+	require.Equal(t, int64(25_415), order.PayAmountCNYFen)
+	require.Equal(t, NativeCheckoutPaymentMethodCommissionWallet, order.PaymentMethod)
+	require.Equal(t, int64(254_150_000), walletRepo.purchasedMicros)
+	require.Equal(t, 1, redeem.redeemCalls)
+
+	replayed, err := svc.CreateCommissionWalletOrder(context.Background(), 42, "plus", 29_900, "wallet-plus-test")
+	require.NoError(t, err)
+	require.Equal(t, order.OrderNo, replayed.OrderNo)
+	require.Equal(t, 1, walletRepo.purchaseCalls, "idempotent replay must not post a second wallet debit")
+}
+
+func TestNativeCheckoutCommissionWalletRejectsStalePrice(t *testing.T) {
+	offer := NativeCheckoutOffer{Code: "plus", ProductKind: "subscription", RedeemType: "subscription", PayAmountCNYFen: 29_900, Enabled: true}
+	repo := newNativeCheckoutRepoFake(offer)
+	walletService := NewAffiliateWalletService(&nativeCheckoutAffiliateWalletRepoFake{})
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(&nativeCheckoutProviderFake{}), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+	svc.SetAffiliateWalletService(walletService)
+
+	_, err := svc.CreateCommissionWalletOrder(context.Background(), 42, "plus", 25_500, "stale-price")
+	require.ErrorIs(t, err, ErrNativeCheckoutPriceChanged)
+}
+
 func TestNativeCheckoutManualOfferStatusHidesPurchaseLinkAfterClaim(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(&nativeCheckoutProviderFake{}), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
@@ -462,6 +512,17 @@ func (r *nativeCheckoutRepoFake) SetProviderOrder(_ context.Context, _ int64, tr
 	return &copy, nil
 }
 
+func (r *nativeCheckoutRepoFake) SetCommissionWalletOrderReady(_ context.Context, _ int64, tradeNo string) (*NativeCheckoutOrder, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.order.ProviderTradeNo = tradeNo
+	r.order.PaymentURL = ""
+	r.order.PaymentMethod = NativeCheckoutPaymentMethodCommissionWallet
+	r.order.Status = NativeCheckoutStatusChecking
+	copy := *r.order
+	return &copy, nil
+}
+
 func (r *nativeCheckoutRepoFake) SetOrderState(_ context.Context, _ int64, status, failureCode string, _ time.Time) (*NativeCheckoutOrder, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -592,6 +653,39 @@ func (p *nativeCheckoutProviderFake) GetOrderInfo(context.Context, string) (*Nat
 type nativeCheckoutUserRepoFake struct {
 	UserRepository
 	user *User
+}
+
+type nativeCheckoutAffiliateWalletRepoFake struct {
+	AffiliateWalletRepository
+	wallet          AffiliateWalletSummary
+	purchasedMicros int64
+	purchaseCalls   int
+}
+
+func (r *nativeCheckoutAffiliateWalletRepoFake) GetAffiliateWallet(context.Context, int64) (*AffiliateWalletSummary, error) {
+	copy := r.wallet
+	return &copy, nil
+}
+
+func (r *nativeCheckoutAffiliateWalletRepoFake) PurchaseWithAffiliateCommission(
+	_ context.Context,
+	agentID, amountMicros, operatorID int64,
+	purchaseKind, productCode, externalReference, note, idempotencyKey string,
+) (*AffiliateCommissionPurchase, error) {
+	if r.purchaseCalls > 0 {
+		return &AffiliateCommissionPurchase{
+			ID: 1, AgentID: agentID, AmountMicros: r.purchasedMicros,
+			OperatorID: operatorID, PurchaseKind: purchaseKind, ProductCode: productCode,
+			ExternalReference: externalReference, Note: note,
+		}, nil
+	}
+	r.purchasedMicros = amountMicros
+	r.purchaseCalls++
+	return &AffiliateCommissionPurchase{
+		ID: int64(r.purchaseCalls), AgentID: agentID, AmountMicros: amountMicros,
+		OperatorID: operatorID, PurchaseKind: purchaseKind, ProductCode: productCode,
+		ExternalReference: externalReference, Note: note,
+	}, nil
 }
 
 func (r *nativeCheckoutUserRepoFake) GetByID(context.Context, int64) (*User, error) {

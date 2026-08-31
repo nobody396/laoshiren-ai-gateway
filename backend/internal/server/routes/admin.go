@@ -232,6 +232,8 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		ops.GET("/account-availability", h.Admin.Ops.GetAccountAvailability)
 		ops.GET("/realtime-traffic", h.Admin.Ops.GetRealtimeTrafficSummary)
 		ops.GET("/monthly-upstreams", h.Admin.Ops.GetMonthlyUpstreamProbeSnapshot)
+		ops.GET("/monthly-commercial-cutover", h.Admin.Ops.PreviewMonthlyCommercialCutover)
+		ops.POST("/monthly-commercial-cutover", h.Admin.Ops.ExecuteMonthlyCommercialCutover)
 		ops.PUT("/monthly-upstreams/settings", h.Admin.Ops.UpdateMonthlyUpstreamProbeSettings)
 		ops.GET("/cost-accounting", h.Admin.Ops.GetCostAccounting)
 		if h.Status != nil {

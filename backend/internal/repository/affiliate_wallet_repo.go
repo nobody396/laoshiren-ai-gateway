@@ -717,6 +717,151 @@ func (r *affiliateWalletRepository) ConvertAffiliateCommission(
 	return &conversion, nil
 }
 
+func (r *affiliateWalletRepository) PurchaseWithAffiliateCommission(
+	ctx context.Context,
+	agentID, amountMicros, operatorID int64,
+	purchaseKind, productCode, externalReference, note, idempotencyKey string,
+) (_ *service.AffiliateCommissionPurchase, err error) {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if err := lockAffiliateAgent(ctx, tx, agentID); err != nil {
+		return nil, err
+	}
+	if existing, lookupErr := getAffiliatePurchaseByIdempotency(ctx, tx, agentID, idempotencyKey); lookupErr == nil {
+		if !sameAffiliatePurchase(existing, amountMicros, operatorID, purchaseKind, productCode, externalReference, note) {
+			return nil, service.ErrAffiliatePurchaseIdempotencyConflict
+		}
+		return existing, tx.Commit()
+	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+		return nil, lookupErr
+	}
+	if existing, lookupErr := getAffiliatePurchaseByReference(ctx, tx, agentID, externalReference); lookupErr == nil {
+		if !sameAffiliatePurchase(existing, amountMicros, operatorID, purchaseKind, productCode, externalReference, note) {
+			return nil, service.ErrAffiliatePurchaseIdempotencyConflict
+		}
+		return existing, tx.Commit()
+	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+		return nil, lookupErr
+	}
+
+	var principalStatus, riskStatus string
+	err = tx.QueryRowContext(ctx, `
+		SELECT status, risk_status
+		FROM agent_principals
+		WHERE agent_id = $1
+		FOR UPDATE
+	`, agentID).Scan(&principalStatus, &riskStatus)
+	if errors.Is(err, sql.ErrNoRows) ||
+		principalStatus != "active" ||
+		riskStatus != "clear" {
+		return nil, service.ErrAffiliateWalletNotAvailable
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	availableMicros, err := lockAffiliateAvailableCash(ctx, tx, agentID)
+	if err != nil {
+		return nil, err
+	}
+	if amountMicros > availableMicros {
+		return nil, service.ErrAffiliateInsufficientCash
+	}
+	remainingMicros := availableMicros - amountMicros
+
+	var entryID int64
+	err = tx.QueryRowContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, entry_type, amount_micros,
+			posting_status, source_type, source_id,
+			idempotency_key, metadata, occurred_at
+		)
+		VALUES (
+			$1, 'platform_purchase', -($2::bigint),
+			'posted', 'platform_purchase', NULL,
+			$3, jsonb_build_object(
+				'asset_symbol', '¥',
+				'purchase_kind', $4::text,
+				'product_code', $5::text,
+				'external_reference', $6::text,
+				'note', $7::text,
+				'operator_id', $8::bigint,
+				'remaining_cash_micros', $9::bigint
+			), NOW()
+		)
+		RETURNING id
+	`, agentID, amountMicros, idempotencyKey, purchaseKind, productCode,
+		externalReference, note, operatorID, remainingMicros).Scan(&entryID)
+	if err != nil {
+		if isPostgresUniqueViolation(err) {
+			return nil, service.ErrAffiliatePurchaseIdempotencyConflict
+		}
+		return nil, err
+	}
+	if err := insertAffiliateAgentNotice(
+		ctx,
+		tx,
+		agentID,
+		"commission_purchase",
+		"佣金已用于购买平台套餐",
+		fmt.Sprintf(
+			"已从可提现佣金中扣除 %s，用于购买 %s 月卡；剩余可提现佣金 %s。",
+			formatAffiliateCashMicros(amountMicros),
+			affiliateMonthlyProductLabel(productCode),
+			formatAffiliateCashMicros(remainingMicros),
+		),
+		"platform_purchase",
+		entryID,
+		fmt.Sprintf("platform-purchase:%d:notice", entryID),
+	); err != nil {
+		return nil, err
+	}
+	item, err := getAffiliatePurchaseByID(ctx, tx, entryID)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
+func formatAffiliateCashMicros(amountMicros int64) string {
+	cents := (amountMicros + 5_000) / 10_000
+	return fmt.Sprintf("¥%d.%02d", cents/100, cents%100)
+}
+
+func affiliateMonthlyProductLabel(productCode string) string {
+	switch productCode {
+	case "plus":
+		return "Plus"
+	case "pro":
+		return "Pro"
+	case "max":
+		return "Max"
+	default:
+		return productCode
+	}
+}
+
+func sameAffiliatePurchase(
+	item *service.AffiliateCommissionPurchase,
+	amountMicros, operatorID int64,
+	purchaseKind, productCode, externalReference, note string,
+) bool {
+	return item != nil &&
+		item.AmountMicros == amountMicros &&
+		item.OperatorID == operatorID &&
+		item.PurchaseKind == purchaseKind &&
+		item.ProductCode == productCode &&
+		item.ExternalReference == externalReference &&
+		item.Note == note
+}
+
 func (r *affiliateWalletRepository) ListAffiliateAgentNotices(
 	ctx context.Context,
 	agentID int64,
@@ -829,6 +974,80 @@ func scanAffiliateWithdrawal(scanner affiliateWithdrawalScanner) (*service.Affil
 
 type affiliateWalletQuerier interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+func getAffiliatePurchaseByID(
+	ctx context.Context,
+	q affiliateWalletQuerier,
+	entryID int64,
+) (*service.AffiliateCommissionPurchase, error) {
+	return scanAffiliatePurchase(q.QueryRowContext(ctx, affiliatePurchaseSelect(`
+		WHERE id = $1
+	`), entryID))
+}
+
+func getAffiliatePurchaseByIdempotency(
+	ctx context.Context,
+	q affiliateWalletQuerier,
+	agentID int64,
+	idempotencyKey string,
+) (*service.AffiliateCommissionPurchase, error) {
+	return scanAffiliatePurchase(q.QueryRowContext(ctx, affiliatePurchaseSelect(`
+		WHERE agent_id = $1
+			AND idempotency_key = $2
+	`), agentID, idempotencyKey))
+}
+
+func getAffiliatePurchaseByReference(
+	ctx context.Context,
+	q affiliateWalletQuerier,
+	agentID int64,
+	externalReference string,
+) (*service.AffiliateCommissionPurchase, error) {
+	return scanAffiliatePurchase(q.QueryRowContext(ctx, affiliatePurchaseSelect(`
+		WHERE agent_id = $1
+			AND metadata ->> 'external_reference' = $2
+	`), agentID, externalReference))
+}
+
+func affiliatePurchaseSelect(suffix string) string {
+	return `
+		SELECT
+			id,
+			agent_id,
+			-(amount_micros),
+			metadata ->> 'purchase_kind',
+			metadata ->> 'product_code',
+			metadata ->> 'external_reference',
+			COALESCE(metadata ->> 'note', ''),
+			(metadata ->> 'operator_id')::bigint,
+			(metadata ->> 'remaining_cash_micros')::bigint,
+			occurred_at
+		FROM agent_cash_commission_entries
+	` + suffix + `
+			AND entry_type = 'platform_purchase'
+		LIMIT 1`
+}
+
+type affiliatePurchaseScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanAffiliatePurchase(scanner affiliatePurchaseScanner) (*service.AffiliateCommissionPurchase, error) {
+	out := &service.AffiliateCommissionPurchase{}
+	err := scanner.Scan(
+		&out.ID,
+		&out.AgentID,
+		&out.AmountMicros,
+		&out.PurchaseKind,
+		&out.ProductCode,
+		&out.ExternalReference,
+		&out.Note,
+		&out.OperatorID,
+		&out.RemainingCashMicros,
+		&out.CreatedAt,
+	)
+	return out, err
 }
 
 func getAffiliateWithdrawalByID(

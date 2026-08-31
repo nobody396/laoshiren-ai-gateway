@@ -275,6 +275,19 @@ const updatePosition = () => {
     : { top: rect.bottom + 4, left: safeLeft, listMaxHeight }
 }
 
+const clampPanelToViewport = () => {
+  const panel = panelRef.value
+  const current = position.value
+  if (!panel || !current) return
+  const rect = panel.getBoundingClientRect()
+  const overflow = Math.max(rect.bottom - (window.innerHeight - 12), 12 - rect.top, 0)
+  if (overflow <= 0) return
+  position.value = {
+    ...current,
+    listMaxHeight: Math.max(120, current.listMaxHeight - Math.ceil(overflow))
+  }
+}
+
 const close = () => {
   if (!open.value) return
   open.value = false
@@ -289,6 +302,8 @@ const show = async () => {
   emit('open')
   await nextTick()
   updatePosition()
+  await nextTick()
+  clampPanelToViewport()
 }
 
 const toggle = () => open.value ? close() : show()
@@ -302,7 +317,9 @@ const handleOutsidePointer = (event: PointerEvent) => {
   if (!triggerRef.value?.contains(target) && !panelRef.value?.contains(target)) close()
 }
 const handleViewportChange = () => {
-  if (open.value) updatePosition()
+  if (!open.value) return
+  updatePosition()
+  void nextTick(clampPanelToViewport)
 }
 
 watch(sections, () => {

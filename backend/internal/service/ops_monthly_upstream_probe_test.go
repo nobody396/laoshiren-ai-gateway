@@ -231,7 +231,7 @@ func TestMonthlyCardPublicStatusSnapshotFiltersSelectedChannels(t *testing.T) {
 			ListMonthlyUpstreamProbeResultsFn: func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
 				return []MonthlyUpstreamProbePoint{
 					{AccountID: 1, AccountName: "monthly-codex-gateway", Platform: PlatformOpenAI, Model: "gpt-5.6-sol", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
-					{AccountID: 2, AccountName: "monthly-claude-gateway", Platform: PlatformAnthropic, Model: "claude-haiku-4-5", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
+					{AccountID: 2, AccountName: "monthly-claude-gateway", Platform: PlatformAnthropic, Model: "claude-sonnet-5", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
 					{AccountID: 3, AccountName: "monthly-grok-gateway", Platform: PlatformGrok, Model: "grok-4.5", ProbePath: MonthlyUpstreamProbePathGateway, Status: "failed", CheckedAt: checkedAt},
 				}, nil
 			},
@@ -486,7 +486,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	require.InDelta(t, 0.2, targets[0].Account.BillingRateMultiplier(), 0.0001)
 	require.Equal(t, "monthly-claude-gateway", targets[1].AccountName)
 	require.Equal(t, PlatformAnthropic, targets[1].Platform)
-	require.Equal(t, "claude-haiku-4-5", targets[1].Model)
+	require.Equal(t, "claude-sonnet-5", targets[1].Model)
 	require.Equal(t, int64(11), targets[1].GroupID)
 	require.Equal(t, "monthly-grok-gateway", targets[2].AccountName)
 	require.Equal(t, PlatformGrok, targets[2].Platform)
@@ -519,7 +519,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 func TestMonthlyCardPublicStatusLabelsNativeGrokProtocol(t *testing.T) {
 	require.Equal(t, "Grok", monthlyCardPublicChannelName("monthly-grok-gateway", "grok-4.5", PlatformGrok))
 	require.Equal(t, "Grok 月卡", monthlyCardPublicDisplayName("monthly-grok-gateway", "grok-4.5", PlatformGrok))
-	require.Equal(t, "Claude", monthlyCardPublicChannelName("monthly-claude-gateway", "claude-haiku-4-5", PlatformAnthropic))
+	require.Equal(t, "Claude", monthlyCardPublicChannelName("monthly-claude-gateway", "claude-sonnet-5", PlatformAnthropic))
 }
 
 func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *testing.T) {
@@ -669,6 +669,23 @@ func TestMonthlyOpenAIProbeCostEstimateUsesGPT56SolPricing(t *testing.T) {
 	require.InDelta(t, 0.00003060, observedCost, 0.0000001)
 }
 
+func TestMonthlyAnthropicProbeCostEstimateUsesClaudeSonnet5Pricing(t *testing.T) {
+	rateMultiplier := 0.3
+	estimate := buildMonthlyUpstreamProbeCostEstimate(
+		"monthly-claude-gateway",
+		PlatformAnthropic,
+		"claude-sonnet-5",
+		&Account{RateMultiplier: &rateMultiplier},
+	)
+
+	require.NotNil(t, estimate)
+	require.Equal(t, monthlyAnthropicProbeEstimatedInputTokens, estimate.InputTokens)
+	require.Equal(t, monthlyAnthropicProbeEstimatedOutputTokens, estimate.OutputTokens)
+	require.InDelta(t, 2e-6, estimate.InputCostPerToken, 1e-12)
+	require.InDelta(t, 10e-6, estimate.OutputCostPerToken, 1e-12)
+	require.InDelta(t, 0.0002376, estimate.ActualCostPerProbe, 1e-12)
+}
+
 func TestMonthlyGatewayProbePointDoesNotStoreSuccessBodyAsError(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	recorder.WriteHeader(200)
@@ -704,7 +721,7 @@ func TestMonthlyGatewayProbePointClassifiesGenericGatewayFailure(t *testing.T) {
 func TestMonthlyUpstreamProbeTimeoutForModelWidensOnlyGrok(t *testing.T) {
 	require.Equal(t, 45*time.Second, monthlyUpstreamProbeTimeoutForModel("grok-4.5"))
 	require.Equal(t, 45*time.Second, monthlyUpstreamProbeTimeoutForModel(" GROK-4.5 "))
-	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("claude-haiku-4-5"))
+	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("claude-sonnet-5"))
 	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("gpt-5.6-sol"))
 }
 
@@ -806,7 +823,7 @@ func intPointerForProbe(value int) *int { return &value }
 func TestMonthlyUpstreamProbeSlowThresholdWidensOnlyGPT56Sol(t *testing.T) {
 	require.Equal(t, 10*time.Second, monthlyUpstreamProbeSlowThresholdForModel("gpt-5.6-sol"))
 	require.Equal(t, 10*time.Second, monthlyUpstreamProbeSlowThresholdForModel(" GPT-5.6-SOL "))
-	require.Equal(t, 5*time.Second, monthlyUpstreamProbeSlowThresholdForModel("claude-haiku-4-5"))
+	require.Equal(t, 5*time.Second, monthlyUpstreamProbeSlowThresholdForModel("claude-sonnet-5"))
 	require.Equal(t, 5*time.Second, monthlyUpstreamProbeSlowThresholdForModel("grok-4.5"))
 }
 
@@ -841,7 +858,7 @@ func TestMonthlyGatewayProbePointUsesModelSpecificSlowThreshold(t *testing.T) {
 
 	aboveDefaultThreshold := monthlyGatewayProbePoint(
 		account,
-		"claude-haiku-4-5",
+		"claude-sonnet-5",
 		recorder,
 		time.Now(),
 		nil,

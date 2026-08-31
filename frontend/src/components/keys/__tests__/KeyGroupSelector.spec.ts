@@ -96,4 +96,21 @@ describe('KeyGroupSelector', () => {
 
     wrapper.unmount()
   })
+
+  it('keeps an existing key group visible when it is no longer selectable', () => {
+    const wrapper = mount(KeyGroupSelector, {
+      props: {
+        modelValue: 46,
+        options,
+        variant: 'inline',
+        fallbackOption: {
+          ...options[0],
+          value: 46,
+          label: 'Kimi 分组'
+        }
+      }
+    })
+
+    expect(wrapper.get('[data-testid="key-group-selector-trigger"]').text()).toContain('Kimi 分组')
+  })
 })

@@ -180,6 +180,7 @@ interface KeyGroupSelectorOption extends SectionableGroupOption {
 interface Props {
   modelValue: number | null
   options: KeyGroupSelectorOption[]
+  fallbackOption?: KeyGroupSelectorOption | null
   includeMonthly?: boolean
   variant?: 'field' | 'inline'
   placeholder?: string
@@ -188,6 +189,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   includeMonthly: false,
+  fallbackOption: null,
   variant: 'field',
   placeholder: '',
   searchPlaceholder: ''
@@ -216,7 +218,7 @@ const position = ref<{
 const sections = computed(() => buildGroupOptionSections(props.options, props.includeMonthly))
 const activeSectionRow = computed(() => sections.value.find((section) => section.id === activeSection.value) ?? sections.value[0])
 const families = computed(() => buildGroupOptionFamilies(activeSectionRow.value?.options ?? []))
-const selectedOption = computed(() => props.options.find((option) => option.value === props.modelValue) ?? null)
+const selectedOption = computed(() => props.options.find((option) => option.value === props.modelValue) ?? props.fallbackOption ?? null)
 const visibleOptions = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   const options = activeSectionRow.value?.options ?? []

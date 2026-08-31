@@ -127,40 +127,16 @@
           </template>
 
           <template #cell-group="{ row }">
-            <div class="group/dropdown relative">
-              <button
-                :ref="(el) => setGroupButtonRef(row.id, el)"
-                @click="openGroupSelector(row)"
-                class="-mx-2 -my-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-dark-700"
-                :title="t('keys.clickToChangeGroup')"
-              >
-                <GroupBadge
-                  v-if="row.group"
-                  :name="row.group.name"
-                  :platform="row.group.platform"
-                  :subscription-type="row.group.subscription_type"
-                  :rate-multiplier="row.group.rate_multiplier"
-                  :user-rate-multiplier="userGroupRates[row.group.id]"
-                />
-                <span v-else class="text-sm text-gray-400 dark:text-dark-400">{{
-                  t('keys.noGroup')
-                }}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('keys.selectGroup') }}</span>
-                <svg
-                  class="h-3.5 w-3.5 text-gray-400 opacity-60 transition-opacity group-hover/dropdown:opacity-100"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
-                  />
-                </svg>
-              </button>
-            </div>
+            <KeyGroupSelector
+              :model-value="row.group_id"
+              :options="baseGroupOptions"
+              :include-monthly="subscriptionStore.hasActiveSubscriptions"
+              variant="inline"
+              :placeholder="t('keys.selectGroup')"
+              :search-placeholder="t('keys.searchGroup')"
+              :title="t('keys.clickToChangeGroup')"
+              @update:model-value="changeGroup(row, $event)"
+            />
           </template>
 
           <template #cell-usage="{ row }">
@@ -464,68 +440,14 @@
 
         <div>
           <label class="input-label">{{ t('keys.groupLabel') }}</label>
-          <Select
+          <KeyGroupSelector
             v-model="formData.group_id"
-            :options="groupSelectOptions"
+            :options="baseGroupOptions"
             :placeholder="t('keys.selectGroup')"
-            :searchable="true"
             :search-placeholder="t('keys.searchGroup')"
+            :include-monthly="subscriptionStore.hasActiveSubscriptions"
             data-tour="key-form-group"
-          >
-            <template #selected="{ option }">
-              <GroupBadge
-                v-if="option"
-                :name="(option as unknown as GroupOption).label"
-                :platform="(option as unknown as GroupOption).platform"
-                :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).rate
-                    : undefined
-                "
-                :user-rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).userRate
-                    : null
-                "
-                :show-rate="shouldShowGroupOptionMeta(option as unknown as GroupOption)"
-              />
-              <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
-            </template>
-            <template #option="{ option, selected }">
-              <GroupSectionHeader
-                v-if="isGroupHeaderOption(option as unknown as GroupSelectOption)"
-                :section="(option as unknown as GroupHeaderOption).groupKey"
-                :label="(option as unknown as GroupHeaderOption).label"
-                :count="(option as unknown as GroupHeaderOption).count"
-              />
-              <GroupOptionItem
-                v-else
-                :name="(option as unknown as GroupOption).label"
-                :platform="(option as unknown as GroupOption).platform"
-                :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).rate
-                    : undefined
-                "
-                :user-rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).userRate
-                    : null
-                "
-                :description="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).description
-                    : null
-                "
-                :action-label="getGroupOptionActionLabel(option as unknown as GroupOption)"
-                :cache-hit-rate-pct="(option as unknown as GroupOption).cacheHitRatePct"
-                :cache-window-days="(option as unknown as GroupOption).cacheWindowDays"
-                :selected="selected"
-              />
-            </template>
-          </Select>
+          />
         </div>
 
         <!-- Custom Key Section (only for create) -->
@@ -1241,112 +1163,11 @@
       </template>
     </BaseDialog>
 
-    <!-- Group Selector Dropdown (Teleported to body to avoid overflow clipping) -->
-    <Teleport to="body">
-      <div
-        v-if="groupSelectorKeyId !== null && dropdownPosition"
-        ref="dropdownRef"
-        class="animate-in fade-in slide-in-from-top-2 fixed z-[100000020] w-[min(560px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl shadow-black/10 duration-200 dark:border-dark-700 dark:bg-dark-800 dark:shadow-black/30"
-        style="pointer-events: auto !important;"
-        :style="{
-          top: dropdownPosition.top !== undefined ? dropdownPosition.top + 'px' : undefined,
-          bottom: dropdownPosition.bottom !== undefined ? dropdownPosition.bottom + 'px' : undefined,
-          left: dropdownPosition.left + 'px'
-        }"
-      >
-        <!-- Search box -->
-        <div class="border-b border-gray-100 p-2 dark:border-dark-700">
-          <div class="relative">
-            <svg class="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              v-model="groupSearchQuery"
-              type="text"
-              class="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-300 dark:border-dark-600 dark:bg-dark-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-primary-600 dark:focus:ring-primary-600"
-              :placeholder="t('keys.searchGroup')"
-              @click.stop
-            />
-          </div>
-          <div class="mt-2 flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-dark-900">
-            <button
-              v-for="section in groupOptionSections"
-              :key="section.id"
-              type="button"
-              :class="[
-                'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
-                activeGroupBillingSection === section.id
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              ]"
-              @click.stop="selectGroupBillingSection(section.id)"
-            >
-              {{ getGroupSectionLabel(section.id) }}
-              <span class="ml-1 opacity-60">{{ section.options.length }}</span>
-            </button>
-          </div>
-          <div v-if="activeGroupFamilies.length > 1" class="mt-2 flex gap-1 overflow-x-auto pb-0.5">
-            <button
-              v-for="family in activeGroupFamilies"
-              :key="family.id"
-              type="button"
-              :class="[
-                'shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                activeGroupFamily === family.id
-                  ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
-                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-800 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-400 dark:hover:text-gray-200'
-              ]"
-              @click.stop="selectGroupFamily(family.id)"
-            >
-              {{ getGroupFamilyLabel(family.id) }}
-              <span class="ml-1 opacity-60">{{ family.options.length }}</span>
-            </button>
-          </div>
-        </div>
-        <!-- Group list -->
-        <div
-          class="overflow-y-auto bg-gray-50/60 p-2 dark:bg-dark-900/40"
-          :style="{ maxHeight: dropdownPosition.listMaxHeight + 'px' }"
-        >
-          <div class="space-y-1">
-              <button
-                v-for="option in visibleGroupOptions"
-                :key="option.value"
-                @click="changeGroup(selectedKeyForGroup!, option.value)"
-                :class="[
-                  'flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm transition-all',
-                  selectedKeyForGroup?.group_id === option.value
-                    ? 'border-primary-200 bg-primary-50 shadow-sm dark:border-primary-800 dark:bg-primary-900/20'
-                    : 'border-transparent bg-white hover:border-gray-200 hover:bg-gray-50 dark:bg-dark-800 dark:hover:border-dark-600 dark:hover:bg-dark-700'
-                ]"
-                :title="getGroupOptionHoverTitle(option)"
-              >
-                <GroupOptionItem
-                  :name="option.label"
-                  :platform="option.platform"
-                  :subscription-type="option.subscriptionType"
-                  :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
-                  :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
-                  :description="shouldShowGroupOptionMeta(option) ? option.description : null"
-                  :action-label="getGroupOptionActionLabel(option)"
-                  :cache-hit-rate-pct="option.cacheHitRatePct"
-                  :cache-window-days="option.cacheWindowDays"
-                  :selected="selectedKeyForGroup?.group_id === option.value"
-                />
-              </button>
-          </div>
-          <!-- Empty state when search has no results -->
-          <div v-if="filteredGroupOptionCount === 0" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-            {{ t('keys.noGroupFound') }}
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-	import { ref, computed, onMounted, onUnmounted, watch, type ComponentPublicInstance } from 'vue'
+	import { ref, computed, onMounted, onUnmounted } from 'vue'
 	import { useRoute, useRouter } from 'vue-router'
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
@@ -1370,9 +1191,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import Icon from '@/components/icons/Icon.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
 	import CcsClientIcon from '@/components/keys/CcsClientIcon.vue'
-	import GroupBadge from '@/components/common/GroupBadge.vue'
-	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
-	import GroupSectionHeader from '@/components/common/GroupSectionHeader.vue'
+	import KeyGroupSelector from '@/components/keys/KeyGroupSelector.vue'
 	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
 import type { GroupCacheStats } from '@/api/groups'
 import type { Column } from '@/components/common/types'
@@ -1396,10 +1215,7 @@ import {
   type ClientAutoConfigTarget
 } from '@/utils/clientAutoConfig'
 import {
-  buildGroupOptionFamilies,
-  buildGroupOptionSections,
   classifyGroupOptionFamily,
-  isMonthlyGroupOption,
   type GroupOptionFamilyId,
   type GroupOptionSectionId
 } from '@/utils/groupOptionSections'
@@ -1425,18 +1241,6 @@ interface GroupOption {
   groupKey: GroupOptionSectionId
   familyKey: GroupOptionFamilyId
 }
-
-interface GroupHeaderOption {
-  [key: string]: unknown
-  value: string
-  label: string
-  kind: 'group'
-  groupKey: GroupOptionSectionId
-  count: number
-  disabled: true
-}
-
-type GroupSelectOption = GroupOption | GroupHeaderOption
 
 type CcsClientOption = {
   value: CcsImportTarget
@@ -1507,16 +1311,7 @@ const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const copiedBaseUrl = ref(false)
 const configuringKeyId = ref<number | null>(null)
-const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
-const dropdownRef = ref<HTMLElement | null>(null)
-const dropdownPosition = ref<{
-  top?: number
-  bottom?: number
-  left: number
-  listMaxHeight: number
-} | null>(null)
-const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
 let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
 let ccsLaunchObserved = false
@@ -1604,20 +1399,6 @@ const ccsHasClaudeCodeTarget = computed(() =>
 const ccsDiagnosticCommand = computed(() =>
   buildCcsDiagnosticCommand(ccsDiagnosticPlatform.value, window.location.origin)
 )
-
-// Get the currently selected key for group change
-const selectedKeyForGroup = computed(() => {
-  if (groupSelectorKeyId.value === null) return null
-  return apiKeys.value.find((k) => k.id === groupSelectorKeyId.value) || null
-})
-
-const setGroupButtonRef = (keyId: number, el: Element | ComponentPublicInstance | null) => {
-  if (el instanceof HTMLElement) {
-    groupButtonRefs.value.set(keyId, el)
-  } else {
-    groupButtonRefs.value.delete(keyId)
-  }
-}
 
 const formData = ref({
   name: '',
@@ -1715,112 +1496,6 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
     }
   })
 )
-
-const groupOptionSections = computed(() => {
-  return buildGroupOptionSections(
-    baseGroupOptions.value,
-    subscriptionStore.hasActiveSubscriptions
-  )
-})
-
-const getGroupSectionLabel = (section: GroupOptionSectionId): string => {
-  return section === 'monthly'
-    ? t('keys.groupSections.monthly')
-    : t('keys.groupSections.payg')
-}
-
-const getGroupFamilyLabel = (family: GroupOptionFamilyId): string => {
-  return t(`keys.groupFamilies.${family}`)
-}
-
-const groupSelectOptions = computed<GroupSelectOption[]>(() => {
-  return groupOptionSections.value.flatMap((section) =>
-    buildGroupOptionFamilies(section.options).flatMap((family) => [
-      {
-        value: `group:${section.id}:${family.id}`,
-        label: `${getGroupSectionLabel(section.id)} · ${getGroupFamilyLabel(family.id)}`,
-        kind: 'group' as const,
-        groupKey: section.id,
-        count: family.options.length,
-        disabled: true as const
-      },
-      ...family.options
-    ])
-  )
-})
-
-const isGroupHeaderOption = (option: GroupSelectOption): option is GroupHeaderOption => {
-  return 'kind' in option && option.kind === 'group'
-}
-
-const shouldShowGroupOptionMeta = (option: GroupOption): boolean => {
-  return option.subscriptionType !== 'subscription' && option.subscriptionType !== 'credit'
-}
-
-const isMonthlyAccessGroup = (option: GroupOption): boolean => {
-  return isMonthlyGroupOption(option)
-}
-
-const getGroupOptionActionLabel = (option: GroupOption): string | null => {
-  return isMonthlyAccessGroup(option) ? t('keys.groupSections.monthlyOnly') : null
-}
-
-const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
-  return shouldShowGroupOptionMeta(option) ? option.description || undefined : undefined
-}
-
-// Group dropdown search
-const groupSearchQuery = ref('')
-const activeGroupBillingSection = ref<GroupOptionSectionId>('payg')
-const activeGroupFamily = ref<GroupOptionFamilyId>('openai')
-
-const activeBillingSection = computed(() => {
-  return groupOptionSections.value.find((section) => section.id === activeGroupBillingSection.value) ?? groupOptionSections.value[0]
-})
-
-const activeGroupFamilies = computed(() => {
-  return buildGroupOptionFamilies(activeBillingSection.value?.options ?? [])
-})
-
-const visibleGroupOptions = computed(() => {
-  const query = groupSearchQuery.value.trim().toLowerCase()
-  const options = activeBillingSection.value?.options ?? []
-  if (query) {
-    return options.filter((option) => {
-      return option.label.toLowerCase().includes(query) ||
-        (option.description && option.description.toLowerCase().includes(query))
-    })
-  }
-  return activeGroupFamilies.value.find((family) => family.id === activeGroupFamily.value)?.options ?? []
-})
-
-const filteredGroupOptionCount = computed(() => {
-  return visibleGroupOptions.value.length
-})
-
-const selectGroupBillingSection = (section: GroupOptionSectionId) => {
-  activeGroupBillingSection.value = section
-  const families = buildGroupOptionFamilies(
-    groupOptionSections.value.find((candidate) => candidate.id === section)?.options ?? []
-  )
-  activeGroupFamily.value = families[0]?.id ?? 'openai'
-}
-
-const selectGroupFamily = (family: GroupOptionFamilyId) => {
-  activeGroupFamily.value = family
-}
-
-watch(groupOptionSections, (sections) => {
-  if (!sections.some((section) => section.id === activeGroupBillingSection.value)) {
-    activeGroupBillingSection.value = sections[0]?.id ?? 'payg'
-  }
-  const families = buildGroupOptionFamilies(
-    sections.find((section) => section.id === activeGroupBillingSection.value)?.options ?? []
-  )
-  if (!families.some((family) => family.id === activeGroupFamily.value)) {
-    activeGroupFamily.value = families[0]?.id ?? 'openai'
-  }
-}, { immediate: true })
 
 const maskKey = (key: string): string => {
   if (key.length <= 12) return key
@@ -2082,54 +1757,7 @@ const toggleKeyStatus = async (key: ApiKey) => {
   }
 }
 
-const openGroupSelector = (key: ApiKey) => {
-  if (groupSelectorKeyId.value === key.id) {
-    groupSelectorKeyId.value = null
-    dropdownPosition.value = null
-  } else {
-    const buttonEl = groupButtonRefs.value.get(key.id)
-    if (buttonEl) {
-      const rect = buttonEl.getBoundingClientRect()
-      const dropdownWidth = Math.min(560, window.innerWidth - 24)
-      const safeLeft = Math.min(
-        Math.max(12, rect.left),
-        Math.max(12, window.innerWidth - dropdownWidth - 12)
-      )
-      const spaceBelow = window.innerHeight - rect.bottom
-      const spaceAbove = rect.top
-      const openUpward = spaceBelow < 460 && spaceAbove > spaceBelow
-      const availableHeight = openUpward ? spaceAbove : spaceBelow
-      const listMaxHeight = Math.max(160, Math.min(480, availableHeight - 156))
-
-      if (openUpward) {
-        dropdownPosition.value = {
-          bottom: window.innerHeight - rect.top + 4,
-          left: safeLeft,
-          listMaxHeight
-        }
-      } else {
-        dropdownPosition.value = {
-          top: rect.bottom + 4,
-          left: safeLeft,
-          listMaxHeight
-        }
-      }
-    }
-    groupSelectorKeyId.value = key.id
-    groupSearchQuery.value = ''
-    const selectedOption = baseGroupOptions.value.find((option) => option.value === key.group_id)
-    if (selectedOption) {
-      activeGroupBillingSection.value = selectedOption.groupKey
-      activeGroupFamily.value = selectedOption.familyKey
-    } else {
-      selectGroupBillingSection(groupOptionSections.value[0]?.id ?? 'payg')
-    }
-  }
-}
-
 const changeGroup = async (key: ApiKey, newGroupId: number | null) => {
-  groupSelectorKeyId.value = null
-  dropdownPosition.value = null
   if (key.group_id === newGroupId) return
 
   try {
@@ -2138,15 +1766,6 @@ const changeGroup = async (key: ApiKey, newGroupId: number | null) => {
     loadApiKeys()
   } catch (error) {
     appStore.showError(t('keys.failedToChangeGroup'))
-  }
-}
-
-const closeGroupSelector = (event: MouseEvent) => {
-  const target = event.target as HTMLElement
-  // Check if click is inside the dropdown or the trigger button
-  if (!target.closest('.group\\/dropdown') && !dropdownRef.value?.contains(target)) {
-    groupSelectorKeyId.value = null
-    dropdownPosition.value = null
   }
 }
 
@@ -2543,7 +2162,6 @@ onMounted(() => {
   loadGroups()
   loadUserGroupRates()
   loadPublicSettings()
-  document.addEventListener('click', closeGroupSelector)
   resetTimer = setInterval(() => { now.value = new Date() }, 60000)
 })
 
@@ -2557,7 +2175,6 @@ const setScope = async (scope: 'personal' | 'team') => {
 }
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeGroupSelector)
   cleanupCcsLaunchWatch()
   if (resetTimer) clearInterval(resetTimer)
 })

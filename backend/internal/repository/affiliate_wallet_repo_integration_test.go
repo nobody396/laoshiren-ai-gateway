@@ -206,10 +206,6 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 	client := testEntClient(t)
 	repo := NewAffiliateWalletRepository(integrationDB)
 	walletService := service.NewAffiliateWalletService(repo)
-	operator := mustCreateUser(t, client, &service.User{
-		Email: fmt.Sprintf("wallet-purchase-admin-%d@example.com", time.Now().UnixNano()),
-		Role:  service.RoleAdmin,
-	})
 	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "wallet-purchase-agent")
 	_, err := integrationDB.ExecContext(ctx, `
 		INSERT INTO agent_cash_commission_entries (
@@ -234,7 +230,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		255_000_000,
-		operator.ID,
+		0,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -247,13 +243,13 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 	require.Equal(t, service.AffiliateCommissionPurchaseKindMonthlyCard, purchase.PurchaseKind)
 	require.Equal(t, "plus", purchase.ProductCode)
 	require.Equal(t, "monthly-new-cycle-integration-plus", purchase.ExternalReference)
-	require.Equal(t, operator.ID, purchase.OperatorID)
+	require.Zero(t, purchase.OperatorID)
 
 	idempotent, err := walletService.Purchase(
 		ctx,
 		agent.ID,
 		255_000_000,
-		operator.ID,
+		0,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -267,7 +263,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		255_000_000,
-		operator.ID,
+		0,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -281,7 +277,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		254_000_000,
-		operator.ID,
+		0,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -294,7 +290,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		100_000_000,
-		operator.ID,
+		0,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus-second",
@@ -339,7 +335,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 	require.Equal(t, int64(-255_000_000), ledgerAmount)
 	require.Equal(t, "plus", productCode)
 	require.Equal(t, "monthly-new-cycle-integration-plus", externalReference)
-	require.Equal(t, operator.ID, ledgerOperatorID)
+	require.Zero(t, ledgerOperatorID)
 
 	notices, err := walletService.ListNotices(ctx, agent.ID)
 	require.NoError(t, err)

@@ -230,7 +230,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		255_000_000,
-		0,
+		service.AffiliateCommissionMachineOperatorID,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -243,13 +243,13 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 	require.Equal(t, service.AffiliateCommissionPurchaseKindMonthlyCard, purchase.PurchaseKind)
 	require.Equal(t, "plus", purchase.ProductCode)
 	require.Equal(t, "monthly-new-cycle-integration-plus", purchase.ExternalReference)
-	require.Zero(t, purchase.OperatorID)
+	require.Equal(t, service.AffiliateCommissionMachineOperatorID, purchase.OperatorID)
 
 	idempotent, err := walletService.Purchase(
 		ctx,
 		agent.ID,
 		255_000_000,
-		0,
+		service.AffiliateCommissionMachineOperatorID,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -263,7 +263,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		255_000_000,
-		0,
+		service.AffiliateCommissionMachineOperatorID,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -277,7 +277,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		254_000_000,
-		0,
+		service.AffiliateCommissionMachineOperatorID,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus",
@@ -290,7 +290,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 		ctx,
 		agent.ID,
 		100_000_000,
-		0,
+		service.AffiliateCommissionMachineOperatorID,
 		service.AffiliateCommissionPurchaseKindMonthlyCard,
 		"plus",
 		"monthly-new-cycle-integration-plus-second",
@@ -335,7 +335,7 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 	require.Equal(t, int64(-255_000_000), ledgerAmount)
 	require.Equal(t, "plus", productCode)
 	require.Equal(t, "monthly-new-cycle-integration-plus", externalReference)
-	require.Zero(t, ledgerOperatorID)
+	require.Equal(t, service.AffiliateCommissionMachineOperatorID, ledgerOperatorID)
 
 	notices, err := walletService.ListNotices(ctx, agent.ID)
 	require.NoError(t, err)

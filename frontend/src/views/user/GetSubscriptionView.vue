@@ -190,7 +190,7 @@
                       @click="selectTopupChannel('commission_wallet')"
                     >
                       <span class="topup-radio" aria-hidden="true"><span></span></span>
-                      <span aria-hidden="true">¥</span>
+                      <PaymentMethodIcon kind="commission_wallet" />
                       <strong>佣金钱包</strong>
                     </button>
                   </div>
@@ -271,7 +271,7 @@
                       @click="selectMonthlyTopupChannel('commission_wallet')"
                     >
                       <span class="topup-radio" aria-hidden="true"><span></span></span>
-                      <span aria-hidden="true">¥</span>
+                      <PaymentMethodIcon kind="commission_wallet" />
                       <strong>佣金钱包</strong>
                     </button>
                   </div>

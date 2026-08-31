@@ -198,6 +198,44 @@ describe('GetSubscriptionView payment UX', () => {
     wrapper.unmount()
   })
 
+  it('shows the dedicated commission-wallet icon only when the partner wallet is available', async () => {
+    mocks.nativeOffersByCode.value = {
+      plus: { code: 'plus', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 29900 },
+      pro: { code: 'pro', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 59900 },
+      max: { code: 'max', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 99900 },
+    }
+    mocks.getAffiliateWallet.mockResolvedValue({
+      agent_id: 47,
+      available_cash_micros: 1_000_000_000,
+      processing_withdrawal_micros: 0,
+      lifetime_earned_micros: 1_000_000_000,
+      withdrawal_minimum_micros: 50_000_000,
+      withdrawal_sla_hours: 24,
+      conversion_multiplier_millis: 1200,
+      wallet_checkout_enabled: true,
+      wallet_purchase_rate_bps: 8500,
+      conversion_enabled: false,
+      payment_profile_verified: true,
+      can_withdraw: true,
+      cash_asset_symbol: '¥',
+      credit_asset_symbol: '⚡',
+      display_timezone: 'Asia/Shanghai',
+    })
+
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
+    await wrapper.findAll('.topup-product--monthly')[1].trigger('click')
+
+    const walletMethod = wrapper.get('[data-testid="monthly-method-commission-wallet"]')
+    expect(walletMethod.find('img').attributes('src')).toContain('commission-wallet')
+    await walletMethod.trigger('click')
+    expect(wrapper.text()).toContain('佣金钱包价¥509.15')
+    expect(wrapper.text()).toContain('支付后剩余¥490.85')
+
+    wrapper.unmount()
+  })
+
   it('multiplies a balance-card quantity and sends the locked SKU selection', async () => {
     mocks.createTopupOrder.mockResolvedValue({
       order_no: 'TP-QTY-1',

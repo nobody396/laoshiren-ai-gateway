@@ -34,6 +34,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-09-03T00:00:00+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-affiliate-wallet-monthly-purchase-20260831",
+      "owner": "codex-affiliate-wallet-monthly-purchase",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-09-03T00:00:00+08:00"
     }
   ]
 }

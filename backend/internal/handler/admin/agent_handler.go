@@ -109,6 +109,14 @@ type reverseAffiliatePerformanceRequest struct {
 	Reason  string `json:"reason" binding:"required"`
 }
 
+type purchaseWithAffiliateCommissionRequest struct {
+	AmountMicros      int64  `json:"amount_micros" binding:"required,gt=0"`
+	PurchaseKind      string `json:"purchase_kind" binding:"required,oneof=monthly_card"`
+	ProductCode       string `json:"product_code" binding:"required"`
+	ExternalReference string `json:"external_reference" binding:"required"`
+	Note              string `json:"note"`
+}
+
 type reviewAffiliateApplicationRequest struct {
 	Approve bool   `json:"approve"`
 	Note    string `json:"note"`
@@ -754,6 +762,39 @@ func (h *AgentHandler) CompleteAffiliateWithdrawal(c *gin.Context) {
 		return
 	}
 	response.Success(c, item)
+}
+
+func (h *AgentHandler) PurchaseWithAffiliateCommission(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req purchaseWithAffiliateCommissionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.Purchase(
+		c.Request.Context(),
+		agentID,
+		req.AmountMicros,
+		subject.UserID,
+		req.PurchaseKind,
+		req.ProductCode,
+		req.ExternalReference,
+		req.Note,
+		c.GetHeader("Idempotency-Key"),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Created(c, item)
 }
 
 func (h *AgentHandler) FailAffiliateWithdrawal(c *gin.Context) {

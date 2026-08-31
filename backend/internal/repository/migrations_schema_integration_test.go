@@ -394,6 +394,7 @@ WHERE description = '[fresh-install compatibility template] Disabled source for 
 	requireColumn(t, tx, "affiliate_program_settings", "withdrawal_min_micros", "bigint", 0, false)
 	requireColumn(t, tx, "affiliate_reward_entries", "amount_micros", "bigint", 0, false)
 	requireColumn(t, tx, "agent_cash_commission_entries", "amount_micros", "bigint", 0, false)
+	requireIndex(t, tx, "agent_cash_commission_entries", "uq_agent_cash_platform_purchase_reference")
 
 	var affiliateMode, affiliateVersion string
 	var agentPoolRateBPS, marginFloorBPS int

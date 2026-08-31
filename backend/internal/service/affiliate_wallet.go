@@ -249,7 +249,10 @@ func (s *AffiliateWalletService) Purchase(
 	productCode = strings.ToLower(strings.TrimSpace(productCode))
 	externalReference = strings.TrimSpace(externalReference)
 	note = strings.TrimSpace(note)
-	if agentID <= 0 || amountMicros <= 0 || operatorID <= 0 ||
+	// Admin API-key authentication has no user principal and therefore uses
+	// operator_id=0. Negative values are still invalid; zero remains an
+	// explicit, auditable machine-admin operator in purchase metadata.
+	if agentID <= 0 || amountMicros <= 0 || operatorID < 0 ||
 		purchaseKind != AffiliateCommissionPurchaseKindMonthlyCard ||
 		productCode == "" || len(productCode) > 64 ||
 		externalReference == "" || len(externalReference) > 180 ||

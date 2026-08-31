@@ -55,7 +55,10 @@ var (
 	)
 )
 
-const AffiliateCommissionPurchaseKindMonthlyCard = "monthly_card"
+const (
+	AffiliateCommissionPurchaseKindMonthlyCard = "monthly_card"
+	AffiliateCommissionMachineOperatorID       = int64(-1)
+)
 
 type AffiliateWalletSummary struct {
 	AgentID                    int64  `json:"agent_id"`
@@ -249,10 +252,11 @@ func (s *AffiliateWalletService) Purchase(
 	productCode = strings.ToLower(strings.TrimSpace(productCode))
 	externalReference = strings.TrimSpace(externalReference)
 	note = strings.TrimSpace(note)
-	// Admin API-key authentication has no user principal and therefore uses
-	// operator_id=0. Negative values are still invalid; zero remains an
-	// explicit, auditable machine-admin operator in purchase metadata.
-	if agentID <= 0 || amountMicros <= 0 || operatorID < 0 ||
+	// Admin API-key authentication uses the deterministic service principal -1.
+	// Other negative values stay invalid; zero is retained for compatibility
+	// with internal callers that do not attach a human operator.
+	if agentID <= 0 || amountMicros <= 0 ||
+		(operatorID < 0 && operatorID != AffiliateCommissionMachineOperatorID) ||
 		purchaseKind != AffiliateCommissionPurchaseKindMonthlyCard ||
 		productCode == "" || len(productCode) > 64 ||
 		externalReference == "" || len(externalReference) > 180 ||

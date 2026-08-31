@@ -130,6 +130,7 @@
             <KeyGroupSelector
               :model-value="row.group_id"
               :options="baseGroupOptions"
+              :fallback-option="getKeyGroupFallbackOption(row)"
               :include-monthly="subscriptionStore.hasActiveSubscriptions"
               variant="inline"
               :placeholder="t('keys.selectGroup')"
@@ -1496,6 +1497,28 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
     }
   })
 )
+
+const getKeyGroupFallbackOption = (key: ApiKey): GroupOption | null => {
+  const group = key.group
+  if (!group) return null
+  const existing = baseGroupOptions.value.find((option) => option.value === group.id)
+  if (existing) return existing
+  const subscriptionType = group.subscription_type
+  const label = publicGroupDisplayName(group.name)
+  return {
+    value: group.id,
+    label,
+    description: group.description,
+    rate: group.rate_multiplier,
+    userRate: userGroupRates.value[group.id] ?? null,
+    subscriptionType,
+    platform: group.platform,
+    cacheHitRatePct: null,
+    cacheWindowDays: groupCacheWindowDays.value,
+    groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit' ? 'monthly' : 'payg',
+    familyKey: classifyGroupOptionFamily({ label, platform: group.platform })
+  }
+}
 
 const maskKey = (key: string): string => {
   if (key.length <= 12) return key

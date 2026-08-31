@@ -400,6 +400,9 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		}
 		if s.affiliateConsumption != nil {
 			sourceType, paid := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
+			if affiliateCommissionPurchaseAuthorized(txCtx) {
+				paid = false
+			}
 			paidValue := RedeemPaidValue(redeemCode)
 			occurredAt := time.Now()
 			var rewardResult *AffiliateFirstPaidPurchaseResult
@@ -473,6 +476,9 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		}
 		if s.affiliateConsumption != nil {
 			sourceType, paid := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
+			if affiliateCommissionPurchaseAuthorized(txCtx) {
+				paid = false
+			}
 			creditLimitMicros := AffiliateMonthlyCreditLimitMicros(affiliateGroups, validityDays)
 			salePriceMicros := AffiliateMicrosFromFloat(redeemCode.Value)
 			if creditLimitMicros > 0 {

@@ -50,6 +50,9 @@ func (r *affiliateWalletRepository) GetAffiliateWallet(
 			s.withdrawal_min_micros,
 			s.withdrawal_sla_hours,
 			s.commission_conversion_multiplier_millis,
+			s.commission_wallet_checkout_enabled,
+			s.commission_wallet_purchase_rate_bps,
+			s.commission_conversion_enabled,
 			COALESCE(
 				p.verification_status = 'verified'
 					AND p.privacy_consent_version = $2
@@ -70,6 +73,9 @@ func (r *affiliateWalletRepository) GetAffiliateWallet(
 		&out.WithdrawalMinimumMicros,
 		&out.WithdrawalSLAHours,
 		&out.ConversionMultiplierMillis,
+		&out.WalletCheckoutEnabled,
+		&out.WalletPurchaseRateBPS,
+		&out.ConversionEnabled,
 		&out.PaymentProfileVerified,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -601,21 +607,23 @@ func (r *affiliateWalletRepository) ConvertAffiliateCommission(
 		return nil, err
 	}
 	var (
-		principalStatus string
-		riskStatus      string
-		multiplier      int32
+		principalStatus   string
+		riskStatus        string
+		multiplier        int32
+		conversionEnabled bool
 	)
 	err = tx.QueryRowContext(ctx, `
 		SELECT
 			ap.status,
 			ap.risk_status,
-			s.commission_conversion_multiplier_millis
+			s.commission_conversion_multiplier_millis,
+			s.commission_conversion_enabled
 		FROM agent_principals ap
 		CROSS JOIN affiliate_program_settings s
 		WHERE ap.agent_id = $1
 			AND s.id = 1
 		FOR UPDATE OF ap
-	`, agentID).Scan(&principalStatus, &riskStatus, &multiplier)
+	`, agentID).Scan(&principalStatus, &riskStatus, &multiplier, &conversionEnabled)
 	if errors.Is(err, sql.ErrNoRows) ||
 		principalStatus != "active" ||
 		riskStatus != "clear" {
@@ -623,6 +631,9 @@ func (r *affiliateWalletRepository) ConvertAffiliateCommission(
 	}
 	if err != nil {
 		return nil, err
+	}
+	if !conversionEnabled {
+		return nil, service.ErrAffiliateConversionDisabled
 	}
 	availableMicros, err := lockAffiliateAvailableCash(ctx, tx, agentID)
 	if err != nil {
@@ -828,6 +839,140 @@ func (r *affiliateWalletRepository) PurchaseWithAffiliateCommission(
 		return nil, err
 	}
 	return item, nil
+}
+
+func (r *affiliateWalletRepository) PurchaseBalanceWithAffiliateCommission(
+	ctx context.Context,
+	agentID, creditAmountCNYFen int64,
+	idempotencyKey string,
+) (_ *service.AffiliateBalancePurchase, err error) {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := lockAffiliateAgent(ctx, tx, agentID); err != nil {
+		return nil, err
+	}
+	if existing, lookupErr := getAffiliateBalancePurchase(ctx, tx, agentID, idempotencyKey); lookupErr == nil {
+		if existing.CreditAmountMicros != creditAmountCNYFen*10_000 {
+			return nil, service.ErrAffiliatePurchaseIdempotencyConflict
+		}
+		return existing, tx.Commit()
+	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+		return nil, lookupErr
+	}
+	var principalStatus, riskStatus string
+	var enabled bool
+	var rateBPS int32
+	err = tx.QueryRowContext(ctx, `
+		SELECT ap.status, ap.risk_status,
+		       s.commission_wallet_checkout_enabled,
+		       s.commission_wallet_purchase_rate_bps
+		FROM agent_principals ap
+		CROSS JOIN affiliate_program_settings s
+		WHERE ap.agent_id=$1 AND s.id=1
+		FOR UPDATE OF ap
+	`, agentID).Scan(&principalStatus, &riskStatus, &enabled, &rateBPS)
+	if errors.Is(err, sql.ErrNoRows) || principalStatus != "active" || riskStatus != "clear" {
+		return nil, service.ErrAffiliateWalletNotAvailable
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !enabled || rateBPS <= 0 {
+		return nil, service.ErrAffiliateWalletCheckoutDisabled
+	}
+	chargeFen := (creditAmountCNYFen*int64(rateBPS) + 9_999) / 10_000
+	chargeMicros := chargeFen * 10_000
+	creditMicros := creditAmountCNYFen * 10_000
+	availableMicros, err := lockAffiliateAvailableCash(ctx, tx, agentID)
+	if err != nil {
+		return nil, err
+	}
+	if chargeMicros > availableMicros {
+		return nil, service.ErrAffiliateInsufficientCash
+	}
+	remainingMicros := availableMicros - chargeMicros
+	var result service.AffiliateBalancePurchase
+	err = tx.QueryRowContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, entry_type, amount_micros, posting_status,
+			source_type, idempotency_key, metadata, occurred_at
+		) VALUES (
+			$1, 'platform_purchase', -($2::bigint), 'posted',
+			'platform_purchase', $3::text,
+			jsonb_build_object(
+				'asset_symbol','¥', 'purchase_kind','balance',
+				'product_code','standard_balance', 'external_reference',$3::text,
+				'operator_id',$1::bigint, 'credit_amount_micros',$4::bigint,
+				'rate_bps',$5::integer, 'remaining_cash_micros',$6::bigint
+			), NOW()
+		) RETURNING id, agent_id, -amount_micros, occurred_at
+	`, agentID, chargeMicros, idempotencyKey, creditMicros, rateBPS, remainingMicros).Scan(
+		&result.LedgerEntryID, &result.AgentID, &result.CashAmountMicros, &result.CreatedAt,
+	)
+	if err != nil {
+		if isPostgresUniqueViolation(err) {
+			return nil, service.ErrAffiliatePurchaseIdempotencyConflict
+		}
+		return nil, err
+	}
+	result.CreditAmountMicros = creditMicros
+	result.RateBPS = rateBPS
+	result.RemainingCashMicros = remainingMicros
+	update, err := tx.ExecContext(ctx, `
+		UPDATE users SET balance=balance+($1::numeric/1000000), updated_at=NOW()
+		WHERE id=$2 AND deleted_at IS NULL
+	`, creditMicros, agentID)
+	if err != nil {
+		return nil, err
+	}
+	if affected, _ := update.RowsAffected(); affected != 1 {
+		return nil, service.ErrUserNotFound
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_id, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy, occurred_at
+		) VALUES ($1,'commission_purchase',$2,$3,$4,$4,FALSE,'NONE',NOW())
+	`, agentID, result.LedgerEntryID, "commission_purchase:"+idempotencyKey, creditMicros); err != nil {
+		return nil, err
+	}
+	if err := insertAffiliateAgentNotice(
+		ctx, tx, agentID, "commission_purchase", "佣金已用于余额充值",
+		fmt.Sprintf("已从可提现佣金中扣除 %s，充值平台余额 %s；剩余可提现佣金 %s。",
+			formatAffiliateCashMicros(chargeMicros), formatAffiliateCashMicros(creditMicros), formatAffiliateCashMicros(remainingMicros)),
+		"platform_purchase", result.LedgerEntryID, fmt.Sprintf("platform-purchase:%d:notice", result.LedgerEntryID),
+	); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func getAffiliateBalancePurchase(
+	ctx context.Context, q affiliateWalletQuerier, agentID int64, idempotencyKey string,
+) (*service.AffiliateBalancePurchase, error) {
+	out := &service.AffiliateBalancePurchase{}
+	err := q.QueryRowContext(ctx, `
+		SELECT id, agent_id, -amount_micros,
+		       (metadata->>'credit_amount_micros')::bigint,
+		       (metadata->>'rate_bps')::integer,
+		       (metadata->>'remaining_cash_micros')::bigint,
+		       occurred_at
+		FROM agent_cash_commission_entries
+		WHERE agent_id=$1 AND idempotency_key=$2
+		  AND entry_type='platform_purchase'
+		  AND metadata->>'purchase_kind'='balance'
+	`, agentID, idempotencyKey).Scan(
+		&out.LedgerEntryID, &out.AgentID, &out.CashAmountMicros,
+		&out.CreditAmountMicros, &out.RateBPS, &out.RemainingCashMicros, &out.CreatedAt,
+	)
+	return out, err
 }
 
 func formatAffiliateCashMicros(amountMicros int64) string {

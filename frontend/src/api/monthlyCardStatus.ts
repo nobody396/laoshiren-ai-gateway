@@ -30,6 +30,7 @@ export interface MonthlyCardPlanEntitlement {
   name: string
   gpt_group?: MonthlyCardPlanGroup | null
   claude_group?: MonthlyCardPlanGroup | null
+  grok_group?: MonthlyCardPlanGroup | null
 }
 
 export interface MonthlyCardStatusSnapshot {

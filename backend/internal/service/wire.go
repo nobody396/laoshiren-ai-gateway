@@ -543,12 +543,15 @@ func ProvideNativeCheckoutService(
 	providers NativeCheckoutProviderResolver,
 	userRepo UserRepository,
 	redeem NativeCheckoutRedeemer,
+	affiliateWallet *AffiliateWalletService,
 	cfg *config.Config,
 ) (*NativeCheckoutService, error) {
 	if cfg == nil || strings.TrimSpace(cfg.JWT.Secret) == "" {
 		return nil, errors.New("native checkout contact hash key is not configured")
 	}
-	return NewNativeCheckoutService(repo, providers, userRepo, redeem, cfg.JWT.Secret), nil
+	svc := NewNativeCheckoutService(repo, providers, userRepo, redeem, cfg.JWT.Secret)
+	svc.SetAffiliateWalletService(affiliateWallet)
+	return svc, nil
 }
 
 func ProvideOpenAIGatewayService(
@@ -789,6 +792,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateAgentActivationScheduler,
 	NewAffiliateCommunityService,
 	ProvideAffiliateWalletService,
+	ProvideMonthlyCommercialCutoverService,
 	ProvideAffiliateRiskService,
 	NewAffiliateSelfCommissionPolicyService,
 	NewPaymentService,
@@ -841,6 +845,14 @@ func ProvideAffiliateWalletService(
 	svc := NewAffiliateWalletService(repo)
 	svc.SetBalanceCache(balanceCache)
 	return svc
+}
+
+func ProvideMonthlyCommercialCutoverService(
+	db *sql.DB,
+	billingCache *BillingCacheService,
+	apiKeys *APIKeyService,
+) *MonthlyCommercialCutoverService {
+	return NewMonthlyCommercialCutoverService(db, billingCache, apiKeys)
 }
 
 func ProvideAffiliateAgentService(

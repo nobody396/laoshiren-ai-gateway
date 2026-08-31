@@ -38,7 +38,7 @@ describe('monthlyCreditCardPlans V3', () => {
     ])
   })
 
-  it('uses fixed public multipliers without allowing entitlement limits to rewrite the SKU', () => {
+  it('uses the live shared entitlement limit for customer display', () => {
     const plans = buildMonthlyCreditCardPlans([{
       id: 'plus',
       gpt_group: {
@@ -60,9 +60,9 @@ describe('monthlyCreditCardPlans V3', () => {
     }])
     const plus = plans[0]
     expect(plus.id).toBe('plus')
-    expect(plus.monthlyCredits).toBe(300)
+    expect(plus.monthlyCredits).toBe(999)
     expect(plus.weeklyCredits).toBe(0)
-    expect(plus.displayMonthlyCreditsText).toBe('3,000')
+    expect(plus.displayMonthlyCreditsText).toBe('9,990')
     expect(Object.keys(plus)).not.toContain('gptMonthlyUsage')
     expect(Object.keys(plus)).not.toContain('claudeMonthlyUsage')
   })

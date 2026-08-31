@@ -18,7 +18,10 @@ const mocks = vi.hoisted(() => ({
   requestNewcomerPurchaseURL: vi.fn(),
   newcomerState: { value: 'available' },
   newcomerMode: { value: 'manual' },
-  nativeOfferByCode: { value: undefined as any },
+  nativeOffersByCode: { value: {} as Record<string, any> },
+  getAffiliateWallet: vi.fn(),
+  purchaseBalanceWithAffiliateCommission: vi.fn(),
+  createCommissionWalletCheckoutOrder: vi.fn(),
 }))
 
 const publicSettings = {
@@ -52,6 +55,16 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/topup', () => ({
   createTopupOrder: mocks.createTopupOrder,
   queryTopupOrderStatus: mocks.queryTopupOrderStatus,
+}))
+
+vi.mock('@/api/agent', () => ({
+  getAffiliateWallet: mocks.getAffiliateWallet,
+  purchaseBalanceWithAffiliateCommission: mocks.purchaseBalanceWithAffiliateCommission,
+  affiliateIdempotencyKey: (action: string) => `test-${action}`,
+}))
+
+vi.mock('@/api/nativeCheckout', () => ({
+  createCommissionWalletCheckoutOrder: mocks.createCommissionWalletCheckoutOrder,
 }))
 
 vi.mock('vue-router', () => ({
@@ -95,7 +108,7 @@ vi.mock('@/composables/useManualNewcomerOffer', () => ({
 vi.mock('@/composables/useNativeCheckoutOffers', () => ({
   useNativeCheckoutOffers: () => ({
     loadOffers: mocks.loadOffers,
-    findNativeOfferByCode: () => mocks.nativeOfferByCode.value,
+    findNativeOfferByCode: (code: string) => mocks.nativeOffersByCode.value[code],
   }),
 }))
 
@@ -124,17 +137,17 @@ describe('GetSubscriptionView payment UX', () => {
     mocks.requestNewcomerPurchaseURL.mockResolvedValue('https://shop.example/5')
     mocks.newcomerState.value = 'available'
     mocks.newcomerMode.value = 'manual'
-    mocks.nativeOfferByCode.value = undefined
+    mocks.nativeOffersByCode.value = {
+      plus: { code: 'plus', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 25500 },
+      pro: { code: 'pro', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 71500 },
+      max: { code: 'max', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 152500 },
+    }
+    mocks.getAffiliateWallet.mockRejectedValue(new Error('not an affiliate'))
     mocks.refreshUser.mockResolvedValue({ balance: 48.48 })
     mocks.toDataURL.mockResolvedValue('data:image/png;base64,QR')
   })
 
   it('reuses the balance checkout rows for developer plans without the nested legacy offer card', async () => {
-    mocks.nativeOfferByCode.value = {
-      code: 'plus',
-      product_kind: 'subscription',
-      provider: 'easypay',
-    }
     const wrapper = mountView()
     await flushPromises()
 

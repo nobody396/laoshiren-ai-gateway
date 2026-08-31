@@ -37,6 +37,7 @@ export type MonthlyCreditCardPlanEntitlement = {
   name?: string
   gpt_group?: MonthlyCreditCardPlanGroupEntitlement | null
   claude_group?: MonthlyCreditCardPlanGroupEntitlement | null
+  grok_group?: MonthlyCreditCardPlanGroupEntitlement | null
 }
 
 type PlanInput = Pick<MonthlyCreditCardPlan,
@@ -44,17 +45,20 @@ type PlanInput = Pick<MonthlyCreditCardPlan,
 >
 
 function createMonthlyCreditCardPlan(input: PlanInput, entitlement?: MonthlyCreditCardPlanEntitlement): MonthlyCreditCardPlan {
-  // Catalog limits are immutable SKU values.  The live entitlement is used for
-  // availability/status only; stale group values must never silently change a
-  // published quota or multiplier.
-  const monthlyCredits = input.monthlyCredits
-  void entitlement
+  const liveLimits = [entitlement?.gpt_group, entitlement?.claude_group, entitlement?.grok_group]
+    .map((group) => group?.monthly_limit_usd)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0)
+  // Prices and quotas are live commercial data. If the status endpoint is
+  // unavailable, the last bundled values remain display-only and checkout is
+  // still disabled by the independently loaded native offer catalog.
+  const monthlyCredits = liveLimits.length > 0 ? Math.min(...liveLimits) : input.monthlyCredits
   return {
     ...input,
     price: `¥${input.priceCny}`,
     directPrice: `¥${input.directPriceCny}`,
     dailyCredits: 0,
     weeklyCredits: 0,
+    monthlyCredits,
     displayDailyCredits: 0,
     displayWeeklyCredits: 0,
     displayMonthlyCredits: monthlyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE,

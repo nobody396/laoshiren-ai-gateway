@@ -232,6 +232,7 @@ func RegisterUserRoutes(
 			agent.GET("/affiliate/withdrawals", h.Agent.ListAffiliateWithdrawals)
 			agent.POST("/affiliate/withdrawals", h.Agent.RequestAffiliateWithdrawal)
 			agent.POST("/affiliate/wallet/convert", h.Agent.ConvertAffiliateCommission)
+			agent.POST("/affiliate/wallet/balance-purchases", h.Agent.PurchaseBalanceWithAffiliateCommission)
 			agent.GET("/affiliate/notices", h.Agent.ListAffiliateNotices)
 			agent.POST("/affiliate/notices/:id/read", h.Agent.ReadAffiliateNotice)
 			agent.GET("/payment-profile", h.Agent.GetPaymentProfile)
@@ -274,6 +275,7 @@ func RegisterUserRoutes(
 			nativeCheckout.GET("/manual-offers/:offerCode", h.NativeCheckout.GetManualOfferStatus)
 			nativeCheckout.POST("/manual-offers/:offerCode/purchase", h.NativeCheckout.GetManualOfferPurchase)
 			nativeCheckout.POST("/orders", h.NativeCheckout.CreateOrder)
+			nativeCheckout.POST("/commission-wallet/orders", h.NativeCheckout.CreateCommissionWalletOrder)
 			nativeCheckout.GET("/orders/:orderNo", h.NativeCheckout.GetOrder)
 			nativeCheckout.GET("/orders/:orderNo/qr", h.NativeCheckout.GetDirectPaymentQR)
 		}

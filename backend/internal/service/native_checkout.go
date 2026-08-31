@@ -30,8 +30,9 @@ const (
 	NativeCheckoutStatusFailed       = "failed"
 	NativeCheckoutStatusManualReview = "manual_review"
 
-	NativeCheckoutPaymentMethodWeChat = "wechat"
-	NativeCheckoutPaymentMethodAlipay = "alipay"
+	NativeCheckoutPaymentMethodWeChat           = "wechat"
+	NativeCheckoutPaymentMethodAlipay           = "alipay"
+	NativeCheckoutPaymentMethodCommissionWallet = "commission_wallet"
 
 	// NativeCheckoutProviderLDXP is the LDXP card shop: it collects payment and
 	// delivers a redeem code from pre-stocked inventory.
@@ -39,7 +40,8 @@ const (
 	// NativeCheckoutProviderEasyPay is the EasyPay gateway (彩虹易支付 MD5
 	// protocol): it collects payment only; the redeem code is minted locally
 	// from the order snapshot after the payment is confirmed.
-	NativeCheckoutProviderEasyPay = payment.ProviderEasyPay
+	NativeCheckoutProviderEasyPay         = payment.ProviderEasyPay
+	NativeCheckoutProviderAffiliateWallet = "affiliate_wallet"
 
 	nativeCheckoutWorkerInterval    = time.Second
 	nativeCheckoutWorkerLease       = 30 * time.Second
@@ -52,6 +54,7 @@ var (
 	ErrNativeCheckoutOrderNotFound  = infraerrors.NotFound("NATIVE_CHECKOUT_ORDER_NOT_FOUND", "checkout order not found")
 	ErrNativeCheckoutAlreadyClaimed = infraerrors.Conflict("NATIVE_CHECKOUT_ALREADY_CLAIMED", "checkout offer was already claimed")
 	ErrNativeCheckoutUnavailable    = infraerrors.ServiceUnavailable("NATIVE_CHECKOUT_UNAVAILABLE", "checkout is temporarily unavailable")
+	ErrNativeCheckoutPriceChanged   = infraerrors.Conflict("NATIVE_CHECKOUT_PRICE_CHANGED", "the live product price changed; refresh and confirm again")
 
 	// ErrNativeCheckoutProviderMismatch / ErrNativeCheckoutAmountMismatch are
 	// returned by HandleEasyPayNotify. Any error makes the gateway handler
@@ -165,6 +168,7 @@ type NativeCheckoutRepository interface {
 	// so the reconcile worker re-queries the provider immediately. It does not
 	// touch updated_at (lease staleness) or check_count.
 	NudgeReconcileNow(ctx context.Context, orderID int64) error
+	SetCommissionWalletOrderReady(ctx context.Context, id int64, tradeNo string) (*NativeCheckoutOrder, error)
 }
 
 // NativeCheckoutCreateRequest carries everything a provider needs to open a
@@ -264,20 +268,28 @@ type NativeCheckoutRedeemer interface {
 }
 
 type NativeCheckoutService struct {
-	repo         NativeCheckoutRepository
-	providers    NativeCheckoutProviderResolver
-	userRepo     UserRepository
-	redeem       NativeCheckoutRedeemer
-	contactKey   []byte
-	pollInterval time.Duration
-	staleAfter   time.Duration
+	repo            NativeCheckoutRepository
+	providers       NativeCheckoutProviderResolver
+	userRepo        UserRepository
+	redeem          NativeCheckoutRedeemer
+	affiliateWallet *AffiliateWalletService
+	contactKey      []byte
+	pollInterval    time.Duration
+	staleAfter      time.Duration
 
 	workerMu sync.Mutex
 	stopCh   chan struct{}
 	doneCh   chan struct{}
 }
 
+func (s *NativeCheckoutService) SetAffiliateWalletService(wallet *AffiliateWalletService) {
+	if s != nil {
+		s.affiliateWallet = wallet
+	}
+}
+
 type nativeCheckoutRedeemAuthorizationKey struct{}
+type affiliateCommissionPurchaseAuthorizationKey struct{}
 
 func withNativeCheckoutRedeemAuthorization(ctx context.Context) context.Context {
 	return context.WithValue(ctx, nativeCheckoutRedeemAuthorizationKey{}, true)
@@ -285,6 +297,15 @@ func withNativeCheckoutRedeemAuthorization(ctx context.Context) context.Context 
 
 func nativeCheckoutRedeemAuthorized(ctx context.Context) bool {
 	allowed, _ := ctx.Value(nativeCheckoutRedeemAuthorizationKey{}).(bool)
+	return allowed
+}
+
+func withAffiliateCommissionPurchaseAuthorization(ctx context.Context) context.Context {
+	return context.WithValue(ctx, affiliateCommissionPurchaseAuthorizationKey{}, true)
+}
+
+func affiliateCommissionPurchaseAuthorized(ctx context.Context) bool {
+	allowed, _ := ctx.Value(affiliateCommissionPurchaseAuthorizationKey{}).(bool)
 	return allowed
 }
 
@@ -494,6 +515,87 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 	return s.createProviderOrder(ctx, reserved, contact, payType, clientIP)
 }
 
+func (s *NativeCheckoutService) CreateCommissionWalletOrder(
+	ctx context.Context,
+	userID int64,
+	offerCode string,
+	expectedPriceCNYFen int64,
+	idempotencyKey string,
+) (*NativeCheckoutOrder, error) {
+	if s == nil || s.affiliateWallet == nil {
+		return nil, ErrNativeCheckoutUnavailable
+	}
+	offerCode = strings.TrimSpace(offerCode)
+	idempotencyKey = strings.TrimSpace(idempotencyKey)
+	if offerCode == "" || idempotencyKey == "" || len(idempotencyKey) > 180 {
+		return nil, ErrInvalidInput
+	}
+	offer, err := s.repo.GetVisibleOffer(ctx, userID, offerCode)
+	if err != nil {
+		return nil, err
+	}
+	if offer.ProductKind != "subscription" || offer.RedeemType != "subscription" {
+		return nil, ErrInvalidInput
+	}
+	if expectedPriceCNYFen != offer.PayAmountCNYFen {
+		return nil, ErrNativeCheckoutPriceChanged
+	}
+	wallet, err := s.affiliateWallet.GetWallet(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !wallet.WalletCheckoutEnabled || wallet.WalletPurchaseRateBPS <= 0 {
+		return nil, ErrAffiliateWalletCheckoutDisabled
+	}
+	chargeFen := ceilPositiveRatio(offer.PayAmountCNYFen, int64(wallet.WalletPurchaseRateBPS), 10_000)
+	chargeMicros := chargeFen * 10_000
+	if chargeMicros > wallet.AvailableCashMicros {
+		return nil, ErrAffiliateInsufficientCash
+	}
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	contact, err := normalizedCheckoutEmail(user.Email)
+	if err != nil {
+		return nil, ErrNativeCheckoutUnavailable.WithCause(err)
+	}
+	orderNo := commissionWalletOrderNo(userID, idempotencyKey)
+	if existing, lookupErr := s.repo.GetOrderForUser(ctx, orderNo, userID); lookupErr == nil {
+		return s.syncCommissionWalletOrder(ctx, existing)
+	} else if !errors.Is(lookupErr, ErrNativeCheckoutOrderNotFound) {
+		return nil, lookupErr
+	}
+	order := &NativeCheckoutOrder{
+		OrderNo: orderNo, UserID: userID, OfferCode: offer.Code,
+		Provider: NativeCheckoutProviderAffiliateWallet, ProviderGoodsKey: offer.ProviderGoodsKey,
+		ContactHash: s.hashContact(contact), ProductKind: offer.ProductKind,
+		PayAmountCNYFen: chargeFen, BenefitAmountCNYFen: offer.BenefitAmountCNYFen,
+		RedeemType: offer.RedeemType, RedeemValue: offer.RedeemValue,
+		RedeemPaidValue: offer.RedeemPaidValue, RedeemPurpose: offer.RedeemPurpose,
+		RedeemSalesStatus: offer.RedeemSalesStatus, RedeemGroupIDs: append([]int64(nil), offer.RedeemGroupIDs...),
+		RedeemValidityDays: offer.RedeemValidityDays, EnforceOnce: offer.OncePerUser,
+		Status: NativeCheckoutStatusCreating, NextCheckAt: time.Now(),
+	}
+	reserved, _, err := s.repo.ReserveOrder(ctx, order)
+	if err != nil {
+		return nil, err
+	}
+	return s.syncCommissionWalletOrder(ctx, reserved)
+}
+
+func ceilPositiveRatio(value, numerator, denominator int64) int64 {
+	if value <= 0 || numerator <= 0 || denominator <= 0 {
+		return 0
+	}
+	return (value*numerator + denominator - 1) / denominator
+}
+
+func commissionWalletOrderNo(userID int64, idempotencyKey string) string {
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%d:%s", userID, idempotencyKey)))
+	return "CW-" + hex.EncodeToString(sum[:16])
+}
+
 func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *NativeCheckoutOrder, contact, payType, clientIP string) (*NativeCheckoutOrder, error) {
 	// Once the durable reservation exists, finish the provider call and record
 	// its outcome even if the browser disconnects. Otherwise a cancelled HTTP
@@ -582,6 +684,9 @@ func (s *NativeCheckoutService) FetchDirectPaymentQR(ctx context.Context, userID
 }
 
 func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, error) {
+	if order.Provider == NativeCheckoutProviderAffiliateWallet {
+		return s.syncCommissionWalletOrder(ctx, order)
+	}
 	if order.Status == NativeCheckoutStatusCreating {
 		if order.UpdatedAt.IsZero() || time.Since(order.UpdatedAt) < s.staleAfter {
 			return order, nil
@@ -637,7 +742,41 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 		return s.holdForReview(ctx, order, "provider_order_mismatch")
 	}
 
-	redeemCode, err := s.redeem.GetByCode(ctx, info.RedeemCodes[0])
+	return s.fulfillNativeCheckoutCode(ctx, order, info.RedeemCodes[0])
+}
+
+func (s *NativeCheckoutService) syncCommissionWalletOrder(ctx context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, error) {
+	if order.Status == NativeCheckoutStatusCompleted {
+		return order, nil
+	}
+	if order.Status == NativeCheckoutStatusFailed || order.Status == NativeCheckoutStatusManualReview {
+		return order, ErrNativeCheckoutUnavailable
+	}
+	_, err := s.affiliateWallet.Purchase(
+		ctx, order.UserID, order.PayAmountCNYFen*10_000, order.UserID,
+		AffiliateCommissionPurchaseKindMonthlyCard, order.OfferCode, order.OrderNo,
+		fmt.Sprintf("%s paid from affiliate commission wallet", order.OfferCode),
+		"commission-wallet-order:"+order.OrderNo,
+	)
+	if err != nil {
+		_, _ = s.repo.SetOrderState(ctx, order.ID, NativeCheckoutStatusFailed, "commission_wallet_debit_failed", time.Now())
+		return nil, err
+	}
+	if order.Status == NativeCheckoutStatusCreating {
+		order, err = s.repo.SetCommissionWalletOrderReady(ctx, order.ID, order.OrderNo)
+		if err != nil {
+			return nil, err
+		}
+	}
+	mintedCode, err := s.ensureMintedNativeRedeemCode(ctx, order)
+	if err != nil {
+		return s.holdForReview(ctx, order, "redeem_mint_failed")
+	}
+	return s.fulfillNativeCheckoutCode(withAffiliateCommissionPurchaseAuthorization(ctx), order, mintedCode)
+}
+
+func (s *NativeCheckoutService) fulfillNativeCheckoutCode(ctx context.Context, order *NativeCheckoutOrder, codeValue string) (*NativeCheckoutOrder, error) {
+	redeemCode, err := s.redeem.GetByCode(ctx, codeValue)
 	if err != nil {
 		return s.holdForReview(ctx, order, "redeem_code_not_found")
 	}

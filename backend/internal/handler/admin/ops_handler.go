@@ -16,7 +16,8 @@ import (
 )
 
 type OpsHandler struct {
-	opsService *service.OpsService
+	opsService     *service.OpsService
+	monthlyCutover *service.MonthlyCommercialCutoverService
 }
 
 // GetErrorLogByID returns ops error log detail.
@@ -72,6 +73,41 @@ func parseOpsViewParam(c *gin.Context) string {
 
 func NewOpsHandler(opsService *service.OpsService) *OpsHandler {
 	return &OpsHandler{opsService: opsService}
+}
+
+func (h *OpsHandler) SetMonthlyCommercialCutoverService(cutover *service.MonthlyCommercialCutoverService) {
+	h.monthlyCutover = cutover
+}
+
+func (h *OpsHandler) PreviewMonthlyCommercialCutover(c *gin.Context) {
+	if h.monthlyCutover == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Monthly commercial cutover unavailable")
+		return
+	}
+	result, err := h.monthlyCutover.Preview(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *OpsHandler) ExecuteMonthlyCommercialCutover(c *gin.Context) {
+	if h.monthlyCutover == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Monthly commercial cutover unavailable")
+		return
+	}
+	subject, ok := middleware.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	result, err := h.monthlyCutover.Execute(c.Request.Context(), subject.UserID, c.GetHeader("Idempotency-Key"))
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 // GetMonthlyUpstreamProbeSnapshot returns monthly upstream probe status.

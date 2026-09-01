@@ -69,6 +69,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-09-03T12:00:00+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/local/worktrees/fix-session-policy-immediate-failover-20260901",
+      "owner": "codex-session-policy-immediate-failover",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-09-03T12:00:00+08:00"
     }
   ]
 }

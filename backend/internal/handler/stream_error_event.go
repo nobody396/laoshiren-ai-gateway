@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -37,6 +38,7 @@ func writeResponsesFailedSSE(c *gin.Context, errType, message string) bool {
 	rid := synthesizeResponseID(c)
 	model := requestModel(c)
 	code := mapResponsesErrorCode(errType)
+	message = service.ClientMessageWithRequestID(c, message)
 
 	var b strings.Builder
 	b.Grow(256 + len(message) + len(model) + len(requestID))

@@ -6584,7 +6584,7 @@ func buildOpenAIFastPolicyBlockedWSEvent(err *OpenAIFastBlockedError, requestID 
 	errorObj := map[string]any{
 		"type":    "invalid_request_error",
 		"code":    "policy_violation",
-		"message": err.Message,
+		"message": clientMessageWithRequestID(err.Message, requestID),
 	}
 	if requestID = strings.TrimSpace(requestID); requestID != "" {
 		errorObj["request_id"] = requestID

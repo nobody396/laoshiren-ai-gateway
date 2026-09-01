@@ -117,7 +117,8 @@ func TestOpenAIHandleStreamingAwareError_JSONEscaping(t *testing.T) {
 			errorObj, ok := parsed["error"].(map[string]any)
 			require.True(t, ok, "应包含 error 对象")
 			assert.Equal(t, tt.errType, errorObj["type"])
-			assert.Equal(t, tt.message, errorObj["message"])
+			assert.Contains(t, errorObj["message"], tt.message)
+			assert.Contains(t, errorObj["message"], "Request ID: req-openai-stream")
 			assert.Equal(t, "req-openai-stream", errorObj["request_id"])
 		})
 	}

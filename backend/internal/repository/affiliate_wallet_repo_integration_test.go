@@ -346,6 +346,139 @@ func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCred
 	require.Contains(t, notices[0].Message, "¥45.00")
 }
 
+func TestAffiliateWalletRepository_PlatformPurchaseRefundCreditsWalletAndNotifiesExactlyOnce(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateWalletRepository(integrationDB)
+	walletService := service.NewAffiliateWalletService(repo)
+	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "wallet-purchase-refund-agent")
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, entry_type, amount_micros,
+			posting_status, source_type, source_id,
+			idempotency_key, occurred_at
+		) VALUES ($1,'earned',300000000,'posted','integration',1,$2,NOW())
+	`, agent.ID, fmt.Sprintf("wallet-purchase-refund-earned:%d", agent.ID))
+	require.NoError(t, err)
+	purchase, err := walletService.Purchase(
+		ctx,
+		agent.ID,
+		255_000_000,
+		service.AffiliateCommissionMachineOperatorID,
+		service.AffiliateCommissionPurchaseKindMonthlyCard,
+		"plus",
+		"monthly-new-cycle-integration-plus-refund",
+		"Plus monthly card paid from affiliate commission",
+		"affiliate-purchase-integration-plus-refund",
+	)
+	require.NoError(t, err)
+
+	refund, err := walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		38_250_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"Apply the partner wallet rate to the original purchase price",
+		"affiliate-purchase-rate-refund-integration-plus",
+	)
+	require.NoError(t, err)
+	require.Equal(t, purchase.ID, refund.PurchaseEntryID)
+	require.Equal(t, int64(255_000_000), refund.OriginalAmountMicros)
+	require.Equal(t, int64(216_750_000), refund.PayableAmountMicros)
+	require.Equal(t, int64(38_250_000), refund.RefundAmountMicros)
+	require.Equal(t, int64(83_250_000), refund.RemainingCashMicros)
+	require.Equal(t, int32(8500), refund.RateBPS)
+	require.NotZero(t, refund.NotificationID)
+	require.Equal(t, fmt.Sprintf("platform-purchase-refund:%d:8500", purchase.ID), refund.NotificationDedupeKey)
+
+	replayed, err := walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		38_250_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"Apply the partner wallet rate to the original purchase price",
+		"affiliate-purchase-rate-refund-integration-plus",
+	)
+	require.NoError(t, err)
+	require.Equal(t, refund.ID, replayed.ID)
+	require.Equal(t, refund.NotificationID, replayed.NotificationID)
+
+	sameRateDifferentRetryKey, err := walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		38_250_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"retry",
+		"affiliate-purchase-rate-refund-integration-plus-retry",
+	)
+	require.NoError(t, err)
+	require.Equal(t, refund.ID, sameRateDifferentRetryKey.ID)
+
+	_, err = walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		850_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"wrong expected refund",
+		"affiliate-purchase-rate-refund-integration-plus-wrong",
+	)
+	require.ErrorIs(t, err, service.ErrAffiliatePurchaseRefundConflict)
+
+	wallet, err := walletService.GetWallet(ctx, agent.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(83_250_000), wallet.AvailableCashMicros)
+	require.Equal(t, int64(300_000_000), wallet.LifetimeEarnedMicros)
+
+	var entryType, sourceType string
+	var amountMicros, relatedEntryID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT entry_type,source_type,amount_micros,related_entry_id
+		FROM agent_cash_commission_entries WHERE id=$1
+	`, refund.ID).Scan(&entryType, &sourceType, &amountMicros, &relatedEntryID))
+	require.Equal(t, "platform_purchase_refund", entryType)
+	require.Equal(t, "platform_purchase_refund", sourceType)
+	require.Equal(t, int64(38_250_000), amountMicros)
+	require.Equal(t, purchase.ID, relatedEntryID)
+
+	var notificationCount int
+	var notificationUserID int64
+	var notificationType, title, body, actionURL string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*),MIN(user_id),MIN(type),MIN(title),MIN(body),MIN(action_url)
+		FROM user_notifications WHERE dedupe_key=$1
+	`, refund.NotificationDedupeKey).Scan(
+		&notificationCount,
+		&notificationUserID,
+		&notificationType,
+		&title,
+		&body,
+		&actionURL,
+	))
+	require.Equal(t, 1, notificationCount)
+	require.Equal(t, agent.ID, notificationUserID)
+	require.Equal(t, "affiliate_wallet_refund", notificationType)
+	require.Equal(t, "Plus 月卡合伙人优惠差额已退回", title)
+	require.Contains(t, body, "成交原价为 ¥255.00")
+	require.Contains(t, body, "85% 结算规则")
+	require.Contains(t, body, "实际应付 ¥216.75")
+	require.Contains(t, body, "差额 ¥38.25 已退回")
+	require.Contains(t, body, "退款后佣金钱包余额为 ¥83.25")
+	require.Contains(t, body, "额度升级为免费升级")
+	require.Equal(t, "/affiliate", actionURL)
+}
+
 func TestAffiliateWalletRepository_BalancePurchaseUsesConfiguredRateAndCreditsExactlyOnce(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

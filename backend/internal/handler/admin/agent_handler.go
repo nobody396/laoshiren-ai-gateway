@@ -117,6 +117,13 @@ type purchaseWithAffiliateCommissionRequest struct {
 	Note              string `json:"note"`
 }
 
+type refundAffiliateCommissionPurchaseRequest struct {
+	RateBPS                      int32  `json:"rate_bps" binding:"required,gt=0,lt=10000"`
+	ExpectedOriginalAmountMicros int64  `json:"expected_original_amount_micros" binding:"required,gt=0"`
+	ExpectedRefundAmountMicros   int64  `json:"expected_refund_amount_micros" binding:"required,gt=0"`
+	Note                         string `json:"note"`
+}
+
 type reviewAffiliateApplicationRequest struct {
 	Approve bool   `json:"approve"`
 	Note    string `json:"note"`
@@ -787,6 +794,44 @@ func (h *AgentHandler) PurchaseWithAffiliateCommission(c *gin.Context) {
 		req.PurchaseKind,
 		req.ProductCode,
 		req.ExternalReference,
+		req.Note,
+		c.GetHeader("Idempotency-Key"),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Created(c, item)
+}
+
+func (h *AgentHandler) RefundAffiliateCommissionPurchase(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	purchaseEntryID, err := strconv.ParseInt(c.Param("purchase_id"), 10, 64)
+	if err != nil || purchaseEntryID <= 0 {
+		response.BadRequest(c, "Invalid purchase ID")
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req refundAffiliateCommissionPurchaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.RefundPurchase(
+		c.Request.Context(),
+		agentID,
+		purchaseEntryID,
+		req.ExpectedOriginalAmountMicros,
+		req.ExpectedRefundAmountMicros,
+		subject.UserID,
+		req.RateBPS,
 		req.Note,
 		c.GetHeader("Idempotency-Key"),
 	)

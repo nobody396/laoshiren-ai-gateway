@@ -98,6 +98,60 @@ func TestSummarizeOpsAlertDiagnosisAlignsWithSLAMetricAndExplainsCompensation(t 
 	require.Contains(t, diagnosis.CompensationAssessment, "未达到 3 次门槛")
 }
 
+func TestSummarizeOpsAlertDiagnosisIncludesCallerKeyAndRequestID(t *testing.T) {
+	now := time.Date(2026, 9, 1, 2, 34, 45, 0, time.UTC)
+	userID := int64(2)
+	keyID := int64(128)
+	groupID := int64(6)
+	diagnosis := summarizeOpsAlertDiagnosis("error_rate", []*OpsErrorLog{
+		{
+			ID:               901,
+			CreatedAt:        now,
+			Owner:            "platform",
+			Source:           "gateway",
+			StatusCode:       403,
+			ClientStatusCode: 403,
+			Message:          "This group does not allow /v1/messages dispatch",
+			UserID:           &userID,
+			UserEmail:        "231798222@qq.com",
+			APIKeyID:         &keyID,
+			APIKeyName:       "一键安装 · Codex\nspoofed line",
+			IsInternal:       true,
+			GroupID:          &groupID,
+			GroupName:        "GPT 标准线路",
+			RequestPath:      "/v1/messages",
+			RequestID:        "21134447-ee43-4362-bb7a-96d7a60cc9f2",
+		},
+	}, nil)
+
+	require.NotNil(t, diagnosis)
+	require.Contains(t, diagnosis.RootCause, "分组不允许 /v1/messages")
+	require.Len(t, diagnosis.CallerEvidence, 1)
+	attribution := diagnosis.CallerEvidence[0]
+	require.Contains(t, attribution, "内部测试｜用户 #2 231798222@qq.com｜Key #128「一键安装 · Codex spoofed line」")
+	require.Contains(t, attribution, "报错时间=2026-09-01 10:34:45 CST")
+	require.Contains(t, attribution, "分组=GPT 标准线路")
+	require.Contains(t, attribution, "接口=/v1/messages")
+	require.Contains(t, attribution, "上游账号=未进入调度")
+	require.Contains(t, attribution, "状态=403")
+	require.Contains(t, attribution, "原因=分组不允许 /v1/messages 协议")
+	require.Contains(t, attribution, "Request ID=21134447-ee43-4362-bb7a-96d7a60cc9f2")
+	require.NotContains(t, attribution, "\nspoofed")
+}
+
+func TestOpsAlertCallerEvidenceDeduplicatesAttemptsAndCapsOutput(t *testing.T) {
+	now := time.Date(2026, 9, 1, 2, 34, 45, 0, time.UTC)
+	logs := make([]*OpsErrorLog, 0, 5)
+	for i, requestID := range []string{"req-1", "req-1", "req-2", "req-3", "req-4"} {
+		logs = append(logs, &OpsErrorLog{ID: int64(i + 1), CreatedAt: now.Add(time.Duration(i) * time.Second), RequestID: requestID})
+	}
+
+	evidence := buildOpsAlertCallerEvidence(logs)
+
+	require.Len(t, evidence, opsAlertDiagnosticMaxEvidence)
+	require.Equal(t, 4, countDistinctOpsAlertRequests(logs))
+}
+
 func TestOpsAlertCompensationAssessmentMarksQualifiedUserAsCandidate(t *testing.T) {
 	userID := int64(99)
 	logs := make([]*OpsErrorLog, 0, 3)

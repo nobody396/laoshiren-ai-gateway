@@ -772,8 +772,9 @@ func (s *OpsAlertEvaluatorService) maybeSendAlertWebhooks(ctx context.Context, r
 		return false
 	}
 	diagnosis := s.buildOpsAlertDiagnosis(ctx, rule, event)
-	text := buildOpsAlertWebhookTextWithDiagnosis(rule, event, diagnosis)
-	if strings.TrimSpace(text) == "" {
+	feishuText := buildOpsAlertWebhookTextWithDiagnosis(rule, event, diagnosis)
+	telegramText := buildOpsAlertWebhookTextWithDiagnosis(rule, event, opsAlertDiagnosisWithoutCallerEvidence(diagnosis))
+	if strings.TrimSpace(feishuText) == "" && strings.TrimSpace(telegramText) == "" {
 		return false
 	}
 
@@ -787,7 +788,7 @@ func (s *OpsAlertEvaluatorService) maybeSendAlertWebhooks(ctx context.Context, r
 		}
 		s.feishuLimiter.SetLimit(cfg.Feishu.RateLimitPerHour)
 		if s.feishuLimiter.Allow(now) {
-			if err := sendOpsFeishuText(ctx, opsNotificationHTTPClient, cfg.Feishu, text); err != nil {
+			if err := sendOpsFeishuText(ctx, opsNotificationHTTPClient, cfg.Feishu, feishuText); err != nil {
 				logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] send feishu notification failed (event=%d): %v", event.ID, err)
 			} else {
 				anySent = true
@@ -801,7 +802,7 @@ func (s *OpsAlertEvaluatorService) maybeSendAlertWebhooks(ctx context.Context, r
 		}
 		s.telegramLimiter.SetLimit(cfg.Telegram.RateLimitPerHour)
 		if s.telegramLimiter.Allow(now) {
-			if err := sendOpsTelegramText(ctx, opsNotificationHTTPClient, cfg.Telegram, text); err != nil {
+			if err := sendOpsTelegramText(ctx, opsNotificationHTTPClient, cfg.Telegram, telegramText); err != nil {
 				logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] send telegram notification failed (event=%d): %v", event.ID, err)
 			} else {
 				anySent = true
@@ -810,6 +811,16 @@ func (s *OpsAlertEvaluatorService) maybeSendAlertWebhooks(ctx context.Context, r
 	}
 
 	return anySent
+}
+
+func opsAlertDiagnosisWithoutCallerEvidence(diagnosis *OpsAlertDiagnosis) *OpsAlertDiagnosis {
+	if diagnosis == nil {
+		return nil
+	}
+	redacted := *diagnosis
+	redacted.CallerEvidence = nil
+	redacted.CallerEvidenceOmitted = 0
+	return &redacted
 }
 
 func buildOpsAlertEmailBody(rule *OpsAlertRule, event *OpsAlertEvent) string {

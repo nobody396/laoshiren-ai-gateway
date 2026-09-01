@@ -2363,6 +2363,11 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		if len(groupIDs) == 0 {
 			return nil, errors.New("group_id or group_ids is required for subscription type")
 		}
+		completed, _, completeErr := completeCurrentMonthlyCardGroupIDs(groupIDs)
+		if completeErr != nil {
+			return nil, completeErr
+		}
+		groupIDs = completed
 		groups := make([]Group, 0, len(groupIDs))
 		for _, groupID := range groupIDs {
 			// 验证分组存在且为订阅类型

@@ -348,6 +348,31 @@ func TestNativeCheckoutCustomerStatusReadNeverPollsProvider(t *testing.T) {
 	require.Zero(t, provider.orderInfoCalls, "a browser status read must not query LDXP")
 }
 
+func TestValidateNativeRedeemCodeAcceptsAutoCompletedCurrentMonthlyBundle(t *testing.T) {
+	offer := testNativeCheckoutOffer()
+	offer.Code = "plus"
+	offer.ProductKind = RedeemTypeSubscription
+	offer.RedeemType = RedeemTypeSubscription
+	offer.RedeemValue = 299
+	offer.RedeemPurpose = RedeemCodePurposeSaleRecharge
+	offer.RedeemSalesStatus = RedeemCodeSalesStatusSold
+	offer.RedeemValidityDays = 31
+	offer.RedeemGroupIDs = []int64{40, 41}
+	order := testNativeCheckoutOrder(offer)
+	code := &RedeemCode{
+		Type: RedeemTypeSubscription, Value: 299, Purpose: RedeemCodePurposeSaleRecharge,
+		SalesStatus: RedeemCodeSalesStatusSold, ValidityDays: 31,
+		GroupIDs: []int64{40, 41, 48}, Status: StatusUsed,
+	}
+	require.NoError(t, validateNativeRedeemCode(order, code))
+
+	order.RedeemGroupIDs = []int64{40, 41, 48}
+	code.GroupIDs = nil
+	legacyPrimaryGroupID := int64(40)
+	code.GroupID = &legacyPrimaryGroupID
+	require.NoError(t, validateNativeRedeemCode(order, code))
+}
+
 func TestNativeCheckoutPendingPollingCoolsDownWithOrderAge(t *testing.T) {
 	svc := NewNativeCheckoutService(nil, nil, nil, nil, nativeCheckoutTestContactKey)
 	order := &NativeCheckoutOrder{Status: NativeCheckoutStatusPending, CreatedAt: time.Now().Add(-time.Minute)}

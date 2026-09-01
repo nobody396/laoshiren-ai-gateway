@@ -12,6 +12,20 @@ type currentMonthlyAccountRepoStub struct {
 	accounts map[int64][]Account
 }
 
+type currentMonthlyGroupRepoStub struct {
+	GroupRepository
+	groups map[int64]*Group
+}
+
+func (s *currentMonthlyGroupRepoStub) GetByID(_ context.Context, groupID int64) (*Group, error) {
+	group, ok := s.groups[groupID]
+	if !ok {
+		return nil, ErrGroupNotFound
+	}
+	copy := *group
+	return &copy, nil
+}
+
 func (s *currentMonthlyAccountRepoStub) ListByGroup(_ context.Context, groupID int64) ([]Account, error) {
 	return s.accounts[groupID], nil
 }
@@ -60,6 +74,37 @@ func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.
 
 	require.NoError(t, err)
 	require.True(t, current)
+}
+
+func TestGenerateRedeemCodesAutoCompletesCurrentMonthlyPair(t *testing.T) {
+	settings := DefaultAffiliateProgramSettings()
+	gpt := guardedMonthlyTestGroup(40, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 380)
+	claude := guardedMonthlyTestGroup(41, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 380)
+	grok := guardedMonthlyTestGroup(48, "Grok Plus 月卡组", PlatformGrok, 0.40, 380)
+	redeemRepo := &redeemCreateRepoCapture{}
+	svc := &adminServiceImpl{
+		groupRepo: &currentMonthlyGroupRepoStub{groups: map[int64]*Group{
+			40: &gpt, 41: &claude, 48: &grok,
+		}},
+		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
+			40: {{ID: 1, Status: StatusActive, Schedulable: true}},
+			41: {{ID: 2, Status: StatusActive, Schedulable: true}},
+			48: {{ID: 3, Status: StatusActive, Schedulable: true}},
+		}},
+		redeemCodeRepo:   redeemRepo,
+		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
+	}
+
+	codes, err := svc.GenerateRedeemCodes(context.Background(), &GenerateRedeemCodesInput{
+		Count: 1, Type: RedeemTypeSubscription, Value: 299,
+		GroupIDs: []int64{40, 41}, ValidityDays: 31,
+		Purpose: RedeemCodePurposeInternalTest, SalesStatus: RedeemCodeSalesStatusGifted,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, codes, 1)
+	require.Equal(t, []int64{40, 41, 48}, codes[0].GroupIDs)
+	require.Equal(t, []int64{40, 41, 48}, redeemRepo.created.GroupIDs)
 }
 
 func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {

@@ -949,10 +949,23 @@ func validateNativeRedeemCode(order *NativeCheckoutOrder, code *RedeemCode) erro
 	if order == nil || code == nil {
 		return errors.New("missing redeem code")
 	}
+	orderGroupIDs := order.RedeemGroupIDs
+	codeGroupIDs := subscriptionRedeemGroupIDs(code)
+	if order.RedeemType == RedeemTypeSubscription && code.Type == RedeemTypeSubscription {
+		var err error
+		orderGroupIDs, _, err = completeCurrentMonthlyCardGroupIDs(orderGroupIDs)
+		if err != nil {
+			return errors.New("redeem code entitlement mismatch")
+		}
+		codeGroupIDs, _, err = completeCurrentMonthlyCardGroupIDs(codeGroupIDs)
+		if err != nil {
+			return errors.New("redeem code entitlement mismatch")
+		}
+	}
 	if code.Type != order.RedeemType || !floatNearlyEqual(code.Value, order.RedeemValue) ||
 		!floatNearlyEqual(code.PaidValue, order.RedeemPaidValue) || code.Purpose != order.RedeemPurpose ||
 		code.SalesStatus != order.RedeemSalesStatus || code.ValidityDays != order.RedeemValidityDays ||
-		!sameInt64Set(code.GroupIDs, order.RedeemGroupIDs) {
+		!sameInt64Set(codeGroupIDs, orderGroupIDs) {
 		return errors.New("redeem code entitlement mismatch")
 	}
 	if code.Status != StatusUnused && code.Status != StatusUsed {

@@ -62,6 +62,7 @@ func TestBudgetGuardLowBalanceUserSlotResponseIncludesMessageAndRequestID(t *tes
 	errObj, ok := payload["error"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "rate_limit_error", errObj["type"])
-	require.Equal(t, "账户余额不足 1 元。为避免超额消耗，系统已临时限制为 1 并发，请充值后重试。", errObj["message"])
+	require.Contains(t, errObj["message"], "账户余额不足 1 元。为避免超额消耗，系统已临时限制为 1 并发，请充值后重试。")
+	require.Contains(t, errObj["message"], "Request ID: req-budget-guard-1")
 	require.Equal(t, "req-budget-guard-1", errObj["request_id"])
 }

@@ -10,16 +10,27 @@ import (
 )
 
 const (
-	ClientMessageServiceUnavailable    = "The service is temporarily unavailable. Please try again later."
-	ClientMessageServiceBusy           = "The service is currently busy. Please try again later."
-	ClientMessageRequestFailed         = "The request could not be processed. Please verify the request and try again."
+	ClientMessageServiceUnavailable    = "No healthy service route is currently available. Retry later or switch to another model."
+	ClientMessageServiceBusy           = "No service route currently has available capacity. Retry in about 60 seconds or switch to another model."
+	ClientMessageRequestFailed         = "This request is invalid for the selected model or endpoint. Check the model, endpoint, and request parameters before retrying."
 	ClientMessageRequestBodyTooLarge   = "Request body is too large. Start a new task or remove large attachments before retrying."
 	ClientMessageContextWindowExceeded = "Context window exceeded: this conversation is too long for the model. Retrying the same request will not help; start a new task or remove earlier messages or large attachments."
-	ClientMessageResourceNotFound      = "The requested resource could not be found."
-	ClientMessageRequestTimeout        = "The request timed out. Please try again later."
+	ClientMessageResourceNotFound      = "The requested model or resource is not available for this API key and group. Check /v1/models and your selected group."
+	ClientMessageRequestTimeout        = "The request did not complete before the timeout. Retry later or switch to another model."
+	ClientCodeInvalidRequest           = "invalid_request"
 	ClientCodeRequestBodyTooLarge      = "request_body_too_large"
 	ClientCodeContextWindowExceeded    = "context_length_exceeded"
 	ClientCodeModelNotSupported        = "model_not_supported"
+	ClientCodeAuthenticationFailed     = "authentication_failed"
+	ClientCodePermissionDenied         = "permission_denied"
+	ClientCodeInsufficientBalance      = "insufficient_balance"
+	ClientCodeSubscriptionLimit        = "subscription_limit"
+	ClientCodeRateLimitExceeded        = "rate_limit_exceeded"
+	ClientCodeServiceOverloaded        = "service_overloaded"
+	ClientCodeUpstreamFailure          = "upstream_failure"
+	ClientCodeRequestTimeout           = "request_timeout"
+	ClientCodeResourceNotFound         = "resource_not_found"
+	ClientCodeServiceUnavailable       = "service_unavailable"
 )
 
 // ModelPricingPageURL 用户可查看全部已上架支持模型的公开页面。
@@ -178,10 +189,66 @@ func ClientRequestID(c *gin.Context) string {
 	return ""
 }
 
+// ClientMessageWithRequestID keeps the platform Customer Request ID inside the
+// human-readable message because many SDKs and CLIs discard unknown structured
+// error fields and show only error.message. The structured request_id remains
+// present as well for clients that preserve it.
+func ClientMessageWithRequestID(c *gin.Context, message string) string {
+	return clientMessageWithRequestID(message, ClientRequestID(c))
+}
+
+func clientMessageWithRequestID(message, requestID string) string {
+	message = strings.TrimSpace(message)
+	requestID = strings.TrimSpace(requestID)
+	if requestID == "" {
+		return message
+	}
+	marker := "Request ID: " + requestID
+	if strings.Contains(strings.ToLower(message), strings.ToLower(marker)) {
+		return message
+	}
+	if message == "" {
+		return marker
+	}
+	return message + " [" + marker + "]"
+}
+
+func clientDefaultErrorCode(errType string) string {
+	switch strings.TrimSpace(errType) {
+	case "invalid_request_error":
+		return ClientCodeInvalidRequest
+	case "authentication_error":
+		return ClientCodeAuthenticationFailed
+	case "permission_error", "forbidden_error":
+		return ClientCodePermissionDenied
+	case "billing_error":
+		return ClientCodeInsufficientBalance
+	case "subscription_error":
+		return ClientCodeSubscriptionLimit
+	case "rate_limit_error":
+		return ClientCodeRateLimitExceeded
+	case "overloaded_error":
+		return ClientCodeServiceOverloaded
+	case "timeout_error":
+		return ClientCodeRequestTimeout
+	case "not_found_error":
+		return ClientCodeResourceNotFound
+	case "upstream_error":
+		return ClientCodeUpstreamFailure
+	case "api_error", "server_error":
+		return ClientCodeServiceUnavailable
+	default:
+		return ""
+	}
+}
+
 func ClientErrorObject(c *gin.Context, errType, message string) gin.H {
 	obj := gin.H{
 		"type":    errType,
-		"message": message,
+		"message": ClientMessageWithRequestID(c, message),
+	}
+	if code := clientDefaultErrorCode(errType); code != "" {
+		obj["code"] = code
 	}
 	if requestID := ClientRequestID(c); requestID != "" {
 		obj["request_id"] = requestID
@@ -192,7 +259,7 @@ func ClientErrorObject(c *gin.Context, errType, message string) gin.H {
 func ClientResponsesErrorObject(c *gin.Context, code, message string) gin.H {
 	obj := gin.H{
 		"code":    code,
-		"message": message,
+		"message": ClientMessageWithRequestID(c, message),
 	}
 	if requestID := ClientRequestID(c); requestID != "" {
 		obj["request_id"] = requestID
@@ -225,10 +292,14 @@ func OpenAIResponsesFailedEnvelope(c *gin.Context, responseID, model, code, mess
 }
 
 func ClientErrorEnvelope(c *gin.Context, errType, message string) gin.H {
-	return gin.H{
+	envelope := gin.H{
 		"type":  "error",
 		"error": ClientErrorObject(c, errType, message),
 	}
+	if requestID := ClientRequestID(c); requestID != "" {
+		envelope["request_id"] = requestID
+	}
+	return envelope
 }
 
 func OpenAIClientErrorEnvelope(c *gin.Context, errType, message string) gin.H {
@@ -252,7 +323,7 @@ func OpenAIClientUpstreamErrorEnvelope(c *gin.Context, err ClientUpstreamError) 
 func GoogleClientErrorEnvelope(c *gin.Context, status int, message string) gin.H {
 	errObj := gin.H{
 		"code":    status,
-		"message": message,
+		"message": ClientMessageWithRequestID(c, message),
 		"status":  googleStatusForClient(status),
 	}
 	if requestID := ClientRequestID(c); requestID != "" {

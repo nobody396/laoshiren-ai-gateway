@@ -14,6 +14,27 @@ import (
 
 func TestRedeemCurrentMonthlyPairAutoCompletesAndAssignsThreeHosts(t *testing.T) {
 	ctx := context.Background()
+	var occupiedIDs int
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT count(*) FROM groups WHERE id=ANY(ARRAY[40,41,48]::bigint[])`,
+	).Scan(&occupiedIDs))
+	require.Zero(t, occupiedIDs, "isolated integration catalog must leave production IDs available")
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO groups (
+			id,name,description,rate_multiplier,is_exclusive,status,platform,
+			subscription_type,monthly_limit_usd,default_validity_days,created_at,updated_at
+		) VALUES
+			(40,'integration-plus-gpt','','0.5',TRUE,'active','openai','credit',380,31,NOW(),NOW()),
+			(41,'integration-plus-claude','','2.4',TRUE,'active','anthropic','credit',380,31,NOW(),NOW()),
+			(48,'integration-plus-grok','','0.4',TRUE,'active','grok','credit',380,31,NOW(),NOW());
+		SELECT setval(pg_get_serial_sequence('groups','id'),(SELECT max(id) FROM groups),TRUE);
+	`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(),
+			`DELETE FROM groups WHERE id=ANY(ARRAY[40,41,48]::bigint[])`)
+	})
+
 	client := testEntClient(t)
 	userRepo := newUserRepositoryWithSQL(client, integrationDB)
 	groupRepo := NewGroupRepository(client, integrationDB)
@@ -41,6 +62,12 @@ func TestRedeemCurrentMonthlyPairAutoCompletesAndAssignsThreeHosts(t *testing.T)
 		Purpose:      service.RedeemCodePurposeInternalTest,
 		SalesStatus:  service.RedeemCodeSalesStatusGifted,
 	}
+	t.Cleanup(func() {
+		cleanupCtx := context.Background()
+		_, _ = integrationDB.ExecContext(cleanupCtx, `DELETE FROM user_subscriptions WHERE user_id=$1`, customer.ID)
+		_, _ = integrationDB.ExecContext(cleanupCtx, `DELETE FROM redeem_codes WHERE code=$1`, code.Code)
+		_, _ = integrationDB.ExecContext(cleanupCtx, `DELETE FROM users WHERE id=$1`, customer.ID)
+	})
 	// Direct repository insert simulates inventory created before the current
 	// three-host contract and proves the redemption fallback, not just creation.
 	require.NoError(t, redeemRepo.Create(ctx, code))

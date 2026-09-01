@@ -31,7 +31,7 @@ func TestRedeemCurrentMonthlyPairAutoCompletesAndAssignsThreeHosts(t *testing.T)
 	})
 	primaryGroupID := int64(40)
 	code := &service.RedeemCode{
-		Code:         fmt.Sprintf("MONTHLY-AUTOCOMPLETE-%d", time.Now().UnixNano()),
+		Code:         fmt.Sprintf("%032x", time.Now().UnixNano()),
 		Type:         service.RedeemTypeSubscription,
 		Value:        299,
 		Status:       service.StatusUnused,

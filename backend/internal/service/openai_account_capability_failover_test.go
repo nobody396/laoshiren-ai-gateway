@@ -141,3 +141,46 @@ func TestOpenAIGatewayServiceCapability400ReturnsFailoverWithoutWritingClientErr
 	require.False(t, failoverErr.RetryableOnSameAccount)
 	require.False(t, c.Writer.Written(), "capability rejection must return to the handler for next-account failover")
 }
+
+func TestOpenAIGatewayServiceSessionPolicyBlockSkipsSameAccountRetry(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(nil))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	upstream := &httpUpstreamRecorder{
+		resp: &http.Response{
+			StatusCode: http.StatusForbidden,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body: io.NopCloser(strings.NewReader(
+				`{"error":{"code":"session_blocked_by_cyber_policy","message":"This session is blocked by cyber-security policy, please start a new session","type":"permission_error"}}`,
+			)),
+		},
+	}
+	svc := &OpenAIGatewayService{
+		cfg:          &config.Config{Gateway: config.GatewayConfig{ForceCodexCLI: false}},
+		httpUpstream: upstream,
+	}
+	account := &Account{
+		ID:             80,
+		Name:           "pool-mode-openai-upstream",
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Concurrency:    1,
+		Credentials:    map[string]any{"api_key": "sk-test", "pool_mode": true},
+		Status:         StatusActive,
+		Schedulable:    true,
+		RateMultiplier: f64p(1),
+	}
+
+	_, err := svc.Forward(context.Background(), c, account, []byte(`{"model":"gpt-5.6-terra","stream":false,"input":"hello"}`))
+	require.Error(t, err)
+	var failoverErr *UpstreamFailoverError
+	require.True(t, errors.As(err, &failoverErr))
+	require.Equal(t, http.StatusForbidden, failoverErr.StatusCode)
+	require.False(t, failoverErr.RetryableOnSameAccount, "session policy blocks must switch suppliers immediately")
+	require.False(t, c.Writer.Written(), "session policy block must return to the handler for next-account failover")
+}

@@ -19,6 +19,8 @@ type OpsAlertDiagnosis struct {
 	RootCause              string
 	Impact                 string
 	Evidence               []string
+	CallerEvidence         []string
+	CallerEvidenceOmitted  int
 	SuggestedAction        string
 	SampleWindowText       string
 	CompensationAssessment string
@@ -207,7 +209,12 @@ func summarizeOpsAlertDiagnosis(metricType string, logs []*OpsErrorLog, overview
 	}
 	diagnosis := &OpsAlertDiagnosis{
 		Impact:                 opsAlertImpactText(overview, included, excludedProbe, excludedClient, excludedBusiness, excludedCountTokens, excludedRecovered),
+		CallerEvidence:         buildOpsAlertCallerEvidence(included),
 		CompensationAssessment: opsAlertCompensationAssessment(logs),
+	}
+	diagnosis.CallerEvidenceOmitted = countDistinctOpsAlertRequests(included) - len(diagnosis.CallerEvidence)
+	if diagnosis.CallerEvidenceOmitted < 0 {
+		diagnosis.CallerEvidenceOmitted = 0
 	}
 	if len(buckets) == 0 {
 		diagnosis.RootCause = "未找到与告警指标同口径的真实失败；监控探针、客户端错误和已恢复的上游重试均已排除"
@@ -240,6 +247,144 @@ func summarizeOpsAlertDiagnosis(metricType string, logs []*OpsErrorLog, overview
 		diagnosis.Evidence = append(diagnosis.Evidence, opsAlertEvidenceText(bucket))
 	}
 	return diagnosis
+}
+
+func buildOpsAlertCallerEvidence(logs []*OpsErrorLog) []string {
+	ordered := append([]*OpsErrorLog(nil), logs...)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		if ordered[i] == nil {
+			return false
+		}
+		if ordered[j] == nil {
+			return true
+		}
+		return ordered[i].CreatedAt.After(ordered[j].CreatedAt)
+	})
+
+	out := make([]string, 0, minInt(len(ordered), opsAlertDiagnosticMaxEvidence))
+	seen := map[string]struct{}{}
+	for _, item := range ordered {
+		if item == nil {
+			continue
+		}
+		key := opsAlertRequestEvidenceKey(item)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, opsAlertCallerEvidenceText(item))
+		if len(out) >= opsAlertDiagnosticMaxEvidence {
+			break
+		}
+	}
+	return out
+}
+
+func countDistinctOpsAlertRequests(logs []*OpsErrorLog) int {
+	seen := map[string]struct{}{}
+	for _, item := range logs {
+		if item == nil {
+			continue
+		}
+		seen[opsAlertRequestEvidenceKey(item)] = struct{}{}
+	}
+	return len(seen)
+}
+
+func opsAlertRequestEvidenceKey(item *OpsErrorLog) string {
+	if item == nil {
+		return "nil"
+	}
+	if value := strings.TrimSpace(item.RequestID); value != "" {
+		return "request:" + value
+	}
+	if value := strings.TrimSpace(item.ClientRequestID); value != "" {
+		return "client-request:" + value
+	}
+	return fmt.Sprintf("error:%d", item.ID)
+}
+
+func opsAlertCallerEvidenceText(item *OpsErrorLog) string {
+	if item == nil {
+		return ""
+	}
+	callerType := "真实客户"
+	if item.IsInternal {
+		callerType = "内部测试"
+	}
+	identity := []string{callerType}
+	if item.UserID != nil && *item.UserID > 0 {
+		user := fmt.Sprintf("用户 #%d", *item.UserID)
+		if email := compactOpsAlertField(item.UserEmail, 96); email != "" {
+			user += " " + email
+		}
+		identity = append(identity, user)
+	} else if email := compactOpsAlertField(item.UserEmail, 96); email != "" {
+		identity = append(identity, "用户 "+email)
+	} else {
+		identity[0] = "调用人未识别"
+	}
+	if item.APIKeyID != nil && *item.APIKeyID > 0 {
+		key := fmt.Sprintf("Key #%d", *item.APIKeyID)
+		if name := compactOpsAlertField(item.APIKeyName, 80); name != "" {
+			key += "「" + name + "」"
+		}
+		identity = append(identity, key)
+	}
+
+	detail := []string{"报错时间=" + formatOpsAlertLocalTime(item.CreatedAt)}
+	if group := compactOpsAlertField(item.GroupName, 80); group != "" {
+		detail = append(detail, "分组="+group)
+	} else if item.GroupID != nil && *item.GroupID > 0 {
+		detail = append(detail, fmt.Sprintf("分组=#%d", *item.GroupID))
+	}
+	if path := compactOpsAlertField(item.RequestPath, 96); path != "" {
+		detail = append(detail, "接口="+path)
+	}
+	if account := compactOpsAlertField(item.AccountName, 80); account != "" {
+		detail = append(detail, "上游账号="+account)
+	} else {
+		detail = append(detail, "上游账号=未进入调度")
+	}
+	if model := compactOpsAlertField(firstNonEmptyOpsAlert(item.Model, item.RequestedModel), 80); model != "" {
+		detail = append(detail, "模型="+model)
+	}
+	if item.StatusCode > 0 {
+		detail = append(detail, fmt.Sprintf("状态=%d", item.StatusCode))
+	}
+	cause, _ := classifyOpsAlertErrorCause(item)
+	if cause = compactOpsAlertField(cause, 120); cause != "" {
+		detail = append(detail, "原因="+cause)
+	}
+	requestID := strings.TrimSpace(item.RequestID)
+	if requestID == "" {
+		requestID = strings.TrimSpace(item.ClientRequestID)
+	}
+	if requestID != "" {
+		detail = append(detail, "Request ID="+compactOpsAlertField(requestID, 128))
+	}
+	return strings.Join(identity, "｜") + "\n  " + strings.Join(detail, "｜")
+}
+
+func compactOpsAlertField(value string, maxRunes int) string {
+	value = strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
+	if value == "" || maxRunes <= 0 {
+		return value
+	}
+	runes := []rune(value)
+	if len(runes) <= maxRunes {
+		return value
+	}
+	return string(runes[:maxRunes]) + "…"
+}
+
+func firstNonEmptyOpsAlert(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func opsAlertLogExclusion(item *OpsErrorLog, metricType string) string {
@@ -398,6 +543,9 @@ func classifyOpsAlertErrorCause(item *OpsErrorLog) (cause string, action string)
 	status := item.StatusCode
 
 	switch {
+	case strings.Contains(message, "does not allow /v1/messages dispatch"):
+		return "分组不允许 /v1/messages 协议，请求在进入上游前被网关拒绝",
+			"如果这是内部测试，改用该分组支持的 OpenAI 接口；如果确实要支持 Messages，再单独评估并配置协议能力。"
 	case strings.Contains(message, "no available accounts"):
 		return "二级上游账号池无可用账号",
 			"先暂停或降权对应二级中转账号；到对方平台补充/恢复它后面的官方账号池；恢复后再重新启用。"

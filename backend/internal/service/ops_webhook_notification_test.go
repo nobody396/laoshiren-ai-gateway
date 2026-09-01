@@ -288,6 +288,10 @@ func TestBuildOpsAlertWebhookTextIncludesDynamicDiagnosis(t *testing.T) {
 		RootCause:        "账号/上游「KNA. 成本1.05r/1usd」：二级上游账号池无可用账号",
 		Impact:           "SLA 样本 15 次：成功 3 / 真实失败 12；影响 2 个用户 / 1 个分组；已排除噪声：探针 1",
 		SampleWindowText: "5m",
+		CallerEvidence: []string{
+			"真实客户｜用户 #158 customer@example.com｜Key #22「Claude Code」\n  报错时间=2026-05-20 20:33:58 CST｜上游账号=KNA. 成本1.05r/1usd｜状态=503｜Request ID=req-visible-1",
+		},
+		CallerEvidenceOmitted: 2,
 		Evidence: []string{
 			"10条，二级上游账号池无可用账号，账号/上游=KNA. 成本1.05r/1usd，状态=503，责任=上游/供应商",
 			"2条，请求或流式连接中途取消，账号/上游=dragoncode，状态=499，责任=客户端",
@@ -298,11 +302,33 @@ func TestBuildOpsAlertWebhookTextIncludesDynamicDiagnosis(t *testing.T) {
 
 	require.Contains(t, text, "根因：账号/上游「KNA. 成本1.05r/1usd」：二级上游账号池无可用账号")
 	require.Contains(t, text, "影响：SLA 样本 15 次：成功 3 / 真实失败 12")
+	require.Contains(t, text, "请求定位：")
+	require.Contains(t, text, "- 真实客户｜用户 #158 customer@example.com｜Key #22「Claude Code」")
+	require.Contains(t, text, "Request ID=req-visible-1")
+	require.Contains(t, text, "另有 2 个请求未展开")
 	require.Contains(t, text, "证据：")
 	require.Contains(t, text, "- 10条，二级上游账号池无可用账号")
 	require.Contains(t, text, "赔付预判：暂不生成：符合规则 2 次")
 	require.Contains(t, text, "处理：先暂停或降权对应二级中转账号")
 	require.Contains(t, text, "窗口：5m")
+}
+
+func TestOpsAlertDiagnosisWithoutCallerEvidenceKeepsTelegramFreeOfCustomerPII(t *testing.T) {
+	diagnosis := &OpsAlertDiagnosis{
+		RootCause:             "上游错误",
+		CallerEvidence:        []string{"真实客户｜用户 #158 customer@example.com｜Key #22「Claude Code」"},
+		CallerEvidenceOmitted: 2,
+		Evidence:              []string{"1条，上游错误，状态=503"},
+	}
+
+	redacted := opsAlertDiagnosisWithoutCallerEvidence(diagnosis)
+
+	require.NotSame(t, diagnosis, redacted)
+	require.Empty(t, redacted.CallerEvidence)
+	require.Zero(t, redacted.CallerEvidenceOmitted)
+	require.Equal(t, diagnosis.RootCause, redacted.RootCause)
+	require.Equal(t, diagnosis.Evidence, redacted.Evidence)
+	require.NotEmpty(t, diagnosis.CallerEvidence, "redaction must not mutate the Feishu diagnosis")
 }
 
 func TestBuildOpsAlertWebhookTextRendersRecoveryClearly(t *testing.T) {

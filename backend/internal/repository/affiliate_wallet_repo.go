@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
@@ -841,6 +842,174 @@ func (r *affiliateWalletRepository) PurchaseWithAffiliateCommission(
 	return item, nil
 }
 
+func (r *affiliateWalletRepository) RefundAffiliateCommissionPurchase(
+	ctx context.Context,
+	agentID, purchaseEntryID, expectedOriginalAmountMicros, expectedRefundAmountMicros, operatorID int64,
+	rateBPS int32,
+	note, idempotencyKey string,
+) (_ *service.AffiliateCommissionPurchaseRefund, err error) {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := lockAffiliateAgent(ctx, tx, agentID); err != nil {
+		return nil, err
+	}
+
+	if existing, lookupErr := getAffiliatePurchaseRefundByIdempotency(ctx, tx, agentID, idempotencyKey); lookupErr == nil {
+		if !sameAffiliatePurchaseRefund(existing, purchaseEntryID, expectedOriginalAmountMicros, expectedRefundAmountMicros, rateBPS) {
+			return nil, service.ErrAffiliatePurchaseRefundConflict
+		}
+		return existing, tx.Commit()
+	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+		return nil, lookupErr
+	}
+	if existing, lookupErr := getAffiliatePurchaseRefundByRate(ctx, tx, agentID, purchaseEntryID, rateBPS); lookupErr == nil {
+		if !sameAffiliatePurchaseRefund(existing, purchaseEntryID, expectedOriginalAmountMicros, expectedRefundAmountMicros, rateBPS) {
+			return nil, service.ErrAffiliatePurchaseRefundConflict
+		}
+		return existing, tx.Commit()
+	} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+		return nil, lookupErr
+	}
+
+	var originalAmountMicros int64
+	var purchaseKind, productCode, externalReference string
+	var purchasedAt time.Time
+	err = tx.QueryRowContext(ctx, `
+		SELECT
+			-(amount_micros),
+			metadata ->> 'purchase_kind',
+			metadata ->> 'product_code',
+			metadata ->> 'external_reference',
+			occurred_at
+		FROM agent_cash_commission_entries
+		WHERE id=$1 AND agent_id=$2 AND entry_type='platform_purchase'
+		  AND posting_status='posted'
+		FOR UPDATE
+	`, purchaseEntryID, agentID).Scan(
+		&originalAmountMicros,
+		&purchaseKind,
+		&productCode,
+		&externalReference,
+		&purchasedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrAffiliatePurchaseNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if purchaseKind != service.AffiliateCommissionPurchaseKindMonthlyCard ||
+		originalAmountMicros != expectedOriginalAmountMicros ||
+		originalAmountMicros%10_000 != 0 {
+		return nil, service.ErrAffiliatePurchaseRefundConflict
+	}
+	originalFen := originalAmountMicros / 10_000
+	payableFen := (originalFen*int64(rateBPS) + 9_999) / 10_000
+	payableAmountMicros := payableFen * 10_000
+	refundAmountMicros := originalAmountMicros - payableAmountMicros
+	if refundAmountMicros <= 0 || refundAmountMicros != expectedRefundAmountMicros {
+		return nil, service.ErrAffiliatePurchaseRefundConflict
+	}
+	var priorRefundMicros int64
+	if err := tx.QueryRowContext(ctx, `
+		SELECT COALESCE(SUM(amount_micros),0)::bigint
+		FROM agent_cash_commission_entries
+		WHERE agent_id=$1 AND related_entry_id=$2
+		  AND entry_type='platform_purchase_refund' AND posting_status='posted'
+	`, agentID, purchaseEntryID).Scan(&priorRefundMicros); err != nil {
+		return nil, err
+	}
+	if priorRefundMicros != 0 {
+		return nil, service.ErrAffiliatePurchaseRefundConflict
+	}
+	availableMicros, err := lockAffiliateAvailableCash(ctx, tx, agentID)
+	if err != nil {
+		return nil, err
+	}
+	remainingMicros := availableMicros + refundAmountMicros
+	notificationDedupe := fmt.Sprintf("platform-purchase-refund:%d:%d", purchaseEntryID, rateBPS)
+
+	var refundID int64
+	err = tx.QueryRowContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, entry_type, amount_micros,
+			posting_status, source_type, source_id,
+			idempotency_key, related_entry_id, metadata, occurred_at
+		) VALUES (
+			$1, 'platform_purchase_refund', $2,
+			'posted', 'platform_purchase_refund', $3,
+			$4, $3, jsonb_build_object(
+				'asset_symbol','¥',
+				'purchase_kind',$5::text,
+				'product_code',$6::text,
+				'external_reference',$7::text,
+				'original_amount_micros',$8::bigint,
+				'rate_bps',$9::integer,
+				'payable_amount_micros',$10::bigint,
+				'refund_amount_micros',$2::bigint,
+				'note',$11::text,
+				'operator_id',$12::bigint,
+				'remaining_cash_micros',$13::bigint,
+				'notification_dedupe_key',$14::text
+			), NOW()
+		) RETURNING id
+	`, agentID, refundAmountMicros, purchaseEntryID, idempotencyKey,
+		purchaseKind, productCode, externalReference, originalAmountMicros, rateBPS,
+		payableAmountMicros, note, operatorID, remainingMicros, notificationDedupe).Scan(&refundID)
+	if err != nil {
+		if isPostgresUniqueViolation(err) {
+			return nil, service.ErrAffiliatePurchaseRefundConflict
+		}
+		return nil, err
+	}
+
+	beijing := time.FixedZone("Asia/Shanghai", 8*60*60)
+	title := fmt.Sprintf("%s 月卡合伙人优惠差额已退回", affiliateMonthlyProductLabel(productCode))
+	body := fmt.Sprintf(
+		"您好，您于 %s购买的 %s 月卡，成交原价为 %s。按照合伙人佣金钱包 %s 结算规则，实际应付 %s，差额 %s 已退回您的佣金钱包。\n\n退款后佣金钱包余额为 %s。本次 %s 月卡额度升级为免费升级，不会重置已用额度，也不会改变到期时间。感谢您的支持。",
+		purchasedAt.In(beijing).Format("2006 年 1 月 2 日"),
+		affiliateMonthlyProductLabel(productCode),
+		formatAffiliateCashMicros(originalAmountMicros),
+		formatAffiliateRateBPS(rateBPS),
+		formatAffiliateCashMicros(payableAmountMicros),
+		formatAffiliateCashMicros(refundAmountMicros),
+		formatAffiliateCashMicros(remainingMicros),
+		affiliateMonthlyProductLabel(productCode),
+	)
+	var notificationID int64
+	err = tx.QueryRowContext(ctx, `
+		INSERT INTO user_notifications (
+			user_id,type,title,body,action_url,dedupe_key
+		) VALUES ($1,'affiliate_wallet_refund',$2,$3,'/affiliate',$4)
+		ON CONFLICT(dedupe_key) DO NOTHING
+		RETURNING id
+	`, agentID, title, body, notificationDedupe).Scan(&notificationID)
+	if errors.Is(err, sql.ErrNoRows) {
+		err = tx.QueryRowContext(ctx, `
+			SELECT id FROM user_notifications
+			WHERE user_id=$1 AND type='affiliate_wallet_refund' AND title=$2
+			  AND body=$3 AND action_url='/affiliate' AND dedupe_key=$4
+		`, agentID, title, body, notificationDedupe).Scan(&notificationID)
+	}
+	if err != nil {
+		return nil, err
+	}
+	item, err := getAffiliatePurchaseRefundByID(ctx, tx, refundID)
+	if err != nil {
+		return nil, err
+	}
+	if item.NotificationID != notificationID || item.NotificationDedupeKey != notificationDedupe {
+		return nil, fmt.Errorf("affiliate purchase refund notification readback mismatch")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
 func (r *affiliateWalletRepository) PurchaseBalanceWithAffiliateCommission(
 	ctx context.Context,
 	agentID, creditAmountCNYFen int64,
@@ -978,6 +1147,13 @@ func getAffiliateBalancePurchase(
 func formatAffiliateCashMicros(amountMicros int64) string {
 	cents := (amountMicros + 5_000) / 10_000
 	return fmt.Sprintf("¥%d.%02d", cents/100, cents%100)
+}
+
+func formatAffiliateRateBPS(rateBPS int32) string {
+	if rateBPS%100 == 0 {
+		return fmt.Sprintf("%d%%", rateBPS/100)
+	}
+	return fmt.Sprintf("%d.%02d%%", rateBPS/100, rateBPS%100)
 }
 
 func affiliateMonthlyProductLabel(productCode string) string {
@@ -1193,6 +1369,96 @@ func scanAffiliatePurchase(scanner affiliatePurchaseScanner) (*service.Affiliate
 		&out.CreatedAt,
 	)
 	return out, err
+}
+
+func getAffiliatePurchaseRefundByID(
+	ctx context.Context,
+	q affiliateWalletQuerier,
+	refundID int64,
+) (*service.AffiliateCommissionPurchaseRefund, error) {
+	return scanAffiliatePurchaseRefund(q.QueryRowContext(ctx, affiliatePurchaseRefundSelect(`
+		WHERE refund.id=$1
+	`), refundID))
+}
+
+func getAffiliatePurchaseRefundByIdempotency(
+	ctx context.Context,
+	q affiliateWalletQuerier,
+	agentID int64,
+	idempotencyKey string,
+) (*service.AffiliateCommissionPurchaseRefund, error) {
+	return scanAffiliatePurchaseRefund(q.QueryRowContext(ctx, affiliatePurchaseRefundSelect(`
+		WHERE refund.agent_id=$1 AND refund.idempotency_key=$2
+	`), agentID, idempotencyKey))
+}
+
+func getAffiliatePurchaseRefundByRate(
+	ctx context.Context,
+	q affiliateWalletQuerier,
+	agentID, purchaseEntryID int64,
+	rateBPS int32,
+) (*service.AffiliateCommissionPurchaseRefund, error) {
+	return scanAffiliatePurchaseRefund(q.QueryRowContext(ctx, affiliatePurchaseRefundSelect(`
+		WHERE refund.agent_id=$1 AND refund.related_entry_id=$2
+		  AND (refund.metadata->>'rate_bps')::integer=$3
+	`), agentID, purchaseEntryID, rateBPS))
+}
+
+func affiliatePurchaseRefundSelect(suffix string) string {
+	return `
+		SELECT
+			refund.id,
+			refund.agent_id,
+			refund.related_entry_id,
+			(refund.metadata->>'original_amount_micros')::bigint,
+			(refund.metadata->>'rate_bps')::integer,
+			(refund.metadata->>'payable_amount_micros')::bigint,
+			refund.amount_micros,
+			(refund.metadata->>'remaining_cash_micros')::bigint,
+			notification.id,
+			refund.metadata->>'notification_dedupe_key',
+			refund.occurred_at
+		FROM agent_cash_commission_entries refund
+		JOIN user_notifications notification
+		  ON notification.dedupe_key=refund.metadata->>'notification_dedupe_key'
+	` + suffix + `
+		  AND refund.entry_type='platform_purchase_refund'
+		  AND refund.posting_status='posted'
+		LIMIT 1`
+}
+
+type affiliatePurchaseRefundScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanAffiliatePurchaseRefund(scanner affiliatePurchaseRefundScanner) (*service.AffiliateCommissionPurchaseRefund, error) {
+	out := &service.AffiliateCommissionPurchaseRefund{}
+	err := scanner.Scan(
+		&out.ID,
+		&out.AgentID,
+		&out.PurchaseEntryID,
+		&out.OriginalAmountMicros,
+		&out.RateBPS,
+		&out.PayableAmountMicros,
+		&out.RefundAmountMicros,
+		&out.RemainingCashMicros,
+		&out.NotificationID,
+		&out.NotificationDedupeKey,
+		&out.CreatedAt,
+	)
+	return out, err
+}
+
+func sameAffiliatePurchaseRefund(
+	item *service.AffiliateCommissionPurchaseRefund,
+	purchaseEntryID, expectedOriginalAmountMicros, expectedRefundAmountMicros int64,
+	rateBPS int32,
+) bool {
+	return item != nil &&
+		item.PurchaseEntryID == purchaseEntryID &&
+		item.OriginalAmountMicros == expectedOriginalAmountMicros &&
+		item.RefundAmountMicros == expectedRefundAmountMicros &&
+		item.RateBPS == rateBPS
 }
 
 func getAffiliateWithdrawalByID(

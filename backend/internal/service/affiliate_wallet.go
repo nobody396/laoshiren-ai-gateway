@@ -53,6 +53,14 @@ var (
 		"AFFILIATE_PURCHASE_IDEMPOTENCY_CONFLICT",
 		"affiliate commission purchase idempotency key was already used with different purchase details",
 	)
+	ErrAffiliatePurchaseRefundConflict = infraerrors.Conflict(
+		"AFFILIATE_PURCHASE_REFUND_CONFLICT",
+		"affiliate commission purchase refund does not match the original purchase or prior refunds",
+	)
+	ErrAffiliatePurchaseNotFound = infraerrors.NotFound(
+		"AFFILIATE_PURCHASE_NOT_FOUND",
+		"affiliate commission purchase not found",
+	)
 	ErrAffiliateConversionDisabled = infraerrors.Conflict(
 		"AFFILIATE_CONVERSION_DISABLED",
 		"commission conversion is no longer available; use commission-wallet checkout or withdrawal",
@@ -141,6 +149,20 @@ type AffiliateCommissionPurchase struct {
 	CreatedAt           time.Time `json:"created_at"`
 }
 
+type AffiliateCommissionPurchaseRefund struct {
+	ID                    int64     `json:"id"`
+	AgentID               int64     `json:"agent_id"`
+	PurchaseEntryID       int64     `json:"purchase_entry_id"`
+	OriginalAmountMicros  int64     `json:"original_amount_micros"`
+	RateBPS               int32     `json:"rate_bps"`
+	PayableAmountMicros   int64     `json:"payable_amount_micros"`
+	RefundAmountMicros    int64     `json:"refund_amount_micros"`
+	RemainingCashMicros   int64     `json:"remaining_cash_micros"`
+	NotificationID        int64     `json:"notification_id"`
+	NotificationDedupeKey string    `json:"notification_dedupe_key"`
+	CreatedAt             time.Time `json:"created_at"`
+}
+
 type AffiliateAgentNotice struct {
 	ID         int64      `json:"id"`
 	NoticeType string     `json:"notice_type"`
@@ -162,6 +184,7 @@ type AffiliateWalletRepository interface {
 	ListAdminAffiliateWithdrawals(ctx context.Context, status string, limit int) ([]AffiliateWithdrawal, error)
 	ConvertAffiliateCommission(ctx context.Context, agentID, amountMicros int64, idempotencyKey string) (*AffiliateCommissionConversion, error)
 	PurchaseWithAffiliateCommission(ctx context.Context, agentID, amountMicros, operatorID int64, purchaseKind, productCode, externalReference, note, idempotencyKey string) (*AffiliateCommissionPurchase, error)
+	RefundAffiliateCommissionPurchase(ctx context.Context, agentID, purchaseEntryID, expectedOriginalAmountMicros, expectedRefundAmountMicros, operatorID int64, rateBPS int32, note, idempotencyKey string) (*AffiliateCommissionPurchaseRefund, error)
 	PurchaseBalanceWithAffiliateCommission(ctx context.Context, agentID, creditAmountCNYFen int64, idempotencyKey string) (*AffiliateBalancePurchase, error)
 	ListAffiliateAgentNotices(ctx context.Context, agentID int64, limit int) ([]AffiliateAgentNotice, error)
 	MarkAffiliateAgentNoticeRead(ctx context.Context, agentID, noticeID int64) error
@@ -299,6 +322,35 @@ func (s *AffiliateWalletService) Purchase(
 		purchaseKind,
 		productCode,
 		externalReference,
+		note,
+		strings.TrimSpace(idempotencyKey),
+	)
+}
+
+func (s *AffiliateWalletService) RefundPurchase(
+	ctx context.Context,
+	agentID, purchaseEntryID, expectedOriginalAmountMicros, expectedRefundAmountMicros, operatorID int64,
+	rateBPS int32,
+	note, idempotencyKey string,
+) (*AffiliateCommissionPurchaseRefund, error) {
+	if err := validateAffiliateIdempotencyKey(idempotencyKey); err != nil {
+		return nil, err
+	}
+	note = strings.TrimSpace(note)
+	if agentID <= 0 || purchaseEntryID <= 0 || expectedOriginalAmountMicros <= 0 ||
+		expectedRefundAmountMicros <= 0 || rateBPS <= 0 || rateBPS >= 10_000 ||
+		(operatorID < 0 && operatorID != AffiliateCommissionMachineOperatorID) ||
+		len(note) > 500 {
+		return nil, ErrInvalidInput
+	}
+	return s.repo.RefundAffiliateCommissionPurchase(
+		ctx,
+		agentID,
+		purchaseEntryID,
+		expectedOriginalAmountMicros,
+		expectedRefundAmountMicros,
+		operatorID,
+		rateBPS,
 		note,
 		strings.TrimSpace(idempotencyKey),
 	)

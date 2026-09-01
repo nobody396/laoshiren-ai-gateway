@@ -237,7 +237,12 @@ func (s *RedeemService) CreateCode(ctx context.Context, code *RedeemCode) error 
 		if len(groupIDs) == 0 {
 			return errors.New("group_id or group_ids is required for subscription type")
 		}
-		if code.GroupID == nil {
+		completed, currentMonthly, err := completeCurrentMonthlyCardGroupIDs(groupIDs)
+		if err != nil {
+			return err
+		}
+		groupIDs = completed
+		if currentMonthly || code.GroupID == nil {
 			primaryGroupID := groupIDs[0]
 			code.GroupID = &primaryGroupID
 		}
@@ -389,6 +394,11 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	redeemCode, err = s.redeemRepo.GetByID(txCtx, redeemCode.ID)
 	if err != nil {
 		return nil, fmt.Errorf("reload redeemed code: %w", err)
+	}
+	if redeemCode.Type == RedeemTypeSubscription {
+		if _, err := s.completeRedeemedMonthlyCardBundle(txCtx, redeemCode); err != nil {
+			return nil, err
+		}
 	}
 
 	// 执行兑换逻辑（兑换码已被锁定，此时可安全操作）
@@ -606,6 +616,88 @@ func subscriptionRedeemGroupIDs(code *RedeemCode) []int64 {
 		add(*code.GroupID)
 	}
 	return out
+}
+
+type currentMonthlyRedeemBundle struct {
+	plan     string
+	groupIDs []int64
+}
+
+var currentMonthlyRedeemBundles = []currentMonthlyRedeemBundle{
+	{plan: "plus", groupIDs: []int64{40, 41, 48}},
+	{plan: "pro", groupIDs: []int64{42, 43, 49}},
+	{plan: "max", groupIDs: []int64{44, 45, 50}},
+}
+
+// completeCurrentMonthlyCardGroupIDs upgrades any unambiguous current
+// Plus/Pro/Max subset to the complete GPT+Claude+Grok bundle. This is used at
+// creation and again at redemption so a customer never loses fulfillment
+// because an older inventory record omitted a host.
+func completeCurrentMonthlyCardGroupIDs(groupIDs []int64) ([]int64, bool, error) {
+	normalized := make([]int64, 0, len(groupIDs))
+	seen := make(map[int64]struct{}, len(groupIDs))
+	for _, groupID := range groupIDs {
+		if groupID <= 0 {
+			continue
+		}
+		if _, ok := seen[groupID]; ok {
+			continue
+		}
+		seen[groupID] = struct{}{}
+		normalized = append(normalized, groupID)
+	}
+
+	matchedBundle := -1
+	for index, bundle := range currentMonthlyRedeemBundles {
+		for _, groupID := range normalized {
+			if containsMonthlyRedeemGroupID(bundle.groupIDs, groupID) {
+				if matchedBundle >= 0 && matchedBundle != index {
+					return nil, true, fmt.Errorf("current monthly-card groups span multiple plans")
+				}
+				matchedBundle = index
+			}
+		}
+	}
+	if matchedBundle < 0 {
+		return normalized, false, nil
+	}
+	bundle := currentMonthlyRedeemBundles[matchedBundle]
+	for _, groupID := range normalized {
+		if !containsMonthlyRedeemGroupID(bundle.groupIDs, groupID) {
+			return nil, true, fmt.Errorf("current %s monthly card cannot include unrelated group %d", bundle.plan, groupID)
+		}
+	}
+	return append([]int64(nil), bundle.groupIDs...), true, nil
+}
+
+func containsMonthlyRedeemGroupID(groupIDs []int64, target int64) bool {
+	for _, groupID := range groupIDs {
+		if groupID == target {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *RedeemService) completeRedeemedMonthlyCardBundle(ctx context.Context, code *RedeemCode) (bool, error) {
+	if code == nil || code.Type != RedeemTypeSubscription {
+		return false, nil
+	}
+	groupIDs := subscriptionRedeemGroupIDs(code)
+	completed, currentMonthly, err := completeCurrentMonthlyCardGroupIDs(groupIDs)
+	if err != nil {
+		return false, fmt.Errorf("complete current monthly-card bundle: %w", err)
+	}
+	if !currentMonthly || sameInt64Set(groupIDs, completed) {
+		return false, nil
+	}
+	code.GroupIDs = completed
+	primaryGroupID := completed[0]
+	code.GroupID = &primaryGroupID
+	if err := s.redeemRepo.Update(ctx, code); err != nil {
+		return false, fmt.Errorf("persist completed monthly-card bundle: %w", err)
+	}
+	return true, nil
 }
 
 func subscriptionRedeemNotes(code string, sharedQuota bool) string {

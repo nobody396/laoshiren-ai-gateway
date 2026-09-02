@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import json
 import sys
 
 
@@ -45,6 +47,82 @@ def render_workbuddy_windows(group_id: int, group_name: str) -> str:
     return ";".join(parts)
 
 
+def workbuddy_macos_payload(group_id: int, group_name: str) -> str:
+    group_literal = json.dumps(group_name, ensure_ascii=False)
+    return f'''import datetime,getpass,json,os,pathlib,shutil,tempfile,urllib.error,urllib.request
+GROUP_ID={group_id}
+GROUP_NAME={group_literal}
+BASE="https://api.laoshirenai.com"
+def fetch(url,key=None):
+    headers={{"Accept":"application/json","User-Agent":"laoshirenai-one-line-client-setup/1.0"}}
+    if key is not None: headers["Authorization"]="Bearer "+key
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=30) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        try: detail=json.loads(error.read().decode("utf-8","replace")).get("message",str(error))
+        except Exception: detail=str(error)
+        raise SystemExit("接口请求失败："+detail)
+    except Exception as error:
+        raise SystemExit("网络请求失败："+str(error))
+key=getpass.getpass("请粘贴 "+GROUP_NAME+" API Key：").strip()
+if not key: raise SystemExit("API Key 不能为空")
+catalog=fetch(BASE+"/api/v1/public/model-pricing")
+groups=((catalog.get("data") or {{}}).get("groups") or [])
+group=next((item for item in groups if int(item.get("group_id",-1))==GROUP_ID),None)
+if group is None: raise SystemExit("找不到分组："+GROUP_NAME+"（ID "+str(GROUP_ID)+"）")
+group_ids=sorted({{str(item.get("model")) for item in (group.get("models") or []) if item.get("model")}})
+if not group_ids: raise SystemExit("分组没有公开可用模型："+GROUP_NAME)
+key_catalog=fetch(BASE+"/v1/models",key)
+key_ids={{str(item.get("id")) for item in (key_catalog.get("data") or []) if item.get("id")}}
+missing=[model for model in group_ids if model not in key_ids]
+if missing: raise SystemExit("该 Key 无权调用分组全部模型，缺少："+"、".join(missing))
+path=pathlib.Path.home()/".codebuddy"/"models.json"
+path.parent.mkdir(parents=True,exist_ok=True)
+if path.exists():
+    try: config=json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception: raise SystemExit("现有 models.json 格式错误，未修改："+str(path))
+else: config={{"models":[]}}
+if not isinstance(config,dict): raise SystemExit("现有 models.json 顶层必须是对象，未修改："+str(path))
+models=config.setdefault("models",[])
+if not isinstance(models,list): raise SystemExit("现有 models 字段必须是数组，未修改："+str(path))
+prefix="老实人AI "+GROUP_NAME
+old_ids={{str(item.get("id")) for item in models if isinstance(item,dict) and str(item.get("name","")).startswith(prefix)}}
+kept=[item for item in models if not (isinstance(item,dict) and (str(item.get("id")) in set(group_ids) or str(item.get("id")) in old_ids))]
+created=[{{"id":model,"name":prefix+"（"+model+"）","vendor":"OpenAI","apiKey":key,"url":BASE+"/v1/chat/completions","supportsToolCall":True,"supportsImages":True,"supportsReasoning":True}} for model in group_ids]
+config["models"]=kept+created
+if "availableModels" in config:
+    visible=config["availableModels"]
+    if not isinstance(visible,list): raise SystemExit("现有 availableModels 字段必须是数组，未修改："+str(path))
+    if visible: config["availableModels"]=[item for item in visible if str(item) not in old_ids and str(item) not in set(group_ids)]+group_ids
+text=json.dumps(config,ensure_ascii=False,indent=2)+"\\n"
+if path.exists() and path.read_text(encoding="utf-8")==text:
+    print("已是最新配置，可选模型："+"、".join(group_ids))
+else:
+    if path.exists():
+        stamp=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        shutil.copy2(path,str(path)+".bak-"+stamp)
+    fd,tmp=tempfile.mkstemp(prefix=".models.json.",suffix=".tmp",dir=path.parent)
+    try:
+        with os.fdopen(fd,"w",encoding="utf-8",newline="\\n") as handle: handle.write(text)
+        os.chmod(tmp,0o600)
+        os.replace(tmp,path)
+    finally:
+        if os.path.exists(tmp): os.unlink(tmp)
+    print("接入完成，可选模型："+"、".join(group_ids))
+'''
+
+
+def render_workbuddy_macos(group_id: int, group_name: str) -> str:
+    payload = workbuddy_macos_payload(group_id, group_name).encode("utf-8")
+    encoded = base64.b64encode(payload).decode("ascii")
+    return (
+        "python3 -c 'import base64;exec(compile(base64.b64decode(\""
+        + encoded
+        + "\"),\"<laoshirenai-workbuddy-setup>\",\"exec\"))'"
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--client", required=True)
@@ -63,6 +141,9 @@ def main() -> int:
     key = (args.client.casefold(), args.os_name.casefold())
     if key == ("workbuddy", "windows"):
         print(render_workbuddy_windows(args.group_id, args.group_name))
+        return 0
+    if key in {("workbuddy", "macos"), ("workbuddy", "mac") }:
+        print(render_workbuddy_macos(args.group_id, args.group_name))
         return 0
     print(
         f"no tested one-line adapter for {args.client!r} on {args.os_name!r}",

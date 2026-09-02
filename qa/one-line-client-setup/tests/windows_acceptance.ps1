@@ -54,7 +54,7 @@ function global:Invoke-RestMethod {
 
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Restricted -Force
 
-$configDir = Join-Path $HOME '.codebuddy'
+$configDir = Join-Path $HOME '.workbuddy'
 $configPath = Join-Path $configDir 'models.json'
 if (Test-Path $configDir) {
   Remove-Item $configDir -Recurse -Force

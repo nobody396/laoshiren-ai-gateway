@@ -29,7 +29,7 @@ def render_workbuddy_windows(group_id: int, group_name: str) -> str:
         "$keyIds=@($keyCatalog.data|ForEach-Object{[string]$_.id}|Sort-Object -Unique)",
         "$ids=@($groupIds|Where-Object{$keyIds -contains $_}|Sort-Object -Unique)",
         "if($ids.Count -ne $groupIds.Count){$missing=@($groupIds|Where-Object{$keyIds -notcontains $_});throw \"该 Key 无权调用分组全部模型，缺少：$($missing -join '、')\"}",
-        "$d=Join-Path $HOME '.codebuddy'",
+        "$d=Join-Path $HOME '.workbuddy'",
         "$p=Join-Path $d 'models.json'",
         "New-Item -ItemType Directory -Force -Path $d|Out-Null",
         "if(Test-Path $p){try{$c=Get-Content $p -Raw|ConvertFrom-Json}catch{throw \"现有 models.json 格式错误，未修改：$p\"}}else{$c=[pscustomobject]@{models=@()}}",
@@ -77,25 +77,38 @@ key_catalog=fetch(BASE+"/v1/models",key)
 key_ids={{str(item.get("id")) for item in (key_catalog.get("data") or []) if item.get("id")}}
 missing=[model for model in group_ids if model not in key_ids]
 if missing: raise SystemExit("该 Key 无权调用分组全部模型，缺少："+"、".join(missing))
-path=pathlib.Path.home()/".codebuddy"/"models.json"
+path=pathlib.Path.home()/".workbuddy"/"models.json"
 path.parent.mkdir(parents=True,exist_ok=True)
 if path.exists():
-    try: config=json.loads(path.read_text(encoding="utf-8-sig"))
-    except Exception: raise SystemExit("现有 models.json 格式错误，未修改："+str(path))
-else: config={{"models":[]}}
-if not isinstance(config,dict): raise SystemExit("现有 models.json 顶层必须是对象，未修改："+str(path))
-models=config.setdefault("models",[])
-if not isinstance(models,list): raise SystemExit("现有 models 字段必须是数组，未修改："+str(path))
+    raw=path.read_text(encoding="utf-8-sig")
+    if raw.strip():
+        try: root=json.loads(raw)
+        except Exception: raise SystemExit("现有 models.json 格式错误，未修改："+str(path))
+    else: root=[]
+else: root=[]
+if isinstance(root,list):
+    models=root
+    envelope=None
+elif isinstance(root,dict):
+    models=root.get("models",[])
+    if not isinstance(models,list): raise SystemExit("现有 models 字段必须是数组，未修改："+str(path))
+    envelope=root
+else: raise SystemExit("现有 models.json 顶层必须是数组或对象，未修改："+str(path))
 prefix="老实人AI "+GROUP_NAME
 old_ids={{str(item.get("id")) for item in models if isinstance(item,dict) and str(item.get("name","")).startswith(prefix)}}
 kept=[item for item in models if not (isinstance(item,dict) and (str(item.get("id")) in set(group_ids) or str(item.get("id")) in old_ids))]
 created=[{{"id":model,"name":prefix+"（"+model+"）","vendor":"OpenAI","apiKey":key,"url":BASE+"/v1/chat/completions","supportsToolCall":True,"supportsImages":True,"supportsReasoning":True}} for model in group_ids]
-config["models"]=kept+created
-if "availableModels" in config:
-    visible=config["availableModels"]
+new_models=kept+created
+if envelope is None:
+    output=new_models
+else:
+    envelope["models"]=new_models
+    output=envelope
+if envelope is not None and "availableModels" in envelope:
+    visible=envelope["availableModels"]
     if not isinstance(visible,list): raise SystemExit("现有 availableModels 字段必须是数组，未修改："+str(path))
-    if visible: config["availableModels"]=[item for item in visible if str(item) not in old_ids and str(item) not in set(group_ids)]+group_ids
-text=json.dumps(config,ensure_ascii=False,indent=2)+"\\n"
+    if visible: envelope["availableModels"]=[item for item in visible if str(item) not in old_ids and str(item) not in set(group_ids)]+group_ids
+text=json.dumps(output,ensure_ascii=False,indent=2)+"\\n"
 if path.exists() and path.read_text(encoding="utf-8")==text:
     print("已是最新配置，可选模型："+"、".join(group_ids))
 else:

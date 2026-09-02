@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$command = [IO.File]::ReadAllText((Resolve-Path $CommandPath))
+$command = [IO.File]::ReadAllText((Resolve-Path $CommandPath)).TrimEnd([char[]]"`r`n")
 if ($command.Contains("`r") -or $command.Contains("`n")) {
   throw 'Rendered customer command is not one physical line.'
 }

@@ -147,9 +147,10 @@ func (s *ModelPricingService) isDisplayHiddenModel(model string) bool {
 //
 // 缓存读取按对应厂商规则：Anthropic 为输入价的 10%。
 type manualOfficialPrice struct {
-	input     float64
-	output    float64
-	cacheRead float64
+	input      float64
+	output     float64
+	cacheWrite float64
+	cacheRead  float64
 }
 
 var manualOfficialPrices = map[string]manualOfficialPrice{
@@ -429,7 +430,23 @@ func multipliedPrice(price *float64, multiplier float64) *float64 {
 // billing resolver. Nil override fields keep their catalog/manual defaults.
 func (s *ModelPricingService) priceForModel(ctx context.Context, groupID int64, model string, rateMultiplier float64) (PublicModelPrice, bool) {
 	var input, output, cacheWrite, cacheRead *float64
-	if p := s.pricing.GetModelPricing(model); p != nil {
+	// A catalog row with an explicit cache-write contract is complete enough to
+	// override fuzzy LiteLLM matches (for example Fable 5.1 resolving to Fable 5).
+	// Rows without that contract keep the existing dynamic-provider behavior.
+	if mp, ok := generatedCatalogDisplayPrices[strings.ToLower(model)]; ok && mp.cacheWrite > 0 {
+		if mp.input > 0 {
+			input = ptr(mp.input)
+		}
+		if mp.output > 0 {
+			output = ptr(mp.output)
+		}
+		if mp.cacheWrite > 0 {
+			cacheWrite = ptr(mp.cacheWrite)
+		}
+		if mp.cacheRead > 0 {
+			cacheRead = ptr(mp.cacheRead)
+		}
+	} else if p := s.pricing.GetModelPricing(model); p != nil {
 		input = nonZeroPricePerMTok(p.InputCostPerToken)
 		output = nonZeroPricePerMTok(p.OutputCostPerToken)
 		cacheWrite = nonZeroPricePerMTok(p.CacheCreationInputTokenCost)

@@ -145,6 +145,14 @@ def catalog_row_from_manifest(manifest: dict[str, Any], previous: dict[str, Any]
         "pricing": {
             "input_per_mtok_usd": pricing.get("input_per_mtok_usd"),
             "cached_input_per_mtok_usd": pricing.get("cached_input_per_mtok_usd", 0),
+            "cache_write_5m_per_mtok_usd": pricing.get(
+                "cache_write_5m_per_mtok_usd",
+                previous.get("pricing", {}).get("cache_write_5m_per_mtok_usd"),
+            ),
+            "cache_write_1h_per_mtok_usd": pricing.get(
+                "cache_write_1h_per_mtok_usd",
+                previous.get("pricing", {}).get("cache_write_1h_per_mtok_usd"),
+            ),
             "output_per_mtok_usd": pricing.get("output_per_mtok_usd"),
             "long_context_input_threshold": long_context.get("input_threshold") if long_context else None,
             "long_context_input_multiplier": long_context.get("input_multiplier") if long_context else None,
@@ -270,6 +278,16 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         cached_input = pricing.get("cached_input_per_mtok_usd")
         if cached_input is not None:
             number(cached_input, f"{path}.pricing.cached_input_per_mtok_usd", allow_zero=True)
+        cache_write_5m = pricing.get("cache_write_5m_per_mtok_usd")
+        cache_write_1h = pricing.get("cache_write_1h_per_mtok_usd")
+        if cache_write_5m is not None:
+            number(cache_write_5m, f"{path}.pricing.cache_write_5m_per_mtok_usd")
+        if cache_write_1h is not None:
+            number(cache_write_1h, f"{path}.pricing.cache_write_1h_per_mtok_usd")
+            if cache_write_5m is None:
+                fail(f"{path}.pricing.cache_write_1h_per_mtok_usd requires the 5m price")
+            if float(cache_write_1h) <= float(cache_write_5m):
+                fail(f"{path}.pricing.cache_write_1h_per_mtok_usd must exceed the 5m price")
         threshold = pricing.get("long_context_input_threshold")
         if threshold is not None:
             number(threshold, f"{path}.pricing.long_context_input_threshold")
@@ -449,16 +467,35 @@ def render_go(catalog: dict[str, Any]) -> str:
         threshold = pricing.get("long_context_input_threshold") or 0
         input_multiplier = pricing.get("long_context_input_multiplier") or 0
         output_multiplier = pricing.get("long_context_output_multiplier") or 0
+        cache_write_5m = pricing.get("cache_write_5m_per_mtok_usd") or 0
+        cache_write_1h = pricing.get("cache_write_1h_per_mtok_usd") or 0
+        cache_write_fields = ""
+        if cache_write_5m:
+            cache_write_fields += (
+                f"CacheCreationPricePerToken: {go_float(cache_write_5m)}e-6, "
+                f"CacheCreation5mPrice: {go_float(cache_write_5m)}e-6, "
+            )
+        if cache_write_1h:
+            cache_write_fields += (
+                f"CacheCreation1hPrice: {go_float(cache_write_1h)}e-6, "
+                "SupportsCacheBreakdown: true, "
+            )
+        display_cache_write = (
+            f", cacheWrite: {go_float(cache_write_5m)}" if cache_write_5m else ""
+        )
         price_rows.append(
             f'\t"{model["id"]}": {{InputPricePerToken: {go_float(pricing["input_per_mtok_usd"])}e-6, '
             f'OutputPricePerToken: {go_float(pricing["output_per_mtok_usd"])}e-6, '
+            f'{cache_write_fields}'
             f'CacheReadPricePerToken: {go_float(pricing.get("cached_input_per_mtok_usd") or 0)}e-6, '
             f'LongContextInputThreshold: {int(threshold)}, LongContextInputMultiplier: {go_float(input_multiplier)}, '
             f'LongContextOutputMultiplier: {go_float(output_multiplier)}}},'
         )
         display_rows.append(
             f'\t"{model["id"]}": {{input: {go_float(pricing["input_per_mtok_usd"])}, '
-            f'output: {go_float(pricing["output_per_mtok_usd"])}, cacheRead: {go_float(pricing.get("cached_input_per_mtok_usd") or 0)}}},'
+            f'output: {go_float(pricing["output_per_mtok_usd"])}, '
+            f'{display_cache_write.lstrip(", ") + ", " if display_cache_write else ""}'
+            f'cacheRead: {go_float(pricing.get("cached_input_per_mtok_usd") or 0)}}},'
         )
         if model.get("client_default"):
             default_rows.append(f'\t"{model["platform"]}": "{model["id"]}",')

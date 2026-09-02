@@ -142,6 +142,30 @@ func TestModelPricingPriceFormula(t *testing.T) {
 	assertPrice(t, "cache_read", m.CacheReadPrice, 0.125)
 }
 
+func TestModelPricingCatalogReleaseOverridesStaleFuzzyProviderPricing(t *testing.T) {
+	groups := []Group{{ID: 5, Name: "Claude 标准线路", Platform: "anthropic", RateMultiplier: 2.4}}
+	prices := map[string]*LiteLLMModelPricing{
+		"claude-fable-5-1": {
+			InputCostPerToken:           10e-6,
+			OutputCostPerToken:          50e-6,
+			CacheCreationInputTokenCost: 12.5e-6,
+			CacheReadInputTokenCost:     1e-6,
+		},
+	}
+	models := map[int64][]string{5: {"claude-fable-5-1"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	require.NoError(t, err)
+	require.Len(t, catalog.Groups, 1)
+	require.Len(t, catalog.Groups[0].Models, 1)
+	m := catalog.Groups[0].Models[0]
+	assertPrice(t, "input", m.InputPrice, 24)
+	assertPrice(t, "output", m.OutputPrice, 120)
+	assertPrice(t, "cache_write", m.CacheWritePrice, 30)
+	assertPrice(t, "cache_read", m.CacheReadPrice, 0.6)
+}
+
 func TestModelPricingUsesGroupChannelOverrideIncludingCacheWrite(t *testing.T) {
 	groups := []Group{{ID: 52, Name: "GPT CYBER 分组（特价！）", Platform: "openai", RateMultiplier: 2}}
 	prices := map[string]*LiteLLMModelPricing{

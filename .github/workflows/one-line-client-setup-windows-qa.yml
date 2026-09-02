@@ -1,0 +1,31 @@
+name: One-line WorkBuddy Windows QA
+
+on:
+  push:
+    branches:
+      - qa/one-line-client-setup-windows-20260902
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workbuddy-windows:
+    name: WorkBuddy / ${{ matrix.shell }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [pwsh, powershell]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Render exact customer command
+        shell: pwsh
+        run: |
+          python qa/one-line-client-setup/scripts/render_setup_command.py --client workbuddy --group-id 58 --group-name 'GPT 经济线路' --os windows | Out-File -FilePath qa/one-line-client-setup/workbuddy-windows-command.txt -Encoding utf8
+      - name: Execute Windows acceptance
+        shell: ${{ matrix.shell }}
+        run: qa/one-line-client-setup/tests/windows_acceptance.ps1 -CommandPath qa/one-line-client-setup/workbuddy-windows-command.txt

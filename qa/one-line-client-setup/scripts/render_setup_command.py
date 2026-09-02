@@ -40,7 +40,7 @@ def render_workbuddy_windows(group_id: int, group_name: str) -> str:
         "if($c.PSObject.Properties['availableModels'] -and @($c.availableModels).Count -gt 0){$c.availableModels=@($c.availableModels|Where-Object{($oldIds -notcontains $_)-and($ids -notcontains $_)})+$ids}",
         "$json=$c|ConvertTo-Json -Depth 20",
         "$unchanged=(Test-Path $p)-and([IO.File]::ReadAllText($p)-eq $json)",
-        "if($unchanged){Write-Host \"已是最新配置，可选模型：$($ids -join '、')\"}else{if(Test-Path $p){Copy-Item $p \"$p.bak-$(Get-Date -Format yyyyMMddHHmmssfff)\"};$tmp=\"$p.tmp\";[IO.File]::WriteAllText($tmp,$json,[Text.UTF8Encoding]::new($false));if(Test-Path $p){[IO.File]::Replace($tmp,$p,$null)}else{[IO.File]::Move($tmp,$p)};Write-Host \"接入完成，可选模型：$($ids -join '、')\"}",
+        "if($unchanged){Write-Host \"已是最新配置，可选模型：$($ids -join '、')\"}else{$tmp=\"$p.tmp\";[IO.File]::WriteAllText($tmp,$json,[Text.UTF8Encoding]::new($false));if(Test-Path $p){$backup=\"$p.bak-$(Get-Date -Format yyyyMMddHHmmssfff)\";[IO.File]::Replace($tmp,$p,$backup)}else{[IO.File]::Move($tmp,$p)};Write-Host \"接入完成，可选模型：$($ids -join '、')\"}",
     ]
     return ";".join(parts)
 

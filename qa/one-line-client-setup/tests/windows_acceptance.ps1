@@ -110,6 +110,9 @@ if (@($imported | Where-Object { $_.maxInputTokens -ne 1050000 -or $_.maxOutputT
 }
 $sol = @($imported | Where-Object { $_.id -eq 'gpt-5.6-sol' })[0]
 $gpt54 = @($imported | Where-Object { $_.id -eq 'gpt-5.4' })[0]
+if (@($imported | Where-Object { $_.name -ne $_.id }).Count -ne 0) {
+  throw 'Imported model display names are not concise model IDs.'
+}
 if (($sol.reasoning.supportedEfforts -join '|') -ne 'low|medium|high|xhigh|max') {
   throw 'gpt-5.6-sol reasoning levels are wrong.'
 }

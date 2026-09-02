@@ -42,7 +42,7 @@ def render_workbuddy_windows(group_id: int, group_name: str) -> str:
         "if($c.PSObject.Properties['availableModels'] -and @($c.availableModels).Count -gt 0){$c.availableModels=@($c.availableModels|Where-Object{($oldIds -notcontains $_)-and($ids -notcontains $_)})+$ids}",
         "$json=$c|ConvertTo-Json -Depth 20",
         "$unchanged=(Test-Path $p)-and([IO.File]::ReadAllText($p)-eq $json)",
-        "if($unchanged){Write-Host \"已是最新配置，可选模型：$($ids -join '、')\"}else{$tmp=\"$p.tmp\";[IO.File]::WriteAllText($tmp,$json,[Text.UTF8Encoding]::new($false));if(Test-Path $p){$backup=\"$p.bak-$(Get-Date -Format yyyyMMddHHmmssfff)\";[IO.File]::Replace($tmp,$p,$backup)}else{[IO.File]::Move($tmp,$p)};Write-Host \"接入完成，可选模型：$($ids -join '、')\"}",
+        "if($unchanged){Write-Host \"已是最新配置，可选模型：$($ids -join '、')；请完全退出并重新打开 WorkBuddy\"}else{$tmp=\"$p.tmp\";[IO.File]::WriteAllText($tmp,$json,[Text.UTF8Encoding]::new($false));if(Test-Path $p){$backup=\"$p.bak-$(Get-Date -Format yyyyMMddHHmmssfff)\";[IO.File]::Replace($tmp,$p,$backup)}else{[IO.File]::Move($tmp,$p)};Write-Host \"接入完成，可选模型：$($ids -join '、')；请完全退出并重新打开 WorkBuddy\"}",
     ]
     return ";".join(parts)
 
@@ -110,7 +110,7 @@ if envelope is not None and "availableModels" in envelope:
     if visible: envelope["availableModels"]=[item for item in visible if str(item) not in old_ids and str(item) not in set(group_ids)]+group_ids
 text=json.dumps(output,ensure_ascii=False,indent=2)+"\\n"
 if path.exists() and path.read_text(encoding="utf-8")==text:
-    print("已是最新配置，可选模型："+"、".join(group_ids))
+    print("已是最新配置，可选模型："+"、".join(group_ids)+"；请完全退出并重新打开 WorkBuddy")
 else:
     if path.exists():
         stamp=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
@@ -122,7 +122,7 @@ else:
         os.replace(tmp,path)
     finally:
         if os.path.exists(tmp): os.unlink(tmp)
-    print("接入完成，可选模型："+"、".join(group_ids))
+    print("接入完成，可选模型："+"、".join(group_ids)+"；请完全退出并重新打开 WorkBuddy")
 '''
 
 

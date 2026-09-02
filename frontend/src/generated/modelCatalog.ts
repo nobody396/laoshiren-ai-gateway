@@ -30,6 +30,22 @@ export const clientAutoConfigDefaults = {
 
 export const modelCatalog: readonly CatalogModel[] = [
   {
+    "id": "claude-fable-5-1",
+    "upstreamId": "claude-fable-5-1",
+    "displayName": "Claude Fable 5.1",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-fable-5-1",
+      "to": "claude-fable-5-1",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
     "id": "glm-5.2",
     "upstreamId": "glm-5.2",
     "displayName": "GLM 5.2",

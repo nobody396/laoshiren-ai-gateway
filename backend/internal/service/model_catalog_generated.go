@@ -10,6 +10,7 @@ type generatedCatalogGroupPolicy struct {
 }
 
 var generatedCatalogBillingPrices = map[string]*ModelPricing{
+	"claude-fable-5-1": {InputPricePerToken: 10e-6, OutputPricePerToken: 50e-6, CacheReadPricePerToken: 0.25e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"deepseek-v4-flash": {InputPricePerToken: 0.44e-6, OutputPricePerToken: 1.32e-6, CacheReadPricePerToken: 0.044e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"deepseek-v4-flash-0731": {InputPricePerToken: 3e-6, OutputPricePerToken: 9e-6, CacheReadPricePerToken: 0.3e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"deepseek-v4-pro-0813": {InputPricePerToken: 9e-6, OutputPricePerToken: 27e-6, CacheReadPricePerToken: 0.9e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
@@ -32,6 +33,7 @@ var generatedCatalogBillingPrices = map[string]*ModelPricing{
 }
 
 var generatedCatalogDisplayPrices = map[string]manualOfficialPrice{
+	"claude-fable-5-1": {input: 10, output: 50, cacheRead: 0.25},
 	"deepseek-v4-flash": {input: 0.44, output: 1.32, cacheRead: 0.044},
 	"deepseek-v4-flash-0731": {input: 3, output: 9, cacheRead: 0.3},
 	"deepseek-v4-pro-0813": {input: 9, output: 27, cacheRead: 0.9},

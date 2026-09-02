@@ -11,12 +11,8 @@ permissions:
 
 jobs:
   workbuddy-windows:
-    name: WorkBuddy / ${{ matrix.shell }}
+    name: WorkBuddy / PowerShell 5.1 + 7
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shell: [pwsh, powershell]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,6 +22,9 @@ jobs:
         shell: pwsh
         run: |
           python qa/one-line-client-setup/scripts/render_setup_command.py --client workbuddy --group-id 58 --group-name 'GPT 经济线路' --os windows | Out-File -FilePath qa/one-line-client-setup/workbuddy-windows-command.txt -Encoding utf8
-      - name: Execute Windows acceptance
-        shell: ${{ matrix.shell }}
+      - name: Execute Windows acceptance in PowerShell 7
+        shell: pwsh
+        run: qa/one-line-client-setup/tests/windows_acceptance.ps1 -CommandPath qa/one-line-client-setup/workbuddy-windows-command.txt
+      - name: Execute Windows acceptance in Windows PowerShell 5.1
+        shell: powershell
         run: qa/one-line-client-setup/tests/windows_acceptance.ps1 -CommandPath qa/one-line-client-setup/workbuddy-windows-command.txt

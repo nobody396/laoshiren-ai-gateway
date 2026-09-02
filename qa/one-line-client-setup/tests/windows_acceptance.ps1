@@ -151,4 +151,12 @@ if (Test-Path "$configPath.tmp") {
   throw 'Failure left a temporary file behind.'
 }
 
+[IO.File]::WriteAllText($configPath, '', [Text.UTF8Encoding]::new($false))
+Invoke-Expression $command
+$arrayConfig = Get-Content $configPath -Raw | ConvertFrom-Json
+$arrayIds = @($arrayConfig | ForEach-Object { [string]$_.id }) | Sort-Object
+if (($arrayIds -join '|') -ne (($script:groupModels | Sort-Object) -join '|')) {
+  throw "GUI-created empty file was not recovered as a model array: $($arrayIds -join ', ')"
+}
+
 Write-Output "WINDOWS_ACCEPTANCE_OK shell=$($PSVersionTable.PSEdition) version=$($PSVersionTable.PSVersion)"

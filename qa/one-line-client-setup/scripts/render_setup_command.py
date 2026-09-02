@@ -37,7 +37,7 @@ def render_workbuddy_windows(group_id: int, group_name: str) -> str:
         "$prefix=\"老实人AI $groupName\"",
         "$old=@($models)",
         "$oldIds=@($old|Where-Object{$_.name -like \"$prefix*\"}|ForEach-Object{[string]$_.id})",
-        "$new=@($ids|ForEach-Object{[pscustomobject]@{id=[string]$_;name=\"$prefix（$($_)）\";vendor='OpenAI';apiKey=$k;url='https://api.laoshirenai.com/v1/chat/completions';supportsToolCall=$true;supportsImages=$true;supportsReasoning=$true}})",
+        "$new=@($ids|ForEach-Object{$modelId=[string]$_;$efforts=if($modelId -in @('gpt-5.6-sol','gpt-5.6-terra')){@('low','medium','high','xhigh','max')}else{@('low','medium','high','xhigh')};[pscustomobject]@{id=$modelId;name=\"$prefix（$modelId）\";vendor='OpenAI';apiKey=$k;url='https://api.laoshirenai.com/v1/chat/completions';supportsToolCall=$true;supportsImages=$true;supportsReasoning=$true;onlyReasoning=$false;useCustomProtocol=$false;maxInputTokens=1050000;maxOutputTokens=128000;reasoning=[pscustomobject]@{defaultEffort='medium';supportedEfforts=$efforts;canDisableThinking=$false}}})",
         "$newModels=@($old|Where-Object{($oldIds -notcontains $_.id)-and($ids -notcontains $_.id)})+$new",
         "if($arrayRoot){$output=@($newModels);$json=ConvertTo-Json -InputObject $output -Depth 20}else{if($envelope.PSObject.Properties['models']){$envelope.models=$newModels}else{$envelope|Add-Member -NotePropertyName models -NotePropertyValue $newModels};if($envelope.PSObject.Properties['availableModels'] -and @($envelope.availableModels).Count -gt 0){$envelope.availableModels=@($envelope.availableModels|Where-Object{($oldIds -notcontains $_)-and($ids -notcontains $_)})+$ids};$json=ConvertTo-Json -InputObject $envelope -Depth 20}",
         "$unchanged=(Test-Path $p)-and([IO.File]::ReadAllText($p)-eq $json)",
@@ -96,7 +96,10 @@ else: raise SystemExit("现有 models.json 顶层必须是数组或对象，未�
 prefix="老实人AI "+GROUP_NAME
 old_ids={{str(item.get("id")) for item in models if isinstance(item,dict) and str(item.get("name","")).startswith(prefix)}}
 kept=[item for item in models if not (isinstance(item,dict) and (str(item.get("id")) in set(group_ids) or str(item.get("id")) in old_ids))]
-created=[{{"id":model,"name":prefix+"（"+model+"）","vendor":"OpenAI","apiKey":key,"url":BASE+"/v1/chat/completions","supportsToolCall":True,"supportsImages":True,"supportsReasoning":True}} for model in group_ids]
+created=[]
+for model in group_ids:
+    efforts=["low","medium","high","xhigh","max"] if model in {{"gpt-5.6-sol","gpt-5.6-terra"}} else ["low","medium","high","xhigh"]
+    created.append({{"id":model,"name":prefix+"（"+model+"）","vendor":"OpenAI","apiKey":key,"url":BASE+"/v1/chat/completions","supportsToolCall":True,"supportsImages":True,"supportsReasoning":True,"onlyReasoning":False,"useCustomProtocol":False,"maxInputTokens":1050000,"maxOutputTokens":128000,"reasoning":{{"defaultEffort":"medium","supportedEfforts":efforts,"canDisableThinking":False}}}})
 new_models=kept+created
 if envelope is None:
     output=new_models

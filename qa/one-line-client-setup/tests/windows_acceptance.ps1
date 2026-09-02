@@ -99,6 +99,23 @@ if (@($imported | Where-Object { $_.apiKey -ne $script:testKey }).Count -ne 0) {
 if (@($imported | Where-Object { $_.url -ne 'https://api.laoshirenai.com/v1/chat/completions' }).Count -ne 0) {
   throw 'Imported models received the wrong endpoint.'
 }
+if (@($imported | Where-Object { $_.onlyReasoning -ne $false -or $_.useCustomProtocol -ne $false }).Count -ne 0) {
+  throw 'Imported models received the wrong reasoning/protocol toggles.'
+}
+if (@($imported | Where-Object { $_.reasoning.defaultEffort -ne 'medium' -or $_.reasoning.canDisableThinking -ne $false }).Count -ne 0) {
+  throw 'Imported models received the wrong reasoning defaults.'
+}
+if (@($imported | Where-Object { $_.maxInputTokens -ne 1050000 -or $_.maxOutputTokens -ne 128000 }).Count -ne 0) {
+  throw 'Imported models received the wrong token limits.'
+}
+$sol = @($imported | Where-Object { $_.id -eq 'gpt-5.6-sol' })[0]
+$gpt54 = @($imported | Where-Object { $_.id -eq 'gpt-5.4' })[0]
+if (($sol.reasoning.supportedEfforts -join '|') -ne 'low|medium|high|xhigh|max') {
+  throw 'gpt-5.6-sol reasoning levels are wrong.'
+}
+if (($gpt54.reasoning.supportedEfforts -join '|') -ne 'low|medium|high|xhigh') {
+  throw 'gpt-5.4 reasoning levels are wrong.'
+}
 $expectedVisible = $expectedIds
 $actualVisible = @($config.availableModels | ForEach-Object { [string]$_ }) | Sort-Object
 if (($actualVisible -join '|') -ne ($expectedVisible -join '|')) {

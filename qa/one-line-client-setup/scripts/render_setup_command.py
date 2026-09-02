@@ -154,6 +154,14 @@ def main() -> int:
         sys.stderr.reconfigure(encoding="utf-8")
     args = parse_args()
     key = (args.client.casefold(), args.os_name.casefold())
+    if key[0] == "workbuddy" and (
+        args.group_id != 58 or args.group_name != "GPT 经济线路"
+    ):
+        print(
+            "no tested WorkBuddy group profile for this group; build protocol and model metadata evidence first",
+            file=sys.stderr,
+        )
+        return 2
     if key == ("workbuddy", "windows"):
         print(render_workbuddy_windows(args.group_id, args.group_name))
         return 0

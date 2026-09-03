@@ -501,7 +501,8 @@ describe('client auto-config scripts', () => {
         'user-model',
         'gemini-3.1-pro',
         'gemini-3.7-flash',
-        'gemini-3.7-flash-high'
+        'gemini-3.7-flash-high',
+        'gemini-3.8-flash'
       ])
       for (const entry of firstSettings.modelConfigs.overrides.slice(1)) {
         expect(entry.generateContentConfig).toEqual({ thinkingConfig: { thinkingLevel: 'HIGH' } })

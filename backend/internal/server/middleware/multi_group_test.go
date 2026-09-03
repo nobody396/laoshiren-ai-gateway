@@ -200,3 +200,22 @@ func TestMultiGroupWildcardDeclarationBlocksLowerPriorityDiscovery(t *testing.T)
 	require.NotContains(t, w.Body.String(), "family-new")
 	require.NotContains(t, w.Body.String(), "family-*")
 }
+
+func TestMultiGroupAuthorizedWildcardCanDiscoverLaterConcreteNames(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{5: {ID: 5, Platform: service.PlatformOpenAI}, 6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{}}
+	r := multiRouter(f, &service.APIKey{GroupIDs: []int64{5, 6}, User: &service.User{ID: 2}}, func(_ context.Context, g *service.Group) ([]string, error) {
+		if g.ID == 5 {
+			return []string{"family-*"}, nil
+		}
+		return []string{"family-new"}, nil
+	})
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("GET", "/v1/models", nil))
+	require.Equal(t, 200, w.Code)
+	require.Contains(t, w.Body.String(), "family-new")
+	require.NotContains(t, w.Body.String(), "family-*")
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"family-new"}`)))
+	require.Equal(t, 200, w.Code)
+	require.JSONEq(t, `{"group":5,"fallback":null}`, w.Body.String())
+}

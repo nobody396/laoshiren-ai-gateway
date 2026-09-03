@@ -21,6 +21,11 @@ type MultiGroupAuthorizer interface {
 }
 type MultiGroupModelCatalog func(context.Context, *service.Group) ([]string, error)
 
+type multiGroupDeclaration struct {
+	patterns   []string
+	authorized bool
+}
+
 // MultiGroupRouting selects one billing group, never another model. Once a
 // matching priority is found, authorization/quota failure is terminal; neither
 // wallet fallback nor cross-group error fallback is implied by selecting groups.
@@ -65,7 +70,7 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			return
 		}
 		var discovered []string
-		priorDeclarations := map[string][]string{}
+		priorDeclarations := map[string][]multiGroupDeclaration{}
 		for _, id := range key.GroupIDs {
 			group, loadErr := groups.GetByID(c.Request.Context(), id)
 			if loadErr != nil || group == nil {
@@ -93,45 +98,31 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			if !listing && !service.MultiGroupModelMatches(models, model) {
 				continue
 			}
-			// A lower-priority group must not advertise a route which requests
-			// would reject at a revoked higher-priority group.
-			listingModels := []string{}
+			payer, authErr := access.AuthorizeMultiGroupTarget(c.Request.Context(), key, group)
 			if listing {
+				// Collect concrete names independently from routing decisions.
+				// A later group's concrete name may be owned by an earlier
+				// authorized wildcard. Resolve each name after all declarations
+				// are known, using the same first-match order as requests.
 				protocols := []string{"messages", "responses", "chat_completions", "generate_content"}
 				if strings.Contains(path, "/v1beta/") {
 					protocols = []string{"generate_content"}
 				}
-				for _, candidate := range models {
-					if strings.Contains(candidate, "*") {
-						continue
-					}
-					fresh := false
-					for _, p := range protocols {
-						if service.MultiGroupProtocolSupported(group, p) && !service.MultiGroupModelMatches(priorDeclarations[p], candidate) {
-							fresh = true
-						}
-					}
-					if fresh {
-						listingModels = append(listingModels, candidate)
-					}
-				}
 				for _, p := range protocols {
 					if service.MultiGroupProtocolSupported(group, p) {
-						priorDeclarations[p] = append(priorDeclarations[p], models...)
+						priorDeclarations[p] = append(priorDeclarations[p], multiGroupDeclaration{patterns: models, authorized: authErr == nil})
 					}
 				}
-			}
-			payer, authErr := access.AuthorizeMultiGroupTarget(c.Request.Context(), key, group)
-			if authErr != nil {
-				if listing {
-					continue
+				for _, candidate := range models {
+					if !strings.Contains(candidate, "*") {
+						discovered = append(discovered, candidate)
+					}
 				}
+				continue
+			}
+			if authErr != nil {
 				fail(403, "The selected model group is no longer authorized; review this key's group selection")
 				return
-			}
-			if listing {
-				discovered = append(discovered, listingModels...)
-				continue
 			}
 			var subscription *service.UserSubscription
 			if cfg == nil || cfg.RunMode != config.RunModeSimple {
@@ -180,6 +171,18 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			data := make([]gin.H, 0, len(discovered))
 			google := strings.Contains(path, "/v1beta/")
 			for _, name := range discovered {
+				authorized := false
+				for _, declarations := range priorDeclarations {
+					for _, declaration := range declarations {
+						if service.MultiGroupModelMatches(declaration.patterns, name) {
+							authorized = authorized || declaration.authorized
+							break
+						}
+					}
+				}
+				if !authorized {
+					continue
+				}
 				if google {
 					data = append(data, gin.H{"name": "models/" + name, "displayName": name, "supportedGenerationMethods": []string{"generateContent", "countTokens"}})
 				} else {

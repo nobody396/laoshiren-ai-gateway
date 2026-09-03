@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "fbca9bbd207ae1699a8d445ea6f258b55fee1c8904dc6f9aa07dd186daebb94b",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "ca0bd863b875f91a",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-claude-opus47-group15-minimal-20260901/run-state.json",
+  "status_counts": {
+    "pass": 1
+  }
+}

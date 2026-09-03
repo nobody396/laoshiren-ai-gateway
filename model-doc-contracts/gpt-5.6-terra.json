@@ -1,0 +1,1681 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 0.5,
+        "name": "GPT 标准线路"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Plus 月卡组"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Pro 月卡组"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Max 月卡组"
+      },
+      {
+        "multiplier": 0.35,
+        "name": "GPT 经济线路"
+      },
+      {
+        "multiplier": 0.8,
+        "name": "GPT 企业高速线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "M8 receipts: evidence-59d38a78e8e4a2811847f4ae, evidence-770c46840cc617d565d96780",
+      "name": "Codex",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-59d38a78e8e4a2811847f4ae",
+        "evidence-770c46840cc617d565d96780"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-093efca1491ce972c01943b7, evidence-a5f6444bfa052dad4e0ddbae",
+      "name": "OpenCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-093efca1491ce972c01943b7",
+        "evidence-a5f6444bfa052dad4e0ddbae"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-c9c2c56bd0d940febfa6a232, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31, evidence-fe47319696f3148bcbe2c7fb",
+      "name": "Kimi Code",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-c9c2c56bd0d940febfa6a232",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31",
+        "evidence-fe47319696f3148bcbe2c7fb"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-41461aff218a1989e14dadbd, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-5fddd59db9f31d1c0127a32f, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-d49e8191f93ada23ef7bc701, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31",
+      "name": "Grok Build",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-41461aff218a1989e14dadbd",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-5fddd59db9f31d1c0127a32f",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-d49e8191f93ada23ef7bc701",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-4155b471344bc2cb99ce626b, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-4d49055fe0fa328644cb7558, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-89aa17021b66dcd61e5996d1, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31",
+      "name": "ZCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-4155b471344bc2cb99ce626b",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-4d49055fe0fa328644cb7558",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-89aa17021b66dcd61e5996d1",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31"
+      ]
+    },
+    {
+      "name": "Hermes Agent",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-0ff18dd47de51d371518bb26, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-71059534a93994fb372d98fa, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-dcbb64623300809699a75ab2, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-0ff18dd47de51d371518bb26",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-71059534a93994fb372d98fa",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31"
+      ]
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "evidence": "M8 receipts: evidence-59d38a78e8e4a2811847f4ae, evidence-770c46840cc617d565d96780",
+      "name": "Codex",
+      "protocol": "responses",
+      "recommended": true,
+      "status": "verified",
+      "version": "0.151.0",
+      "evidence_ids": [
+        "evidence-59d38a78e8e4a2811847f4ae",
+        "evidence-770c46840cc617d565d96780"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-093efca1491ce972c01943b7, evidence-a5f6444bfa052dad4e0ddbae",
+      "name": "OpenCode",
+      "protocol": "responses",
+      "recommended": false,
+      "status": "verified",
+      "version": "1.18.15",
+      "evidence_ids": [
+        "evidence-093efca1491ce972c01943b7",
+        "evidence-a5f6444bfa052dad4e0ddbae"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-c9c2c56bd0d940febfa6a232, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31, evidence-fe47319696f3148bcbe2c7fb",
+      "name": "Kimi Code",
+      "protocol": "responses",
+      "recommended": false,
+      "status": "verified",
+      "version": "0.39.1",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-c9c2c56bd0d940febfa6a232",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31",
+        "evidence-fe47319696f3148bcbe2c7fb"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-41461aff218a1989e14dadbd, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-5fddd59db9f31d1c0127a32f, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-d49e8191f93ada23ef7bc701, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31",
+      "name": "Grok Build",
+      "protocol": "responses",
+      "recommended": false,
+      "status": "verified",
+      "version": "1.0.13",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-41461aff218a1989e14dadbd",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-5fddd59db9f31d1c0127a32f",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-d49e8191f93ada23ef7bc701",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31"
+      ]
+    },
+    {
+      "name": "ZCode",
+      "recommended": false,
+      "version": "3.10.1 / CLI 0.16.5",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-4155b471344bc2cb99ce626b",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-4d49055fe0fa328644cb7558",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-89aa17021b66dcd61e5996d1",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31"
+      ],
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-4155b471344bc2cb99ce626b, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-4d49055fe0fa328644cb7558, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-89aa17021b66dcd61e5996d1, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31"
+    },
+    {
+      "name": "Hermes Agent",
+      "recommended": false,
+      "version": "0.20.0",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-08aa0c4a2977aa66fdaa2b66, evidence-0babff5bfc384fb6f72c96e3, evidence-0ff18dd47de51d371518bb26, evidence-133aec70a138dd194bbcaf4a, evidence-1825740c7b197c376c81c8e2, evidence-19cd736738a159f4255d72c2, evidence-2706cff825d81b9dd7a9ad19, evidence-314f90847706c0570272ef4d, evidence-4514755a13476bd52dfb6a02, evidence-4716d972afed71c0fc9c9432, evidence-481ff9a5fbccf80c3d089980, evidence-4b33dcfbf819cfdf562f292e, evidence-5727995e4e45ee11e0a3a6a0, evidence-573a5baee5ff4dce79490ed9, evidence-5ee79966161a076f1fff2006, evidence-5f919d798a6d327d23cadd7b, evidence-65c9e71873aa765ddf74984e, evidence-67a7e6d9b74e940983260dfc, evidence-6d1b1afbab2471c0b279a6de, evidence-71059534a93994fb372d98fa, evidence-74f36f788ff9b0deff699fc2, evidence-7e212353f51d5fafefa0556b, evidence-860be616218ddc52ab40441f, evidence-8c5df25c11436f88c8841f7b, evidence-8f4f4e1668b7c6155e04ce1f, evidence-9d6f33d057b2c7df765fe854, evidence-aaa3a9f03e771e9a40b6070a, evidence-b336ec5f825b2266f6d4287f, evidence-b457b5e4ccc358eff31fe35d, evidence-b74a06827ac2310736c35da3, evidence-ba45722c5a3b3c2a217fd032, evidence-baf4483823cc7f5c5d0ee446, evidence-c0483c1b298d1098ceb5372c, evidence-c8dad7b85d182f7d699350a3, evidence-d54b9e19828c2d35a0790c26, evidence-d54ce67321cce5d684aab93a, evidence-d918b1e8782f8b9eaba51dee, evidence-dcbb64623300809699a75ab2, evidence-df8e954d109e7f00736d2592, evidence-e04b5ffcf7673a207995c867, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94, evidence-f20cd3ac583040fd1ce06a31",
+      "evidence_ids": [
+        "evidence-05713b097a5331c5290a97ee",
+        "evidence-08aa0c4a2977aa66fdaa2b66",
+        "evidence-0babff5bfc384fb6f72c96e3",
+        "evidence-0ff18dd47de51d371518bb26",
+        "evidence-133aec70a138dd194bbcaf4a",
+        "evidence-1825740c7b197c376c81c8e2",
+        "evidence-19cd736738a159f4255d72c2",
+        "evidence-2706cff825d81b9dd7a9ad19",
+        "evidence-314f90847706c0570272ef4d",
+        "evidence-4514755a13476bd52dfb6a02",
+        "evidence-4716d972afed71c0fc9c9432",
+        "evidence-481ff9a5fbccf80c3d089980",
+        "evidence-4b33dcfbf819cfdf562f292e",
+        "evidence-5727995e4e45ee11e0a3a6a0",
+        "evidence-573a5baee5ff4dce79490ed9",
+        "evidence-5ee79966161a076f1fff2006",
+        "evidence-5f919d798a6d327d23cadd7b",
+        "evidence-65c9e71873aa765ddf74984e",
+        "evidence-67a7e6d9b74e940983260dfc",
+        "evidence-6d1b1afbab2471c0b279a6de",
+        "evidence-71059534a93994fb372d98fa",
+        "evidence-74f36f788ff9b0deff699fc2",
+        "evidence-7e212353f51d5fafefa0556b",
+        "evidence-860be616218ddc52ab40441f",
+        "evidence-8c5df25c11436f88c8841f7b",
+        "evidence-8f4f4e1668b7c6155e04ce1f",
+        "evidence-9d6f33d057b2c7df765fe854",
+        "evidence-aaa3a9f03e771e9a40b6070a",
+        "evidence-b336ec5f825b2266f6d4287f",
+        "evidence-b457b5e4ccc358eff31fe35d",
+        "evidence-b74a06827ac2310736c35da3",
+        "evidence-ba45722c5a3b3c2a217fd032",
+        "evidence-baf4483823cc7f5c5d0ee446",
+        "evidence-c0483c1b298d1098ceb5372c",
+        "evidence-c8dad7b85d182f7d699350a3",
+        "evidence-d54b9e19828c2d35a0790c26",
+        "evidence-d54ce67321cce5d684aab93a",
+        "evidence-d918b1e8782f8b9eaba51dee",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-df8e954d109e7f00736d2592",
+        "evidence-e04b5ffcf7673a207995c867",
+        "evidence-e1e0ad02765bfe9b0711845c",
+        "evidence-e98e581658efc58daa1cdb40",
+        "evidence-edf099138b93a2d55074bc94",
+        "evidence-f20cd3ac583040fd1ce06a31"
+      ]
+    }
+  ],
+  "model": {
+    "context_window": 1050000,
+    "display_name": "GPT-5.6 Terra",
+    "family": "gpt",
+    "id": "gpt-5.6-terra",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "max_output_tokens": 128000,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "2026-08-31 Codex, OpenCode, Kimi Code and Grok Build completed owned public-gateway Responses tool-result loops.",
+      "name": "responses",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [
+      {
+        "client": "Kimi Code",
+        "levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      }
+    ],
+    "client_mappings": [],
+    "default_level": "medium",
+    "model_levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ]
+  },
+  "recommended_protocol": "responses",
+  "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Codex": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.151.0",
+            "evidence": "migration_gap: no exact linux Codex cli:0.151.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:0.151.0",
+            "model_id": "gpt-5.6-terra",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-59d38a78e8e4a2811847f4ae",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-59d38a78e8e4a2811847f4ae"
+            ],
+            "pass_evidence_ids": [
+              "evidence-59d38a78e8e4a2811847f4ae"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:0.151.0",
+            "evidence": "migration_gap: no exact windows Codex cli:0.151.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Grok Build": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.0.13",
+            "evidence": "migration_gap: no exact linux Grok Build cli:1.0.13 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "model_id": "gpt-5.6-terra",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-5fddd59db9f31d1c0127a32f",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-5fddd59db9f31d1c0127a32f"
+            ],
+            "pass_evidence_ids": [
+              "evidence-5fddd59db9f31d1c0127a32f"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:1.0.13",
+            "evidence": "migration_gap: no exact windows Grok Build cli:1.0.13 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Kimi Code": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.38.0",
+            "evidence": "migration_gap: no exact linux Kimi Code cli:0.38.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:0.39.1",
+            "model_id": "gpt-5.6-terra",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-fe47319696f3148bcbe2c7fb",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-fe47319696f3148bcbe2c7fb"
+            ],
+            "pass_evidence_ids": [
+              "evidence-fe47319696f3148bcbe2c7fb"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:0.38.0",
+            "evidence": "migration_gap: no exact windows Kimi Code cli:0.38.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "OpenCode": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.18.15",
+            "evidence": "migration_gap: no exact linux OpenCode cli:1.18.15 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "model_id": "gpt-5.6-terra",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-a5f6444bfa052dad4e0ddbae",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-a5f6444bfa052dad4e0ddbae"
+            ],
+            "pass_evidence_ids": [
+              "evidence-a5f6444bfa052dad4e0ddbae"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:1.18.15",
+            "evidence": "migration_gap: no exact windows OpenCode cli:1.18.15 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "ZCode": {
+        "responses": {
+          "linux": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "migration_gap: no exact linux ZCode app:3.10.1+cli:0.16.5 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "model_id": "gpt-5.6-terra",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-89aa17021b66dcd61e5996d1",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-89aa17021b66dcd61e5996d1"
+            ],
+            "pass_evidence_ids": [
+              "evidence-89aa17021b66dcd61e5996d1"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "migration_gap: no exact windows ZCode app:3.10.1+cli:0.16.5 owned public-gateway Responses Agent loop is recorded for gpt-5.6-terra; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-terra",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "model_id": "gpt-5.6-terra",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-0ff18dd47de51d371518bb26",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-0ff18dd47de51d371518bb26"
+            ],
+            "pass_evidence_ids": [
+              "evidence-0ff18dd47de51d371518bb26"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      }
+    },
+    "group_access": {
+      "GPT Max 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.6-terra",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-4514755a13476bd52dfb6a02",
+              "evidence-4b33dcfbf819cfdf562f292e",
+              "evidence-67a7e6d9b74e940983260dfc"
+            ],
+            "pass_evidence_ids": [
+              "evidence-4514755a13476bd52dfb6a02",
+              "evidence-4b33dcfbf819cfdf562f292e",
+              "evidence-67a7e6d9b74e940983260dfc"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:55+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-4514755a13476bd52dfb6a02",
+          "evidence-4b33dcfbf819cfdf562f292e",
+          "evidence-67a7e6d9b74e940983260dfc"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT Plus 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.6-terra",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-2706cff825d81b9dd7a9ad19",
+              "evidence-9d6f33d057b2c7df765fe854",
+              "evidence-d918b1e8782f8b9eaba51dee"
+            ],
+            "pass_evidence_ids": [
+              "evidence-2706cff825d81b9dd7a9ad19",
+              "evidence-9d6f33d057b2c7df765fe854",
+              "evidence-d918b1e8782f8b9eaba51dee"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:05+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-2706cff825d81b9dd7a9ad19",
+          "evidence-9d6f33d057b2c7df765fe854",
+          "evidence-d918b1e8782f8b9eaba51dee"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT Pro 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.6-terra",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-133aec70a138dd194bbcaf4a",
+              "evidence-314f90847706c0570272ef4d",
+              "evidence-e04b5ffcf7673a207995c867"
+            ],
+            "pass_evidence_ids": [
+              "evidence-133aec70a138dd194bbcaf4a",
+              "evidence-314f90847706c0570272ef4d",
+              "evidence-e04b5ffcf7673a207995c867"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:31+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-133aec70a138dd194bbcaf4a",
+          "evidence-314f90847706c0570272ef4d",
+          "evidence-e04b5ffcf7673a207995c867"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT 企业高速线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.6-terra",
+        "multiplier": 0.8,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-0babff5bfc384fb6f72c96e3",
+              "evidence-4716d972afed71c0fc9c9432",
+              "evidence-b74a06827ac2310736c35da3",
+              "evidence-baf4483823cc7f5c5d0ee446",
+              "evidence-df8e954d109e7f00736d2592",
+              "evidence-e98e581658efc58daa1cdb40"
+            ],
+            "pass_evidence_ids": [
+              "evidence-0babff5bfc384fb6f72c96e3",
+              "evidence-4716d972afed71c0fc9c9432",
+              "evidence-b74a06827ac2310736c35da3",
+              "evidence-baf4483823cc7f5c5d0ee446",
+              "evidence-df8e954d109e7f00736d2592",
+              "evidence-e98e581658efc58daa1cdb40"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:21:42+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-0babff5bfc384fb6f72c96e3",
+          "evidence-4716d972afed71c0fc9c9432",
+          "evidence-b74a06827ac2310736c35da3",
+          "evidence-baf4483823cc7f5c5d0ee446",
+          "evidence-df8e954d109e7f00736d2592",
+          "evidence-e98e581658efc58daa1cdb40"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT 标准线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.6-terra",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-08aa0c4a2977aa66fdaa2b66",
+              "evidence-573a5baee5ff4dce79490ed9",
+              "evidence-6d1b1afbab2471c0b279a6de",
+              "evidence-7e212353f51d5fafefa0556b",
+              "evidence-860be616218ddc52ab40441f",
+              "evidence-ba45722c5a3b3c2a217fd032",
+              "evidence-e1e0ad02765bfe9b0711845c",
+              "evidence-edf099138b93a2d55074bc94",
+              "evidence-f20cd3ac583040fd1ce06a31"
+            ],
+            "pass_evidence_ids": [
+              "evidence-08aa0c4a2977aa66fdaa2b66",
+              "evidence-573a5baee5ff4dce79490ed9",
+              "evidence-6d1b1afbab2471c0b279a6de",
+              "evidence-7e212353f51d5fafefa0556b",
+              "evidence-860be616218ddc52ab40441f",
+              "evidence-ba45722c5a3b3c2a217fd032",
+              "evidence-e1e0ad02765bfe9b0711845c",
+              "evidence-edf099138b93a2d55074bc94",
+              "evidence-f20cd3ac583040fd1ce06a31"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T18:47:53.277+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-08aa0c4a2977aa66fdaa2b66",
+          "evidence-573a5baee5ff4dce79490ed9",
+          "evidence-6d1b1afbab2471c0b279a6de",
+          "evidence-7e212353f51d5fafefa0556b",
+          "evidence-860be616218ddc52ab40441f",
+          "evidence-ba45722c5a3b3c2a217fd032",
+          "evidence-e1e0ad02765bfe9b0711845c",
+          "evidence-edf099138b93a2d55074bc94",
+          "evidence-f20cd3ac583040fd1ce06a31"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT 经济线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.6-terra",
+        "multiplier": 0.35,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-05713b097a5331c5290a97ee",
+              "evidence-1825740c7b197c376c81c8e2",
+              "evidence-19cd736738a159f4255d72c2",
+              "evidence-481ff9a5fbccf80c3d089980",
+              "evidence-5727995e4e45ee11e0a3a6a0",
+              "evidence-65c9e71873aa765ddf74984e",
+              "evidence-74f36f788ff9b0deff699fc2",
+              "evidence-8c5df25c11436f88c8841f7b",
+              "evidence-8f4f4e1668b7c6155e04ce1f",
+              "evidence-b457b5e4ccc358eff31fe35d"
+            ],
+            "pass_evidence_ids": [
+              "evidence-05713b097a5331c5290a97ee",
+              "evidence-1825740c7b197c376c81c8e2",
+              "evidence-19cd736738a159f4255d72c2",
+              "evidence-481ff9a5fbccf80c3d089980",
+              "evidence-65c9e71873aa765ddf74984e",
+              "evidence-74f36f788ff9b0deff699fc2",
+              "evidence-8f4f4e1668b7c6155e04ce1f",
+              "evidence-b457b5e4ccc358eff31fe35d"
+            ],
+            "failure_evidence_ids": [
+              "evidence-5727995e4e45ee11e0a3a6a0",
+              "evidence-8c5df25c11436f88c8841f7b"
+            ],
+            "observed_at": "2026-08-31T21:55:08+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-05713b097a5331c5290a97ee",
+          "evidence-1825740c7b197c376c81c8e2",
+          "evidence-19cd736738a159f4255d72c2",
+          "evidence-481ff9a5fbccf80c3d089980",
+          "evidence-5727995e4e45ee11e0a3a6a0",
+          "evidence-65c9e71873aa765ddf74984e",
+          "evidence-74f36f788ff9b0deff699fc2",
+          "evidence-8c5df25c11436f88c8841f7b",
+          "evidence-8f4f4e1668b7c6155e04ce1f",
+          "evidence-b457b5e4ccc358eff31fe35d"
+        ],
+        "verified_at": "2026-08-31"
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "legacy contract official limit: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "legacy contract official limit: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "legacy modality declaration: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+        "status": "verified"
+      },
+      "text": {
+        "evidence": "legacy modality declaration: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "legacy modality declaration: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+        "status": "unsupported"
+      }
+    },
+    "pricing": {
+      "GPT Max 月卡组": {
+        "cache_read_price": 0.1,
+        "cache_write_price": 1.25,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 6,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT Plus 月卡组": {
+        "cache_read_price": 0.1,
+        "cache_write_price": 1.25,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 6,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT Pro 月卡组": {
+        "cache_read_price": 0.1,
+        "cache_write_price": 1.25,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 6,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 企业高速线路": {
+        "cache_read_price": 0.2,
+        "cache_write_price": 2.5,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 2,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 12,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 标准线路": {
+        "cache_read_price": 0.1,
+        "cache_write_price": 1.25,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 6,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 经济线路": {
+        "cache_read_price": 0.07,
+        "cache_write_price": 0.875,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 0.7,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 4.2,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "responses": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-044635d7f58f0c478c4b4c87, evidence-26c705b2dfd38e69a736ede9, evidence-8410a7ff310253cfdad99726",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-044635d7f58f0c478c4b4c87",
+            "evidence-26c705b2dfd38e69a736ede9",
+            "evidence-8410a7ff310253cfdad99726"
+          ],
+          "pass_evidence_ids": [
+            "evidence-044635d7f58f0c478c4b4c87",
+            "evidence-26c705b2dfd38e69a736ede9",
+            "evidence-8410a7ff310253cfdad99726"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-a2fbc00033044c0e2ace0f61, evidence-d3eb8a20950460780eb24ce2",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a2fbc00033044c0e2ace0f61",
+            "evidence-d3eb8a20950460780eb24ce2"
+          ],
+          "pass_evidence_ids": [
+            "evidence-a2fbc00033044c0e2ace0f61",
+            "evidence-d3eb8a20950460780eb24ce2"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-8a6e548016c4c057aea38456, evidence-92a4624e5aeb93421ca67dc1",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8a6e548016c4c057aea38456",
+            "evidence-92a4624e5aeb93421ca67dc1"
+          ],
+          "pass_evidence_ids": [
+            "evidence-8a6e548016c4c057aea38456",
+            "evidence-92a4624e5aeb93421ca67dc1"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-24e9b32c73a655e7b99dc035, evidence-8274cc7caa7d28fdefa449cc, evidence-9ae918b446e6c323e6ab38e4, evidence-a31b89223cb5b47991695aaa, evidence-a5c7f55ef42b590ba1a8f1f7, evidence-cbd4a9562b1538f728d84609, evidence-e72234271b66857bfdbe08ba, evidence-f7b24b52dafa422e312f9043",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-24e9b32c73a655e7b99dc035",
+            "evidence-8274cc7caa7d28fdefa449cc",
+            "evidence-9ae918b446e6c323e6ab38e4",
+            "evidence-a31b89223cb5b47991695aaa",
+            "evidence-a5c7f55ef42b590ba1a8f1f7",
+            "evidence-cbd4a9562b1538f728d84609",
+            "evidence-e72234271b66857bfdbe08ba",
+            "evidence-f7b24b52dafa422e312f9043"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-24e9b32c73a655e7b99dc035",
+            "evidence-8274cc7caa7d28fdefa449cc",
+            "evidence-9ae918b446e6c323e6ab38e4",
+            "evidence-a31b89223cb5b47991695aaa",
+            "evidence-a5c7f55ef42b590ba1a8f1f7",
+            "evidence-cbd4a9562b1538f728d84609",
+            "evidence-e72234271b66857bfdbe08ba",
+            "evidence-f7b24b52dafa422e312f9043"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-5619c2761e79d3ac14234c1b, evidence-67989944482b47fabf016bae",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5619c2761e79d3ac14234c1b",
+            "evidence-67989944482b47fabf016bae"
+          ],
+          "pass_evidence_ids": [
+            "evidence-5619c2761e79d3ac14234c1b",
+            "evidence-67989944482b47fabf016bae"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-6ab24de5d4baaf35db47cbd6",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6ab24de5d4baaf35db47cbd6"
+          ],
+          "pass_evidence_ids": [
+            "evidence-6ab24de5d4baaf35db47cbd6"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-4206c353c88f1b893adb3766",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4206c353c88f1b893adb3766"
+          ],
+          "pass_evidence_ids": [
+            "evidence-4206c353c88f1b893adb3766"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-0c1043a06ba62d8908430850",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0c1043a06ba62d8908430850"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0c1043a06ba62d8908430850"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-b23c4f4fbfaec2eb7e847839, evidence-e1e662587a6bce4670f46e30, evidence-e99f1bd80899a8b45fb3c588",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b23c4f4fbfaec2eb7e847839",
+            "evidence-e1e662587a6bce4670f46e30",
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ],
+          "pass_evidence_ids": [
+            "evidence-b23c4f4fbfaec2eb7e847839",
+            "evidence-e1e662587a6bce4670f46e30",
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "responses": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-90a850dc9cd168b8cdee65b6, evidence-91e58eddc111c04e52bbe73c",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-90a850dc9cd168b8cdee65b6",
+            "evidence-91e58eddc111c04e52bbe73c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-90a850dc9cd168b8cdee65b6",
+            "evidence-91e58eddc111c04e52bbe73c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-05713b097a5331c5290a97ee, evidence-133aec70a138dd194bbcaf4a, evidence-67a7e6d9b74e940983260dfc, evidence-8c5df25c11436f88c8841f7b, evidence-9d6f33d057b2c7df765fe854, evidence-ba45722c5a3b3c2a217fd032, evidence-c8dad7b85d182f7d699350a3, evidence-e1e0ad02765bfe9b0711845c, evidence-e98e581658efc58daa1cdb40, evidence-edf099138b93a2d55074bc94",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-05713b097a5331c5290a97ee",
+            "evidence-133aec70a138dd194bbcaf4a",
+            "evidence-67a7e6d9b74e940983260dfc",
+            "evidence-8c5df25c11436f88c8841f7b",
+            "evidence-9d6f33d057b2c7df765fe854",
+            "evidence-ba45722c5a3b3c2a217fd032",
+            "evidence-c8dad7b85d182f7d699350a3",
+            "evidence-e1e0ad02765bfe9b0711845c",
+            "evidence-e98e581658efc58daa1cdb40",
+            "evidence-edf099138b93a2d55074bc94"
+          ],
+          "pass_evidence_ids": [
+            "evidence-05713b097a5331c5290a97ee",
+            "evidence-133aec70a138dd194bbcaf4a",
+            "evidence-67a7e6d9b74e940983260dfc",
+            "evidence-9d6f33d057b2c7df765fe854",
+            "evidence-ba45722c5a3b3c2a217fd032",
+            "evidence-c8dad7b85d182f7d699350a3",
+            "evidence-e1e0ad02765bfe9b0711845c",
+            "evidence-e98e581658efc58daa1cdb40",
+            "evidence-edf099138b93a2d55074bc94"
+          ],
+          "failure_evidence_ids": [
+            "evidence-8c5df25c11436f88c8841f7b"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-5ee79966161a076f1fff2006, evidence-aaa3a9f03e771e9a40b6070a",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5ee79966161a076f1fff2006",
+            "evidence-aaa3a9f03e771e9a40b6070a"
+          ],
+          "pass_evidence_ids": [
+            "evidence-5ee79966161a076f1fff2006",
+            "evidence-aaa3a9f03e771e9a40b6070a"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-5f919d798a6d327d23cadd7b, evidence-c0483c1b298d1098ceb5372c, evidence-d54b9e19828c2d35a0790c26",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5f919d798a6d327d23cadd7b",
+            "evidence-c0483c1b298d1098ceb5372c",
+            "evidence-d54b9e19828c2d35a0790c26"
+          ],
+          "pass_evidence_ids": [
+            "evidence-5f919d798a6d327d23cadd7b",
+            "evidence-c0483c1b298d1098ceb5372c",
+            "evidence-d54b9e19828c2d35a0790c26"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-b336ec5f825b2266f6d4287f, evidence-d54ce67321cce5d684aab93a",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b336ec5f825b2266f6d4287f",
+            "evidence-d54ce67321cce5d684aab93a"
+          ],
+          "pass_evidence_ids": [
+            "evidence-b336ec5f825b2266f6d4287f",
+            "evidence-d54ce67321cce5d684aab93a"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-42aef9a63a226a161fa810ae, evidence-e6ef5a1b59d0a9032dad16ef",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-42aef9a63a226a161fa810ae",
+            "evidence-e6ef5a1b59d0a9032dad16ef"
+          ],
+          "pass_evidence_ids": [
+            "evidence-42aef9a63a226a161fa810ae",
+            "evidence-e6ef5a1b59d0a9032dad16ef"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Codex": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "responses": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "fixed client levels fit inside the verified model reasoning matrix",
+            "mappings": [],
+            "status": "verified"
+          }
+        },
+        "OpenCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "responses": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        }
+      },
+      "model_levels": {
+        "high": {
+          "evidence": "OpenAI official gpt-5.6-terra specification explicitly lists reasoning.effort=high: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+          "status": "verified"
+        },
+        "low": {
+          "evidence": "OpenAI official gpt-5.6-terra specification explicitly lists reasoning.effort=low: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+          "status": "verified"
+        },
+        "max": {
+          "evidence": "OpenAI official gpt-5.6-terra specification explicitly lists reasoning.effort=max: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+          "status": "verified"
+        },
+        "medium": {
+          "evidence": "M8 receipts: evidence-8a5fb23b19256bdbd8395178",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8a5fb23b19256bdbd8395178"
+          ],
+          "pass_evidence_ids": [
+            "evidence-8a5fb23b19256bdbd8395178"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        },
+        "none": {
+          "evidence": "OpenAI official gpt-5.6-terra specification explicitly lists reasoning.effort=none: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+          "status": "verified"
+        },
+        "xhigh": {
+          "evidence": "OpenAI official gpt-5.6-terra specification explicitly lists reasoning.effort=xhigh: https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+          "status": "verified"
+        }
+      }
+    },
+    "tools": {
+      "responses": {
+        "apply_patch": {
+          "evidence": "OpenAI lists apply_patch for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "code_interpreter": {
+          "evidence": "OpenAI lists code_interpreter for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "computer_use": {
+          "evidence": "OpenAI lists computer_use for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "file_search": {
+          "evidence": "OpenAI lists file_search for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "function_calling": {
+          "evidence": "2026-08-31 owned public-gateway gpt-5.6-terra Responses Agent loops emitted a function/tool call, accepted the tool result, returned the exact marker, and completed.",
+          "status": "verified",
+          "verified_at": "2026-08-31"
+        },
+        "hosted_shell": {
+          "evidence": "OpenAI lists hosted_shell for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "image_generation": {
+          "evidence": "OpenAI lists image_generation for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "mcp": {
+          "evidence": "OpenAI lists mcp for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "skills": {
+          "evidence": "OpenAI lists skills for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "tool_search": {
+          "evidence": "OpenAI lists tool_search for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-b23c4f4fbfaec2eb7e847839, evidence-e1e662587a6bce4670f46e30, evidence-e99f1bd80899a8b45fb3c588",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b23c4f4fbfaec2eb7e847839",
+            "evidence-e1e662587a6bce4670f46e30",
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ],
+          "pass_evidence_ids": [
+            "evidence-b23c4f4fbfaec2eb7e847839",
+            "evidence-e1e662587a6bce4670f46e30",
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "evidence": "2026-08-31 owned public-gateway gpt-5.6-terra Responses Agent loops emitted a function/tool call, accepted the tool result, returned the exact marker, and completed.",
+      "name": "function_calling",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "evidence": "OpenAI lists web_search for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "web_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists file_search for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "file_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists image_generation for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "image_generation",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists code_interpreter for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "code_interpreter",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists hosted_shell for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "hosted_shell",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists apply_patch for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "apply_patch",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists skills for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "skills",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists computer_use for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "computer_use",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists mcp for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "mcp",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists tool_search for gpt-5.6-terra on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-terra; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "tool_search",
+      "protocol": "responses",
+      "status": "blocked"
+    }
+  ],
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+    "verified_at": "2026-08-31"
+  }
+}

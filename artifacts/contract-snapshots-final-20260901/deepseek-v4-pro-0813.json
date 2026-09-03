@@ -1,0 +1,1713 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 0.95,
+        "name": "DeepSeek 企业高速线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-4f4676e56532dcd99d8374b8, evidence-5705c47b67afe79a134cc462, evidence-59d38a78e8e4a2811847f4ae, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-4f4676e56532dcd99d8374b8",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-59d38a78e8e4a2811847f4ae",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "name": "Codex",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-a55a6c8db5f9a4b9a06fe267, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-a55a6c8db5f9a4b9a06fe267",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "name": "Grok Build",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-6152d3fe976b6833d62dbc4f, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-6152d3fe976b6833d62dbc4f",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "name": "Kimi Code",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-93c53fa4a263a0500c300794, evidence-9be83b303988b25f324de8ad, evidence-9d83d4a566cbbdd19561b81f, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-93c53fa4a263a0500c300794",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-9d83d4a566cbbdd19561b81f",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "name": "OpenCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-ce56981055de4592468ddacb, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-ce56981055de4592468ddacb",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "name": "ZCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-dbb8bf7369d6fce0768d3087, evidence-dcbb64623300809699a75ab2, evidence-e36b1ae7621280b608ad6f2c",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-dbb8bf7369d6fce0768d3087",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "name": "Hermes Agent",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "Qoder",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "WorkBuddy",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Visual Studio Code Local Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "name": "Codex",
+      "recommended": false,
+      "version": "0.151.0",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-4f4676e56532dcd99d8374b8",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-59d38a78e8e4a2811847f4ae",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-4f4676e56532dcd99d8374b8, evidence-5705c47b67afe79a134cc462, evidence-59d38a78e8e4a2811847f4ae, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c"
+    },
+    {
+      "name": "Grok Build",
+      "recommended": false,
+      "version": "1.0.13",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-a55a6c8db5f9a4b9a06fe267",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-a55a6c8db5f9a4b9a06fe267, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c"
+    },
+    {
+      "name": "Hermes Agent",
+      "recommended": false,
+      "version": "0.20.0",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-dbb8bf7369d6fce0768d3087",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-dbb8bf7369d6fce0768d3087, evidence-dcbb64623300809699a75ab2, evidence-e36b1ae7621280b608ad6f2c"
+    },
+    {
+      "name": "Kimi Code",
+      "recommended": false,
+      "version": "0.38.0+",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-6152d3fe976b6833d62dbc4f",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-6152d3fe976b6833d62dbc4f, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c"
+    },
+    {
+      "name": "OpenCode",
+      "recommended": false,
+      "version": "1.18.15",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-93c53fa4a263a0500c300794",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-9d83d4a566cbbdd19561b81f",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-93c53fa4a263a0500c300794, evidence-9be83b303988b25f324de8ad, evidence-9d83d4a566cbbdd19561b81f, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c"
+    },
+    {
+      "name": "ZCode",
+      "recommended": false,
+      "version": "3.10.1 / CLI 0.16.5",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-098e74cf76021e1168cb4264",
+        "evidence-1e193efea73df0571707f1e4",
+        "evidence-24d272b7def4a8e66e78e8f0",
+        "evidence-262ffe3be556765bcb3165fa",
+        "evidence-3173ecfc7e04681e69c28d24",
+        "evidence-35693d04151541612e6e8e27",
+        "evidence-38272bf038e9315fa5caa769",
+        "evidence-5705c47b67afe79a134cc462",
+        "evidence-82755c0f3601fb09fca34403",
+        "evidence-8cf647a28da8ae7787e26232",
+        "evidence-9be83b303988b25f324de8ad",
+        "evidence-b238185a46d054f6241d3a9e",
+        "evidence-ce56981055de4592468ddacb",
+        "evidence-d607bc26b81a46ac4f3975df",
+        "evidence-e36b1ae7621280b608ad6f2c"
+      ],
+      "evidence": "M8 receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-ce56981055de4592468ddacb, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c"
+    }
+  ],
+  "model": {
+    "context_window": 1000000,
+    "display_name": "DeepSeek V4 Pro 0813",
+    "family": "deepseek",
+    "id": "deepseek-v4-pro-0813",
+    "input_modalities": [
+      "text"
+    ],
+    "max_output_tokens": 393216,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "2026-08-30 direct-source and production probes passed minimal text, SSE terminal response.completed, function calling, native web_search, usage parsing and public route readback",
+      "name": "responses",
+      "status": "verified"
+    },
+    {
+      "evidence": "2026-08-30 four-protocol audit passed ordinary text, streaming terminal completion, function calling, tool-result continuation and usage parsing",
+      "name": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "evidence": "Alibaba documents an upstream Messages surface, but the current public DeepSeek group did not pass the platform Messages probe and is not published for this protocol",
+      "name": "messages",
+      "status": "unsupported"
+    },
+    {
+      "evidence": "current platform protocol audit rejected the Gemini GenerateContent surface for this model",
+      "name": "generate_content",
+      "status": "unsupported"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [],
+    "client_mappings": [],
+    "model_levels": [
+      "low",
+      "high",
+      "max"
+    ]
+  },
+  "recommended_protocol": "responses",
+  "recommended_protocol_reason": "Responses is the recommended native path because the exact public snapshots passed streaming response.completed, Function Calling, native Web Search, Usage, and real coding-client tool-result continuations; Chat Completions remains verified for clients that require its request shape.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Codex": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.151.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-4f4676e56532dcd99d8374b8, evidence-5705c47b67afe79a134cc462, evidence-59d38a78e8e4a2811847f4ae, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-1e193efea73df0571707f1e4",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-262ffe3be556765bcb3165fa",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-38272bf038e9315fa5caa769",
+              "evidence-4f4676e56532dcd99d8374b8",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-59d38a78e8e4a2811847f4ae",
+              "evidence-82755c0f3601fb09fca34403",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-4f4676e56532dcd99d8374b8"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Grok Build": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-044ec2f0fbf2a30c6e900375",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-044ec2f0fbf2a30c6e900375"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-044ec2f0fbf2a30c6e900375"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        },
+        "responses": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-a55a6c8db5f9a4b9a06fe267, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-1e193efea73df0571707f1e4",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-262ffe3be556765bcb3165fa",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-38272bf038e9315fa5caa769",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-82755c0f3601fb09fca34403",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-a55a6c8db5f9a4b9a06fe267",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-a55a6c8db5f9a4b9a06fe267"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Hermes Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-dbb8bf7369d6fce0768d3087, evidence-dcbb64623300809699a75ab2, evidence-e36b1ae7621280b608ad6f2c",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-1e193efea73df0571707f1e4",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-262ffe3be556765bcb3165fa",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-38272bf038e9315fa5caa769",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-82755c0f3601fb09fca34403",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-dbb8bf7369d6fce0768d3087",
+              "evidence-dcbb64623300809699a75ab2",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-dbb8bf7369d6fce0768d3087"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "Kimi Code": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-24d272b7def4a8e66e78e8f0, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-5705c47b67afe79a134cc462, evidence-6055e286ae694e78512bbc2b, evidence-61533b6d71cbb8263dbb369f, evidence-766455305f8152146a0d966a, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-c0178ea5dd05200bcf5d5d7d, evidence-c978a074080b461e1826e110, evidence-d607bc26b81a46ac4f3975df, evidence-d7aebeba174ccc305f10f4ed, evidence-d8b2117c74cf43b4447f4218, evidence-da149c310667f365277541e8, evidence-dc7ed4b842c49d33e44987d0, evidence-e36b1ae7621280b608ad6f2c, evidence-e7a3a0a7df39fab607034821, evidence-f209cd6006252b3f6718ed34",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-6055e286ae694e78512bbc2b",
+              "evidence-61533b6d71cbb8263dbb369f",
+              "evidence-766455305f8152146a0d966a",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-c0178ea5dd05200bcf5d5d7d",
+              "evidence-c978a074080b461e1826e110",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-d7aebeba174ccc305f10f4ed",
+              "evidence-d8b2117c74cf43b4447f4218",
+              "evidence-da149c310667f365277541e8",
+              "evidence-dc7ed4b842c49d33e44987d0",
+              "evidence-e36b1ae7621280b608ad6f2c",
+              "evidence-e7a3a0a7df39fab607034821",
+              "evidence-f209cd6006252b3f6718ed34"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-c978a074080b461e1826e110"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        },
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-6152d3fe976b6833d62dbc4f, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-1e193efea73df0571707f1e4",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-262ffe3be556765bcb3165fa",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-38272bf038e9315fa5caa769",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-6152d3fe976b6833d62dbc4f",
+              "evidence-82755c0f3601fb09fca34403",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-6152d3fe976b6833d62dbc4f"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "MiniMax Code": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.2.7",
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        },
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.2.7",
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "OpenCode": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-24d272b7def4a8e66e78e8f0, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-5705c47b67afe79a134cc462, evidence-6055e286ae694e78512bbc2b, evidence-61533b6d71cbb8263dbb369f, evidence-62edd5d70b4d534a6c159cd6, evidence-766455305f8152146a0d966a, evidence-827ffe98b3fc9d84aef64ce5, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-c0178ea5dd05200bcf5d5d7d, evidence-d607bc26b81a46ac4f3975df, evidence-d7aebeba174ccc305f10f4ed, evidence-d8b2117c74cf43b4447f4218, evidence-da149c310667f365277541e8, evidence-dc7ed4b842c49d33e44987d0, evidence-e36b1ae7621280b608ad6f2c, evidence-e7a3a0a7df39fab607034821, evidence-f209cd6006252b3f6718ed34",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-6055e286ae694e78512bbc2b",
+              "evidence-61533b6d71cbb8263dbb369f",
+              "evidence-62edd5d70b4d534a6c159cd6",
+              "evidence-766455305f8152146a0d966a",
+              "evidence-827ffe98b3fc9d84aef64ce5",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-c0178ea5dd05200bcf5d5d7d",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-d7aebeba174ccc305f10f4ed",
+              "evidence-d8b2117c74cf43b4447f4218",
+              "evidence-da149c310667f365277541e8",
+              "evidence-dc7ed4b842c49d33e44987d0",
+              "evidence-e36b1ae7621280b608ad6f2c",
+              "evidence-e7a3a0a7df39fab607034821",
+              "evidence-f209cd6006252b3f6718ed34"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-827ffe98b3fc9d84aef64ce5"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        },
+        "responses": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-93c53fa4a263a0500c300794, evidence-9be83b303988b25f324de8ad, evidence-9d83d4a566cbbdd19561b81f, evidence-b238185a46d054f6241d3a9e, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-1e193efea73df0571707f1e4",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-262ffe3be556765bcb3165fa",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-38272bf038e9315fa5caa769",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-82755c0f3601fb09fca34403",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-93c53fa4a263a0500c300794",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-9d83d4a566cbbdd19561b81f",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-9d83d4a566cbbdd19561b81f"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Qoder": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.1.38",
+            "evidence": "blocked: Qoder cli:1.1.38 has an official protocol adapter, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        }
+      },
+      "WorkBuddy": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "app:5.3.14+cli:2.115.0",
+            "evidence": "2026-09-01 blocked admission gap: WorkBuddy documents chat_completions, but no exact deepseek-v4-pro-0813 × chat_completions × app:5.3.14+cli:2.115.0 × macos 老实人AI Agent loop with local tool call, tool-result continuation, final marker, and clean completion has been preserved.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked",
+            "verified_at": "2026-09-01"
+          },
+          "windows": {
+            "client_version": "app:5.3.14+cli:2.115.0",
+            "evidence": "2026-09-01 blocked admission gap: WorkBuddy documents chat_completions, but no exact deepseek-v4-pro-0813 × chat_completions × app:5.3.14+cli:2.115.0 × windows 老实人AI Agent loop with local tool call, tool-result continuation, final marker, and clean completion has been preserved.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "windows",
+            "protocol": "chat_completions",
+            "status": "blocked",
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "ZCode": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-24d272b7def4a8e66e78e8f0, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-3b1033a224d699e6af098214, evidence-5705c47b67afe79a134cc462, evidence-6055e286ae694e78512bbc2b, evidence-61533b6d71cbb8263dbb369f, evidence-766455305f8152146a0d966a, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-c0178ea5dd05200bcf5d5d7d, evidence-d607bc26b81a46ac4f3975df, evidence-d7aebeba174ccc305f10f4ed, evidence-d8b2117c74cf43b4447f4218, evidence-da149c310667f365277541e8, evidence-dc7ed4b842c49d33e44987d0, evidence-e36b1ae7621280b608ad6f2c, evidence-e7a3a0a7df39fab607034821, evidence-f209cd6006252b3f6718ed34",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-3b1033a224d699e6af098214",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-6055e286ae694e78512bbc2b",
+              "evidence-61533b6d71cbb8263dbb369f",
+              "evidence-766455305f8152146a0d966a",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-c0178ea5dd05200bcf5d5d7d",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-d7aebeba174ccc305f10f4ed",
+              "evidence-d8b2117c74cf43b4447f4218",
+              "evidence-da149c310667f365277541e8",
+              "evidence-dc7ed4b842c49d33e44987d0",
+              "evidence-e36b1ae7621280b608ad6f2c",
+              "evidence-e7a3a0a7df39fab607034821",
+              "evidence-f209cd6006252b3f6718ed34"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-3b1033a224d699e6af098214"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        },
+        "responses": {
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-098e74cf76021e1168cb4264, evidence-1e193efea73df0571707f1e4, evidence-24d272b7def4a8e66e78e8f0, evidence-262ffe3be556765bcb3165fa, evidence-3173ecfc7e04681e69c28d24, evidence-35693d04151541612e6e8e27, evidence-38272bf038e9315fa5caa769, evidence-5705c47b67afe79a134cc462, evidence-82755c0f3601fb09fca34403, evidence-8cf647a28da8ae7787e26232, evidence-9be83b303988b25f324de8ad, evidence-b238185a46d054f6241d3a9e, evidence-ce56981055de4592468ddacb, evidence-d607bc26b81a46ac4f3975df, evidence-e36b1ae7621280b608ad6f2c",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-1e193efea73df0571707f1e4",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-262ffe3be556765bcb3165fa",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-38272bf038e9315fa5caa769",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-82755c0f3601fb09fca34403",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-ce56981055de4592468ddacb",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-ce56981055de4592468ddacb"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "linux",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "windows",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        },
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Visual Studio Code Local Agent": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "linux",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "windows",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        },
+        "responses": {
+          "macos": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "deepseek-v4-pro-0813",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "DeepSeek 企业高速线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: chat_completions=verified, responses=verified",
+        "evidence_ids": [
+          "evidence-098e74cf76021e1168cb4264",
+          "evidence-24d272b7def4a8e66e78e8f0",
+          "evidence-3173ecfc7e04681e69c28d24",
+          "evidence-35693d04151541612e6e8e27",
+          "evidence-5705c47b67afe79a134cc462",
+          "evidence-8cf647a28da8ae7787e26232",
+          "evidence-9be83b303988b25f324de8ad",
+          "evidence-b238185a46d054f6241d3a9e",
+          "evidence-d607bc26b81a46ac4f3975df",
+          "evidence-e36b1ae7621280b608ad6f2c"
+        ],
+        "model_id": "deepseek-v4-pro-0813",
+        "multiplier": 0.95,
+        "protocol_evidence": {
+          "chat_completions": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-d607bc26b81a46ac4f3975df"
+            ],
+            "pass_evidence_ids": [
+              "evidence-098e74cf76021e1168cb4264",
+              "evidence-24d272b7def4a8e66e78e8f0",
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-b238185a46d054f6241d3a9e",
+              "evidence-d607bc26b81a46ac4f3975df"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T21:55:59+00:00"
+          },
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-3173ecfc7e04681e69c28d24",
+              "evidence-35693d04151541612e6e8e27",
+              "evidence-5705c47b67afe79a134cc462",
+              "evidence-8cf647a28da8ae7787e26232",
+              "evidence-9be83b303988b25f324de8ad",
+              "evidence-d607bc26b81a46ac4f3975df",
+              "evidence-e36b1ae7621280b608ad6f2c"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T21:55:59+00:00"
+          }
+        },
+        "protocols": [
+          "responses",
+          "chat_completions"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the recommended native path because the exact public snapshots passed streaming response.completed, Function Calling, native Web Search, Usage, and real coding-client tool-result continuations; Chat Completions remains verified for clients that require its request shape.",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "legacy contract official limit: https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "legacy contract official limit: https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "legacy modality declaration: https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+        "status": "unsupported"
+      },
+      "text": {
+        "evidence": "legacy modality declaration: https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "legacy modality declaration: https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+        "status": "unsupported"
+      }
+    },
+    "pricing": {
+      "DeepSeek 企业高速线路": {
+        "cache_read_price": 0.855,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 8.55,
+        "output_price": 25.65,
+        "status": "verified",
+        "time_pricing": {
+          "periods": [
+            {
+              "end_time": "08:00:00",
+              "multiplier": 0.5,
+              "start_time": "00:00:00"
+            },
+            {
+              "end_time": "00:00:00",
+              "multiplier": 0.5,
+              "start_time": "22:00:00"
+            }
+          ],
+          "timezone": "Asia/Shanghai"
+        },
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "chat_completions": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-6ee1bd0fe743d137f0ce44b2, evidence-9a3974a0eb76a05e24e8583b, evidence-fce457557298121341a94f0d",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6ee1bd0fe743d137f0ce44b2",
+            "evidence-9a3974a0eb76a05e24e8583b",
+            "evidence-fce457557298121341a94f0d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-6ee1bd0fe743d137f0ce44b2",
+            "evidence-9a3974a0eb76a05e24e8583b",
+            "evidence-fce457557298121341a94f0d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-110df6daa7b01ee26dbfa255, evidence-5051269491c6608a3af54f0a",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-110df6daa7b01ee26dbfa255",
+            "evidence-5051269491c6608a3af54f0a"
+          ],
+          "pass_evidence_ids": [
+            "evidence-110df6daa7b01ee26dbfa255",
+            "evidence-5051269491c6608a3af54f0a"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-07914dc5683b4f56457e8956",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-07914dc5683b4f56457e8956"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-07914dc5683b4f56457e8956"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-00c7407efd49c106c653878b, evidence-14f62cb7473b8321d746e643, evidence-a1a054003cd5b8ca62f0741a",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-00c7407efd49c106c653878b",
+            "evidence-14f62cb7473b8321d746e643",
+            "evidence-a1a054003cd5b8ca62f0741a"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-00c7407efd49c106c653878b",
+            "evidence-14f62cb7473b8321d746e643",
+            "evidence-a1a054003cd5b8ca62f0741a"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-08b643836a8acdf60ecc2988, evidence-352e92c7dba27e7c0490f55d",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-08b643836a8acdf60ecc2988",
+            "evidence-352e92c7dba27e7c0490f55d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-08b643836a8acdf60ecc2988",
+            "evidence-352e92c7dba27e7c0490f55d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-47650175abae16f0eae4d193",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-47650175abae16f0eae4d193"
+          ],
+          "pass_evidence_ids": [
+            "evidence-47650175abae16f0eae4d193"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-7c34c10a822dd1462615ffa1",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7c34c10a822dd1462615ffa1"
+          ],
+          "pass_evidence_ids": [
+            "evidence-7c34c10a822dd1462615ffa1"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-35d3f8c122fa519747f1eef9",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-35d3f8c122fa519747f1eef9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-35d3f8c122fa519747f1eef9"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-6eb723821479286d148ff928",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-6eb723821479286d148ff928"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-6eb723821479286d148ff928"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      },
+      "responses": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-027bbd999047df329c01d0c0, evidence-45ea51af21dc33ee93b9b00a, evidence-da514779341c09647a5cc5d2",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-027bbd999047df329c01d0c0",
+            "evidence-45ea51af21dc33ee93b9b00a",
+            "evidence-da514779341c09647a5cc5d2"
+          ],
+          "pass_evidence_ids": [
+            "evidence-027bbd999047df329c01d0c0",
+            "evidence-45ea51af21dc33ee93b9b00a",
+            "evidence-da514779341c09647a5cc5d2"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-3aca5f91da836cf7478d424a, evidence-3cf98539ff68e7e3c061d0c0",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3aca5f91da836cf7478d424a",
+            "evidence-3cf98539ff68e7e3c061d0c0"
+          ],
+          "pass_evidence_ids": [
+            "evidence-3aca5f91da836cf7478d424a",
+            "evidence-3cf98539ff68e7e3c061d0c0"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-b02ae06950f455174b38ad6b",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-b02ae06950f455174b38ad6b"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-b02ae06950f455174b38ad6b"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-76fc4114bfebf59a0ba63b44, evidence-b4ee9378071710c2ab450997, evidence-eb3e312a8f87c9c688b0654f",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-76fc4114bfebf59a0ba63b44",
+            "evidence-b4ee9378071710c2ab450997",
+            "evidence-eb3e312a8f87c9c688b0654f"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-76fc4114bfebf59a0ba63b44",
+            "evidence-b4ee9378071710c2ab450997",
+            "evidence-eb3e312a8f87c9c688b0654f"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-0c2d62ab48e8839ef79b03e6, evidence-43fafc689b76aae2c3bbacd1",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0c2d62ab48e8839ef79b03e6",
+            "evidence-43fafc689b76aae2c3bbacd1"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0c2d62ab48e8839ef79b03e6",
+            "evidence-43fafc689b76aae2c3bbacd1"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-09f89559b7fb7778ebadface",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-09f89559b7fb7778ebadface"
+          ],
+          "pass_evidence_ids": [
+            "evidence-09f89559b7fb7778ebadface"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-abe95020d98fd1d535b0a71a",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-abe95020d98fd1d535b0a71a"
+          ],
+          "pass_evidence_ids": [
+            "evidence-abe95020d98fd1d535b0a71a"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-65c7a805b2534f4f8c0ac2c3",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-65c7a805b2534f4f8c0ac2c3"
+          ],
+          "pass_evidence_ids": [
+            "evidence-65c7a805b2534f4f8c0ac2c3"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-ec371fea53dd915111eb6814",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ec371fea53dd915111eb6814"
+          ],
+          "pass_evidence_ids": [
+            "evidence-ec371fea53dd915111eb6814"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "chat_completions": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-29f1d57ab1b9f215debd5d94, evidence-c2a92593f292bed1eba5bdd7",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-29f1d57ab1b9f215debd5d94",
+            "evidence-c2a92593f292bed1eba5bdd7"
+          ],
+          "pass_evidence_ids": [
+            "evidence-29f1d57ab1b9f215debd5d94",
+            "evidence-c2a92593f292bed1eba5bdd7"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-161e10d34f36fb701e3ce5b6, evidence-24d272b7def4a8e66e78e8f0, evidence-b238185a46d054f6241d3a9e",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-161e10d34f36fb701e3ce5b6",
+            "evidence-24d272b7def4a8e66e78e8f0",
+            "evidence-b238185a46d054f6241d3a9e"
+          ],
+          "pass_evidence_ids": [
+            "evidence-161e10d34f36fb701e3ce5b6",
+            "evidence-24d272b7def4a8e66e78e8f0",
+            "evidence-b238185a46d054f6241d3a9e"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-6055e286ae694e78512bbc2b, evidence-766455305f8152146a0d966a, evidence-af57d427dec8733a05fb587b, evidence-d8b2117c74cf43b4447f4218",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-6055e286ae694e78512bbc2b",
+            "evidence-766455305f8152146a0d966a",
+            "evidence-af57d427dec8733a05fb587b",
+            "evidence-d8b2117c74cf43b4447f4218"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-6055e286ae694e78512bbc2b",
+            "evidence-766455305f8152146a0d966a",
+            "evidence-af57d427dec8733a05fb587b",
+            "evidence-d8b2117c74cf43b4447f4218"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-357dfe2241c6775506b9f741, evidence-61533b6d71cbb8263dbb369f, evidence-c0178ea5dd05200bcf5d5d7d, evidence-da149c310667f365277541e8, evidence-dc7ed4b842c49d33e44987d0, evidence-e7a3a0a7df39fab607034821",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-357dfe2241c6775506b9f741",
+            "evidence-61533b6d71cbb8263dbb369f",
+            "evidence-c0178ea5dd05200bcf5d5d7d",
+            "evidence-da149c310667f365277541e8",
+            "evidence-dc7ed4b842c49d33e44987d0",
+            "evidence-e7a3a0a7df39fab607034821"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-357dfe2241c6775506b9f741",
+            "evidence-61533b6d71cbb8263dbb369f",
+            "evidence-c0178ea5dd05200bcf5d5d7d",
+            "evidence-da149c310667f365277541e8",
+            "evidence-dc7ed4b842c49d33e44987d0",
+            "evidence-e7a3a0a7df39fab607034821"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-9f933e4b6bd6b40744e55d93, evidence-d7aebeba174ccc305f10f4ed, evidence-f209cd6006252b3f6718ed34",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-9f933e4b6bd6b40744e55d93",
+            "evidence-d7aebeba174ccc305f10f4ed",
+            "evidence-f209cd6006252b3f6718ed34"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-9f933e4b6bd6b40744e55d93",
+            "evidence-d7aebeba174ccc305f10f4ed",
+            "evidence-f209cd6006252b3f6718ed34"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-cccb7ab6dfe7c64d9ed80086, evidence-ee2ab6f770c1f96efd475bbe",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cccb7ab6dfe7c64d9ed80086",
+            "evidence-ee2ab6f770c1f96efd475bbe"
+          ],
+          "pass_evidence_ids": [
+            "evidence-cccb7ab6dfe7c64d9ed80086",
+            "evidence-ee2ab6f770c1f96efd475bbe"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      },
+      "responses": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-b141a2c743a1912f8bb1bde5, evidence-f897618207ecdc0ab0dba8fa",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b141a2c743a1912f8bb1bde5",
+            "evidence-f897618207ecdc0ab0dba8fa"
+          ],
+          "pass_evidence_ids": [
+            "evidence-b141a2c743a1912f8bb1bde5",
+            "evidence-f897618207ecdc0ab0dba8fa"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-3d276b7b9f0a5276d81536ab, evidence-e36b1ae7621280b608ad6f2c",
+          "evidence_ids": [
+            "evidence-3d276b7b9f0a5276d81536ab",
+            "evidence-e36b1ae7621280b608ad6f2c"
+          ],
+          "status": "verified",
+          "pass_evidence_ids": [
+            "evidence-3d276b7b9f0a5276d81536ab",
+            "evidence-e36b1ae7621280b608ad6f2c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-82755c0f3601fb09fca34403, evidence-eee13004e0ceca6f87177484",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-82755c0f3601fb09fca34403",
+            "evidence-eee13004e0ceca6f87177484"
+          ],
+          "pass_evidence_ids": [
+            "evidence-82755c0f3601fb09fca34403",
+            "evidence-eee13004e0ceca6f87177484"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-0c2d9a629846de996348b0c0, evidence-1e193efea73df0571707f1e4, evidence-38272bf038e9315fa5caa769",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0c2d9a629846de996348b0c0",
+            "evidence-1e193efea73df0571707f1e4",
+            "evidence-38272bf038e9315fa5caa769"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0c2d9a629846de996348b0c0",
+            "evidence-1e193efea73df0571707f1e4",
+            "evidence-38272bf038e9315fa5caa769"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-149f884533f3cb8b54c24ae7, evidence-262ffe3be556765bcb3165fa",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-149f884533f3cb8b54c24ae7",
+            "evidence-262ffe3be556765bcb3165fa"
+          ],
+          "pass_evidence_ids": [
+            "evidence-149f884533f3cb8b54c24ae7",
+            "evidence-262ffe3be556765bcb3165fa"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-a2c4beafd43d8c6d6be2de15, evidence-b861799f228e689e26a70317",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a2c4beafd43d8c6d6be2de15",
+            "evidence-b861799f228e689e26a70317"
+          ],
+          "pass_evidence_ids": [
+            "evidence-a2c4beafd43d8c6d6be2de15",
+            "evidence-b861799f228e689e26a70317"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Codex": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          },
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "responses": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "Kimi Code": {
+          "chat_completions": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "Kimi Code exposes fixed effort levels, but this exact DeepSeek chat_completions per-level client mapping has not been verified; no model mapping is published.",
+            "mappings": [],
+            "status": "unsupported"
+          },
+          "responses": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "Kimi Code exposes fixed effort levels, but this exact DeepSeek responses per-level client mapping has not been verified; no model mapping is published.",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        },
+        "MiniMax Code": {
+          "chat_completions": {
+            "client_levels": [
+              "off",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          },
+          "responses": {
+            "client_levels": [
+              "off",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "OpenCode": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          },
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Qoder": {
+          "chat_completions": {
+            "client_levels": [
+              "disabled",
+              "off",
+              "none",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: Qoder cli:1.1.38 has an official protocol adapter, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "WorkBuddy": {
+          "chat_completions": {
+            "client_levels": [
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "ZCode": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          },
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "DeepSeek Harness": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          },
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "Visual Studio Code Local Agent": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          },
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact deepseek-v4-pro-0813 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        }
+      },
+      "model_levels": {
+        "high": {
+          "evidence": "M8 receipts: evidence-4d65fb854db9ae1869e0c362, evidence-71e9330e718109d06dc511ad",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4d65fb854db9ae1869e0c362",
+            "evidence-71e9330e718109d06dc511ad"
+          ],
+          "pass_evidence_ids": [
+            "evidence-4d65fb854db9ae1869e0c362",
+            "evidence-71e9330e718109d06dc511ad"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        },
+        "low": {
+          "evidence": "Official DeepSeek exact-snapshot API specification documents reasoning_effort low, high, and max.",
+          "status": "verified"
+        },
+        "max": {
+          "evidence": "Official DeepSeek exact-snapshot API specification documents reasoning_effort low, high, and max.",
+          "status": "verified"
+        }
+      }
+    }
+  },
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "image": "unsupported",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+    "verified_at": "2026-08-31"
+  }
+}

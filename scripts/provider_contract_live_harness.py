@@ -333,7 +333,7 @@ def build_cases(
     if unknown:
         raise HarnessError("unknown case IDs: " + ", ".join(sorted(unknown)))
     for path in sorted(contracts_dir.glob("*.json")):
-        if path.name in {"client-matrix.json", "matrix-schema.json"}:
+        if path.name in {"client-matrix.json", "matrix-schema.json", "import-provenance.json"}:
             continue
         contract = load_json(path)
         if not isinstance(contract, dict):

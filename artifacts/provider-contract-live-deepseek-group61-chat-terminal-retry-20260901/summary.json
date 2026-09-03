@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "d3edee78365a6e29ce9b660e08b4259c2ddb00d9c80ca4c853c833abc30a50c8",
+  "case_count": 2,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "5910549796aa2847",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-deepseek-group61-chat-terminal-retry-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 2
+  }
+}

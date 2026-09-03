@@ -1,0 +1,222 @@
+{
+  "cases": {
+    "64:qwen3.6-flash:responses:P-02:default": {
+      "artifact_sha256": "9dcda751f6e8eca833d329bf33b7c1648e0e493f7303a53a02afcf1177d2252b",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-flash_responses_P-02_default-2c97e5ea67da.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:responses:P-03:default": {
+      "artifact_sha256": "769554023cf0dc5987149112f9c7a03fae1f8242ba9403b7d8beb3e1fd66de98",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-flash_responses_P-03_default-9153ef7af979.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:responses:P-04:default": {
+      "artifact_sha256": "4286cdba573e377727c8be1a0e29b022755dc99ea1f3e17922f71639095815de",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-flash_responses_P-04_default-930f8d2118a4.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:responses:P-05:default": {
+      "artifact_sha256": "9e146860be44db72eb7df2632e46b6fac5d76298414c50102352c3878586346d",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-flash_responses_P-05_default-62f8d85ee5ae.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:responses:P-06:medium": {
+      "artifact_sha256": "665d8627e1117ee8dd376f1c07ac84c3ff97866d492f72b31a7db10c304a6a90",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-flash_responses_P-06_medium-4381876c2e7e.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:responses:P-12:default": {
+      "artifact_sha256": "30044d366f8ae0ef7eb54e283861fcd78d4fa02adbaf80ab497e76f5a3a6a4de",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-flash_responses_P-12_default-5f5a06409b88.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:responses:P-15:default": {
+      "artifact_sha256": "72eec2016b956222afcb5ab8c71c80ffc0487ffe3911d562f623b927d1e2c970",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-flash_responses_P-15_default-20cd4ea52f0e.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:responses:P-02:default": {
+      "artifact_sha256": "689814e6279692993f6ba12973663f47fae00638ffb77a2022e39bf89f8268e4",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-plus_responses_P-02_default-463eb898d21b.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:responses:P-03:default": {
+      "artifact_sha256": "d972046a4849d9ac2b6141ed85ef8fff24480314ed3e8c829347b77b685ac6ed",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-plus_responses_P-03_default-e14c86f458ca.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:responses:P-04:default": {
+      "artifact_sha256": "9813a66e112658e8407143a195c516a928c5a7fc15f5f0a9dd9888a6a400295e",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-plus_responses_P-04_default-7cb6dac579a1.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:responses:P-05:default": {
+      "artifact_sha256": "2bf3d1f36863221877354f8903689b1e707e69930b293b50d12072c79453648d",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-plus_responses_P-05_default-ba80c9bb9f6e.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:responses:P-06:medium": {
+      "artifact_sha256": "d49a3ca532ea27d393fa140d10f332a3468a0c297b327af1dfce4053a894741d",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-plus_responses_P-06_medium-1eb049fda768.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:responses:P-12:default": {
+      "artifact_sha256": "4c0f8efa002ddf26ce09a8d28ddebd75d3279c4afa8f97dccb7424eec1c3a9f8",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-plus_responses_P-12_default-2df11ff6df7b.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:responses:P-15:default": {
+      "artifact_sha256": "c3d9dfed6f853b37a331b2c8fdf4cc54bb029821171a7c1587105a94eb9b71cb",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.6-plus_responses_P-15_default-175652c9dd2c.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:responses:P-02:default": {
+      "artifact_sha256": "1ad6e99429ea40f45e5dbad9eadf45d2a27f51e6978085649daf4f5a93a0250a",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-flash_responses_P-02_default-797782de8e92.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:responses:P-03:default": {
+      "artifact_sha256": "6860c4f25f1005c27c71b41f22b0a0b872cb2d06f2b5e3cb1f87cca71d1f2ebd",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-flash_responses_P-03_default-c51ccb6f41b4.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:responses:P-04:default": {
+      "artifact_sha256": "3983644eb58c02bb0b99885ec08890b7b0a2807ded7c2863588e175d6eada85a",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-flash_responses_P-04_default-7cad513819c4.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:responses:P-05:default": {
+      "artifact_sha256": "4ea744bdcb55a82e329edabc42bab6d85f0abe1b23eae98440a4e85a3261c503",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-flash_responses_P-05_default-7112a914f1c4.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:responses:P-06:medium": {
+      "artifact_sha256": "755081d86cff2a2df487a223ac9f93943a2e42afbe5cd4b07bf90d5ec60a3c43",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-flash_responses_P-06_medium-716768e4f6b8.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:responses:P-12:default": {
+      "artifact_sha256": "9435d3031887ac48dd2f5878f347145ae8af723b94b524720eaa7b769d1fe843",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-flash_responses_P-12_default-8d41f610c005.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:responses:P-15:default": {
+      "artifact_sha256": "cd7f519f4c9b5ca94698a54887a7317a07e70f4d4a63979f272aaf04a5b8fe97",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-flash_responses_P-15_default-e6d0e4731fa7.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:responses:P-02:default": {
+      "artifact_sha256": "658284823a38c737cadf2551e40226b43a307b5bc2cd03b8bbc1a0da984424a2",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-max_responses_P-02_default-0b6f1e699e9d.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:responses:P-03:default": {
+      "artifact_sha256": "29497d55ae898f58433a5792b56849960e90d44f5dd67cb690410995bc9c5d2f",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-max_responses_P-03_default-85bde6cd02ac.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:responses:P-04:default": {
+      "artifact_sha256": "7e25c17ffd54efa580daf1db40769465e68155ec004c642065262ba805c75d4a",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-max_responses_P-04_default-5a78f9a7615d.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:responses:P-05:default": {
+      "artifact_sha256": "ab72bac789aab9dbcad0631114f76344291d1cc70633a8c3a7789e7068ad11f7",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-max_responses_P-05_default-10af4a81e48e.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:responses:P-06:medium": {
+      "artifact_sha256": "7a06b1e63df277af9ee234d6c30c4a2f75b221490b6e8bfb4d8563ed0c84b3d5",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-max_responses_P-06_medium-f968e896354a.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:responses:P-12:default": {
+      "artifact_sha256": "212781dd07843c1d15190e446b23a888bc5a5c0cf55304fec067f2da59b707ca",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-max_responses_P-12_default-e7f3de6a90c7.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:responses:P-15:default": {
+      "artifact_sha256": "f1b050ea11f0c13a9283307c269f4cc80a6a7ddd653a087d042f386572d88aff",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-max_responses_P-15_default-597c70575867.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:responses:P-02:default": {
+      "artifact_sha256": "e304f42195e41935f6f803bb0c77ef0e6f038d2bc0f591276246f2530b9bcb9e",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-plus_responses_P-02_default-975486fd7e25.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:responses:P-03:default": {
+      "artifact_sha256": "9a1fe91e12ec3ad6ac1813bd7c915db962fa124df904808e14c3fbc4f066e44c",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-plus_responses_P-03_default-68a67f7d373d.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:responses:P-04:default": {
+      "artifact_sha256": "73a3c98a2e3c9f8d8145a72ff1284215800ef2fd71df5e94d2fba555fb31bf16",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-plus_responses_P-04_default-d9c4a5145fbd.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:responses:P-05:default": {
+      "artifact_sha256": "9db9372f4d47a4954edd95b81240b72af9689eca4a14200133004b83dc1692c6",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-plus_responses_P-05_default-224f0541740c.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:responses:P-06:medium": {
+      "artifact_sha256": "9b6daaeaa5481edd45dd62bbb5d7d4cbb21a1f64404433e926bbe35836aa1be1",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-plus_responses_P-06_medium-f0bc9d6bb73e.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:responses:P-12:default": {
+      "artifact_sha256": "02cde134750b28e7301e6ec9606e4108ff94f61686ae7a85d4da78c5657dc181",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-plus_responses_P-12_default-41d0699a1b47.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:responses:P-15:default": {
+      "artifact_sha256": "842a1f09208794c5d6df373bb5334967a30f686ff3a65324c7a9d20261b24355",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.7-plus_responses_P-15_default-162fd53ab4db.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:responses:P-02:default": {
+      "artifact_sha256": "d5dfd9e8b395d48085f7f8616fc9303888580bb778ff7bee6b835884659b7a41",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.8-max_responses_P-02_default-59766ff30474.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:responses:P-03:default": {
+      "artifact_sha256": "cc7714f5c06cbb96832ce400bdd6e2bc0cc7821e1f60415cd966464862f292e2",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.8-max_responses_P-03_default-9e0906ddbc44.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:responses:P-04:default": {
+      "artifact_sha256": "d44ea65297ebfbf7a8f44e389b0785e48fc402eea9f389df07011d77a0d4ec6e",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.8-max_responses_P-04_default-5f096e6567bf.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:responses:P-05:default": {
+      "artifact_sha256": "bf657dd091e71c28e09c2509657587fc44dffdb4abd4664cf728be52d9a30509",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.8-max_responses_P-05_default-537b1cc07cc7.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:responses:P-06:medium": {
+      "artifact_sha256": "3bf263852f25acd901ec6f3045651446d18834a41a63ca21789d975c84572682",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.8-max_responses_P-06_medium-f0667c4284e5.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:responses:P-12:default": {
+      "artifact_sha256": "a8ae5bfed750abd55f69ab3a1460711a7b11c0d9acf7111d88c53f467ea191a0",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.8-max_responses_P-12_default-b5597deda523.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:responses:P-15:default": {
+      "artifact_sha256": "45f4a4e233f1aa5fe9b1463b8a1e7839bc600bcd1c681b8d586cffe1b8faaa7c",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-responses-20260901/cases/64_qwen3.8-max_responses_P-15_default-54e7398ffdb7.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:06:00.605+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "7542659d772b8f95",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T19:01:32.440+00:00"
+}

@@ -1,0 +1,75 @@
+{
+  "architecture": "arm64",
+  "artifact_sha256": "7fddcd31d7e583d596901203cf76a648881496818e660237c1dc7329bc8a4b98",
+  "assistant_text_bytes": 0,
+  "assistant_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "client_id": "opencode",
+  "client_version": "cli:1.18.15",
+  "command_contract": {
+    "auto": true,
+    "client_version": "1.18.15",
+    "model": "glm-5.2",
+    "output_format": "json",
+    "provider_id": "laoshirenai-responses",
+    "provider_package": "@ai-sdk/openai",
+    "pure": true
+  },
+  "duration_ms": 9620,
+  "event_count": 5,
+  "event_types": {
+    "step_finish": 2,
+    "step_start": 2,
+    "tool_use": 1
+  },
+  "exit_code": 0,
+  "file_marker_verified": true,
+  "final_marker_verified": false,
+  "finished_at": "2026-08-31T23:37:29+00:00",
+  "group_id": 60,
+  "kind": "real_client_loop",
+  "model_id": "glm-5.2",
+  "observed_at": "2026-08-31T23:37:18+00:00",
+  "os": "macos",
+  "owned_key": {
+    "key_id": 128,
+    "name": "一键安装 · Codex",
+    "user_id": 2
+  },
+  "passed": false,
+  "protocol": "responses",
+  "protocol_attribution": {
+    "artifact_sha256": "8605794d0ae38c4c65d9ec7c95e47d85398361d5a926947fd9d9a2f62e1ad623",
+    "artifact_uri": "artifacts/opencode-messages-responses-key128-20260901/opencode-responses-glm-5.2-group60-20260901-usage.json",
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/chat/completions",
+    "usage_rows": 3,
+    "verified": true
+  },
+  "read_tool_verified": true,
+  "restored_group_id": 6,
+  "schema_version": 1,
+  "secret_free": true,
+  "shell_file_verified": false,
+  "shell_tool_verified": false,
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 2493,
+  "stdout_sha256": "f14653bd3fcf0d1919dd02d32d2cadfea2b47d681b83e551c254be9f8e530570",
+  "successful_tools": [
+    "read"
+  ],
+  "temporary_config": {
+    "api_key_source": "child env LAOSHIRENAI_OPENCODE_KEY",
+    "literal_key_written": false,
+    "path": "~/.config/opencode/opencode.json",
+    "removed_with_temporary_home": true,
+    "sha256": "3532ef13cc9cf8d685c216b0fecd4e9bfab1f3efd3737104d0cc4d25719efd6d"
+  },
+  "timed_out": false,
+  "tool_names": [
+    "read"
+  ],
+  "tool_result_observed": true,
+  "tool_use_observed": true
+}

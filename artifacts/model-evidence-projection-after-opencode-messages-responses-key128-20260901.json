@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 7,
+  "events": 13,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "236dd59cb26ce9ce641140af743ed6eb6467860dc03cfbb8790a93ed82363231",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-09c9db60f7275d64c5779af2"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-09c9db60f7275d64c5779af2",
+            "evidence-9a84d781398bebcd60de8007"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-1b49eef27dec1b8548b3bb2e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6eb9dca457067a9c75298190"
+          ]
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6eb9dca457067a9c75298190",
+            "evidence-f919ee36ce7161e48d2a32a4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-594167fd31f34aa12634a34f"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1795578ea74edefa44c5b82b",
+            "evidence-594167fd31f34aa12634a34f"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1cc2897964921c901ffac548"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0d3e768de0489fb87e282763",
+            "evidence-1cc2897964921c901ffac548"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-69c93a5f2eb44fc1c2d90241"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-69c93a5f2eb44fc1c2d90241",
+            "evidence-e81da554243bacdb753623c2"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a5f6444bfa052dad4e0ddbae"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-093efca1491ce972c01943b7",
+            "evidence-a5f6444bfa052dad4e0ddbae"
+          ]
+        }
+      ]
+    }
+  ]
+}

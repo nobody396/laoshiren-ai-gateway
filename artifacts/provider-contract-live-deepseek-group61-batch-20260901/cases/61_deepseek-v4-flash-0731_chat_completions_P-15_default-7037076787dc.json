@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "90d75504ca5480aa2e3172aba776f876768e956da75d8dd09aa34908e66b21e1",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "61:deepseek-v4-flash-0731:chat_completions:P-15:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 61,
+    "group_name": "DeepSeek 企业高速线路",
+    "marker": "LSR_CONTRACT_99B88B2B1DC19AC4",
+    "max_output_tokens": 393216,
+    "model_id": "deepseek-v4-flash-0731",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:deepseek-v4-flash-0731/chat_completions/invalid_request"
+    ]
+  },
+  "case_fingerprint": "7cd010ab7171e148dcd9573f8995a30941a39ec3a41e8faeddb025b8b4ee5599",
+  "classification": "verified",
+  "finished_at": "2026-08-31T18:56:32.968+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T18:56:31.177+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 61,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "57aa5820ac5b17a7f353bc8b7c8a8e09ac1d688bea7d6f0650b62a58ddde5f3a",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "27baac68c910a9c7f49cee78926f3e22b4e95cbd5be899c734b7742040a540ca"
+  },
+  "response": {
+    "body_bytes": 158,
+    "body_sha256": "b1d2a5548746e8947bc12cb7bb9496e80da3f977967f361dc229bcb9418245b3",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The service is temporarily unavailable. Please try again later.",
+      "type": "api_error"
+    },
+    "event_count": 0,
+    "http_status": 502,
+    "marker_present": false,
+    "request_id": "f09bad77-ba3a-4d9d-b310-be3ff0514b82",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

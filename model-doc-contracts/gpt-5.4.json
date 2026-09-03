@@ -1,0 +1,1518 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 0.5,
+        "name": "GPT 标准线路"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Plus 月卡组"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Pro 月卡组"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Max 月卡组"
+      },
+      {
+        "multiplier": 0.35,
+        "name": "GPT 经济线路"
+      },
+      {
+        "multiplier": 0.8,
+        "name": "GPT 企业高速线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "M8 receipts: evidence-8a62bed40a2724ab6d643c31, evidence-931e20ae7eb68a883d8e141f",
+      "name": "Codex",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-8a62bed40a2724ab6d643c31",
+        "evidence-931e20ae7eb68a883d8e141f"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-8dfb9c3283c995914e30f96d, evidence-93c53fa4a263a0500c300794",
+      "name": "OpenCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-8dfb9c3283c995914e30f96d",
+        "evidence-93c53fa4a263a0500c300794"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-215f82ad182843a1ad38ab0b, evidence-2c9b519976c54ae0ac9ab12c, evidence-58d580e07a694508bd273023, evidence-935933eab6034aa98efdfec6, evidence-dbf7f4e1e9c34c4795006bdf, evidence-df5411a6373f41ae9bb978e5",
+      "name": "Kimi Code",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-215f82ad182843a1ad38ab0b",
+        "evidence-2c9b519976c54ae0ac9ab12c",
+        "evidence-58d580e07a694508bd273023",
+        "evidence-935933eab6034aa98efdfec6",
+        "evidence-dbf7f4e1e9c34c4795006bdf",
+        "evidence-df5411a6373f41ae9bb978e5"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-4b70e025982ed24111e2c9d2, evidence-d49e8191f93ada23ef7bc701",
+      "name": "Grok Build",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-4b70e025982ed24111e2c9d2",
+        "evidence-d49e8191f93ada23ef7bc701"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-0592ca5eef7fc987d9858768, evidence-075d0dc9d6125f9bc733c853, evidence-10490a4d3d534ebab2b51f09, evidence-1081098451373f8fc837ccfe, evidence-144cf46cf9a323eb4b033956, evidence-154ce930cb08a2260592a482, evidence-16f12a91639b22a34e1aca03, evidence-1a883fab78a58f7f453793f5, evidence-1fa3f5a2e7f6ef3198598dc0, evidence-204292027bbb4ab3ac3b483c, evidence-215260ad909040b8664deea6, evidence-27941cd3771d88295eb377b7, evidence-2c9b519976c54ae0ac9ab12c, evidence-37de395a51f53fab78bd963b, evidence-38988e655d34ffab23ceee47, evidence-3a1cf28636ffdb698c0b6a17, evidence-457a512a48b4fb7ca203d067, evidence-490a03dbc54208146f65b2be, evidence-4b95a217bef5e941a42f806b, evidence-4d49055fe0fa328644cb7558, evidence-4ec69893437539cba69d2cbd, evidence-4f60d1ac2a0accc53151051f, evidence-4f6f2e72f0cfdb81ea0057ff, evidence-4fa3b14e2358fe2ebd7b36ca, evidence-4fd47c9e11bec111f371602d, evidence-58d580e07a694508bd273023, evidence-5b36dfabbba716541d2fdcb3, evidence-5bb8ecb0a7e1f89316336106, evidence-5f3115529b05c2969b2cbd10, evidence-601d7767dd18fe07605196f3, evidence-6524386cbd2def85073cc202, evidence-713887808707b972d9773c7a, evidence-76c7ee16ebd55d7f5cd78ac8, evidence-778b743e33951bd332975d86, evidence-788ce817421d5364efc9e119, evidence-7a1ba38cb69215ebbdbc9c43, evidence-7c3e1c053002d15649670aa7, evidence-8292de461c8bcb7c52eb6c32, evidence-85298ee57bda902b3395cd92, evidence-935933eab6034aa98efdfec6, evidence-93f7a883d69d4e771f9161ae, evidence-9cbfdae2378a38e278ebe7fc, evidence-9e2d1ef3d7bdb809abcdf3bd, evidence-9f64fed5a58f8cc786986e84, evidence-a36f0e2d6d9070aa1bc6af50, evidence-a49aabb391b10755f8c5fc26, evidence-a79e05141f60cd8ee44c0bd8, evidence-aa8dbd643503d595530d6d4e, evidence-b1b4266298d61d05d94a4535, evidence-b7f5435013e745daf9516a7c, evidence-bb148b6b7228cf5d841587fd, evidence-bbbce4c7357c366935f0fd25, evidence-be480035aafe6a28c6b69806, evidence-c7f4812c4b53486d93529199, evidence-d0147fe424a40923b11b5683, evidence-d72df4b3f2a4d0da9506c4e2, evidence-d74b2d4ae95d7a98fc84f33a, evidence-dbf7f4e1e9c34c4795006bdf, evidence-dc9737bdea7c019574284c70, evidence-f5a084f245d24d1f9ef84bd9, evidence-f80c28c85c888eb105a00d3d",
+      "name": "ZCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-0592ca5eef7fc987d9858768",
+        "evidence-075d0dc9d6125f9bc733c853",
+        "evidence-10490a4d3d534ebab2b51f09",
+        "evidence-1081098451373f8fc837ccfe",
+        "evidence-144cf46cf9a323eb4b033956",
+        "evidence-154ce930cb08a2260592a482",
+        "evidence-16f12a91639b22a34e1aca03",
+        "evidence-1a883fab78a58f7f453793f5",
+        "evidence-1fa3f5a2e7f6ef3198598dc0",
+        "evidence-204292027bbb4ab3ac3b483c",
+        "evidence-215260ad909040b8664deea6",
+        "evidence-27941cd3771d88295eb377b7",
+        "evidence-2c9b519976c54ae0ac9ab12c",
+        "evidence-37de395a51f53fab78bd963b",
+        "evidence-38988e655d34ffab23ceee47",
+        "evidence-3a1cf28636ffdb698c0b6a17",
+        "evidence-457a512a48b4fb7ca203d067",
+        "evidence-490a03dbc54208146f65b2be",
+        "evidence-4b95a217bef5e941a42f806b",
+        "evidence-4d49055fe0fa328644cb7558",
+        "evidence-4ec69893437539cba69d2cbd",
+        "evidence-4f60d1ac2a0accc53151051f",
+        "evidence-4f6f2e72f0cfdb81ea0057ff",
+        "evidence-4fa3b14e2358fe2ebd7b36ca",
+        "evidence-4fd47c9e11bec111f371602d",
+        "evidence-58d580e07a694508bd273023",
+        "evidence-5b36dfabbba716541d2fdcb3",
+        "evidence-5bb8ecb0a7e1f89316336106",
+        "evidence-5f3115529b05c2969b2cbd10",
+        "evidence-601d7767dd18fe07605196f3",
+        "evidence-6524386cbd2def85073cc202",
+        "evidence-713887808707b972d9773c7a",
+        "evidence-76c7ee16ebd55d7f5cd78ac8",
+        "evidence-778b743e33951bd332975d86",
+        "evidence-788ce817421d5364efc9e119",
+        "evidence-7a1ba38cb69215ebbdbc9c43",
+        "evidence-7c3e1c053002d15649670aa7",
+        "evidence-8292de461c8bcb7c52eb6c32",
+        "evidence-85298ee57bda902b3395cd92",
+        "evidence-935933eab6034aa98efdfec6",
+        "evidence-93f7a883d69d4e771f9161ae",
+        "evidence-9cbfdae2378a38e278ebe7fc",
+        "evidence-9e2d1ef3d7bdb809abcdf3bd",
+        "evidence-9f64fed5a58f8cc786986e84",
+        "evidence-a36f0e2d6d9070aa1bc6af50",
+        "evidence-a49aabb391b10755f8c5fc26",
+        "evidence-a79e05141f60cd8ee44c0bd8",
+        "evidence-aa8dbd643503d595530d6d4e",
+        "evidence-b1b4266298d61d05d94a4535",
+        "evidence-b7f5435013e745daf9516a7c",
+        "evidence-bb148b6b7228cf5d841587fd",
+        "evidence-bbbce4c7357c366935f0fd25",
+        "evidence-be480035aafe6a28c6b69806",
+        "evidence-c7f4812c4b53486d93529199",
+        "evidence-d0147fe424a40923b11b5683",
+        "evidence-d72df4b3f2a4d0da9506c4e2",
+        "evidence-d74b2d4ae95d7a98fc84f33a",
+        "evidence-dbf7f4e1e9c34c4795006bdf",
+        "evidence-dc9737bdea7c019574284c70",
+        "evidence-f5a084f245d24d1f9ef84bd9",
+        "evidence-f80c28c85c888eb105a00d3d"
+      ]
+    },
+    {
+      "name": "Hermes Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "evidence": "M8 receipts: evidence-8a62bed40a2724ab6d643c31, evidence-931e20ae7eb68a883d8e141f",
+      "name": "Codex",
+      "protocol": "responses",
+      "recommended": true,
+      "status": "verified",
+      "version": "0.151.0",
+      "evidence_ids": [
+        "evidence-8a62bed40a2724ab6d643c31",
+        "evidence-931e20ae7eb68a883d8e141f"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-8dfb9c3283c995914e30f96d, evidence-93c53fa4a263a0500c300794",
+      "name": "OpenCode",
+      "protocol": "responses",
+      "recommended": false,
+      "status": "verified",
+      "version": "1.18.15",
+      "evidence_ids": [
+        "evidence-8dfb9c3283c995914e30f96d",
+        "evidence-93c53fa4a263a0500c300794"
+      ]
+    },
+    {
+      "name": "Kimi Code",
+      "recommended": false,
+      "version": "0.39.1",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-215f82ad182843a1ad38ab0b, evidence-2c9b519976c54ae0ac9ab12c, evidence-58d580e07a694508bd273023, evidence-935933eab6034aa98efdfec6, evidence-dbf7f4e1e9c34c4795006bdf, evidence-df5411a6373f41ae9bb978e5",
+      "evidence_ids": [
+        "evidence-215f82ad182843a1ad38ab0b",
+        "evidence-2c9b519976c54ae0ac9ab12c",
+        "evidence-58d580e07a694508bd273023",
+        "evidence-935933eab6034aa98efdfec6",
+        "evidence-dbf7f4e1e9c34c4795006bdf",
+        "evidence-df5411a6373f41ae9bb978e5"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-4b70e025982ed24111e2c9d2, evidence-d49e8191f93ada23ef7bc701",
+      "name": "Grok Build",
+      "protocol": "responses",
+      "recommended": false,
+      "status": "verified",
+      "version": "1.0.13",
+      "evidence_ids": [
+        "evidence-4b70e025982ed24111e2c9d2",
+        "evidence-d49e8191f93ada23ef7bc701"
+      ]
+    },
+    {
+      "name": "ZCode",
+      "recommended": false,
+      "version": "3.10.1 / CLI 0.16.5",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-0592ca5eef7fc987d9858768",
+        "evidence-075d0dc9d6125f9bc733c853",
+        "evidence-10490a4d3d534ebab2b51f09",
+        "evidence-1081098451373f8fc837ccfe",
+        "evidence-144cf46cf9a323eb4b033956",
+        "evidence-154ce930cb08a2260592a482",
+        "evidence-16f12a91639b22a34e1aca03",
+        "evidence-1a883fab78a58f7f453793f5",
+        "evidence-1fa3f5a2e7f6ef3198598dc0",
+        "evidence-204292027bbb4ab3ac3b483c",
+        "evidence-215260ad909040b8664deea6",
+        "evidence-27941cd3771d88295eb377b7",
+        "evidence-2c9b519976c54ae0ac9ab12c",
+        "evidence-37de395a51f53fab78bd963b",
+        "evidence-38988e655d34ffab23ceee47",
+        "evidence-3a1cf28636ffdb698c0b6a17",
+        "evidence-457a512a48b4fb7ca203d067",
+        "evidence-490a03dbc54208146f65b2be",
+        "evidence-4b95a217bef5e941a42f806b",
+        "evidence-4d49055fe0fa328644cb7558",
+        "evidence-4ec69893437539cba69d2cbd",
+        "evidence-4f60d1ac2a0accc53151051f",
+        "evidence-4f6f2e72f0cfdb81ea0057ff",
+        "evidence-4fa3b14e2358fe2ebd7b36ca",
+        "evidence-4fd47c9e11bec111f371602d",
+        "evidence-58d580e07a694508bd273023",
+        "evidence-5b36dfabbba716541d2fdcb3",
+        "evidence-5bb8ecb0a7e1f89316336106",
+        "evidence-5f3115529b05c2969b2cbd10",
+        "evidence-601d7767dd18fe07605196f3",
+        "evidence-6524386cbd2def85073cc202",
+        "evidence-713887808707b972d9773c7a",
+        "evidence-76c7ee16ebd55d7f5cd78ac8",
+        "evidence-778b743e33951bd332975d86",
+        "evidence-788ce817421d5364efc9e119",
+        "evidence-7a1ba38cb69215ebbdbc9c43",
+        "evidence-7c3e1c053002d15649670aa7",
+        "evidence-8292de461c8bcb7c52eb6c32",
+        "evidence-85298ee57bda902b3395cd92",
+        "evidence-935933eab6034aa98efdfec6",
+        "evidence-93f7a883d69d4e771f9161ae",
+        "evidence-9cbfdae2378a38e278ebe7fc",
+        "evidence-9e2d1ef3d7bdb809abcdf3bd",
+        "evidence-9f64fed5a58f8cc786986e84",
+        "evidence-a36f0e2d6d9070aa1bc6af50",
+        "evidence-a49aabb391b10755f8c5fc26",
+        "evidence-a79e05141f60cd8ee44c0bd8",
+        "evidence-aa8dbd643503d595530d6d4e",
+        "evidence-b1b4266298d61d05d94a4535",
+        "evidence-b7f5435013e745daf9516a7c",
+        "evidence-bb148b6b7228cf5d841587fd",
+        "evidence-bbbce4c7357c366935f0fd25",
+        "evidence-be480035aafe6a28c6b69806",
+        "evidence-c7f4812c4b53486d93529199",
+        "evidence-d0147fe424a40923b11b5683",
+        "evidence-d72df4b3f2a4d0da9506c4e2",
+        "evidence-d74b2d4ae95d7a98fc84f33a",
+        "evidence-dbf7f4e1e9c34c4795006bdf",
+        "evidence-dc9737bdea7c019574284c70",
+        "evidence-f5a084f245d24d1f9ef84bd9",
+        "evidence-f80c28c85c888eb105a00d3d"
+      ],
+      "evidence": "M8 receipts: evidence-0592ca5eef7fc987d9858768, evidence-075d0dc9d6125f9bc733c853, evidence-10490a4d3d534ebab2b51f09, evidence-1081098451373f8fc837ccfe, evidence-144cf46cf9a323eb4b033956, evidence-154ce930cb08a2260592a482, evidence-16f12a91639b22a34e1aca03, evidence-1a883fab78a58f7f453793f5, evidence-1fa3f5a2e7f6ef3198598dc0, evidence-204292027bbb4ab3ac3b483c, evidence-215260ad909040b8664deea6, evidence-27941cd3771d88295eb377b7, evidence-2c9b519976c54ae0ac9ab12c, evidence-37de395a51f53fab78bd963b, evidence-38988e655d34ffab23ceee47, evidence-3a1cf28636ffdb698c0b6a17, evidence-457a512a48b4fb7ca203d067, evidence-490a03dbc54208146f65b2be, evidence-4b95a217bef5e941a42f806b, evidence-4d49055fe0fa328644cb7558, evidence-4ec69893437539cba69d2cbd, evidence-4f60d1ac2a0accc53151051f, evidence-4f6f2e72f0cfdb81ea0057ff, evidence-4fa3b14e2358fe2ebd7b36ca, evidence-4fd47c9e11bec111f371602d, evidence-58d580e07a694508bd273023, evidence-5b36dfabbba716541d2fdcb3, evidence-5bb8ecb0a7e1f89316336106, evidence-5f3115529b05c2969b2cbd10, evidence-601d7767dd18fe07605196f3, evidence-6524386cbd2def85073cc202, evidence-713887808707b972d9773c7a, evidence-76c7ee16ebd55d7f5cd78ac8, evidence-778b743e33951bd332975d86, evidence-788ce817421d5364efc9e119, evidence-7a1ba38cb69215ebbdbc9c43, evidence-7c3e1c053002d15649670aa7, evidence-8292de461c8bcb7c52eb6c32, evidence-85298ee57bda902b3395cd92, evidence-935933eab6034aa98efdfec6, evidence-93f7a883d69d4e771f9161ae, evidence-9cbfdae2378a38e278ebe7fc, evidence-9e2d1ef3d7bdb809abcdf3bd, evidence-9f64fed5a58f8cc786986e84, evidence-a36f0e2d6d9070aa1bc6af50, evidence-a49aabb391b10755f8c5fc26, evidence-a79e05141f60cd8ee44c0bd8, evidence-aa8dbd643503d595530d6d4e, evidence-b1b4266298d61d05d94a4535, evidence-b7f5435013e745daf9516a7c, evidence-bb148b6b7228cf5d841587fd, evidence-bbbce4c7357c366935f0fd25, evidence-be480035aafe6a28c6b69806, evidence-c7f4812c4b53486d93529199, evidence-d0147fe424a40923b11b5683, evidence-d72df4b3f2a4d0da9506c4e2, evidence-d74b2d4ae95d7a98fc84f33a, evidence-dbf7f4e1e9c34c4795006bdf, evidence-dc9737bdea7c019574284c70, evidence-f5a084f245d24d1f9ef84bd9, evidence-f80c28c85c888eb105a00d3d"
+    }
+  ],
+  "model": {
+    "context_window": 1050000,
+    "display_name": "GPT-5.4",
+    "family": "gpt",
+    "id": "gpt-5.4",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "max_output_tokens": 128000,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "2026-08-31 Codex, OpenCode, Kimi Code and Grok Build completed owned public-gateway Responses tool-result loops for gpt-5.4.",
+      "name": "responses",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_mappings": [],
+    "model_levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "default_level": "none",
+    "client_levels": [
+      {
+        "client": "Kimi Code",
+        "levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      }
+    ]
+  },
+  "recommended_protocol": "responses",
+  "recommended_protocol_reason": "Responses is the only public-gateway protocol with completed tool-result loops for this exact model. OpenAI also lists Chat Completions, but that path remains unverified on this gateway.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Codex": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.151.0",
+            "model_id": "gpt-5.4",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-931e20ae7eb68a883d8e141f",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-931e20ae7eb68a883d8e141f"
+            ],
+            "pass_evidence_ids": [
+              "evidence-931e20ae7eb68a883d8e141f"
+            ],
+            "failure_evidence_ids": []
+          },
+          "linux": {
+            "client_version": "cli:0.151.0",
+            "evidence": "migration_gap: Codex linux is documented as compatible, but no exact gpt-5.4/responses/Codex/linux public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.151.0",
+            "evidence": "migration_gap: Codex windows is documented as compatible, but no exact gpt-5.4/responses/Codex/windows public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Grok Build": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "model_id": "gpt-5.4",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-d49e8191f93ada23ef7bc701",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-d49e8191f93ada23ef7bc701"
+            ],
+            "pass_evidence_ids": [
+              "evidence-d49e8191f93ada23ef7bc701"
+            ],
+            "failure_evidence_ids": []
+          },
+          "linux": {
+            "client_version": "cli:1.0.13",
+            "evidence": "migration_gap: Grok Build linux is documented as compatible, but no exact gpt-5.4/responses/Grok Build/linux public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:1.0.13",
+            "evidence": "migration_gap: Grok Build windows is documented as compatible, but no exact gpt-5.4/responses/Grok Build/windows public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Kimi Code": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.39.1",
+            "model_id": "gpt-5.4",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-df5411a6373f41ae9bb978e5",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-df5411a6373f41ae9bb978e5"
+            ],
+            "pass_evidence_ids": [
+              "evidence-df5411a6373f41ae9bb978e5"
+            ],
+            "failure_evidence_ids": []
+          },
+          "linux": {
+            "client_version": "cli:0.38.0",
+            "evidence": "migration_gap: Kimi Code linux is documented as compatible, but no exact gpt-5.4/responses/Kimi Code/linux public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.38.0",
+            "evidence": "migration_gap: Kimi Code windows is documented as compatible, but no exact gpt-5.4/responses/Kimi Code/windows public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "OpenCode": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "model_id": "gpt-5.4",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-93c53fa4a263a0500c300794",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-93c53fa4a263a0500c300794"
+            ],
+            "pass_evidence_ids": [
+              "evidence-93c53fa4a263a0500c300794"
+            ],
+            "failure_evidence_ids": []
+          },
+          "linux": {
+            "client_version": "cli:1.18.15",
+            "evidence": "migration_gap: OpenCode linux is documented as compatible, but no exact gpt-5.4/responses/OpenCode/linux public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:1.18.15",
+            "evidence": "migration_gap: OpenCode windows is documented as compatible, but no exact gpt-5.4/responses/OpenCode/windows public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "ZCode": {
+        "responses": {
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "model_id": "gpt-5.4",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-490a03dbc54208146f65b2be",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-490a03dbc54208146f65b2be"
+            ],
+            "pass_evidence_ids": [
+              "evidence-490a03dbc54208146f65b2be"
+            ],
+            "failure_evidence_ids": []
+          },
+          "linux": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "migration_gap: ZCode linux is documented as compatible, but no exact gpt-5.4/responses/ZCode/linux public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "migration_gap: ZCode windows is documented as compatible, but no exact gpt-5.4/responses/ZCode/windows public-gateway Agent tool-result loop evidence is recorded.",
+            "model_id": "gpt-5.4",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "model_id": "gpt-5.4",
+            "os": "macos",
+            "protocol": "responses",
+            "evidence": "Latest direct receipt is negative: evidence-f31eda51318c234ebe202804",
+            "status": "unsupported",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-f31eda51318c234ebe202804"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-f31eda51318c234ebe202804"
+            ]
+          }
+        }
+      }
+    },
+    "group_access": {
+      "GPT Max 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.4",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only public-gateway protocol with completed tool-result loops for this exact model. OpenAI also lists Chat Completions, but that path remains unverified on this gateway.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-16f12a91639b22a34e1aca03",
+              "evidence-4b95a217bef5e941a42f806b",
+              "evidence-4ec69893437539cba69d2cbd",
+              "evidence-7c3e1c053002d15649670aa7",
+              "evidence-a79e05141f60cd8ee44c0bd8"
+            ],
+            "pass_evidence_ids": [
+              "evidence-16f12a91639b22a34e1aca03",
+              "evidence-4b95a217bef5e941a42f806b",
+              "evidence-4ec69893437539cba69d2cbd",
+              "evidence-7c3e1c053002d15649670aa7",
+              "evidence-a79e05141f60cd8ee44c0bd8"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:55+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-16f12a91639b22a34e1aca03",
+          "evidence-4b95a217bef5e941a42f806b",
+          "evidence-4ec69893437539cba69d2cbd",
+          "evidence-7c3e1c053002d15649670aa7",
+          "evidence-a79e05141f60cd8ee44c0bd8"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT Plus 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.4",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only public-gateway protocol with completed tool-result loops for this exact model. OpenAI also lists Chat Completions, but that path remains unverified on this gateway.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-144cf46cf9a323eb4b033956",
+              "evidence-154ce930cb08a2260592a482",
+              "evidence-5bb8ecb0a7e1f89316336106",
+              "evidence-9f64fed5a58f8cc786986e84",
+              "evidence-b7f5435013e745daf9516a7c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-144cf46cf9a323eb4b033956",
+              "evidence-154ce930cb08a2260592a482",
+              "evidence-5bb8ecb0a7e1f89316336106",
+              "evidence-9f64fed5a58f8cc786986e84",
+              "evidence-b7f5435013e745daf9516a7c"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:05+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-144cf46cf9a323eb4b033956",
+          "evidence-154ce930cb08a2260592a482",
+          "evidence-5bb8ecb0a7e1f89316336106",
+          "evidence-9f64fed5a58f8cc786986e84",
+          "evidence-b7f5435013e745daf9516a7c"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT Pro 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.4",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only public-gateway protocol with completed tool-result loops for this exact model. OpenAI also lists Chat Completions, but that path remains unverified on this gateway.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-215260ad909040b8664deea6",
+              "evidence-27941cd3771d88295eb377b7",
+              "evidence-778b743e33951bd332975d86",
+              "evidence-93f7a883d69d4e771f9161ae",
+              "evidence-aa8dbd643503d595530d6d4e"
+            ],
+            "pass_evidence_ids": [
+              "evidence-215260ad909040b8664deea6",
+              "evidence-27941cd3771d88295eb377b7",
+              "evidence-778b743e33951bd332975d86",
+              "evidence-93f7a883d69d4e771f9161ae",
+              "evidence-aa8dbd643503d595530d6d4e"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:31+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-215260ad909040b8664deea6",
+          "evidence-27941cd3771d88295eb377b7",
+          "evidence-778b743e33951bd332975d86",
+          "evidence-93f7a883d69d4e771f9161ae",
+          "evidence-aa8dbd643503d595530d6d4e"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT 企业高速线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.4",
+        "multiplier": 0.8,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only public-gateway protocol with completed tool-result loops for this exact model. OpenAI also lists Chat Completions, but that path remains unverified on this gateway.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-1a883fab78a58f7f453793f5",
+              "evidence-1fa3f5a2e7f6ef3198598dc0",
+              "evidence-4fa3b14e2358fe2ebd7b36ca",
+              "evidence-713887808707b972d9773c7a",
+              "evidence-76c7ee16ebd55d7f5cd78ac8",
+              "evidence-7a1ba38cb69215ebbdbc9c43",
+              "evidence-9cbfdae2378a38e278ebe7fc",
+              "evidence-d0147fe424a40923b11b5683"
+            ],
+            "pass_evidence_ids": [
+              "evidence-1a883fab78a58f7f453793f5",
+              "evidence-1fa3f5a2e7f6ef3198598dc0",
+              "evidence-4fa3b14e2358fe2ebd7b36ca",
+              "evidence-713887808707b972d9773c7a",
+              "evidence-76c7ee16ebd55d7f5cd78ac8",
+              "evidence-7a1ba38cb69215ebbdbc9c43",
+              "evidence-9cbfdae2378a38e278ebe7fc",
+              "evidence-d0147fe424a40923b11b5683"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:21:42+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-1a883fab78a58f7f453793f5",
+          "evidence-1fa3f5a2e7f6ef3198598dc0",
+          "evidence-4fa3b14e2358fe2ebd7b36ca",
+          "evidence-713887808707b972d9773c7a",
+          "evidence-76c7ee16ebd55d7f5cd78ac8",
+          "evidence-7a1ba38cb69215ebbdbc9c43",
+          "evidence-9cbfdae2378a38e278ebe7fc",
+          "evidence-d0147fe424a40923b11b5683"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT 标准线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.4",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only public-gateway protocol with completed tool-result loops for this exact model. OpenAI also lists Chat Completions, but that path remains unverified on this gateway.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-3a1cf28636ffdb698c0b6a17",
+              "evidence-4f6f2e72f0cfdb81ea0057ff",
+              "evidence-601d7767dd18fe07605196f3",
+              "evidence-6524386cbd2def85073cc202",
+              "evidence-788ce817421d5364efc9e119",
+              "evidence-85298ee57bda902b3395cd92",
+              "evidence-a49aabb391b10755f8c5fc26",
+              "evidence-be480035aafe6a28c6b69806",
+              "evidence-dc9737bdea7c019574284c70"
+            ],
+            "pass_evidence_ids": [
+              "evidence-3a1cf28636ffdb698c0b6a17",
+              "evidence-4f6f2e72f0cfdb81ea0057ff",
+              "evidence-601d7767dd18fe07605196f3",
+              "evidence-6524386cbd2def85073cc202",
+              "evidence-788ce817421d5364efc9e119",
+              "evidence-85298ee57bda902b3395cd92",
+              "evidence-a49aabb391b10755f8c5fc26",
+              "evidence-be480035aafe6a28c6b69806",
+              "evidence-dc9737bdea7c019574284c70"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T18:46:32.231+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-3a1cf28636ffdb698c0b6a17",
+          "evidence-4f6f2e72f0cfdb81ea0057ff",
+          "evidence-601d7767dd18fe07605196f3",
+          "evidence-6524386cbd2def85073cc202",
+          "evidence-788ce817421d5364efc9e119",
+          "evidence-85298ee57bda902b3395cd92",
+          "evidence-a49aabb391b10755f8c5fc26",
+          "evidence-be480035aafe6a28c6b69806",
+          "evidence-dc9737bdea7c019574284c70"
+        ],
+        "verified_at": "2026-08-31"
+      },
+      "GPT 经济线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.4",
+        "multiplier": 0.35,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only public-gateway protocol with completed tool-result loops for this exact model. OpenAI also lists Chat Completions, but that path remains unverified on this gateway.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-0592ca5eef7fc987d9858768",
+              "evidence-37de395a51f53fab78bd963b",
+              "evidence-38988e655d34ffab23ceee47",
+              "evidence-457a512a48b4fb7ca203d067",
+              "evidence-5b36dfabbba716541d2fdcb3",
+              "evidence-8292de461c8bcb7c52eb6c32",
+              "evidence-a36f0e2d6d9070aa1bc6af50",
+              "evidence-bb148b6b7228cf5d841587fd",
+              "evidence-bbbce4c7357c366935f0fd25",
+              "evidence-f80c28c85c888eb105a00d3d"
+            ],
+            "pass_evidence_ids": [
+              "evidence-0592ca5eef7fc987d9858768",
+              "evidence-37de395a51f53fab78bd963b",
+              "evidence-38988e655d34ffab23ceee47",
+              "evidence-5b36dfabbba716541d2fdcb3",
+              "evidence-8292de461c8bcb7c52eb6c32",
+              "evidence-bb148b6b7228cf5d841587fd",
+              "evidence-bbbce4c7357c366935f0fd25",
+              "evidence-f80c28c85c888eb105a00d3d"
+            ],
+            "failure_evidence_ids": [
+              "evidence-457a512a48b4fb7ca203d067",
+              "evidence-a36f0e2d6d9070aa1bc6af50"
+            ],
+            "observed_at": "2026-08-31T21:55:08+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-0592ca5eef7fc987d9858768",
+          "evidence-37de395a51f53fab78bd963b",
+          "evidence-38988e655d34ffab23ceee47",
+          "evidence-457a512a48b4fb7ca203d067",
+          "evidence-5b36dfabbba716541d2fdcb3",
+          "evidence-8292de461c8bcb7c52eb6c32",
+          "evidence-a36f0e2d6d9070aa1bc6af50",
+          "evidence-bb148b6b7228cf5d841587fd",
+          "evidence-bbbce4c7357c366935f0fd25",
+          "evidence-f80c28c85c888eb105a00d3d"
+        ],
+        "verified_at": "2026-08-31"
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "https://developers.openai.com/api/docs/models/gpt-5.4",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "https://developers.openai.com/api/docs/models/gpt-5.4",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "OpenAI official GPT-5.4 model specification declares image input: https://developers.openai.com/api/docs/models/gpt-5.4",
+        "status": "verified"
+      },
+      "text": {
+        "evidence": "OpenAI official GPT-5.4 model specification declares text input and output: https://developers.openai.com/api/docs/models/gpt-5.4",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "OpenAI official GPT-5.4 model specification declares video unsupported: https://developers.openai.com/api/docs/models/gpt-5.4",
+        "status": "unsupported"
+      }
+    },
+    "pricing": {
+      "GPT Max 月卡组": {
+        "cache_read_price": 0.125,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1.25,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 7.5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT Plus 月卡组": {
+        "cache_read_price": 0.125,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1.25,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 7.5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT Pro 月卡组": {
+        "cache_read_price": 0.125,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1.25,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 7.5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 企业高速线路": {
+        "cache_read_price": 0.25,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 2.5,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 15,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 标准线路": {
+        "cache_read_price": 0.125,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 1.25,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 7.5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 经济线路": {
+        "cache_read_price": 0.0875,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 0.875,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 5.25,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "responses": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-063beefe0e285a05faac0a01, evidence-21a009fe6a6a016b217c83e0, evidence-a253a6990c24a678ad7ebce8",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-063beefe0e285a05faac0a01",
+            "evidence-21a009fe6a6a016b217c83e0",
+            "evidence-a253a6990c24a678ad7ebce8"
+          ],
+          "pass_evidence_ids": [
+            "evidence-063beefe0e285a05faac0a01",
+            "evidence-21a009fe6a6a016b217c83e0",
+            "evidence-a253a6990c24a678ad7ebce8"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-917f5bc60a1247055aa25d32, evidence-cb9ee3139648b8e083c2ffd9",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-917f5bc60a1247055aa25d32",
+            "evidence-cb9ee3139648b8e083c2ffd9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-917f5bc60a1247055aa25d32",
+            "evidence-cb9ee3139648b8e083c2ffd9"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-46f35fa30d7239506e60276c, evidence-9cfdd5de9b4d334d17f954d9",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-46f35fa30d7239506e60276c",
+            "evidence-9cfdd5de9b4d334d17f954d9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-46f35fa30d7239506e60276c",
+            "evidence-9cfdd5de9b4d334d17f954d9"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-2d544a01222328d2897f882a, evidence-320cd6ea8b7134c3015244a6, evidence-575ebfc92d6943c73cc7af34, evidence-b17cda3705c1d677a1524f77, evidence-b26346236831120aa92d2215, evidence-e23988f60f1d52eebcd1228b, evidence-fd3dea4725b67166aae69498, evidence-fdbc6907858cf111144ed26c",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2d544a01222328d2897f882a",
+            "evidence-320cd6ea8b7134c3015244a6",
+            "evidence-575ebfc92d6943c73cc7af34",
+            "evidence-b17cda3705c1d677a1524f77",
+            "evidence-b26346236831120aa92d2215",
+            "evidence-e23988f60f1d52eebcd1228b",
+            "evidence-fd3dea4725b67166aae69498",
+            "evidence-fdbc6907858cf111144ed26c"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-2d544a01222328d2897f882a",
+            "evidence-320cd6ea8b7134c3015244a6",
+            "evidence-575ebfc92d6943c73cc7af34",
+            "evidence-b17cda3705c1d677a1524f77",
+            "evidence-b26346236831120aa92d2215",
+            "evidence-e23988f60f1d52eebcd1228b",
+            "evidence-fd3dea4725b67166aae69498",
+            "evidence-fdbc6907858cf111144ed26c"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-35c293789b7f681e5fcde226, evidence-3f94435ef0c8a6138c2594ec",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-35c293789b7f681e5fcde226",
+            "evidence-3f94435ef0c8a6138c2594ec"
+          ],
+          "pass_evidence_ids": [
+            "evidence-35c293789b7f681e5fcde226",
+            "evidence-3f94435ef0c8a6138c2594ec"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-69bf9921d2ea652c2f0facb9",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-69bf9921d2ea652c2f0facb9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-69bf9921d2ea652c2f0facb9"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-d3d9db901571f0664122426c",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d3d9db901571f0664122426c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-d3d9db901571f0664122426c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-76910dc2f83eb8fbd7e88e81",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-76910dc2f83eb8fbd7e88e81"
+          ],
+          "pass_evidence_ids": [
+            "evidence-76910dc2f83eb8fbd7e88e81"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-80adea594a427b2476585109, evidence-92f693e6c17c1580f5f2dede, evidence-d46265a76ff7753367659d9d",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80adea594a427b2476585109",
+            "evidence-92f693e6c17c1580f5f2dede",
+            "evidence-d46265a76ff7753367659d9d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-80adea594a427b2476585109",
+            "evidence-92f693e6c17c1580f5f2dede",
+            "evidence-d46265a76ff7753367659d9d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "responses": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-625d50e8d11e4baf4d9159df, evidence-eadfca5594aeb77098dfb513",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-625d50e8d11e4baf4d9159df",
+            "evidence-eadfca5594aeb77098dfb513"
+          ],
+          "pass_evidence_ids": [
+            "evidence-625d50e8d11e4baf4d9159df",
+            "evidence-eadfca5594aeb77098dfb513"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-144cf46cf9a323eb4b033956, evidence-154ce930cb08a2260592a482, evidence-457a512a48b4fb7ca203d067, evidence-4ec69893437539cba69d2cbd, evidence-4f60d1ac2a0accc53151051f, evidence-5b36dfabbba716541d2fdcb3, evidence-778b743e33951bd332975d86, evidence-85298ee57bda902b3395cd92, evidence-935933eab6034aa98efdfec6, evidence-9cbfdae2378a38e278ebe7fc, evidence-a49aabb391b10755f8c5fc26, evidence-a79e05141f60cd8ee44c0bd8, evidence-aa8dbd643503d595530d6d4e, evidence-d0147fe424a40923b11b5683, evidence-dc9737bdea7c019574284c70, evidence-f5a084f245d24d1f9ef84bd9",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-144cf46cf9a323eb4b033956",
+            "evidence-154ce930cb08a2260592a482",
+            "evidence-457a512a48b4fb7ca203d067",
+            "evidence-4ec69893437539cba69d2cbd",
+            "evidence-4f60d1ac2a0accc53151051f",
+            "evidence-5b36dfabbba716541d2fdcb3",
+            "evidence-778b743e33951bd332975d86",
+            "evidence-85298ee57bda902b3395cd92",
+            "evidence-935933eab6034aa98efdfec6",
+            "evidence-9cbfdae2378a38e278ebe7fc",
+            "evidence-a49aabb391b10755f8c5fc26",
+            "evidence-a79e05141f60cd8ee44c0bd8",
+            "evidence-aa8dbd643503d595530d6d4e",
+            "evidence-d0147fe424a40923b11b5683",
+            "evidence-dc9737bdea7c019574284c70",
+            "evidence-f5a084f245d24d1f9ef84bd9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-144cf46cf9a323eb4b033956",
+            "evidence-154ce930cb08a2260592a482",
+            "evidence-4ec69893437539cba69d2cbd",
+            "evidence-4f60d1ac2a0accc53151051f",
+            "evidence-5b36dfabbba716541d2fdcb3",
+            "evidence-778b743e33951bd332975d86",
+            "evidence-85298ee57bda902b3395cd92",
+            "evidence-935933eab6034aa98efdfec6",
+            "evidence-9cbfdae2378a38e278ebe7fc",
+            "evidence-a49aabb391b10755f8c5fc26",
+            "evidence-a79e05141f60cd8ee44c0bd8",
+            "evidence-aa8dbd643503d595530d6d4e",
+            "evidence-d0147fe424a40923b11b5683",
+            "evidence-dc9737bdea7c019574284c70",
+            "evidence-f5a084f245d24d1f9ef84bd9"
+          ],
+          "failure_evidence_ids": [
+            "evidence-457a512a48b4fb7ca203d067"
+          ],
+          "verified_at": "2026-09-03"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-075d0dc9d6125f9bc733c853, evidence-2c9b519976c54ae0ac9ab12c, evidence-5f3115529b05c2969b2cbd10, evidence-c7f4812c4b53486d93529199",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-075d0dc9d6125f9bc733c853",
+            "evidence-2c9b519976c54ae0ac9ab12c",
+            "evidence-5f3115529b05c2969b2cbd10",
+            "evidence-c7f4812c4b53486d93529199"
+          ],
+          "pass_evidence_ids": [
+            "evidence-075d0dc9d6125f9bc733c853",
+            "evidence-2c9b519976c54ae0ac9ab12c",
+            "evidence-5f3115529b05c2969b2cbd10",
+            "evidence-c7f4812c4b53486d93529199"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-10490a4d3d534ebab2b51f09, evidence-4fd47c9e11bec111f371602d, evidence-9e2d1ef3d7bdb809abcdf3bd, evidence-d72df4b3f2a4d0da9506c4e2, evidence-dbf7f4e1e9c34c4795006bdf",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-10490a4d3d534ebab2b51f09",
+            "evidence-4fd47c9e11bec111f371602d",
+            "evidence-9e2d1ef3d7bdb809abcdf3bd",
+            "evidence-d72df4b3f2a4d0da9506c4e2",
+            "evidence-dbf7f4e1e9c34c4795006bdf"
+          ],
+          "pass_evidence_ids": [
+            "evidence-10490a4d3d534ebab2b51f09",
+            "evidence-4fd47c9e11bec111f371602d",
+            "evidence-9e2d1ef3d7bdb809abcdf3bd",
+            "evidence-d72df4b3f2a4d0da9506c4e2",
+            "evidence-dbf7f4e1e9c34c4795006bdf"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-1081098451373f8fc837ccfe, evidence-204292027bbb4ab3ac3b483c, evidence-58d580e07a694508bd273023, evidence-b1b4266298d61d05d94a4535",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1081098451373f8fc837ccfe",
+            "evidence-204292027bbb4ab3ac3b483c",
+            "evidence-58d580e07a694508bd273023",
+            "evidence-b1b4266298d61d05d94a4535"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1081098451373f8fc837ccfe",
+            "evidence-204292027bbb4ab3ac3b483c",
+            "evidence-58d580e07a694508bd273023",
+            "evidence-b1b4266298d61d05d94a4535"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-120dbe6b83ea4a29a003d13b, evidence-24f80d9127ae56796f7f8ad8, evidence-78e90c54b4831afaf6584282, evidence-d6bfe63716b64667a2e8ae69",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-120dbe6b83ea4a29a003d13b",
+            "evidence-24f80d9127ae56796f7f8ad8",
+            "evidence-78e90c54b4831afaf6584282",
+            "evidence-d6bfe63716b64667a2e8ae69"
+          ],
+          "pass_evidence_ids": [
+            "evidence-120dbe6b83ea4a29a003d13b",
+            "evidence-24f80d9127ae56796f7f8ad8",
+            "evidence-78e90c54b4831afaf6584282",
+            "evidence-d6bfe63716b64667a2e8ae69"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        }
+      }
+    },
+    "tools": {
+      "responses": {
+        "function_calling": {
+          "evidence": "2026-08-31 owned public-gateway Responses client loops completed function calls and tool-result continuation for gpt-5.4.",
+          "name": "function_calling",
+          "protocol": "responses",
+          "status": "verified",
+          "verified_at": "2026-08-31"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-80adea594a427b2476585109, evidence-92f693e6c17c1580f5f2dede, evidence-d46265a76ff7753367659d9d",
+          "name": "web_search",
+          "protocol": "responses",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80adea594a427b2476585109",
+            "evidence-92f693e6c17c1580f5f2dede",
+            "evidence-d46265a76ff7753367659d9d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-80adea594a427b2476585109",
+            "evidence-92f693e6c17c1580f5f2dede",
+            "evidence-d46265a76ff7753367659d9d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "file_search": {
+          "evidence": "OpenAI officially supports File Search for GPT-5.4 Responses; no exact public-gateway File Search execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "file_search",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "image_generation": {
+          "evidence": "OpenAI officially supports Image Generation for GPT-5.4 Responses; no exact public-gateway Image Generation execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "image_generation",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "code_interpreter": {
+          "evidence": "OpenAI officially supports Code Interpreter for GPT-5.4 Responses; no exact public-gateway Code Interpreter execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "code_interpreter",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "hosted_shell": {
+          "evidence": "OpenAI officially supports Hosted Shell for GPT-5.4 Responses; no exact public-gateway Hosted Shell execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "hosted_shell",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "apply_patch": {
+          "evidence": "OpenAI officially supports Apply Patch for GPT-5.4 Responses; no exact public-gateway Apply Patch execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "apply_patch",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "skills": {
+          "evidence": "OpenAI officially supports Skills for GPT-5.4 Responses; no exact public-gateway Skills execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "skills",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "computer_use": {
+          "evidence": "OpenAI officially supports Computer Use for GPT-5.4 Responses; no exact public-gateway Computer Use execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "computer_use",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "mcp": {
+          "evidence": "OpenAI officially supports MCP for GPT-5.4 Responses; no exact public-gateway MCP execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "mcp",
+          "protocol": "responses",
+          "status": "blocked"
+        },
+        "tool_search": {
+          "evidence": "OpenAI officially supports Tool Search for GPT-5.4 Responses; no exact public-gateway Tool Search execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "name": "tool_search",
+          "protocol": "responses",
+          "status": "blocked"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Codex": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "responses": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        },
+        "OpenCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "responses": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        }
+      },
+      "model_levels": {
+        "none": {
+          "evidence": "M8 receipts: evidence-aa9b11f72ef90e4f365b13d6",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-aa9b11f72ef90e4f365b13d6"
+          ],
+          "pass_evidence_ids": [
+            "evidence-aa9b11f72ef90e4f365b13d6"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        },
+        "low": {
+          "evidence": "OpenAI official GPT-5.4 model specification lists reasoning.effort=low: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "status": "verified"
+        },
+        "medium": {
+          "evidence": "OpenAI official GPT-5.4 model specification lists reasoning.effort=medium: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "status": "verified"
+        },
+        "high": {
+          "evidence": "OpenAI official GPT-5.4 model specification lists reasoning.effort=high: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "status": "verified"
+        },
+        "xhigh": {
+          "evidence": "OpenAI official GPT-5.4 model specification lists reasoning.effort=xhigh: https://developers.openai.com/api/docs/models/gpt-5.4",
+          "status": "verified"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "evidence": "2026-08-31 owned public-gateway Responses client loops completed function calls and tool-result continuation for gpt-5.4.",
+      "name": "function_calling",
+      "protocol": "responses",
+      "status": "verified",
+      "verified_at": "2026-08-31"
+    },
+    {
+      "evidence": "OpenAI officially supports Web Search for GPT-5.4 Responses; no exact public-gateway Web Search execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "web_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports File Search for GPT-5.4 Responses; no exact public-gateway File Search execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "file_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports Image Generation for GPT-5.4 Responses; no exact public-gateway Image Generation execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "image_generation",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports Code Interpreter for GPT-5.4 Responses; no exact public-gateway Code Interpreter execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "code_interpreter",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports Hosted Shell for GPT-5.4 Responses; no exact public-gateway Hosted Shell execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "hosted_shell",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports Apply Patch for GPT-5.4 Responses; no exact public-gateway Apply Patch execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "apply_patch",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports Skills for GPT-5.4 Responses; no exact public-gateway Skills execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "skills",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports Computer Use for GPT-5.4 Responses; no exact public-gateway Computer Use execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "computer_use",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports MCP for GPT-5.4 Responses; no exact public-gateway MCP execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "mcp",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI officially supports Tool Search for GPT-5.4 Responses; no exact public-gateway Tool Search execution evidence is recorded: https://developers.openai.com/api/docs/models/gpt-5.4",
+      "name": "tool_search",
+      "protocol": "responses",
+      "status": "blocked"
+    }
+  ],
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+    "verified_at": "2026-08-31"
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 5,
+  "events": 11,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "7a42fd3b2257dd05f0b65d58ab69200c563902384870917478b23ad5b2dc3655",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b46729b4e5e8348baaebdc91"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-67b1602967cb15b686b64236",
+            "evidence-b46729b4e5e8348baaebdc91"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "OpenCode/generate_content/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a689d6cb306ab1398ed99749"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e0bc50459ae7ad4e3e51835",
+            "evidence-a689d6cb306ab1398ed99749"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-f31eda51318c234ebe202804"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-93c53fa4a263a0500c300794"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8dfb9c3283c995914e30f96d",
+            "evidence-93c53fa4a263a0500c300794"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-718fbbd04f9aab65c13a1146",
+            "evidence-dcbb64623300809699a75ab2"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-718fbbd04f9aab65c13a1146",
+            "evidence-dcbb64623300809699a75ab2",
+            "evidence-fd7a5bdc6c9ad88355ffdad2"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/chat_completions/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-62edd5d70b4d534a6c159cd6"
+          ]
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-62edd5d70b4d534a6c159cd6",
+            "evidence-ce22cbfbbd319d36d4bd92ed"
+          ]
+        }
+      ]
+    }
+  ]
+}

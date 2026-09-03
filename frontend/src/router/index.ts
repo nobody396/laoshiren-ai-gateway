@@ -20,6 +20,17 @@ import {evaluateRoutePolicy} from './route-policy'
  * Route definitions with lazy loading
  */
 const routes: RouteRecordRaw[] = [
+  ...(import.meta.env.DEV
+    ? [{
+        path: '/__dev/group-selector-preview',
+        name: 'GroupSelectorPreview',
+        component: () => import('@/views/dev/GroupProtocolPreview.vue'),
+        meta: {
+          requiresAuth: false,
+          title: '分组协议样式预览'
+        }
+      }] satisfies RouteRecordRaw[]
+    : []),
   // ==================== Setup Routes ====================
   {
     path: '/setup',
@@ -79,7 +90,21 @@ const routes: RouteRecordRaw[] = [
           meta: {
             requiresAuth: false,
             title: '文档',
-            description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+            description: '老实人AI 文档：快速开始、API 参考、工具集成、图片生成与实时模型目录。'
+          }
+        },
+        {
+          path: '/docs/category/start',
+          redirect: '/docs/quickstart'
+        },
+        {
+          path: '/docs/category/:category',
+          name: 'DocsCategory',
+          component: () => import('@/views/docs/DocsView.vue'),
+          meta: {
+            requiresAuth: false,
+            title: '文档板块',
+            description: '按快速开始、API 参考、工具集成和模型目录浏览老实人AI文档。'
           }
         },
         {
@@ -89,7 +114,7 @@ const routes: RouteRecordRaw[] = [
           meta: {
             requiresAuth: false,
             title: '文档',
-            description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+            description: '老实人AI 文档：快速开始、API 参考、工具集成、图片生成与实时模型目录。'
           }
         }
       ] satisfies RouteRecordRaw[]
@@ -107,6 +132,18 @@ const routes: RouteRecordRaw[] = [
       description: '老实人AI 为企业团队提供 Claude Code、Codex、ChatGPT、Gemini 等多模型统一接入、API Key 管理、用量统计、成本控制和技术支持方案。',
       publicDocSlug: 'enterprise-ai-api-gateway'
     }
+  },
+  {
+    path: '/newcomer',
+    redirect: '/docs/quickstart'
+  },
+  {
+    path: '/guide',
+    redirect: '/docs/quickstart'
+  },
+  {
+    path: '/reference',
+    redirect: '/docs/api-overview'
   },
   {
     path: '/security',
@@ -619,6 +656,17 @@ const routes: RouteRecordRaw[] = [
       title: 'Admin Dashboard',
       titleKey: 'admin.dashboard.title',
       descriptionKey: 'admin.dashboard.description'
+    }
+  },
+  {
+    path: '/admin/model-client-matrix',
+    name: 'AdminModelClientMatrix',
+    component: () => import('@/views/admin/ModelClientMatrixView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'api:GET:/admin/model-client-matrix',
+      title: '模型与客户端矩阵'
     }
   },
   {

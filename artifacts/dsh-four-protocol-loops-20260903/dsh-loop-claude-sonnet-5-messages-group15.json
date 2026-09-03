@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "deepseek-harness",
+  "client_version": "cli:0.1.1-rc.2",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-sonnet-5",
+  "protocol": "messages",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 15,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T04:18:43+00:00",
+  "finished_at": "2026-09-03T04:19:20+00:00",
+  "duration_ms": 25300,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-messages",
+    "api": "anthropic-messages",
+    "provider_base_url": "https://api.laoshirenai.com",
+    "profile": "headless",
+    "isolated_dsh_home": true,
+    "credential": "apiKeyEnv reference, key only in child env"
+  },
+  "target_group_readback": {
+    "group_id": 15
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "final_text_present": false,
+  "final_marker_note": "final exact-marker is the strict oracle; claude-sonnet-5 over the messages route drifts to an identity reply, so pass/fail keys on final_text_present",
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "usage_stream_flags": [
+    "True"
+  ],
+  "streaming_observed": true,
+  "stdout_bytes": 14,
+  "stdout_sha256": "34774871e00c55525fd5921f577874f56e37432b9d1f2055f5db6e09ddc78293",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/dsh-four-protocol-loops-20260903/dsh-loop-claude-sonnet-5-messages-group15-usage.json",
+    "artifact_sha256": "09bb047e95abc25e68603d501f7b7e78477e2c0f4922e1ae4c16c7b20bd4545d",
+    "usage_rows": 5,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoints": [
+      "/v1/messages"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "b90343228293d3f1898728ccf1097de40c5de2ab0e9c8790bd6a1c0761a43e28"
+}

@@ -1,0 +1,22 @@
+{
+  "cases": {
+    "59:gpt-5.4-mini:responses:P-11:default": {
+      "artifact_sha256": "1bd67a2e32b079e67f641e8d19d89272f6442ee6ec22b2955a24bdffb7096895",
+      "receipt": "artifacts/provider-contract-live-gpt-group59-websearch-strict-20260901/cases/59_gpt-5.4-mini_responses_P-11_default-27f1d2b884c0.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-11:default": {
+      "artifact_sha256": "3ef4adc3f785955b2617d7be5afe5f4f61c48514b198ca7f982898f5dc199c7e",
+      "receipt": "artifacts/provider-contract-live-gpt-group59-websearch-strict-20260901/cases/59_gpt-5.6-luna_responses_P-11_default-d078b4a35a38.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:32:50.026+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "31a86d632a89020c",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:32:25.478+00:00"
+}

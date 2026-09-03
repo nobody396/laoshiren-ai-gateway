@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 2,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "dfae62c1fc4161d107082c931a21433180d85ec1ffb012874b4b2efff25a4fa9",
+  "changes": [
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-341464c6b729be6138a41e8a",
+            "evidence-4258c2e7e9ec5570c1b871fd",
+            "evidence-7ae7903660e79437b250d847"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-6055e286ae694e78512bbc2b",
+            "evidence-766455305f8152146a0d966a",
+            "evidence-d8b2117c74cf43b4447f4218"
+          ]
+        }
+      ]
+    }
+  ]
+}

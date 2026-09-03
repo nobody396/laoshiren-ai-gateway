@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "client_matrix_source",
+  "client_id": "hermes-agent",
+  "observed_at": "2026-08-31",
+  "official_sources": [
+    "https://hermes-agent.nousresearch.com/docs/",
+    "https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md"
+  ],
+  "local_version": "0.20.0",
+  "claims": {
+    "platforms": [
+      "macos",
+      "linux",
+      "windows"
+    ],
+    "config_files": [
+      "~/.hermes/config.yaml",
+      "~/.hermes/.env",
+      "~/.hermes/auth.json"
+    ],
+    "provider": "openai-api",
+    "base_url_env": "OPENAI_BASE_URL",
+    "api_key_env": "OPENAI_API_KEY",
+    "reasoning_levels": [
+      "none",
+      "minimal",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ]
+  },
+  "runtime_evidence": [
+    "artifacts/hermes-agent-tool-loop-20260831.json",
+    "artifacts/hermes-agent-usage-attribution-20260831.json"
+  ],
+  "secret_free": true
+}

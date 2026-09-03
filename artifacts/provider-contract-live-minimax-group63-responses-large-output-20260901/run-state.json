@@ -1,0 +1,22 @@
+{
+  "cases": {
+    "63:minimax-m3:responses:P-01:default": {
+      "artifact_sha256": "0aadbb4b2c28c72700bdf3d541bdfcc7cf599a01c86cd9f93fc6794082d0174c",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-responses-large-output-20260901/cases/63_minimax-m3_responses_P-01_default-87693fde9efc.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:responses:P-03:default": {
+      "artifact_sha256": "f94d533f3e0299851f512429355e4c329124206d0a7af9778a5c857e48bc7563",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-responses-large-output-20260901/cases/63_minimax-m3_responses_P-03_default-40f3dedd04e6.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-08-31T21:28:51.114+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "6abbe962d3093ef6",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T21:28:28.636+00:00"
+}

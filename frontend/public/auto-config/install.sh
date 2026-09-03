@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
+# Generated catalog metadata includes values consumed by the PowerShell twin
+# but intentionally retained here for cross-installer fingerprint parity.
+# shellcheck disable=SC2034
+
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.14'
+SCRIPT_VERSION='0.7.15'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -14,6 +18,7 @@ CATALOG_GROK_DEFAULT_CONTEXT_WINDOW=500000
 CATALOG_GROK_MANAGED_MODELS_JSON='[{"id":"grok-4.5","display_name":"Grok 4.5","context_window":500000},{"id":"grok-4.6","display_name":"Grok 4.6","context_window":500000}]'
 CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'
 CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high gemini-3.8-flash'
+CATALOG_MODEL_REASONING_JSON='{"claude-fable-5-1":["low","medium","high","xhigh","max"],"claude-fable-5":["low","medium","high","xhigh","max"],"claude-haiku-4-5":[],"claude-opus-4-5":["low","medium","high","max"],"claude-opus-4-6":["low","medium","high","max"],"claude-opus-4-7":["low","medium","high","xhigh","max"],"claude-opus-4-8":["low","medium","high","xhigh","max"],"claude-opus-5":["low","medium","high","xhigh","max"],"claude-sonnet-4-6":["low","medium","high","max"],"claude-sonnet-5":["low","medium","high","xhigh","max"],"deepseek-v4-flash-0731":["low","high","max"],"deepseek-v4-pro-0813":["low","high","max"],"gemini-3.1-pro":["low","medium","high"],"gemini-3.7-flash":["low","medium","high"],"gemini-3.8-flash":["low","medium","high"],"glm-5.2":["none","minimal","low","medium","high","xhigh","max"],"glm-5.3":["low","high","max"],"gpt-5.3-codex-spark":["none"],"gpt-5.4-mini":["none","low","medium","high","xhigh"],"gpt-5.4":["none","low","medium","high","xhigh"],"gpt-5.5":["none","low","medium","high","xhigh"],"gpt-5.6-luna":["none","low","medium","high","xhigh","max"],"gpt-5.6-sol":["none","low","medium","high","xhigh","max"],"gpt-5.6-terra":["none","low","medium","high","xhigh","max"],"gpt-daybreak-blue-latest":[],"grok-4.5":["low","medium","high","xhigh"],"grok-4.6":["low","medium","high","xhigh"],"kimi-k2.7-code":["always_on"],"kimi-k3":["low","high","max"],"minimax-m3":["disabled","adaptive"],"qwen3.6-flash":["none","minimal","low","medium"],"qwen3.6-plus":["none","minimal","low","medium"],"qwen3.7-flash":["none","minimal","low","medium"],"qwen3.7-max":["none","minimal","low","medium","high","xhigh","max"],"qwen3.7-plus":["none","minimal","low","medium","high","xhigh","max"],"qwen3.8-max":["none","minimal","low","medium","high","xhigh","max"]}'
 # END GENERATED MODEL CATALOG
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
@@ -59,6 +64,10 @@ SKIP_CLIENT_INSTALL=0
 FORCE_CLIENT_INSTALL=0
 INSTALL_CODEX_APP=0
 SETUP_TOKEN="${LAOSHIRENAI_SETUP_TOKEN:-}"
+SELECTED_MODEL="${LAOSHIRENAI_MODEL_ID:-}"
+SELECTED_PROTOCOL="${LAOSHIRENAI_PROTOCOL:-}"
+SELECTED_REASONING="${LAOSHIRENAI_REASONING_EFFORT:-}"
+GROK_API_BACKEND="responses"
 SETUP_EXCHANGE_URL="${LAOSHIRENAI_SETUP_EXCHANGE_URL:-$DEFAULT_SETUP_EXCHANGE_URL}"
 CODEX_MANIFEST_URL="${LAOSHIRENAI_CODEX_MANIFEST_URL:-$DEFAULT_CODEX_MANIFEST_URL}"
 CODEX_MODEL_CATALOG_URL="${LAOSHIRENAI_CODEX_MODEL_CATALOG_URL:-$DEFAULT_CODEX_MODEL_CATALOG_URL}"
@@ -735,6 +744,8 @@ exchange_setup_ticket() {
   local target
   local received_key
   local received_base_url
+  local received_model
+  local received_protocol
 
   tmp_dir="$(mktemp -d)"
   request_path="${tmp_dir}/request.json"
@@ -758,13 +769,15 @@ EOF
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.env.SETUP_RESPONSE_PATH, 'utf8'))
 const data = body && body.data
-if (!data || !['claude', 'codex', 'grok', 'gemini'].includes(data.target) || !data.api_key || !data.base_url) {
+if (!data || !['claude', 'codex', 'grok', 'gemini'].includes(data.target) || !data.api_key || !data.base_url || (data.client_id && (!data.model_id || !data.protocol))) {
   process.exit(2)
 }
 process.stdout.write([
   Buffer.from(String(data.target)).toString('base64'),
   Buffer.from(String(data.api_key)).toString('base64'),
-  Buffer.from(String(data.base_url)).toString('base64')
+  Buffer.from(String(data.base_url)).toString('base64'),
+  Buffer.from(String(data.model_id || '')).toString('base64'),
+  Buffer.from(String(data.protocol || '')).toString('base64')
 ].join(':'))
 EOF
   )" || {
@@ -773,25 +786,67 @@ EOF
   }
   rm -rf "$tmp_dir"
 
-  IFS=: read -r target received_key received_base_url <<<"$parsed"
+  IFS=: read -r target received_key received_base_url received_model received_protocol <<<"$parsed"
   target="$(printf '%s' "$target" | base64 -d)"
   received_key="$(printf '%s' "$received_key" | base64 -d)"
   received_base_url="$(printf '%s' "$received_base_url" | base64 -d)"
+  received_model="$(printf '%s' "$received_model" | base64 -d)"
+  received_protocol="$(printf '%s' "$received_protocol" | base64 -d)"
   [ "$target" = "$TOOLS" ] || log_error "安装凭证与当前工具不匹配，请重新生成"
 
   BASE_URL="$received_base_url"
+  SELECTED_MODEL="$received_model"
+  SELECTED_PROTOCOL="$received_protocol"
   if [ "$target" = "claude" ]; then
     CLAUDE_API_KEY="$received_key"
+    [ -z "$SELECTED_MODEL" ] || CATALOG_ANTHROPIC_DEFAULT_MODEL="$SELECTED_MODEL"
   elif [ "$target" = "codex" ]; then
     CODEX_API_KEY="$received_key"
   elif [ "$target" = "gemini" ]; then
     GEMINI_API_KEY="$received_key"
+    if [ -n "$SELECTED_MODEL" ]; then
+      CATALOG_GEMINI_DEFAULT_MODEL="$SELECTED_MODEL"
+      CATALOG_GEMINI_MANAGED_MODELS="$SELECTED_MODEL"
+    fi
   else
     GROK_API_KEY="$received_key"
+    if [ -n "$SELECTED_MODEL" ]; then
+      CATALOG_GROK_DEFAULT_MODEL="$SELECTED_MODEL"
+      CATALOG_GROK_DEFAULT_DISPLAY_NAME="$SELECTED_MODEL"
+      GROK_API_BACKEND="$SELECTED_PROTOCOL"
+      CATALOG_GROK_MANAGED_MODELS_JSON="$(MODEL_ID="$SELECTED_MODEL" "$NODE_BIN" -e 'process.stdout.write(JSON.stringify([{id:process.env.MODEL_ID,display_name:process.env.MODEL_ID,context_window:null}]))')"
+    fi
   fi
   SETUP_TOKEN=""
   unset LAOSHIRENAI_SETUP_TOKEN SETUP_TICKET
   log_info "专用配置领取成功"
+}
+
+# 手动路径（无一次性票据）下，页面表单选择通过 LAOSHIRENAI_MODEL_ID 等环境变量
+# 传入。这里把它们应用到各客户端真正写入的默认值，与票据路径保持一致；
+# 否则手写配置会静默落回内置默认模型与默认协议。
+apply_manual_selection() {
+  [ -n "$SELECTED_MODEL" ] || return 0
+  case "$TOOLS" in
+    claude)
+      CATALOG_ANTHROPIC_DEFAULT_MODEL="$SELECTED_MODEL"
+      ;;
+    gemini)
+      CATALOG_GEMINI_DEFAULT_MODEL="$SELECTED_MODEL"
+      CATALOG_GEMINI_MANAGED_MODELS="$SELECTED_MODEL"
+      ;;
+    grok)
+      CATALOG_GROK_DEFAULT_MODEL="$SELECTED_MODEL"
+      CATALOG_GROK_DEFAULT_DISPLAY_NAME="$SELECTED_MODEL"
+      CATALOG_GROK_MANAGED_MODELS_JSON="$(MODEL_ID="$SELECTED_MODEL" "$NODE_BIN" -e 'process.stdout.write(JSON.stringify([{id:process.env.MODEL_ID,display_name:process.env.MODEL_ID,context_window:null}]))')"
+      if [ -n "$SELECTED_PROTOCOL" ]; then
+        case "$SELECTED_PROTOCOL" in
+          responses|chat_completions|messages) GROK_API_BACKEND="$SELECTED_PROTOCOL" ;;
+          *) log_error "Grok Build 不支持协议: ${SELECTED_PROTOCOL}" ;;
+        esac
+      fi
+      ;;
+  esac
 }
 
 # 将 npm 切到国内镜像，降低无代理环境下的失败率。
@@ -986,38 +1041,66 @@ write_claude_config() {
   create_backup_if_needed "$CLAUDE_SETTINGS_PATH"
   ensure_dir "$(dirname "$CLAUDE_SETTINGS_PATH")"
 
-  CONFIG_PATH="$CLAUDE_SETTINGS_PATH" CONFIG_BASE_URL="$BASE_URL" CONFIG_API_KEY="$CLAUDE_API_KEY" CONFIG_MODEL="$CATALOG_ANTHROPIC_DEFAULT_MODEL" "$NODE_BIN" <<'EOF'
+  CONFIG_PATH="$CLAUDE_SETTINGS_PATH" CONFIG_BASE_URL="$BASE_URL" CONFIG_API_KEY="$CLAUDE_API_KEY" CONFIG_MODEL="$CATALOG_ANTHROPIC_DEFAULT_MODEL" CONFIG_REASONING_JSON="$CATALOG_MODEL_REASONING_JSON" "$NODE_BIN" <<'EOF'
 const fs = require('node:fs')
 const path = process.env.CONFIG_PATH
 const baseUrl = process.env.CONFIG_BASE_URL
 const apiKey = process.env.CONFIG_API_KEY
 const model = process.env.CONFIG_MODEL
+const reasoning = JSON.parse(process.env.CONFIG_REASONING_JSON || '{}')
 
 let config = {}
 if (fs.existsSync(path)) {
   try {
     config = JSON.parse(fs.readFileSync(path, 'utf8'))
   } catch (error) {
-    config = {}
+    throw new Error(`refusing to overwrite malformed Claude settings: ${error.message}`)
   }
 }
 
 if (!config || typeof config !== 'object' || Array.isArray(config)) {
-  config = {}
+  throw new Error('refusing to overwrite non-object Claude settings')
 }
 
 if (!config.env || typeof config.env !== 'object' || Array.isArray(config.env)) {
+  if (config.env != null) throw new Error('refusing to replace non-object Claude env')
   config.env = {}
 }
 
 config.model = model
-config.effortLevel = 'xhigh'
+delete config.effortLevel
+if (!config.modelSettings || typeof config.modelSettings !== 'object' || Array.isArray(config.modelSettings)) {
+  if (config.modelSettings != null) throw new Error('refusing to replace non-object Claude modelSettings')
+  config.modelSettings = {}
+}
+const levels = Array.isArray(reasoning[model]) ? reasoning[model] : []
+const currentModelSettings = config.modelSettings[model]
+if (currentModelSettings != null && (typeof currentModelSettings !== 'object' || Array.isArray(currentModelSettings))) {
+  throw new Error('refusing to replace non-object Claude modelSettings entry')
+}
+const modelSettings = currentModelSettings || {}
+if (levels.includes('high')) modelSettings.effortLevel = 'high'
+else delete modelSettings.effortLevel
+if (Object.keys(modelSettings).length) config.modelSettings[model] = modelSettings
+else delete config.modelSettings[model]
 config.env.ANTHROPIC_BASE_URL = baseUrl
 config.env.ANTHROPIC_AUTH_TOKEN = apiKey
+config.env.ANTHROPIC_MODEL = model
+config.env.ANTHROPIC_DEFAULT_OPUS_MODEL = model
+config.env.ANTHROPIC_DEFAULT_SONNET_MODEL = model
+config.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = model
+config.env.ANTHROPIC_DEFAULT_FABLE_MODEL = model
 config.env.CLAUDE_CODE_ATTRIBUTION_HEADER = '0'
 config.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = '1'
 
-fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
+const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(config, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
+  fs.renameSync(temporaryPath, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally {
+  try { fs.unlinkSync(temporaryPath) } catch {}
+}
 EOF
 }
 
@@ -1036,16 +1119,23 @@ if (fs.existsSync(path)) {
   try {
     config = JSON.parse(fs.readFileSync(path, 'utf8'))
   } catch (error) {
-    config = {}
+    throw new Error(`refusing to overwrite malformed Codex auth: ${error.message}`)
   }
 }
 
 if (!config || typeof config !== 'object' || Array.isArray(config)) {
-  config = {}
+  throw new Error('refusing to overwrite non-object Codex auth')
 }
 
 config.OPENAI_API_KEY = apiKey
-fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
+const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(config, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
+  fs.renameSync(temporaryPath, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally {
+  try { fs.unlinkSync(temporaryPath) } catch {}
+}
 EOF
 }
 
@@ -1056,7 +1146,7 @@ filter_codex_model_catalog() {
   local source_path="$1"
   local authorized_path="$2"
 
-  SOURCE_PATH="$source_path" AUTHORIZED_PATH="$authorized_path" "$NODE_BIN" <<'EOF'
+  SOURCE_PATH="$source_path" AUTHORIZED_PATH="$authorized_path" PREFERRED_MODEL="$SELECTED_MODEL" "$NODE_BIN" <<'EOF'
 const fs = require('node:fs')
 const sourcePath = process.env.SOURCE_PATH
 const authorizedPath = process.env.AUTHORIZED_PATH
@@ -1065,6 +1155,7 @@ const response = JSON.parse(fs.readFileSync(authorizedPath, 'utf8'))
 const models = Array.isArray(source.models) ? source.models : []
 const required = ['slug', 'base_instructions', 'supports_reasoning_summaries', 'context_window', 'visibility']
 const authorized = []
+const preferredModel = (process.env.PREFERRED_MODEL || '').trim()
 const seen = new Set()
 
 for (const row of Array.isArray(response.data) ? response.data : []) {
@@ -1076,37 +1167,31 @@ for (const row of Array.isArray(response.data) ? response.data : []) {
 
 if (
   models.length === 0 ||
-  models.some((model) => model.slug === 'gpt-5.3-codex-spark') ||
   models.some((model) => required.some((field) => !(field in model))) ||
   authorized.length === 0
 ) {
   throw new Error('invalid Codex model catalog or empty group model list')
 }
+if (preferredModel && !authorized.includes(preferredModel)) {
+  throw new Error('ticket model is not present in the current key model list')
+}
 
 const byID = new Map(models.map((model) => [model.slug, model]))
-const template = byID.get('gpt-5.6-sol') || models[0]
-const displayToken = (token) => ({
-  gpt: 'GPT', codex: 'Codex', openai: 'OpenAI', daybreak: 'Daybreak',
-  blue: 'Blue', latest: 'Latest', sol: 'Sol', terra: 'Terra', luna: 'Luna'
-}[token.toLowerCase()] || token)
-const displayName = (id) => id.split('-').map(displayToken).join(' ')
-const filtered = authorized.map((id, index) => {
-  const known = byID.get(id)
-  if (known) return { ...known, priority: index + 1 }
-  const cloned = JSON.parse(JSON.stringify(template))
-  cloned.slug = id
-  cloned.display_name = displayName(id)
-  cloned.description = `${cloned.display_name} coding model.`
-  cloned.priority = index + 1
-  return cloned
-})
+const filtered = authorized
+  .flatMap((id) => byID.has(id) ? [{ ...byID.get(id) }] : [])
+  .map((model, index) => ({ ...model, priority: index + 1 }))
+
+if (filtered.length === 0) throw new Error('the current key has no Codex-compatible Responses model')
+if (preferredModel && !filtered.some(model => model.slug === preferredModel)) {
+  throw new Error('ticket model is not present in the Codex Responses catalog')
+}
 
 if (filtered.some((model) => required.some((field) => !(field in model)))) {
   throw new Error('filtered Codex model catalog is incomplete')
 }
 
 fs.writeFileSync(sourcePath, `${JSON.stringify({ models: filtered }, null, 2)}\n`, 'utf8')
-process.stdout.write(authorized.includes('gpt-5.6-sol') ? 'gpt-5.6-sol' : authorized[0])
+process.stdout.write(preferredModel || (filtered.some(model => model.slug === 'gpt-5.6-sol') ? 'gpt-5.6-sol' : filtered[0].slug))
 EOF
 }
 
@@ -1141,28 +1226,75 @@ write_codex_model_catalog() {
   rm -f "$authorized_path"
 }
 
-# 生成 Codex 的核心 TOML 配置，第一版采用确定性覆盖策略并配合备份保证可回滚。
+# 只更新 Codex 的本站 owned fields 和独立 Provider block，保留 MCP、其他 Provider、
+# 权限、通知和用户自定义设置；损坏或不完整的表头直接拒绝写入。
 write_codex_config() {
   create_backup_if_needed "$CODEX_CONFIG_PATH"
   ensure_dir "$(dirname "$CODEX_CONFIG_PATH")"
 
-  cat >"$CODEX_CONFIG_PATH" <<EOF
-model_provider = "OpenAI"
-model = "${CATALOG_OPENAI_DEFAULT_MODEL}"
-review_model = "${CATALOG_OPENAI_DEFAULT_MODEL}"
-model_reasoning_effort = "xhigh"
-model_catalog_json = "laoshirenai-model-catalog.json"
-disable_response_storage = true
-network_access = "enabled"
-preferred_auth_method = "apikey"
-model_context_window = ${CATALOG_OPENAI_CONTEXT_WINDOW}
-model_auto_compact_token_limit = ${CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT}
-
-[model_providers.OpenAI]
-name = "OpenAI"
-base_url = "${BASE_URL}"
-wire_api = "responses"
-requires_openai_auth = true
+  CONFIG_PATH="$CODEX_CONFIG_PATH" MODEL_CATALOG_PATH="$CODEX_MODEL_CATALOG_PATH" CONFIG_BASE_URL="$BASE_URL" CONFIG_MODEL="$CATALOG_OPENAI_DEFAULT_MODEL" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const path = process.env.CONFIG_PATH
+const catalog = JSON.parse(fs.readFileSync(process.env.MODEL_CATALOG_PATH, 'utf8'))
+const model = catalog.models.find(row => row.slug === process.env.CONFIG_MODEL)
+if (!model) throw new Error('selected Codex model is missing from the authorized catalog')
+const levels = (model.supported_reasoning_levels || []).map(row => row.effort)
+const effort = levels.includes('high') ? 'high' : (levels[0] || '')
+const ownedRoot = new Set(['model_provider','model','review_model','model_reasoning_effort','model_catalog_json','disable_response_storage','network_access','preferred_auth_method','model_context_window','model_auto_compact_token_limit'])
+const managedSection = 'model_providers.laoshirenai_responses'
+const text = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : ''
+if (text.includes('\u0000')) throw new Error('refusing to rewrite malformed TOML containing NUL')
+const kept = []
+let section = ''
+let dropping = false
+for (const line of text.split(/\r?\n/)) {
+  const trimmed = line.trim()
+  if (trimmed.startsWith('[')) {
+    const header = trimmed.match(/^\[([^\]]+)\](?:\s*#.*)?$/)
+    if (!header) throw new Error(`refusing to rewrite malformed TOML header: ${trimmed}`)
+    section = header[1]
+    dropping = section === managedSection
+  }
+  if (dropping) continue
+  const key = section === '' ? trimmed.match(/^([A-Za-z0-9_.-]+)\s*=/)?.[1] : undefined
+  if (key && ownedRoot.has(key)) continue
+  if (trimmed === '# BEGIN LAOSHIRENAI CODEX PROVIDER' || trimmed === '# END LAOSHIRENAI CODEX PROVIDER') continue
+  kept.push(line)
+}
+while (kept.length && !kept[kept.length - 1].trim()) kept.pop()
+while (kept.length && !kept[0].trim()) kept.shift()
+const root = [
+  `model_provider = ${JSON.stringify('laoshirenai_responses')}`,
+  `model = ${JSON.stringify(model.slug)}`,
+  `review_model = ${JSON.stringify(model.slug)}`,
+  ...(effort ? [`model_reasoning_effort = ${JSON.stringify(effort)}`] : []),
+  'model_catalog_json = "laoshirenai-model-catalog.json"',
+  'disable_response_storage = true',
+  'network_access = "enabled"',
+  'preferred_auth_method = "apikey"',
+  `model_context_window = ${Number(model.context_window)}`,
+  `model_auto_compact_token_limit = ${Number(model.auto_compact_token_limit)}`,
+  '',
+]
+const provider = [
+  '# BEGIN LAOSHIRENAI CODEX PROVIDER',
+  `[${managedSection}]`,
+  'name = "老实人AI Responses"',
+  `base_url = ${JSON.stringify(process.env.CONFIG_BASE_URL)}`,
+  'wire_api = "responses"',
+  'requires_openai_auth = true',
+  '# END LAOSHIRENAI CODEX PROVIDER',
+  '',
+]
+const output = [...root, ...kept, ...(kept.length ? [''] : []), ...provider].join('\n')
+const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporaryPath, output, { encoding: 'utf8', mode: 0o600 })
+  fs.renameSync(temporaryPath, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally {
+  try { fs.unlinkSync(temporaryPath) } catch {}
+}
 EOF
 }
 
@@ -1171,12 +1303,13 @@ write_grok_config() {
   create_backup_if_needed "$GROK_CONFIG_PATH"
   ensure_dir "$GROK_DIR"
 
-  CONFIG_PATH="$GROK_CONFIG_PATH" CONFIG_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" CONFIG_API_KEY="$GROK_API_KEY" CONFIG_MODEL="$CATALOG_GROK_DEFAULT_MODEL" CONFIG_MANAGED_MODELS="$CATALOG_GROK_MANAGED_MODELS_JSON" "$NODE_BIN" <<'EOF'
+  CONFIG_PATH="$GROK_CONFIG_PATH" CONFIG_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" CONFIG_API_KEY="$GROK_API_KEY" CONFIG_MODEL="$CATALOG_GROK_DEFAULT_MODEL" CONFIG_PROTOCOL="$GROK_API_BACKEND" CONFIG_MANAGED_MODELS="$CATALOG_GROK_MANAGED_MODELS_JSON" "$NODE_BIN" <<'EOF'
 const fs = require('node:fs')
 const path = process.env.CONFIG_PATH
 const baseUrl = process.env.CONFIG_BASE_URL
 const apiKey = process.env.CONFIG_API_KEY
 const model = process.env.CONFIG_MODEL
+const protocol = process.env.CONFIG_PROTOCOL || 'responses'
 const managedModels = JSON.parse(process.env.CONFIG_MANAGED_MODELS || '[]')
 const managedModelIds = managedModels.map((profile) => profile.id)
 const managedSections = new Set(managedModelIds.flatMap((id) => [`model.${id}`, `model."${id}"`]))
@@ -1187,7 +1320,9 @@ let lines = text.split(/\r?\n/)
 const kept = []
 let droppingModel = false
 for (const line of lines) {
-  const header = line.trim().match(/^\[([^\]]+)\]$/)
+  const trimmed = line.trim()
+  const header = trimmed.match(/^\[([^\]]+)\]$/)
+  if (trimmed.startsWith('[') && !header) throw new Error(`refusing to rewrite malformed Grok TOML header: ${trimmed}`)
   if (header) droppingModel = managedSections.has(header[1])
   if (!droppingModel && line.trim() !== '# Managed by laoshirenai one-click setup') kept.push(line)
 }
@@ -1217,17 +1352,18 @@ if (modelsHeader < 0) {
 while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
 lines.push('', '# Managed by laoshirenai one-click setup')
 for (const profile of managedModels) {
-  lines.push(
+  const block = [
     `[model.${JSON.stringify(profile.id)}]`,
     `model = ${JSON.stringify(profile.id)}`,
     `base_url = ${JSON.stringify(baseUrl)}`,
     `name = ${JSON.stringify(profile.display_name)}`,
     `description = ${JSON.stringify(profile.display_name)}`,
     `api_key = ${JSON.stringify(apiKey)}`,
-    'api_backend = "responses"',
-    `context_window = ${Number(profile.context_window)}`,
-    ''
-  )
+    `api_backend = ${JSON.stringify(protocol)}`,
+  ]
+  if (Number(profile.context_window) > 0) block.push(`context_window = ${Number(profile.context_window)}`)
+  block.push('')
+  lines.push(...block)
 }
 
 const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
@@ -1286,24 +1422,26 @@ try {
 }
 EOF
 
-  CONFIG_PATH="$GEMINI_SETTINGS_PATH" CONFIG_MODEL="$CATALOG_GEMINI_DEFAULT_MODEL" CONFIG_MANAGED_MODELS="$CATALOG_GEMINI_MANAGED_MODELS" "$NODE_BIN" <<'EOF'
+  CONFIG_PATH="$GEMINI_SETTINGS_PATH" CONFIG_MODEL="$CATALOG_GEMINI_DEFAULT_MODEL" CONFIG_MANAGED_MODELS="$CATALOG_GEMINI_MANAGED_MODELS" CONFIG_REASONING="$SELECTED_REASONING" "$NODE_BIN" <<'EOF'
 const fs = require('node:fs')
 const path = process.env.CONFIG_PATH
 const model = process.env.CONFIG_MODEL
 const managedModels = (process.env.CONFIG_MANAGED_MODELS || '').split(/\s+/).filter(Boolean)
 const managedSet = new Set(managedModels)
+const requestedReasoning = String(process.env.CONFIG_REASONING || '').toLowerCase()
+const thinkingLevel = ['low', 'medium', 'high'].includes(requestedReasoning) ? requestedReasoning.toUpperCase() : 'HIGH'
 
 let config = {}
 if (fs.existsSync(path)) {
   try {
     config = JSON.parse(fs.readFileSync(path, 'utf8'))
   } catch (error) {
-    config = {}
+    throw new Error(`refusing to overwrite malformed Gemini settings: ${error.message}`)
   }
 }
 
 if (!config || typeof config !== 'object' || Array.isArray(config)) {
-  config = {}
+  throw new Error('refusing to overwrite non-object Gemini settings')
 }
 
 if (!config.security || typeof config.security !== 'object' || Array.isArray(config.security)) {
@@ -1329,7 +1467,7 @@ config.modelConfigs.overrides = overrides.filter(
 for (const modelId of managedModels) {
   config.modelConfigs.overrides.push({
     match: { model: modelId },
-    generateContentConfig: { thinkingConfig: { thinkingLevel: 'HIGH' } }
+    generateContentConfig: { thinkingConfig: { thinkingLevel } }
   })
 }
 
@@ -1383,7 +1521,7 @@ open_cc_switch_if_requested() {
   db_path="$("$NODE_BIN" --no-warnings "$importer_path" --print-db-path)"
   if [ ! -f "$db_path" ]; then
     open -gja "CC Switch" >/dev/null 2>&1 || true
-    for attempt in $(seq 1 40); do
+    for _ in $(seq 1 40); do
       [ -f "$db_path" ] && break
       sleep 0.25
     done
@@ -1474,6 +1612,8 @@ if (data.mode === 'quota_limited' && data.status && !['active', 'quota_exhausted
 } else {
   process.stdout.write('ready')
 }
+
+
 EOF
   )" || {
     rm -rf "$tmp_dir"
@@ -1495,6 +1635,71 @@ EOF
     log_error "${label} 连通性测试失败: ${api_base_url}/models 返回 HTTP ${status_code}"
   fi
   log_info "${label} 专用 Key、余额和连通性检查通过"
+}
+
+
+# 对票据中精确选择的模型和协议执行一次最小真实请求；只验证终态和非空文本，
+# 不把 /v1/models 可见性误当成模型可调用证明。
+verify_selected_model_request() {
+  [ -n "$SELECTED_MODEL" ] && [ -n "$SELECTED_PROTOCOL" ] || return 0
+
+  local api_key="" api_base_url root_url endpoint response_path request_path status_code
+  case "$TOOLS" in
+    claude) api_key="$CLAUDE_API_KEY" ;;
+    codex) api_key="$CODEX_API_KEY" ;;
+    grok) api_key="$GROK_API_KEY" ;;
+    gemini) api_key="$GEMINI_API_KEY" ;;
+    *) return 0 ;;
+  esac
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  root_url="${api_base_url%/v1}"
+  request_path="$(mktemp)"
+  response_path="$(mktemp)"
+  trap 'rm -f "$request_path" "$response_path"' RETURN
+
+  case "$SELECTED_PROTOCOL" in
+    responses)
+      endpoint="${api_base_url}/responses"
+      MODEL_ID="$SELECTED_MODEL" "$NODE_BIN" -e 'process.stdout.write(JSON.stringify({model:process.env.MODEL_ID,input:"只回复 CONFIG_OK",max_output_tokens:32}))' >"$request_path"
+      status_code="$(curl -sS -o "$response_path" -w '%{http_code}' -H 'Content-Type: application/json' -H "Authorization: Bearer ${api_key}" --data-binary "@${request_path}" "$endpoint" || true)"
+      ;;
+    chat_completions)
+      endpoint="${api_base_url}/chat/completions"
+      MODEL_ID="$SELECTED_MODEL" "$NODE_BIN" -e 'process.stdout.write(JSON.stringify({model:process.env.MODEL_ID,messages:[{role:"user",content:"只回复 CONFIG_OK"}],max_tokens:32}))' >"$request_path"
+      status_code="$(curl -sS -o "$response_path" -w '%{http_code}' -H 'Content-Type: application/json' -H "Authorization: Bearer ${api_key}" --data-binary "@${request_path}" "$endpoint" || true)"
+      ;;
+    messages)
+      endpoint="${api_base_url}/messages"
+      MODEL_ID="$SELECTED_MODEL" "$NODE_BIN" -e 'process.stdout.write(JSON.stringify({model:process.env.MODEL_ID,messages:[{role:"user",content:"只回复 CONFIG_OK"}],max_tokens:32}))' >"$request_path"
+      status_code="$(curl -sS -o "$response_path" -w '%{http_code}' -H 'Content-Type: application/json' -H 'anthropic-version: 2023-06-01' -H "x-api-key: ${api_key}" --data-binary "@${request_path}" "$endpoint" || true)"
+      ;;
+    generate_content)
+      endpoint="${root_url}/v1beta/models/${SELECTED_MODEL}:generateContent"
+      printf '%s' '{"contents":[{"role":"user","parts":[{"text":"只回复 CONFIG_OK"}]}],"generationConfig":{"maxOutputTokens":32}}' >"$request_path"
+      status_code="$(curl -sS -o "$response_path" -w '%{http_code}' -H 'Content-Type: application/json' -H "x-goog-api-key: ${api_key}" --data-binary "@${request_path}" "$endpoint" || true)"
+      ;;
+    *) log_error "票据返回了不支持的协议: ${SELECTED_PROTOCOL}" ;;
+  esac
+  [ "$status_code" = "200" ] || log_error "${SELECTED_MODEL} 最小验证失败: ${SELECTED_PROTOCOL} 返回 HTTP ${status_code}"
+
+  RESPONSE_PATH="$response_path" PROTOCOL="$SELECTED_PROTOCOL" "$NODE_BIN" <<'EOF' || log_error "最小验证响应缺少完整终态或文本"
+const fs = require('node:fs')
+const body = JSON.parse(fs.readFileSync(process.env.RESPONSE_PATH, 'utf8'))
+const protocol = process.env.PROTOCOL
+let ok = false
+if (protocol === 'responses') {
+  const output = Array.isArray(body.output) ? body.output : []
+  const hasText = output.some(item => item?.type === 'message' && (Array.isArray(item?.content) ? item.content : []).some(part => part?.type === 'output_text' && part?.text))
+  ok = body.status === 'completed' || Boolean(body.output_text) || hasText
+}
+if (protocol === 'chat_completions') ok = Boolean(body.choices?.[0]?.message?.content) && Boolean(body.choices?.[0]?.finish_reason)
+if (protocol === 'messages') ok = Array.isArray(body.content) && body.content.some(part => part?.type === 'text' && part.text) && Boolean(body.stop_reason)
+if (protocol === 'generate_content') ok = Boolean(body.candidates?.[0]?.content?.parts?.some(part => part?.text)) && Boolean(body.candidates?.[0]?.finishReason)
+if (!ok) process.exit(2)
+EOF
+  rm -f "$request_path" "$response_path"
+  trap - RETURN
+  log_info "${SELECTED_MODEL} · ${SELECTED_PROTOCOL} 最小真实请求通过"
 }
 
 verify_claude_api_key() {
@@ -1570,7 +1775,9 @@ verify_client_commands() {
   if uses_grok; then
     local grok_command="$EXISTING_GROK_COMMAND"
     [ "$INSTALL_GROK_CLIENT" -eq 0 ] || grok_command="$GROK_BIN_PATH"
-    [ -n "$grok_command" ] && "$grok_command" --version >/dev/null 2>&1 || log_error "Grok Build 安装验证失败"
+    if [ -z "$grok_command" ] || ! "$grok_command" --version >/dev/null 2>&1; then
+      log_error "Grok Build 安装验证失败"
+    fi
   fi
 
   if uses_gemini; then
@@ -1634,6 +1841,11 @@ print_summary() {
   if [ -n "$PROFILE_FILE" ]; then
     printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
   fi
+  printf '\n回滚方法（仅显示本次存在的备份）:\n'
+  local rollback_path
+  for rollback_path in "$CLAUDE_SETTINGS_PATH" "$CODEX_AUTH_PATH" "$CODEX_CONFIG_PATH" "$CODEX_MODEL_CATALOG_PATH" "$GROK_CONFIG_PATH" "$GEMINI_ENV_PATH" "$GEMINI_SETTINGS_PATH"; do
+    [ -f "${rollback_path}.bak" ] && printf '  cp %q %q\n' "${rollback_path}.bak" "$rollback_path"
+  done
   printf '\n'
   if [ "$BALANCE_READY" -eq 1 ]; then
     printf '✅ 余额/套餐额度充足，现在可以直接使用。\n\n'
@@ -1670,7 +1882,11 @@ main() {
   prompt_for_api_keys
   # 一次性凭证和配置文件都使用 Node 做严格 JSON 解析，因此先确保运行时可用。
   ensure_node_runtime
-  exchange_setup_ticket
+  if [ -n "$SETUP_TOKEN" ]; then
+    exchange_setup_ticket
+  else
+    apply_manual_selection
+  fi
   resolve_client_install_plan
   resolve_client_update_plan
   if needs_client_install; then
@@ -1689,6 +1905,7 @@ main() {
   verify_codex_api_key
   verify_grok_api_key
   verify_gemini_api_key
+  verify_selected_model_request
   verify_client_commands
   open_cc_switch_if_requested
   print_summary

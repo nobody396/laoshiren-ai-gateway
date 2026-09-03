@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 15,
+  "protocol": "messages",
+  "observed_at": "2026-08-31T23:09:02+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T07:08:42.691931+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 6,
+      "output_tokens": 85,
+      "account_id": 13,
+      "request_id": "generated:r3l15la8umlfjw-7sh"
+    },
+    {
+      "created_at": "2026-09-01T07:08:46.692837+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 1,
+      "output_tokens": 132,
+      "account_id": 13,
+      "request_id": "generated:r3l15la8umlfjw-7sl"
+    },
+    {
+      "created_at": "2026-09-01T07:08:53.618642+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 1,
+      "output_tokens": 71,
+      "account_id": 36,
+      "request_id": "3df9cdcc-08e2-4407-918c-a913f919f93d"
+    },
+    {
+      "created_at": "2026-09-01T07:09:00.895079+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 1,
+      "output_tokens": 26,
+      "account_id": 13,
+      "request_id": "generated:r3l15la8umlfjw-7t0"
+    }
+  ],
+  "artifact_sha256": "df04132b10c1efcdeeca15ed3a0b1cfa98e4d04fb604be7c203e8cdfac319461"
+}

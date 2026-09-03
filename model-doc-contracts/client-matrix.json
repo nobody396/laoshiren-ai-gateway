@@ -206,20 +206,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:2.1.251",
-          "display": "2.1.251",
+          "version_key": "cli:2.1.258",
+          "display": "2.1.258",
           "components": [
             {
               "component": "cli",
-              "version": "2.1.251"
+              "version": "2.1.258"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-03",
+            "source_ref": "model-doc-contracts/evidence/claude-code-installed-refresh-20260903.json",
+            "artifact_sha256": "ed93eaad2fcdd7917c5762ae45a98eea015284228550f9d7b1667fe25562b39a"
           }
         },
         "os_support": [
@@ -647,20 +647,20 @@
           },
           {
             "protocol": "chat_completions",
-            "support": "supported",
+            "support": "unsupported",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unsupported",
               "observed_at": "2026-09-01",
-              "source_ref": "artifacts/grok-build-tool-loop-20260831.json#evidence-2ab5414525856cf640a4c7a0",
-              "artifact_sha256": "55c790d11776833d04f61b04c7ba797936adf0aed63025cb1b704feaa5673071"
+              "source_ref": "artifacts/client-protocol-terminal-adjudication-20260901.json#evidence-e8af3a275d64fa2dcdbb0444",
+              "artifact_sha256": "77b6dd5abb312c0001c664d96c7b577b2d81d20c8da6e90b179bb2b973a4291f"
             }
           },
           {
@@ -879,9 +879,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-c9c2c56bd0d940febfa6a232",
+              "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
             }
           },
           {
@@ -897,9 +897,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-492c761099ea4f5393f9a4ab",
+              "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
             }
           },
           {
@@ -915,9 +915,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-loop-claude-sonnet-5-messages-group15-usage.json#evidence-fa00de04741c4acaa387900c",
+              "artifact_sha256": "316898c6a6293430a3a25fa801b32e49d11a689cbfc97f6c09b5c32c1b1a7c6d"
             }
           },
           {
@@ -933,9 +933,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-4e08457d24bb420d97cecc8b",
+              "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
             }
           }
         ],
@@ -979,21 +979,21 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:0.38.0",
-          "display": "0.38.0+",
+          "version_key": "cli:0.39.1",
+          "display": "0.39.1",
           "components": [
             {
               "component": "cli",
-              "version": "0.38.0",
+              "version": "0.39.1",
               "supported_range": ">=0.38.0"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-03",
+            "source_ref": "model-doc-contracts/evidence/kimi-code-installed-refresh-20260903.json",
+            "artifact_sha256": "23babd9b31ac709e99f621d6dbe97409e39d22267b54e1249b3002f363db0dc2"
           }
         },
         "os_support": [
@@ -1368,44 +1368,44 @@
             "evidence": {
               "status": "verified",
               "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "source_ref": "artifacts/zcode-client-protocol-loops-20260901/zcode-loop-qwen3.7-max-responses-group64-20260901.json#evidence-4d49055fe0fa328644cb7558",
+              "artifact_sha256": "7f4c33a55bc1d8d094747f9b53772ce53af0f5ff774eba2cade270dec319f2db"
             }
           },
           {
             "protocol": "chat_completions",
-            "support": "supported",
+            "support": "unsupported",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unsupported",
               "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "source_ref": "artifacts/client-protocol-terminal-adjudication-v2-20260901.json#evidence-0ca1f1fa267ce96c27e2e5b5",
+              "artifact_sha256": "820dabffb1fc313725b44402080a2b4fd480cf5b57e79eaac722725ed6f4d765"
             }
           },
           {
             "protocol": "messages",
-            "support": "supported",
+            "support": "unsupported",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unsupported",
               "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "source_ref": "artifacts/client-protocol-terminal-adjudication-v2-20260901.json#evidence-3ab193fdb0d1a595cbf101d5",
+              "artifact_sha256": "820dabffb1fc313725b44402080a2b4fd480cf5b57e79eaac722725ed6f4d765"
             }
           },
           {
@@ -2140,38 +2140,38 @@
           },
           {
             "protocol": "chat_completions",
-            "support": "unsupported",
+            "support": "supported",
             "client_transport_features": {
-              "minimal_text": "not_applicable",
-              "streaming_terminal": "not_applicable",
-              "tool_call": "not_applicable",
-              "tool_result_continuation": "not_applicable",
-              "usage": "not_applicable",
-              "invalid_request": "not_applicable"
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
             },
             "evidence": {
-              "status": "unsupported",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/hermes-agent-source-20260831.json",
-              "artifact_sha256": "0313dcb8ef61755af44d982734b257cca9957046789c00a428243cfc92704578"
+              "status": "verified",
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/hermes-chat-messages-loops-20260903/hermes-invalid-request-probes-20260903.json#evidence-bc1a681ed4704854a98a3400",
+              "artifact_sha256": "d0f33caebfe25d3546c5dd608b0f0ecdce2ac631972a0fb9be1c9209f21658fa"
             }
           },
           {
             "protocol": "messages",
-            "support": "unsupported",
+            "support": "supported",
             "client_transport_features": {
-              "minimal_text": "not_applicable",
-              "streaming_terminal": "not_applicable",
-              "tool_call": "not_applicable",
-              "tool_result_continuation": "not_applicable",
-              "usage": "not_applicable",
-              "invalid_request": "not_applicable"
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
             },
             "evidence": {
-              "status": "unsupported",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/hermes-agent-source-20260831.json",
-              "artifact_sha256": "0313dcb8ef61755af44d982734b257cca9957046789c00a428243cfc92704578"
+              "status": "verified",
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/hermes-chat-messages-loops-20260903/hermes-invalid-request-probes-20260903.json#evidence-d6838c0ccda64e98ab0332c6",
+              "artifact_sha256": "d0f33caebfe25d3546c5dd608b0f0ecdce2ac631972a0fb9be1c9209f21658fa"
             }
           },
           {
@@ -2398,7 +2398,7 @@
       "id": "qoder",
       "name": "Qoder",
       "slug": "integration-qoder",
-      "icon": "/brand/client-tools/qwen.svg",
+      "icon": "/tool-icons/qoder.png",
       "one_click_status": "prototype",
       "client_protocol": {
         "protocols": [
@@ -2415,27 +2415,27 @@
             },
             "evidence": {
               "status": "unsupported",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-              "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/qoder-login-gate-byo-20260903.json#evidence-351fc4d486914071bb2e3d61",
+              "artifact_sha256": "2c95a83b489b6fcf07c82fde40ee551a5b82b9e7f57c6f5a56cee821bd062cb7"
             }
           },
           {
             "protocol": "chat_completions",
-            "support": "supported",
+            "support": "unsupported",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
             },
             "evidence": {
-              "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-              "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+              "status": "unsupported",
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/qoder-login-gate-byo-20260903.json#evidence-094a747356154f97a0ad5e95",
+              "artifact_sha256": "2c95a83b489b6fcf07c82fde40ee551a5b82b9e7f57c6f5a56cee821bd062cb7"
             }
           },
           {
@@ -2451,9 +2451,9 @@
             },
             "evidence": {
               "status": "unsupported",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-              "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/qoder-login-gate-byo-20260903.json#evidence-ad11179ff8be4bfe8412bc56",
+              "artifact_sha256": "2c95a83b489b6fcf07c82fde40ee551a5b82b9e7f57c6f5a56cee821bd062cb7"
             }
           },
           {
@@ -2469,9 +2469,9 @@
             },
             "evidence": {
               "status": "unsupported",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-              "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/qoder-login-gate-byo-20260903.json#evidence-9373e7c8189a46f38079fe5b",
+              "artifact_sha256": "2c95a83b489b6fcf07c82fde40ee551a5b82b9e7f57c6f5a56cee821bd062cb7"
             }
           }
         ],
@@ -2550,20 +2550,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:1.1.38",
-          "display": "1.1.38",
+          "version_key": "cli:1.1.41",
+          "display": "1.1.41",
           "components": [
             {
               "component": "cli",
-              "version": "1.1.38"
+              "version": "1.1.41"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-01",
-            "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-            "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+            "observed_at": "2026-09-03",
+            "source_ref": "artifacts/qoder-login-gate-byo-20260903.json",
+            "artifact_sha256": "8cffbabe3cbae4a9aa2bf48beca7792d21854f4767b3ed35731a01a951db056f"
           }
         },
         "os_support": [
@@ -2713,7 +2713,7 @@
       "id": "minimax-code",
       "name": "MiniMax Code",
       "slug": "integration-minimax-code",
-      "icon": "/brand/client-tools/minimax.svg",
+      "icon": "/tool-icons/minimax-code.png",
       "one_click_status": "prototype",
       "client_protocol": {
         "protocols": [
@@ -2730,9 +2730,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-              "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/mcode-three-protocol-loops-20260903/mcode-invalid-request-probes-20260903.json#evidence-9027e1ceb55544fdae79df11",
+              "artifact_sha256": "6fcca69722744c6c9d024f47435608b6588f9b3c2028ac7ec925e45be2c4b97c"
             }
           },
           {
@@ -2748,9 +2748,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-              "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/mcode-three-protocol-loops-20260903/mcode-invalid-request-probes-20260903.json#evidence-178eceae3b9c49208c47bdad",
+              "artifact_sha256": "6fcca69722744c6c9d024f47435608b6588f9b3c2028ac7ec925e45be2c4b97c"
             }
           },
           {
@@ -2766,9 +2766,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/qoder-minimax-code-m8-20260901.json",
-              "artifact_sha256": "2fa5397b5955168173f730122572d818e7203c3883125ac8a778b4b499c2bc73"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/mcode-three-protocol-loops-20260903/mcode-invalid-request-probes-20260903.json#evidence-ac8c213f75bd427dba733860",
+              "artifact_sha256": "6fcca69722744c6c9d024f47435608b6588f9b3c2028ac7ec925e45be2c4b97c"
             }
           },
           {
@@ -2985,7 +2985,7 @@
       "id": "workbuddy",
       "name": "WorkBuddy",
       "slug": "integration-workbuddy",
-      "icon": "/tool-icons/workbuddy.png",
+      "icon": "/tool-icons/workbuddy.svg",
       "one_click_status": "prototype",
       "client_protocol": {
         "protocols": [
@@ -3020,9 +3020,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-candidates-trae-doubao-work-workbuddy-20260901.json",
-              "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
+              "observed_at": "2026-09-02",
+              "source_ref": "artifacts/workbuddy-chat-completions-loop-20260902/workbuddy-chat-completions-invalid-request-20260902.json#evidence-dd2b5ba61bf8456c87a61c10",
+              "artifact_sha256": "274ab95d4b5933404ecb2d3c711397ebb332656060fec338db6ebee33647f14d"
             }
           },
           {
@@ -3109,7 +3109,7 @@
           "requires_mapping_evidence": true,
           "notes": "The exact bundled CLI lists six values, but unsupported-model fallback behavior has not been observed."
         },
-        "notes": "WorkBuddy 5.3.14 bundles CodeBuddy Code 2.115.0. GUI fast/balanced/extreme modes are not treated as model-native levels.",
+        "notes": "WorkBuddy 5.5.1 bundles CodeBuddy Code 2.137.1. GUI fast/balanced/extreme modes are not treated as model-native levels.",
         "evidence": {
           "status": "verified",
           "observed_at": "2026-09-01",
@@ -3119,24 +3119,24 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "app:5.3.14+cli:2.115.0",
-          "display": "WorkBuddy 5.3.14",
+          "version_key": "app:5.5.1+cli:2.137.1",
+          "display": "WorkBuddy 5.5.1",
           "components": [
             {
               "component": "app",
-              "version": "5.3.14"
+              "version": "5.5.1"
             },
             {
               "component": "cli",
-              "version": "2.115.0"
+              "version": "2.137.1"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-01",
-            "source_ref": "model-doc-contracts/evidence/client-candidates-trae-doubao-work-workbuddy-20260901.json",
-            "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
+            "observed_at": "2026-09-02",
+            "source_ref": "model-doc-contracts/evidence/workbuddy-installed-refresh-20260902.json",
+            "artifact_sha256": "59ee32671d57c15970fd30f0c674a5cd431f4867a3335d94bd3628bc58aa66d5"
           }
         },
         "os_support": [
@@ -3276,7 +3276,7 @@
             "status": "documented_version_only"
           }
         ],
-        "verification_contract": "Exact app/CLI versions plus local model-config readback, Chat Completions minimal/stream/tool/continuation/usage/error cells, reasoning-level mapping, and a clean real Agent loop. None of the gateway cells has been executed yet."
+        "verification_contract": "Exact app/CLI versions plus the login-free env config path (CODEBUDDY_BASE_URL + CODEBUDDY_API_KEY) verified on 2026-09-02. Chat Completions minimal/stream/tool/continuation/usage/error cells and a clean real Agent loop verified by receipts under artifacts/workbuddy-chat-completions-loop-20260902. Reasoning-level mapping to GUI modes remains unverified."
       },
       "verification_os": []
     },
@@ -3290,20 +3290,20 @@
         "protocols": [
           {
             "protocol": "responses",
-            "support": "supported",
+            "support": "unsupported",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
             },
             "evidence": {
-              "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-admission-source-20260901.json",
-              "artifact_sha256": "78d67d39bb5ab0fee2f2176eb0eec42adc6d912f6dfe3d549ef6f08b8b2e2919"
+              "status": "unsupported",
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/dsh-four-protocol-loops-20260903/dsh-loop-gpt-5.4-responses-group6.json#evidence-5fbb6574d4c24437a68ca473",
+              "artifact_sha256": "49e49725ef2576860ed5a616a51b446434366082cd1d811d07b391db112f0769"
             }
           },
           {
@@ -3319,9 +3319,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-admission-source-20260901.json",
-              "artifact_sha256": "78d67d39bb5ab0fee2f2176eb0eec42adc6d912f6dfe3d549ef6f08b8b2e2919"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/dsh-four-protocol-loops-20260903/dsh-loop-grok-4.5-chat_completions-group34-usage.json#evidence-f883432dcb464a07a8bc9b49",
+              "artifact_sha256": "c2ebf8236d618b4f469ca7e9223a8e3d237e9b3ef703c87b5e4f770fa531e73b"
             }
           },
           {
@@ -3337,27 +3337,27 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-admission-source-20260901.json",
-              "artifact_sha256": "78d67d39bb5ab0fee2f2176eb0eec42adc6d912f6dfe3d549ef6f08b8b2e2919"
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/dsh-four-protocol-loops-20260903/dsh-loop-claude-sonnet-5-messages-group15.json#evidence-b870f14f010848339081c4d3",
+              "artifact_sha256": "f955239366ce1a88d8fffa1084ee0941d8f2a9e58180777fcd5f195f9c5a8760"
             }
           },
           {
             "protocol": "generate_content",
-            "support": "supported",
+            "support": "unsupported",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
             },
             "evidence": {
-              "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-admission-source-20260901.json",
-              "artifact_sha256": "78d67d39bb5ab0fee2f2176eb0eec42adc6d912f6dfe3d549ef6f08b8b2e2919"
+              "status": "unsupported",
+              "observed_at": "2026-09-03",
+              "source_ref": "artifacts/dsh-four-protocol-loops-20260903/dsh-generate-content-no-adapter-20260903.json#evidence-09481f6cfad04b18a5546bfb",
+              "artifact_sha256": "cfa62d1e0fcdf56bf5cfbcbb83d35a16722d370efc3388ca166a1740d5cc27b1"
             }
           }
         ],
@@ -3562,23 +3562,23 @@
       "id": "vscode-local-agent",
       "name": "Visual Studio Code Local Agent",
       "slug": "integration-vscode",
-      "icon": "/brand/client-tools/vscode.svg",
+      "icon": "/tool-icons/vscode.png",
       "one_click_status": "prototype",
       "client_protocol": {
         "protocols": [
           {
             "protocol": "responses",
-            "support": "supported",
+            "support": "unverified",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-01",
               "source_ref": "model-doc-contracts/evidence/client-admission-source-20260901.json",
               "artifact_sha256": "78d67d39bb5ab0fee2f2176eb0eec42adc6d912f6dfe3d549ef6f08b8b2e2919"
@@ -3586,17 +3586,17 @@
           },
           {
             "protocol": "chat_completions",
-            "support": "supported",
+            "support": "unverified",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-01",
               "source_ref": "model-doc-contracts/evidence/client-admission-source-20260901.json",
               "artifact_sha256": "78d67d39bb5ab0fee2f2176eb0eec42adc6d912f6dfe3d549ef6f08b8b2e2919"
@@ -3604,17 +3604,17 @@
           },
           {
             "protocol": "messages",
-            "support": "supported",
+            "support": "unverified",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-01",
               "source_ref": "model-doc-contracts/evidence/client-admission-source-20260901.json",
               "artifact_sha256": "78d67d39bb5ab0fee2f2176eb0eec42adc6d912f6dfe3d549ef6f08b8b2e2919"

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 2,
+  "group_access": {
+    "changed": 1,
+    "verified": 0,
+    "blocked": 1
+  },
+  "evidence_index_sha256": "8b012df9f08918c7b27856a986dd5f2eaefb1914818882795176c9802a45619e",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gpt-daybreak-blue-latest.json",
+      "events": [
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "group_access",
+          "path": "GPT Daybreak Blue 安全研究线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-184f1f4e11dc450ac362c21b",
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-4e8fa49e9c4b3ec3c51ad6a3",
+            "evidence-67705d306c4fd03b9a5c933c",
+            "evidence-bf3a1e7c285a0069c70a5b4a",
+            "evidence-dd55d344cb00b3e6d1842ff8",
+            "evidence-f1003fa2ead6134822adbbdb",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ],
+          "protocol_status": {
+            "responses": "blocked"
+          }
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "artifact_sha256": "0b002b71aa2d81e07b888f7e13c4cd293968d1c20dd558cd8966604138298060",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "63:minimax-m3:messages:P-02:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 63,
+    "group_name": "MiniMax 企业高速线路",
+    "marker": "LSR_CONTRACT_90D113D8A0CD56EF",
+    "max_output_tokens": 524288,
+    "model_id": "minimax-m3",
+    "name": "streaming_sse",
+    "p_id": "P-02",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "0111f67603962c7cda3349e565c570323e16892aa8c43068693d912d0b15bc90",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:13:38.728+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:13:37.352+00:00",
+  "offline_verifier": {
+    "reason": "stream is not valid SSE",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 63,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "stream is not valid SSE",
+  "request": {
+    "payload_sha256": "f6a380a1de8559212830e3f832cccc8f277bf73461e75b61e0e1fa2eb071994b",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "af4f0f4bdb786cd03a51e1064cce37fffe4be6fcc5d6c462654affb4ebd12a31"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "b9f0efe9635570cc1d34b9ed840e2c789da98c9472203e40ad2e202d4e4faa00",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 1,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "c45273c4-2829-45b7-9fd9-f5dc15244303",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

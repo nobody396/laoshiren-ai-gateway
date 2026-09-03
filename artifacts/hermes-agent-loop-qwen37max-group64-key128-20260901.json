@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "qwen3.7-max",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 64,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-08-31T23:45:07+00:00",
+  "finished_at": "2026-08-31T23:45:39+00:00",
+  "duration_ms": 19995,
+  "command_contract": {
+    "executable": "hermes",
+    "provider": "openai-api",
+    "toolsets": "terminal",
+    "max_turns": 10,
+    "isolated_home": true
+  },
+  "target_group_readback": {
+    "group_id": 64
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stdout_bytes": 2414,
+  "stdout_sha256": "753e0a562bf172e7649963ea0618a57922ca6431132d1da56476233f8ea27475",
+  "stderr_bytes": 36,
+  "stderr_sha256": "47fccc6244cf1da01676dd9c17d01c14f757663a9a4970c04637ccc251466f1a",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/hermes-agent-loop-qwen37max-group64-key128-20260901-usage-attribution.json",
+    "artifact_sha256": "c60ee1067564431fa530eca28f5100669ab35364175d37f3bf0476ba74b783c8",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "restoration": {
+    "group_id": 6,
+    "verified": true
+  },
+  "restored_group_id": 6,
+  "passed": true,
+  "artifact_sha256": "cefaed01425d544dea50691c9f825986fd94ed69675e0e8a8ae4523923895ff0"
+}

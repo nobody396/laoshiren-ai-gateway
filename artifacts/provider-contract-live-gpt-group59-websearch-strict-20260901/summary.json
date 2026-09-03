@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "3d5cd071b141c13b71af1c49d918fbcd7274b95b8ce39f69c7932c2f2d03b814",
+  "case_count": 2,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "31a86d632a89020c",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-gpt-group59-websearch-strict-20260901/run-state.json",
+  "status_counts": {
+    "pass": 2
+  }
+}

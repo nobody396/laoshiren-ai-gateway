@@ -95,6 +95,59 @@ func TestBuildOpenAIResponsesURL_ProbeURL(t *testing.T) {
 	}
 }
 
+func TestNormalizeGLM53ChatReasoningEffort(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		model   string
+		body    string
+		want    string
+		changed bool
+	}{
+		{"kimi medium becomes high", "ZHIPU/GLM-5.3", `{"reasoning_effort":"medium"}`, "high", true},
+		{"none becomes low", "glm-5.3", `{"reasoning_effort":"none"}`, "low", true},
+		{"xhigh becomes max", "ZHIPU/GLM-5.3", `{"reasoning_effort":"xhigh"}`, "max", true},
+		{"supported high unchanged", "ZHIPU/GLM-5.3", `{"reasoning_effort":"high"}`, "high", false},
+		{"other model unchanged", "glm-5.2", `{"reasoning_effort":"medium"}`, "medium", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, changed, err := normalizeGLM53ChatReasoningEffort([]byte(tt.body), tt.model)
+			require.NoError(t, err)
+			require.Equal(t, tt.changed, changed)
+			require.Equal(t, tt.want, gjson.GetBytes(got, "reasoning_effort").String())
+		})
+	}
+}
+
+func TestNormalizeQwenChatReasoningEffort(t *testing.T) {
+	tests := []struct {
+		name    string
+		model   string
+		body    string
+		want    string
+		changed bool
+	}{
+		{"limited high becomes medium", "qwen3.6-flash", `{"reasoning_effort":"high"}`, "medium", true},
+		{"limited xhigh becomes medium", "QWEN/qwen3.6-plus", `{"reasoning_effort":"xhigh"}`, "medium", true},
+		{"limited max becomes medium", "qwen3.7-flash", `{"reasoning_effort":"max"}`, "medium", true},
+		{"supported medium unchanged", "qwen3.6-flash", `{"reasoning_effort":"medium"}`, "medium", false},
+		{"broad max unchanged", "qwen3.8-max", `{"reasoning_effort":"max"}`, "max", false},
+		{"missing effort unchanged", "qwen3.6-flash", `{}`, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, changed, err := normalizeQwenChatReasoningEffort([]byte(tt.body), tt.model)
+			require.NoError(t, err)
+			require.Equal(t, tt.changed, changed)
+			require.Equal(t, tt.want, gjson.GetBytes(got, "reasoning_effort").String())
+		})
+	}
+}
+
 func TestForwardAsRawChatCompletions_ForcesStreamUsageUpstreamAndPassesUsageDownstream(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -166,6 +219,32 @@ func TestForwardAsRawChatCompletions_PreservesDeepSeekReasoningContentNonStreami
 	require.Equal(t, 5, result.Usage.OutputTokens)
 	require.Equal(t, "think first", gjson.Get(rec.Body.String(), "choices.0.message.reasoning_content").String())
 	require.Equal(t, "final answer", gjson.Get(rec.Body.String(), "choices.0.message.content").String())
+}
+
+func TestForwardAsRawChatCompletions_NormalizesKimiMediumForGLM53(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	body := []byte(`{"model":"glm-5.3","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"medium","stream":false}`)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid_glm53_kimi"}},
+		Body:       io.NopCloser(strings.NewReader(`{"id":"chatcmpl_glm53","object":"chat.completion","model":"ZHIPU/GLM-5.3","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}`)),
+	}}
+
+	svc := &OpenAIGatewayService{cfg: rawChatCompletionsTestConfig(), httpUpstream: upstream}
+	account := rawChatCompletionsTestAccount()
+	account.Credentials["model_mapping"] = map[string]any{"glm-5.3": "ZHIPU/GLM-5.3"}
+
+	result, err := svc.forwardAsRawChatCompletions(context.Background(), c, account, body, "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, "ZHIPU/GLM-5.3", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.Equal(t, "high", gjson.GetBytes(upstream.lastBody, "reasoning_effort").String())
 }
 
 func TestForwardAsRawChatCompletions_PreservesDeepSeekReasoningContentStreaming(t *testing.T) {

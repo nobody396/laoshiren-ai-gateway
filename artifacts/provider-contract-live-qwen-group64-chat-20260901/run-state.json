@@ -1,0 +1,222 @@
+{
+  "cases": {
+    "64:qwen3.6-flash:chat_completions:P-01:default": {
+      "artifact_sha256": "75c3a0c01cdd0d17e228bfd45fc38ac5f3da7a35d1d0adb354ef5a27eafef5ca",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-flash_chat_completions_P-01_default-ef9a6530fa9f.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:chat_completions:P-02:default": {
+      "artifact_sha256": "411fb9782106bc1ab9ec3eec0853e76ef63ba7c989da423bb2038f24e8eaa705",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-flash_chat_completions_P-02_default-cadb62901aea.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:chat_completions:P-03:default": {
+      "artifact_sha256": "c1a49c570cbb670c54a232a9bf3ef4588b2c69ace4846094836a8e6254135321",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-flash_chat_completions_P-03_default-a5f5e499c670.json",
+      "status": "blocked"
+    },
+    "64:qwen3.6-flash:chat_completions:P-04:default": {
+      "artifact_sha256": "a4f9b2f67e70812ec874c0314e55a5fbf2256b44bcc772c5a89b81b322b1cec6",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-flash_chat_completions_P-04_default-dd3386d7bff5.json",
+      "status": "blocked"
+    },
+    "64:qwen3.6-flash:chat_completions:P-05:default": {
+      "artifact_sha256": "56e030486f8298bde22f1076985527430311070af082b055397a0fb361d93085",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-flash_chat_completions_P-05_default-0703244ed1ec.json",
+      "status": "blocked"
+    },
+    "64:qwen3.6-flash:chat_completions:P-12:default": {
+      "artifact_sha256": "4a52c890c4978c87443cc921b28ab98f08e70a946e1609dddffc333f7b2adc1b",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-flash_chat_completions_P-12_default-a991a4fc04bd.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-flash:chat_completions:P-15:default": {
+      "artifact_sha256": "43df8949dd85b1834bce63f60a219f2da3babdf464368aac5264a653276159c9",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-flash_chat_completions_P-15_default-7eb9f0f8d035.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:chat_completions:P-01:default": {
+      "artifact_sha256": "74ba41da16b7c3862da7ca839afa5b59cb5189e479cb63b9fe1a1cc05ba2a71c",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-plus_chat_completions_P-01_default-cd05b8ea9b5f.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:chat_completions:P-02:default": {
+      "artifact_sha256": "ac0da8dd116b527d777a305af3c1ac6a5b687f4aa09412cef36514611c31a6e4",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-plus_chat_completions_P-02_default-1479c083f177.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:chat_completions:P-03:default": {
+      "artifact_sha256": "b30230b65cdfd0e5095c22ea860fb3c4f690f4f3710766b8844292a66b6d3ce3",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-plus_chat_completions_P-03_default-1c3d5201e79a.json",
+      "status": "blocked"
+    },
+    "64:qwen3.6-plus:chat_completions:P-04:default": {
+      "artifact_sha256": "41aad037c27ff25dc91ee03290271a3000caf593520c80884c44a23d666b9b88",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-plus_chat_completions_P-04_default-eea37755b591.json",
+      "status": "blocked"
+    },
+    "64:qwen3.6-plus:chat_completions:P-05:default": {
+      "artifact_sha256": "7123280cb3acad58642131a6edb0656f14edebe0bb0e2ea383d7f9c466dc0e57",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-plus_chat_completions_P-05_default-f474a51a6c7a.json",
+      "status": "blocked"
+    },
+    "64:qwen3.6-plus:chat_completions:P-12:default": {
+      "artifact_sha256": "ce62a48553d3cd50e8fa4391b8626073312d36a8398741d4cdb5803139cd3afa",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-plus_chat_completions_P-12_default-f6e1b935fb4c.json",
+      "status": "pass"
+    },
+    "64:qwen3.6-plus:chat_completions:P-15:default": {
+      "artifact_sha256": "5cedc6c7c30c3bd5ed9f7e35463b3014ea341bf440bc3e752d46fbc3315e7f82",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.6-plus_chat_completions_P-15_default-0079a1568f8d.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:chat_completions:P-01:default": {
+      "artifact_sha256": "22c23c4b1ea3ac41891d5796eb8d3bf2fb522df06b6729b01d7b6feb9112b4e2",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-flash_chat_completions_P-01_default-e9129a3fb4ad.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:chat_completions:P-02:default": {
+      "artifact_sha256": "00b5fe7c23887e8272d1ca43b408ede38f62c7cdf66b4cf768b8c052132c7a93",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-flash_chat_completions_P-02_default-42f658ca58ed.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:chat_completions:P-03:default": {
+      "artifact_sha256": "ac311c4f86328a368a7da3b07b76f3220439dd5c5606a95f86c6dff25144dbef",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-flash_chat_completions_P-03_default-2a05d7102864.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-flash:chat_completions:P-04:default": {
+      "artifact_sha256": "f375b3c6ff8d7d234f89e6f9af3515ba28eabba4f3e22d4aaf53f2724848804b",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-flash_chat_completions_P-04_default-113c2ce571eb.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-flash:chat_completions:P-05:default": {
+      "artifact_sha256": "720898a2467fe5de38e18dc8a0d4227d6fda8e31e1c91ce801d3ead930ea379a",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-flash_chat_completions_P-05_default-089349b95175.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-flash:chat_completions:P-12:default": {
+      "artifact_sha256": "5568650f1c8ebe9d87886146806c5f0a15dc9d4ca25fa4df725ef5a4dcb13317",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-flash_chat_completions_P-12_default-0780c228f118.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-flash:chat_completions:P-15:default": {
+      "artifact_sha256": "6a6e2989d8341e3e3bbbeed4167fd4673d112f2f1969a21d97c63e352ff2edf8",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-flash_chat_completions_P-15_default-beaae882ad7b.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:chat_completions:P-01:default": {
+      "artifact_sha256": "2086b19f763c113baff95bef229deca464ce1b24b7cd5f85d40f599f876ea467",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-max_chat_completions_P-01_default-d14b25da0bfc.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:chat_completions:P-02:default": {
+      "artifact_sha256": "475518bd4a548aad34d253fbad97de4ca738e5b98d90c7b7a6d77ac699bd3a45",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-max_chat_completions_P-02_default-ca88041f3ab9.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:chat_completions:P-03:default": {
+      "artifact_sha256": "61172b98c7a7be2953df79a34c40f30cec0fc4312a8786b735b18fb17ada32f1",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-max_chat_completions_P-03_default-10699b17077d.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-max:chat_completions:P-04:default": {
+      "artifact_sha256": "24a705d0f32b47f0bf9aca1d56b40e4c81c936c6be5c767dda2222baa107d2c9",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-max_chat_completions_P-04_default-475a4a540630.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-max:chat_completions:P-05:default": {
+      "artifact_sha256": "e7eac6e1a02e6366bdb6179a2dad0ad7cadd9c5caedee03ca9ca0799609eecb0",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-max_chat_completions_P-05_default-e84363baffab.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-max:chat_completions:P-12:default": {
+      "artifact_sha256": "0c67d80a055bb314b2094eb8bf94e67c896a83d4996ee910cbd7daf25cd28a89",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-max_chat_completions_P-12_default-fbe095e1d645.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-max:chat_completions:P-15:default": {
+      "artifact_sha256": "04c70d96c1fa42331a8c642a7c6ee31bccd8d5f6acd2e02c97684bdd0b06f0cb",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-max_chat_completions_P-15_default-adb4a845a294.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:chat_completions:P-01:default": {
+      "artifact_sha256": "383f601bd40e7d54f3c0e45f69a4c07c8026826cddda3e87a8444c81ed85a1d5",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-plus_chat_completions_P-01_default-ce5d91fe3ce0.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:chat_completions:P-02:default": {
+      "artifact_sha256": "ee14af2c78f253b304c682e6406bae4f7081506675881a48e34fc0b3ca488d60",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-plus_chat_completions_P-02_default-77cd6d5b222c.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:chat_completions:P-03:default": {
+      "artifact_sha256": "c690e11459e2c3635c3f7f3b583dc413e9d13dd7a2b7c13a6ea92c9b95aa3428",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-plus_chat_completions_P-03_default-11fd3ff366fd.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-plus:chat_completions:P-04:default": {
+      "artifact_sha256": "1d3c06230f7b6fafbf0eb1a8b0a0eaca935c3df609696587607eb1ea70e6b867",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-plus_chat_completions_P-04_default-8102aa0c1c16.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-plus:chat_completions:P-05:default": {
+      "artifact_sha256": "e36b436e93f9c914de53c7cab38d54b28fd4dad8007792ad5eb0091f79ed9457",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-plus_chat_completions_P-05_default-b25bb6a442da.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-plus:chat_completions:P-12:default": {
+      "artifact_sha256": "f58d6bdccb05cd47f81d3be16e696d19f53c777994e3150fb425e322d7ed60af",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-plus_chat_completions_P-12_default-110a49fc1a1e.json",
+      "status": "pass"
+    },
+    "64:qwen3.7-plus:chat_completions:P-15:default": {
+      "artifact_sha256": "c0cfbafd85e5c887e893f35d5c32e9bf19d913633704fe5ba47f396016bcca8f",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.7-plus_chat_completions_P-15_default-058d2eed21d2.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:chat_completions:P-01:default": {
+      "artifact_sha256": "5f8f955bad6c0889b2bd7348466ee43777cd125f5bcd00bfd0205f20f2185334",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.8-max_chat_completions_P-01_default-9af0ef8ec303.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:chat_completions:P-02:default": {
+      "artifact_sha256": "7b5aa95f9cc734dc37fa0b0f4d197fd8c1698881383514717c218eea9cdd9eda",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.8-max_chat_completions_P-02_default-c1272381c1eb.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:chat_completions:P-03:default": {
+      "artifact_sha256": "390f2d73b30874693acdd08d08db8c616659639730b46e086c48f1890ef5be43",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.8-max_chat_completions_P-03_default-d365499551d9.json",
+      "status": "blocked"
+    },
+    "64:qwen3.8-max:chat_completions:P-04:default": {
+      "artifact_sha256": "6c09d3f1dbdbdb9cc7c4b7584c6e438fe7679354ea2c7e99c1627032697ca81e",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.8-max_chat_completions_P-04_default-2828dfead2b4.json",
+      "status": "blocked"
+    },
+    "64:qwen3.8-max:chat_completions:P-05:default": {
+      "artifact_sha256": "1a166347a23fa6c9348df1d62afa7670c3a714db7e13cd7efa60a2c07f066306",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.8-max_chat_completions_P-05_default-5f84e7af74b0.json",
+      "status": "blocked"
+    },
+    "64:qwen3.8-max:chat_completions:P-12:default": {
+      "artifact_sha256": "812d2a042a74aa781197bf9ebea777eed2503144e76add477e6b8e69a1c6d5a7",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.8-max_chat_completions_P-12_default-49bc5101d943.json",
+      "status": "pass"
+    },
+    "64:qwen3.8-max:chat_completions:P-15:default": {
+      "artifact_sha256": "443768e763e73821834e880be6a677c58cd1369c80637ac67a0f49173e08a6b4",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-20260901/cases/64_qwen3.8-max_chat_completions_P-15_default-a7c929fb2c58.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:21:59.939+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "47fdc203e560989c",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T19:07:17.728+00:00"
+}

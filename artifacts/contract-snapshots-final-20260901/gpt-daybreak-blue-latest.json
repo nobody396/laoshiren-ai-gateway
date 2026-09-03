@@ -1,0 +1,1051 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 2,
+        "name": "GPT Daybreak Blue 安全研究线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "Codex",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "Grok Build",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "Kimi Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "OpenCode",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "ZCode",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "name": "Hermes Agent",
+      "status": "unsupported",
+      "protocols": [],
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Visual Studio Code Local Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [],
+  "model": {
+    "context_window": 1050000,
+    "display_name": "GPT Daybreak Blue Latest",
+    "family": "gpt",
+    "id": "gpt-daybreak-blue-latest",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "max_output_tokens": 128000,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocol_candidates": [
+    {
+      "evidence": "OpenAI currently lists Chat Completions as an endpoint (https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest), but no exact public-gateway Chat Completions matrix or client loop exists.",
+      "name": "chat_completions",
+      "status": "blocked"
+    }
+  ],
+  "protocols": [
+    {
+      "evidence": "Basic/partial production evidence only: on 2026-08-27 group 52 returned HTTP 200 with a complete Responses stream, usage and one completed billing command; tool call, tool-result continuation and invalid-request checks remain blocked.",
+      "name": "responses",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [
+      {
+        "client": "Kimi Code",
+        "levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      }
+    ],
+    "client_mappings": [],
+    "model_levels": []
+  },
+  "recommended_protocol": "responses",
+  "recommended_protocol_reason": "Responses is the only locally verified production protocol and is the official transport for the model built-in tool catalog; Chat Completions is official but remains blocked locally.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Codex": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.151.0",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:0.151.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-f8fa556a3b7b52909ec5c698",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "unsupported",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-f8fa556a3b7b52909ec5c698"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-f8fa556a3b7b52909ec5c698"
+            ]
+          },
+          "windows": {
+            "client_version": "cli:0.151.0",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "Grok Build": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.0.13",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-3e42bcb39d169648d3ab0f57",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "unsupported",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-3e42bcb39d169648d3ab0f57"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-3e42bcb39d169648d3ab0f57"
+            ]
+          },
+          "windows": {
+            "client_version": "cli:1.0.13",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-b60413f0cd438208ae6c96c4",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-b60413f0cd438208ae6c96c4"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-b60413f0cd438208ae6c96c4"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "Kimi Code": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.38.0",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-a3e87c6b3be28e77a85d56ae",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "unsupported",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-a3e87c6b3be28e77a85d56ae"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-a3e87c6b3be28e77a85d56ae"
+            ]
+          },
+          "windows": {
+            "client_version": "cli:0.38.0",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "OpenCode": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.18.15",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-e188d9c5c383b631b306b76b",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "unsupported",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-e188d9c5c383b631b306b76b"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-e188d9c5c383b631b306b76b"
+            ]
+          },
+          "windows": {
+            "client_version": "cli:1.18.15",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "ZCode": {
+        "responses": {
+          "linux": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-afe15c63b9772e462ae19ec7",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "unsupported",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-afe15c63b9772e462ae19ec7"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-afe15c63b9772e462ae19ec7"
+            ]
+          },
+          "windows": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "No exact gpt-daybreak-blue-latest Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "MiniMax Code": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.2.7",
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Visual Studio Code Local Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-daybreak-blue-latest",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "GPT Daybreak Blue 安全研究线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=blocked",
+        "evidence_ids": [
+          "evidence-184f1f4e11dc450ac362c21b",
+          "evidence-3b6035aaf25db20e1a545224",
+          "evidence-4e8fa49e9c4b3ec3c51ad6a3",
+          "evidence-67705d306c4fd03b9a5c933c",
+          "evidence-bf3a1e7c285a0069c70a5b4a",
+          "evidence-dd55d344cb00b3e6d1842ff8",
+          "evidence-f1003fa2ead6134822adbbdb",
+          "evidence-fa9c2ae5988883d04fec6ef9",
+          "evidence-fc625ae10a9d9dbcd36b7584"
+        ],
+        "model_id": "gpt-daybreak-blue-latest",
+        "multiplier": 2,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the verified production path and the official built-in-tools transport; local Chat Completions remains blocked.",
+        "status": "blocked",
+        "verified_at": "2026-09-01",
+        "protocol_evidence": {
+          "responses": {
+            "status": "blocked",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-184f1f4e11dc450ac362c21b",
+              "evidence-3b6035aaf25db20e1a545224",
+              "evidence-4e8fa49e9c4b3ec3c51ad6a3",
+              "evidence-67705d306c4fd03b9a5c933c",
+              "evidence-bf3a1e7c285a0069c70a5b4a",
+              "evidence-dd55d344cb00b3e6d1842ff8",
+              "evidence-f1003fa2ead6134822adbbdb",
+              "evidence-fa9c2ae5988883d04fec6ef9",
+              "evidence-fc625ae10a9d9dbcd36b7584"
+            ],
+            "pass_evidence_ids": [
+              "evidence-4e8fa49e9c4b3ec3c51ad6a3",
+              "evidence-67705d306c4fd03b9a5c933c",
+              "evidence-bf3a1e7c285a0069c70a5b4a",
+              "evidence-dd55d344cb00b3e6d1842ff8",
+              "evidence-f1003fa2ead6134822adbbdb"
+            ],
+            "failure_evidence_ids": [
+              "evidence-184f1f4e11dc450ac362c21b",
+              "evidence-3b6035aaf25db20e1a545224",
+              "evidence-fa9c2ae5988883d04fec6ef9",
+              "evidence-fc625ae10a9d9dbcd36b7584"
+            ],
+            "observed_at": "2026-09-01T23:59:59+00:00"
+          }
+        }
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "OpenAI model page publishes 1,050,000 context tokens: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      },
+      "max_output_tokens": {
+        "evidence": "OpenAI model page publishes 128,000 maximum output tokens: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "OpenAI model page lists image input: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      },
+      "text": {
+        "evidence": "OpenAI model page lists text input/output; production gateway stream also completed: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest; log.md 9167-9178.",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      },
+      "video": {
+        "evidence": "OpenAI model page explicitly says video is not supported: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+        "status": "unsupported",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "pricing": {
+      "GPT Daybreak Blue 安全研究线路": {
+        "cache_read_price": 0.5,
+        "cache_write_price": 12.5,
+        "currency": "CNY",
+        "evidence": "2026-08-31 public pricing readback from https://api.laoshirenai.com/api/v1/public/model-pricing (updated_at 2026-08-31T11:36:37.816099323Z).",
+        "input_price": 10,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 60,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "responses": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-6ab9042e7d1709ebf848b9ad",
+          "status": "verified",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-6ab9042e7d1709ebf848b9ad"
+          ],
+          "pass_evidence_ids": [
+            "evidence-6ab9042e7d1709ebf848b9ad"
+          ],
+          "failure_evidence_ids": []
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-af7764b3058493dfce420546",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-af7764b3058493dfce420546"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-af7764b3058493dfce420546"
+          ]
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-07cee741c4f036b210caa4de, evidence-bc8f7f851d5155fe3ec9fe84",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-07cee741c4f036b210caa4de",
+            "evidence-bc8f7f851d5155fe3ec9fe84"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-07cee741c4f036b210caa4de",
+            "evidence-bc8f7f851d5155fe3ec9fe84"
+          ]
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-3c963c841bf1c1495db2075d",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-3c963c841bf1c1495db2075d"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-3c963c841bf1c1495db2075d"
+          ]
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-60ca92a6d0c6160861c9141a, evidence-70862f55fc56d28db4522760",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-60ca92a6d0c6160861c9141a",
+            "evidence-70862f55fc56d28db4522760"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-60ca92a6d0c6160861c9141a",
+            "evidence-70862f55fc56d28db4522760"
+          ]
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-3c9861fe00cf8f170d7bc753, evidence-e93e538ef86d45c9f7ba787d",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-3c9861fe00cf8f170d7bc753",
+            "evidence-e93e538ef86d45c9f7ba787d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-e93e538ef86d45c9f7ba787d"
+          ],
+          "failure_evidence_ids": [
+            "evidence-3c9861fe00cf8f170d7bc753"
+          ]
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-00f178e7f622fa6d265dd072, evidence-2f2587d1a92cc4f18833ca5d",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-00f178e7f622fa6d265dd072",
+            "evidence-2f2587d1a92cc4f18833ca5d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-00f178e7f622fa6d265dd072"
+          ],
+          "failure_evidence_ids": [
+            "evidence-2f2587d1a92cc4f18833ca5d"
+          ]
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-96c648ac776e3bdf43e70276, evidence-ee09aef54868535f52f89756",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-96c648ac776e3bdf43e70276",
+            "evidence-ee09aef54868535f52f89756"
+          ],
+          "pass_evidence_ids": [
+            "evidence-96c648ac776e3bdf43e70276"
+          ],
+          "failure_evidence_ids": [
+            "evidence-ee09aef54868535f52f89756"
+          ]
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-68e53c55f3a6c143e3f39663, evidence-781ec8b78dc07fe7fdb524e8",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-68e53c55f3a6c143e3f39663",
+            "evidence-781ec8b78dc07fe7fdb524e8"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-68e53c55f3a6c143e3f39663",
+            "evidence-781ec8b78dc07fe7fdb524e8"
+          ]
+        }
+      }
+    },
+    "protocols": {
+      "chat_completions": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-de60e0dc787b2ae895e05092",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-de60e0dc787b2ae895e05092"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-de60e0dc787b2ae895e05092"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-af94a31de8395e669c001181",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-af94a31de8395e669c001181"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-af94a31de8395e669c001181"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-4a4474f8d00c88ca1e29dd07",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-4a4474f8d00c88ca1e29dd07"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-4a4474f8d00c88ca1e29dd07"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-6c4ea6c1e96a1c40b396f825",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-6c4ea6c1e96a1c40b396f825"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-6c4ea6c1e96a1c40b396f825"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-37020f8ce60cce50d55b3a3c",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-37020f8ce60cce50d55b3a3c"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-37020f8ce60cce50d55b3a3c"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-4bdbe642604d9d5e4d187d96",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-4bdbe642604d9d5e4d187d96"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-4bdbe642604d9d5e4d187d96"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      },
+      "responses": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-7b50b6410b5ca228f4e58ab3, evidence-b0271d6a0b5772f38758f005",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-7b50b6410b5ca228f4e58ab3",
+            "evidence-b0271d6a0b5772f38758f005"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-7b50b6410b5ca228f4e58ab3",
+            "evidence-b0271d6a0b5772f38758f005"
+          ]
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-3b6035aaf25db20e1a545224, evidence-6347a5760f1d55740c1ba2be, evidence-fa9c2ae5988883d04fec6ef9, evidence-fc625ae10a9d9dbcd36b7584",
+          "evidence_ids": [
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-6347a5760f1d55740c1ba2be",
+            "evidence-fa9c2ae5988883d04fec6ef9",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ],
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-6347a5760f1d55740c1ba2be",
+            "evidence-fa9c2ae5988883d04fec6ef9",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ]
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-b2c1dd59de2771e73eeafd14",
+          "status": "verified",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-b2c1dd59de2771e73eeafd14"
+          ],
+          "pass_evidence_ids": [
+            "evidence-b2c1dd59de2771e73eeafd14"
+          ],
+          "failure_evidence_ids": []
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-1d10bb648438ef99d85eba9e, evidence-637b397dc35d5c157b22bede, evidence-a43ce9643dadaf0f1dec625f, evidence-aefcac34e9cf6b588ad0aed1, evidence-d7fd22593b53c8119f4d687d, evidence-fb05f840f97977d1c27bff86",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-1d10bb648438ef99d85eba9e",
+            "evidence-637b397dc35d5c157b22bede",
+            "evidence-a43ce9643dadaf0f1dec625f",
+            "evidence-aefcac34e9cf6b588ad0aed1",
+            "evidence-d7fd22593b53c8119f4d687d",
+            "evidence-fb05f840f97977d1c27bff86"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-1d10bb648438ef99d85eba9e",
+            "evidence-637b397dc35d5c157b22bede",
+            "evidence-a43ce9643dadaf0f1dec625f",
+            "evidence-aefcac34e9cf6b588ad0aed1",
+            "evidence-d7fd22593b53c8119f4d687d",
+            "evidence-fb05f840f97977d1c27bff86"
+          ]
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-2f9d363d24d02360e8bbda7f, evidence-817cedcb676d52f8b49b100e",
+          "status": "unsupported",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-2f9d363d24d02360e8bbda7f",
+            "evidence-817cedcb676d52f8b49b100e"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-2f9d363d24d02360e8bbda7f",
+            "evidence-817cedcb676d52f8b49b100e"
+          ]
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-23a69942529e6cef2b16516d",
+          "status": "verified",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-23a69942529e6cef2b16516d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-23a69942529e6cef2b16516d"
+          ],
+          "failure_evidence_ids": []
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Codex": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "responses": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "Kimi Code": {
+          "responses": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "OpenCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "MiniMax Code": {
+          "responses": {
+            "client_levels": [
+              "off",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "DeepSeek Harness": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "Visual Studio Code Local Agent": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-daybreak-blue-latest public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        }
+      },
+      "model_levels": {}
+    },
+    "tools": {
+      "responses": {
+        "apply_patch": {
+          "evidence": "OpenAI lists apply_patch for Daybreak Blue Responses, but no exact 老实人AI public-gateway apply_patch result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "code_interpreter": {
+          "evidence": "OpenAI lists code_interpreter for Daybreak Blue Responses, but no exact 老实人AI public-gateway code_interpreter result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "computer_use": {
+          "evidence": "OpenAI lists computer_use for Daybreak Blue Responses, but no exact 老实人AI public-gateway computer_use result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "file_search": {
+          "evidence": "OpenAI lists file_search for Daybreak Blue Responses, but no exact 老实人AI public-gateway file_search result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "function_calling": {
+          "evidence": "OpenAI lists Function calling as supported for Daybreak Blue, but no exact 老实人AI public-gateway tool-call and tool-result continuation exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "hosted_shell": {
+          "evidence": "OpenAI lists hosted_shell for Daybreak Blue Responses, but no exact 老实人AI public-gateway hosted_shell result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "image_generation": {
+          "evidence": "OpenAI lists image_generation for Daybreak Blue Responses, but no exact 老实人AI public-gateway image_generation result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "mcp": {
+          "evidence": "OpenAI lists mcp for Daybreak Blue Responses, but no exact 老实人AI public-gateway mcp result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "skills": {
+          "evidence": "OpenAI lists skills for Daybreak Blue Responses, but no exact 老实人AI public-gateway skills result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "tool_search": {
+          "evidence": "OpenAI lists tool_search for Daybreak Blue Responses, but no exact 老实人AI public-gateway tool_search result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+          "status": "blocked"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-68e53c55f3a6c143e3f39663, evidence-781ec8b78dc07fe7fdb524e8",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-68e53c55f3a6c143e3f39663",
+            "evidence-781ec8b78dc07fe7fdb524e8"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-68e53c55f3a6c143e3f39663",
+            "evidence-781ec8b78dc07fe7fdb524e8"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "evidence": "OpenAI lists Function calling as supported for Daybreak Blue, but no exact 老实人AI public-gateway tool-call and tool-result continuation exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "function_calling",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists web_search for Daybreak Blue Responses, but no exact 老实人AI public-gateway web_search result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "web_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists file_search for Daybreak Blue Responses, but no exact 老实人AI public-gateway file_search result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "file_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists image_generation for Daybreak Blue Responses, but no exact 老实人AI public-gateway image_generation result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "image_generation",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists code_interpreter for Daybreak Blue Responses, but no exact 老实人AI public-gateway code_interpreter result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "code_interpreter",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists hosted_shell for Daybreak Blue Responses, but no exact 老实人AI public-gateway hosted_shell result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "hosted_shell",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists apply_patch for Daybreak Blue Responses, but no exact 老实人AI public-gateway apply_patch result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "apply_patch",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists skills for Daybreak Blue Responses, but no exact 老实人AI public-gateway skills result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "skills",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists computer_use for Daybreak Blue Responses, but no exact 老实人AI public-gateway computer_use result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "computer_use",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists mcp for Daybreak Blue Responses, but no exact 老实人AI public-gateway mcp result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "mcp",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists tool_search for Daybreak Blue Responses, but no exact 老实人AI public-gateway tool_search result exists: https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+      "name": "tool_search",
+      "protocol": "responses",
+      "status": "blocked"
+    }
+  ],
+  "verification": {
+    "gateway_e2e": false,
+    "gateway_e2e_scope": "minimal_stream_and_billing_only; full release E2E remains false until tool continuation, invalid-request, image and a real client loop complete.",
+    "limits_source": "official",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest",
+    "verified_at": "2026-08-31"
+  }
+}

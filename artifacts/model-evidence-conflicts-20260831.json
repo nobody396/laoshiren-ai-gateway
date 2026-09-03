@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "kind": "historical_evidence_conflict_audit",
+  "source_artifact_id": "evidence-inventory-1122333a8ec187864851",
+  "source_sha256": "1122333a8ec18786485111eecdc5aee94fe1f07a731522d58a35f8daf62e8df5",
+  "records": 848,
+  "exact_target_groups": 716,
+  "conflict_groups": 0,
+  "missing_target_fields": {
+    "protocol": 140,
+    "client_id": 451,
+    "client_version": 484,
+    "os": 558
+  },
+  "terminal_receipts": 0,
+  "conflicts": [],
+  "duplicate_target_groups": 29,
+  "duplicate_candidate_records": 132
+}

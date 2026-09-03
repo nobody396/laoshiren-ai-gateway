@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "cf5ed000d7dccdca3c408a9a3e7e35c7629fe78bb6e00530ce56bfb44ee8e630",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "65:claude-opus-5:messages:P-15:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 65,
+    "group_name": "Claude 经济线路",
+    "marker": "LSR_CONTRACT_A915AC09390CEEED",
+    "max_output_tokens": 128000,
+    "model_id": "claude-opus-5",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:claude-opus-5/messages/features/error_passthrough",
+      "model_protocol:claude-opus-5/messages/invalid_request"
+    ]
+  },
+  "case_fingerprint": "6504c7cf55e9dc3e976b0923de5212c261fbd68036dae35b7fe1d232c1a9e972",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:44:21.766+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:44:19.727+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 65,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "a2a0fe72b3a277d5f0d46ea0b151bff0750ef19f8b8930098742f193af4d85e9",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "03a5ca8f17fc6746764f1f0616b1618111545f07f2172b20a7e476d838c91567"
+  },
+  "response": {
+    "body_bytes": 198,
+    "body_sha256": "ea748052a065c22f6f30203f20fde165da564325df57b2e4caad07cd3ba6b598",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "ea4f984a-adfa-4abd-aa18-bac1e836fcd9",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

@@ -3,7 +3,7 @@
  * 独立模型价格页的数据来源：全部 active 分组 × 模型 × 实付价（元/1M tokens）。
  */
 
-import { apiClient } from './client'
+import { ANONYMOUS_REQUEST_HEADER, apiClient } from './client'
 
 export interface PublicModelPrice {
   model: string
@@ -68,6 +68,14 @@ export interface PublicModelPricingCatalog {
  * 获取公开模型价格目录（无需登录）。
  */
 export async function getPublicModelPricing(): Promise<PublicModelPricingCatalog> {
-  const { data } = await apiClient.get<PublicModelPricingCatalog>('/public/model-pricing')
+  // The response shape evolves with the model catalog. A browser/CDN cache of
+  // an older response (for example, groups whose `models` field was null) must
+  // not make the live model directory appear empty after a frontend update.
+  const { data } = await apiClient.get<PublicModelPricingCatalog>('/public/model-pricing', {
+    params: { _nc: Date.now() },
+    // This catalog is intentionally public. Reusing a local admin/user session
+    // can hit a session-scoped stale response and hide every model.
+    headers: { [ANONYMOUS_REQUEST_HEADER]: '1' },
+  })
   return data
 }

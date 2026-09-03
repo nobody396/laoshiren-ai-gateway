@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 3,
+  "events": 3,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "1147888471a7229a10db074baa6502f14323ac02c93053b72d0c89cb31aee3ca",
+  "changes": [
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-543d2be7a19881a8a7d7d1ec",
+            "evidence-7ac8ce7dba7af8be942be470",
+            "evidence-7e1dea80ba9c2374bd2b6078"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-0351b08baff9573a3214a1f1",
+            "evidence-0972e4ee4e553dc5ddde5445",
+            "evidence-e6ecb1e4cfa5846baccd5e19"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-8ccc465b73e2407503f3cdd1",
+            "evidence-f587d5ca28bad50e79467ee4",
+            "evidence-fbd70cce9dfe515b57b7cf2a"
+          ]
+        }
+      ]
+    }
+  ]
+}

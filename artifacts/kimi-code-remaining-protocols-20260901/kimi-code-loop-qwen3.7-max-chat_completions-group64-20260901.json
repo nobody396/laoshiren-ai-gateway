@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "network_execution": "explicit_live",
+  "client_id": "kimi-code",
+  "client_version": "cli:0.38.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "qwen3.7-max",
+  "protocol": "chat_completions",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 64,
+  "owned_key": {
+    "user_id": 2,
+    "key_id": 128,
+    "name": "一键安装 · Codex"
+  },
+  "observed_at": "2026-09-01T02:16:03+00:00",
+  "finished_at": "2026-09-01T02:16:38+00:00",
+  "duration_ms": 35297,
+  "command_contract": {
+    "executable": "kimi",
+    "version": "0.38.0",
+    "provider_type": "openai",
+    "credential": "KIMI_MODEL_API_KEY environment only",
+    "temporary_home": true,
+    "automatic_permissions": true,
+    "output_format": "stream-json"
+  },
+  "group_readback": {
+    "id": 128,
+    "user_id": 2,
+    "status": "active",
+    "group_id": 64
+  },
+  "model_discovery": {
+    "http_status": 200,
+    "model_count": 6,
+    "model_ids": [
+      "qwen3.6-flash",
+      "qwen3.6-plus",
+      "qwen3.7-flash",
+      "qwen3.7-max",
+      "qwen3.7-plus",
+      "qwen3.8-max"
+    ]
+  },
+  "exit_code": 1,
+  "timed_out": false,
+  "event_count": 1,
+  "event_types": {
+    "system.version": 1
+  },
+  "tool_names": [],
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_observed_after_tool": false,
+  "final_marker_verified": false,
+  "assistant_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assistant_text_bytes": 0,
+  "shell_file_verified": false,
+  "stdout_sha256": "a7eb8ac79a0c7c5bf05c0f7580f271de40b20c4ccdea63755a55674728349040",
+  "stdout_bytes": 59,
+  "stderr_sha256": "3bf6f97981514ad7310e8cbc34c09e6927cab490a59fd593494e31f45b8fdd6e",
+  "stderr_bytes": 1558,
+  "credential_policy": {
+    "key_transport": "environment_only",
+    "config_path": "home/.kimi-code/config.toml",
+    "plaintext_persistence_detected": false,
+    "plaintext_stream_echo_detected": false,
+    "detected_files": [],
+    "blocker": null
+  },
+  "usage_attribution": {
+    "path": "/admin/usage?page=1&page_size=200&api_key_id=128&group_id=64&model=qwen3.7-max&sort_by=id&sort_order=desc&exact_total=true",
+    "expected_endpoint": "/v1/chat/completions",
+    "rows": [],
+    "row_count": 0,
+    "verified": false
+  },
+  "restored_group_id": 6,
+  "passed": false,
+  "restoration_error": null,
+  "artifact_sha256": "1972051f03438fff62727ed907d625d58a0a64c9c888c3808d0fb093dd449add"
+}

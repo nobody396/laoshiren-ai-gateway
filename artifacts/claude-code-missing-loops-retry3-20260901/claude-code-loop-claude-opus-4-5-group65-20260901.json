@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "claude-code",
+  "client_version": "2.1.251",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-opus-4-5",
+  "protocol": "messages",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 65,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T22:10:30+00:00",
+  "finished_at": "2026-08-31T22:10:53+00:00",
+  "duration_ms": 21013,
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "system": 62,
+    "assistant": 8,
+    "user": 3,
+    "result": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "stdout_sha256": "1aeef58e46b5989f0f7c5868f6e15d562e71f9e93fb2cf52072b3708ac953222",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 22883,
+  "stderr_bytes": 0,
+  "restored_group_id": 6,
+  "passed": true,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/claude-code-missing-loops-retry3-20260901/claude-code-usage-claude-opus-4-5-group65-20260901.json",
+    "artifact_sha256": "7877b9b639b330b45ce2dd307f5d857318e8aeb8ca36d10aada40e8d0eda3ad3",
+    "usage_rows": 5,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoint": "/v1/messages",
+    "verified": true
+  },
+  "artifact_sha256": "ab5530749f750d94fdce4ab7c5fbf5f72b680444636020bf274871459781ffeb"
+}

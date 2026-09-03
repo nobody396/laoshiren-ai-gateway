@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": true,
+  "production_write": false,
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 57,
+      "name": "Gemini 标准线路",
+      "platform": "gemini",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.6
+    }
+  ],
+  "results": [],
+  "planned_smoke_probes": [],
+  "restored_group_id": null,
+  "secret_free": true
+}

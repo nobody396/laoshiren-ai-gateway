@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 4,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "4c1314a0f7bb9d33409fccfe4d05507893afe86ef4631fe4b1a281f345176360",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4f15f3195fd92e41a1c9ad0e"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/features/prompt_cache",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-7159c726cfe0ddf205f42b99"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1cfdefcb97ff0e9e9939dbd0"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1cfdefcb97ff0e9e9939dbd0"
+          ]
+        }
+      ]
+    }
+  ]
+}

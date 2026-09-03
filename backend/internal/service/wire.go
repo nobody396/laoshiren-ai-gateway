@@ -686,6 +686,7 @@ var ProviderSet = wire.NewSet(
 	NewModelPricingService,
 	ProvidePublicStatsService,
 	wire.Bind(new(AvailableModelsLister), new(*GatewayService)),
+	wire.Bind(new(ClientSetupModelDiscovery), new(*GatewayService)),
 	wire.Bind(new(ModelPricingProvider), new(*PricingService)),
 	NewBillingCacheService,
 	NewAnnouncementService,

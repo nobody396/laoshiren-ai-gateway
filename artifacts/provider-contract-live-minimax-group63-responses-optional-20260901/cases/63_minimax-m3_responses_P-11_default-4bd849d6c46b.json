@@ -1,0 +1,73 @@
+{
+  "artifact_sha256": "ee331e0599ce1ac02523ddd0a8683a15ad26fc00cba5fdedef9ab3fcb4b28280",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "63:minimax-m3:responses:P-11:default",
+    "context_window": 1048576,
+    "declared_status": "blocked",
+    "group_id": 63,
+    "group_name": "MiniMax 企业高速线路",
+    "marker": "LSR_CONTRACT_D617CE1C61110042",
+    "max_output_tokens": 524288,
+    "model_id": "minimax-m3",
+    "name": "web_search",
+    "p_id": "P-11",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "499738e78a3366d69b70bdd4b5e096628b046fff37b2f0ddeda6866c6f59d32c",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T21:31:59.791+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T21:31:58.253+00:00",
+  "offline_verifier": {
+    "reason": "web search response lacks a protocol-native server tool or grounding record",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 63,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "web search response lacks a protocol-native server tool or grounding record",
+  "request": {
+    "payload_sha256": "d18c69390bac9a3607693460f84ab90e4bd3203a541bffb8d3f3840fa529d939",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "d1f3b7cf64437f5cdd580371b0ce6cf308089943fc9678d83c6d55e5237554c6"
+  },
+  "response": {
+    "body_bytes": 180,
+    "body_sha256": "735854f4212ffcc5e98241ea3fe04405f5dcd4188df1afee11c161c85e638013",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "responses server tool \"web_search\" requires a native Responses upstream",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "445fd291-af00-4e1c-b0f1-eed1e8aadc7c",
+    "server_tool_observed": false,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

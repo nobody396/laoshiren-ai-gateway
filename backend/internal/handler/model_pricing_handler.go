@@ -25,5 +25,10 @@ func (h *ModelPricingHandler) GetModelPricing(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	// The catalog shape and active-group contents change independently of the
+	// frontend bundle. Do not let a browser or intermediary reuse an older
+	// response that can make the current model directory appear empty.
+	c.Header("Cache-Control", "no-store, max-age=0")
+	c.Header("Pragma", "no-cache")
 	response.Success(c, catalog)
 }

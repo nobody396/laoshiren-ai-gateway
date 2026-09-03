@@ -1,0 +1,1052 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 33,
+  "events": 87,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "37dca9d31350ab806e6b803d542dadd3472b53c662da55b039a32fc83b297b86",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0074baa7ca46b76b93460e9b",
+            "evidence-b5270fb6afafc0b2afb4b46a"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-439b181bd24d2159d38a17c4",
+            "evidence-9f41e7f596d69a42e85b7355"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5d213b136e325c6dd1204b99",
+            "evidence-96b105aaf228b2ba91839bf6"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2a910d948eae2a66dc3be549",
+            "evidence-f9c2c1d1934d84659f984f6d"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-34f9c6e45af2a107a457a426",
+            "evidence-ac85bd05bb47721dc9b7ecc6"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-05ce97a10a2611fad9c75b05",
+            "evidence-94c384dda5ce602d4414deb3"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9ef70fa90bc16381964dd4fb",
+            "evidence-c54d0e70965b54d0c41c1ecd"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b25bb9b6da555fd7214cce9b",
+            "evidence-bebcfe45e61510789dd57867"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5ee509dbfc85692a29fc5897",
+            "evidence-65a34ff71a6f9ec57947f96c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ecdc8b933141d8f77f2e84f5",
+            "evidence-ef63985fe74b6a90dfa08dea"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8567ce3b653d47cdff201bc1",
+            "evidence-f5c8173ebfc554ad1afd5667"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-92a6db915697be11f562199a",
+            "evidence-e96c9ba0f5aa88a58497c9ef"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7583b2598722e3174774f0a1",
+            "evidence-9f1303a24761ae6303c4dab5"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-14b90ca746ccc94d4c7b8b6e",
+            "evidence-6826aff90185ebd74ec0f0a5"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-518b706134e08906d9f2b66b",
+            "evidence-fcf18c62fc012603ef424c0a"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-630745928d7b95cf42abef8e",
+            "evidence-69b7f30d13ac5fb2869a4d6b"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2c15cd6f24d86fa0a74b12cb",
+            "evidence-fd8492d317874a933c3b8bb8"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-59d176b2f28d80d34a60ef8f",
+            "evidence-f445bf132fc03896365a7bbe"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1821f9d3b504808f5943c90e",
+            "evidence-82616bc33e0716c6e33a31c2"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-86f846f26d9bd283e956283a",
+            "evidence-8da78c87d904538c0a7e1438"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4bb42fc69b507ed73c533b38",
+            "evidence-a020e9875aafe9b38725d015"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-61533b6d71cbb8263dbb369f",
+            "evidence-e7a3a0a7df39fab607034821"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e193efea73df0571707f1e4",
+            "evidence-38272bf038e9315fa5caa769"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9a3974a0eb76a05e24e8583b",
+            "evidence-fce457557298121341a94f0d"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-45ea51af21dc33ee93b9b00a",
+            "evidence-da514779341c09647a5cc5d2"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-47abaf6c9bdd7e4407401ebc",
+            "evidence-dd2646ad1e5f724c5b1cc724"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-581735c16c0aee36526a3f62",
+            "evidence-ae531c99305f214e5cd9ff6a"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-aee49a5341c5873fd3a0b829",
+            "evidence-c5589cc85942e6768c0a1fe5"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-779108906a27d0fdf9c71afe",
+            "evidence-7ead19a154eb1153e00cdd70"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80e22ff750e7fa725f05b6f3",
+            "evidence-b4cd3a7a2cdcdf2232f770e1"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2bbc62f392de8f0aa0c3594d",
+            "evidence-3a0e5fbbcde848d8553eafd5"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-109e9f615f08f375c3dcdc17",
+            "evidence-501e4a6fc98ced20e7e857f2"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-670fcb5e72f98c63f6af7803",
+            "evidence-cc6e63e73b76893054b8ed99"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.3.json",
+      "events": [
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9676df3fba4ac9c4137a0683",
+            "evidence-cdbb4f093353064160965691"
+          ]
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3e4e2afcbca091c9451357fd",
+            "evidence-8f86730a026b1b38a3ea69eb"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8bae2056fd509d6b9972c8b6",
+            "evidence-f5c78fe2b224e23afbdf434a"
+          ]
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-06d162ec4c4dfb34decdf2d4",
+            "evidence-5c946f1f0316c1af3d2b931a"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-51af079d394d3ee46d143726",
+            "evidence-f9e8ae5a5e99cc4003c9e54f"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5cad6b43241b0a34f252bef0",
+            "evidence-b30a7a8a0c7fd0de2c7edca8"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9e2d1ef3d7bdb809abcdf3bd",
+            "evidence-d72df4b3f2a4d0da9506c4e2"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-063beefe0e285a05faac0a01",
+            "evidence-a253a6990c24a678ad7ebce8"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-98982bc7a0ba79c4999e963f",
+            "evidence-ba4fa650ac136c0a13cce5a0"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-49e085913dacc2ba95dc78db",
+            "evidence-e8af249e221833cb3d004888"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-206783c7127981807c102844",
+            "evidence-e68e5cc9d2637ce32fc9776b"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-33d2be861715d38c755d5195",
+            "evidence-53b2dacbbdb8ca45ecce7fb6"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-37d3aac5775f3d8019f8152d",
+            "evidence-3e0f014482d35cfe4ce5f8d1"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c0eb1ac9de9df53706c1c21c",
+            "evidence-d39559d8211a1f32b0397eb4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c0483c1b298d1098ceb5372c",
+            "evidence-d54b9e19828c2d35a0790c26"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-26c705b2dfd38e69a736ede9",
+            "evidence-8410a7ff310253cfdad99726"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-37b1aab8f37430bb3370f93c",
+            "evidence-62472d2bc20c7b0f5222889d"
+          ]
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0caec52fc249b395870a9837",
+            "evidence-ff2e461889f1b68513cacad2"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-729fcfe6b3c41c737aedcfa7",
+            "evidence-f8d89451b5351b962a93ddca"
+          ]
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-dc2aee2a3a24f5f1a3a8a404",
+            "evidence-f1a18df1b751af131713c18b"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3cee0d5bd04ed326b6095416",
+            "evidence-ef810e78feec87f7f7a0125b"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9c77360e80276286c25f283a",
+            "evidence-b591ac733b1f2921120de98b"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-d07104242c9fd2293d4b5655",
+            "evidence-f0a1183b2e2ead92e6c87395"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3ffe2a3c905b130a6a77ec45",
+            "evidence-50e8f3c8b123829a9bcd7002"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2934555a3154a86fa4cc9644",
+            "evidence-4eefed7c353121e76aab49fc"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-2e013fec56c3bf8e0e7dcde9",
+            "evidence-af8d60f80b20c1592c6a7a19"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-55ecd86cedc78742c085bc9b",
+            "evidence-849a529442d5dcf944101975"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cc941029e166f89ee1e3419f",
+            "evidence-fbde041836bde7238ba7e2fe"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-5b5f8f5ae158420c04ef9a24",
+            "evidence-9dd1824774afbf9d4c02176b"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-83222aa62b276b46748738b5",
+            "evidence-cd6db89da2a8794973c2c98e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-79ad3956f5164ee07326bfbd",
+            "evidence-cf96e7674c827d3b5dc17d13"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-14676ca80ef1697521c652c4",
+            "evidence-9d5b6ca2d454843ea8373934"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e25a8e8e3cd1094c4b68843e",
+            "evidence-e303ebc078a97e790175ae69"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ad44ecc08a4320ac1b37a330",
+            "evidence-e8799a56eefbe878af76dfc1"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-170c51132ab55a3562e19dab",
+            "evidence-a67b2460ac906453852d720a"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-30d6c66598d361e60ad05b37",
+            "evidence-f2d29463d277f39aa5b2143f"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5dfe78a9b3e703efe831a59b",
+            "evidence-e78f518bf6b4b1eb00c845c0"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-25141cb4044db74c8f85d513",
+            "evidence-90d3fc026bf2d8134364d77b"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-438383dda49ca2250de86dfd",
+            "evidence-6d2e3a147c06563321ff181e"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0c3db5fbc4fc94ca6819b9f3",
+            "evidence-f5f6baaeb7684e36a5cfd555"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-39ea731c7b59eb61d42bcee6",
+            "evidence-deeedd1db927530207b8d7bc"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6c44411e3bd6dfff12a4ec08",
+            "evidence-6c65adcb29b860b39deae740"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2cf57ea13db84d1b99918d04",
+            "evidence-c9bcf7968f97ea50b08193a6"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-19089ce64b50708a8cf66df1",
+            "evidence-2e268fd45b4957b1f18edcfb"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-19f1b61ebeba6fd501889691",
+            "evidence-9ed62cda4eca221501c8f055"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-19f0ed5c16f49964fcde3c51",
+            "evidence-c58db199c143c73d9a217614"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2f74af94b2f8c6e9bc4e2e30",
+            "evidence-cde56949bcd40f95dca96fe2"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1282f981b081c00874790db7",
+            "evidence-2f46df6f753250214456232c"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-65bed0a4496057d84aec8e97",
+            "evidence-f9daa31e730fa543b948102b"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2908946eaf28a390f293136e",
+            "evidence-62aef11e7e085bb99508c5b4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.8-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c40ebe212888fa4b27a47822",
+            "evidence-ff541b952ac1138f3f25bdf9"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9bc3e2d2113087152304fa06",
+            "evidence-f5f258477daac687a1ac1486"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4183aa8a296d2e0303b504ed",
+            "evidence-b1654c67c259555b4f2ee80c"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ad9ae5723667c7d4c9dedffb",
+            "evidence-d646073647358e5e96425ca8"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "78fd23fca5598ec443f3537329a98b620da6a40bb4aab39c5b0729041995817c",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "60:glm-5.2:messages:P-05:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 60,
+    "group_name": "GLM 企业高速线路",
+    "marker": "LSR_CONTRACT_CC5D64B797D61C13",
+    "max_output_tokens": 131072,
+    "model_id": "glm-5.2",
+    "name": "tool_result_continuation",
+    "p_id": "P-05",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "ebcebb1c3d06a6cf1c61bddda1c60fb2933051a94fc98006e239b0570fede7c7",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:08:21.356+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:08:19.959+00:00",
+  "offline_verifier": {
+    "reason": "tool result must be correlated and continue to final text",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 60,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "tool result must be correlated and continue to final text",
+  "request": {
+    "payload_sha256": "a847b59c0de9e02ecfb26bc4772c6b68ca81de515b113c320bd8b61e0000e232",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "44bbe711d0a31888c6ecabd6e3090b4cfdc5b11f63a1d15871020a9a323aed48"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "e5ca4272c586e1bb122ec09f286f0a16ba9eaddfba86a0528de3f5c3488d7e39",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "a9ad7822-ff5d-47c4-b3e6-72fc661a11eb",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

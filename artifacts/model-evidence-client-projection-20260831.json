@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 3,
+  "changes": [
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ff653eef4bd179945c9a89b9"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ff653eef4bd179945c9a89b9"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-2ab5414525856cf640a4c7a0"
+          ]
+        }
+      ]
+    }
+  ]
+}

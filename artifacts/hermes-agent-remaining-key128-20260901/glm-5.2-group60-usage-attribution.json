@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "user_id": 2,
+  "api_key_id": 128,
+  "group_id": 60,
+  "observed_at": "2026-08-31T23:48:19+00:00",
+  "query": "/admin/usage?page=1&page_size=200&api_key_id=128&group_id=60&model=glm-5.2&sort_by=id&sort_order=desc&exact_total=true",
+  "rows": [],
+  "secret_free": true,
+  "artifact_sha256": "f30759fd6c487178f09554c0aab03612c227be4ac70fea68e8b1731840b4260b"
+}

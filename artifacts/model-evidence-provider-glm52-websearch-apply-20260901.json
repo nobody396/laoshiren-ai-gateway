@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 1,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "80ddcf41ed712ab795320a30414eb95931259253a9eefac87b7e75d189a4820d",
+  "changes": [
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-c850e0a620c953fcea056418",
+            "evidence-cd90812536212772cc473caf"
+          ]
+        }
+      ]
+    }
+  ]
+}

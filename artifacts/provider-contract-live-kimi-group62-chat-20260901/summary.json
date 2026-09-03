@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "32b40214c9352c0d6d7eb288937eab466bf544dd4f23d249939cfe7978f37b7b",
+  "case_count": 14,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "74f5e61fa5266e47",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-kimi-group62-chat-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 3,
+    "pass": 11
+  }
+}

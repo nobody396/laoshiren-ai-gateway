@@ -1,0 +1,1704 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 6,
+      "name": "GPT 标准线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.5
+    },
+    {
+      "id": 34,
+      "name": "Grok 标准线路",
+      "platform": "grok",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.4
+    },
+    {
+      "id": 52,
+      "name": "GPT Daybreak Blue 安全研究线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 2
+    },
+    {
+      "id": 57,
+      "name": "Gemini 标准线路",
+      "platform": "gemini",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.6
+    },
+    {
+      "id": 58,
+      "name": "GPT 经济线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.35
+    },
+    {
+      "id": 59,
+      "name": "GPT 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    },
+    {
+      "id": 60,
+      "name": "GLM 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    },
+    {
+      "id": 61,
+      "name": "DeepSeek 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 62,
+      "name": "Kimi 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 64,
+      "name": "Qwen 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T17:19:45+00:00",
+      "group": {
+        "id": 6,
+        "name": "GPT 标准线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.5
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 6
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "9aa85eddfe701041d84a9e320b90205f4f260a60c1d259db8c60b3672e6aaae7",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "2163f5a74ae4468a61cc881d1fe1bbc37820a8801ac2647356804fe3ccc6ecfd",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.4",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "96417594f6e90b60da47ee3893628f7b9cf661ea799c7e3f20be3f8c35f46b7f",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.5",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "7477c8b5b50526e3590827c126546b7a00b3e0d535cce0260c66f06dc9eb6d30",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "ed5c009028200dffc8b3a12ccedbcf74cc75a44f26ab04460823942e7d98d7c8",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:20:05+00:00",
+      "group": {
+        "id": 34,
+        "name": "Grok 标准线路",
+        "platform": "grok",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.4
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 34
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "db410410439cb32ba1c41acce55551efe33d1989f4dbe427bf104e3b1b89c3f3",
+        "model_ids": [
+          "grok-4.5",
+          "grok-4.6"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "grok-4.5",
+          "protocol": "chat_completions",
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "aa41349cbc6c61fd7d60d486eda8109ca5ac2fbfb41b5755decb16c9c2db7911",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:20:33+00:00",
+      "group": {
+        "id": 52,
+        "name": "GPT Daybreak Blue 安全研究线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 2
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 52
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "5d7de5e98293ed14e8c7b108e66a6bcc78d2f6e00ea4ed77d3ae13493464efb7",
+        "model_ids": [
+          "gpt-5.6-sol",
+          "gpt-daybreak-blue-latest"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 503,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "aafa679f8e1a4a613078455930be35c1cec7a34435db66bd8694a108e3e11e2d",
+          "error": {
+            "type": "overloaded_error",
+            "message": "The service is currently busy. Please try again later."
+          },
+          "response_shape": {
+            "top_level_keys": [
+              "error"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:20:40+00:00",
+      "group": {
+        "id": 57,
+        "name": "Gemini 标准线路",
+        "platform": "gemini",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.6
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 57
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "62f898aad64c7ae613fbcd4bfc0eb2cec9fb0a0d5e35fdf2448258cadcbee962",
+        "model_ids": [
+          "gemini-3.1-pro",
+          "gemini-3.7-flash"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "protocol": "generate_content",
+          "url": "https://api.laoshirenai.com/v1beta/models/gemini-3.1-pro:generateContent",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "54b7420a513020738a5c0bf9372422b9c78c682967be7ce88765931309f7b6e1",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "candidates",
+              "modelVersion",
+              "responseId",
+              "usageMetadata"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 1,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:20:53+00:00",
+      "group": {
+        "id": 58,
+        "name": "GPT 经济线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.35
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 58
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "8c4b2a2196235432f053f670b5105d3d763952d0802a7659b2c97fe82663c07c",
+        "model_ids": [
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 5,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.4",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "83e704cb3d5c586956244416031db6a4368f173d0de2265a3840c0cad1fafa7b",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.5",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 0,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "error": {
+            "type": "TimeoutError",
+            "message": "The read operation timed out"
+          },
+          "response_shape": {
+            "top_level_keys": [],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "5a84bd0933cd32f69ec21599201807407d7afcd09c4984aebe97335ec01fb2f2",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "output_text",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:21:42+00:00",
+      "group": {
+        "id": 59,
+        "name": "GPT 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 59
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "bc0eba5fa47bef4292b2d1ac7f4d4480a6dee2469628b824dc0e670ce969c800",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.4-mini",
+          "gpt-5.5",
+          "gpt-5.6-luna",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 7,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "46c2f792bde18ce42d085939c160dfebf78b36c75af8608617454577756f9dd3",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.4",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "fb8a3bc2ec24f2a1010edbf9653cf31f87f06ddef1e34e86dca80f56955d6a79",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "bdeecb1113c65c6a71f9695b18a4c0dccca50ba9ae967d56f26e4d0547324430",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.5",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "3075526abfa5b6924c7fcd0447eeb81c314b3598a435948c2fff4843360bc2ab",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "73a5837e6a732d4d9b2bcd5fba9a71842dae08ed8b20aa7d9efe86e5ed85f9dd",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "8a20cf25ecf006eab476add84df17523f858211fffbedc89665f0078f7a1d763",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:22:07+00:00",
+      "group": {
+        "id": 60,
+        "name": "GLM 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 60
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "a661dcf6fe14405f3653ae55eb64f8b9523cacea8cc1a3d89e04141893cd5f9b",
+        "model_ids": [
+          "glm-5.2",
+          "glm-5.3"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "glm-5.2",
+          "protocol": "chat_completions",
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "780e27efd00a732773e6f1d525903975d75efba7e67a1752a320955f07a46634",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:22:16+00:00",
+      "group": {
+        "id": 61,
+        "name": "DeepSeek 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 61
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "70a9e11f45093e86b3b7d7d31a0442c967b193a94b1e6562a049181f715ea6dc",
+        "model_ids": [
+          "deepseek-v4-flash-0731",
+          "deepseek-v4-pro-0813"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "e41f95fce2da1c825147a9ce1e934a2bb6f43c20b08bdb96f3caf05d19d99e4a",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "billing",
+              "completed_at",
+              "conversation",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:22:27+00:00",
+      "group": {
+        "id": 62,
+        "name": "Kimi 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 62
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "06a4e48da3f73d2492bcb9db4c07693756396733d02e174721403f1de91dbba5",
+        "model_ids": [
+          "kimi-k2.7-code",
+          "kimi-k3"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "protocol": "chat_completions",
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "e45c847229ac2df7b8c0cd727e236fdedffc063be38297ae721aee9782df434a",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:22:36+00:00",
+      "group": {
+        "id": 64,
+        "name": "Qwen 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 64
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "5f5ff31dcdd97bbc34473fa4e01b7a8b82cb511efed48adb4e5d6364ad86b249",
+        "model_ids": [
+          "qwen3.6-flash",
+          "qwen3.6-plus",
+          "qwen3.7-flash",
+          "qwen3.7-max",
+          "qwen3.7-plus",
+          "qwen3.8-max"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "qwen3.6-flash",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "36886de08cfded0783350b5ecb37ffa9e3fa4e1072cdc2cb0829150fb6394b96",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "billing",
+              "completed_at",
+              "conversation",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "c499e4de127818eaf796f24610cd76482b2c3a885bec813236b976201c1e7752",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "billing",
+              "completed_at",
+              "conversation",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "802a4aa7cb3bded1bbef4007b506bfd238bdc3667a8012ac7b33ab5365e0318e",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "billing",
+              "completed_at",
+              "conversation",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "e2d3a800626c67be8c15e484d492b765c92327c59993b9c56184dc400e25db9b",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "billing",
+              "completed_at",
+              "conversation",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "155efe2462e3fa65cf63eeec74fc2eba3064a7fa4493a3b04b695a11fbd5e2ab",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "billing",
+              "completed_at",
+              "conversation",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 6,
+      "model_id": "gpt-5.3-codex-spark",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 6,
+      "model_id": "gpt-5.4",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 6,
+      "model_id": "gpt-5.5",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 6,
+      "model_id": "gpt-5.6-terra",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 34,
+      "model_id": "grok-4.5",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 52,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 57,
+      "model_id": "gemini-3.1-pro",
+      "protocol": "generate_content"
+    },
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.4",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.5",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.6-terra",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.3-codex-spark",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.4",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.4-mini",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.5",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.6-luna",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 60,
+      "model_id": "glm-5.2",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 61,
+      "model_id": "deepseek-v4-flash-0731",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 62,
+      "model_id": "kimi-k2.7-code",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.6-flash",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.6-plus",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.7-flash",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.7-max",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.7-plus",
+      "protocol": "responses"
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": false,
+  "artifact_sha256": "0fc6ae98890b96ad8e80aaa6ae354b44ba6dacb05e05d9c3b4a4c6d6ec7f5c83"
+}

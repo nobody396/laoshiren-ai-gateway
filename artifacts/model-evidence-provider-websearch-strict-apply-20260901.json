@@ -1,0 +1,355 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 18,
+  "events": 24,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "4ef8ba9e4592141fda35f0cbfa894304c8743302aadd0fe612b715e6f7d5a5dd",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d086b180bea3d5a398fc4c0e",
+            "evidence-f40b440936c9ff36a53a0c1e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6b49e36d69ec61acfe28de84",
+            "evidence-811494b8ea6f96ec9b9109df",
+            "evidence-ade363434f3f973f09fe07b0"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-72c2a040c00c06eb2f39b6d5",
+            "evidence-ba03d348a7e820d63299a2bd",
+            "evidence-e61bfc10e784f1e503908168"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-30ca8dabd3b6d64e8b31700c",
+            "evidence-751bbd71284066622e6085c4",
+            "evidence-901a16ccf0281371f4dec9c5"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0be65b1c89034e7adfcc8b23",
+            "evidence-3188064a2e324f13a2bc2071",
+            "evidence-820c959adb28b2d68d0de73c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-17ea3f3d35ae398b601e1e17",
+            "evidence-5d511a79b2a4d4812b0fc5fe",
+            "evidence-98b06979ffc9d28224216067"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-68e7016a13a6364bf1c2888c",
+            "evidence-dfbd7bba17595e37be347d4f",
+            "evidence-f3b02f4c8155b1e8bd3cb816"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5b74275426daae31db60a70f",
+            "evidence-a1973bee2dabd895ba2c3279",
+            "evidence-f742feddaf90541fb0460854"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0e77747aff080cd5e511127f",
+            "evidence-2dc04ebd8c51ddc41dd371df",
+            "evidence-c787888798f0309c165a768b"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2bee4280e8025abf91373957",
+            "evidence-f706b8e9860ceea7ce0adc2f"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0bbe491aa5232bd5d118f220",
+            "evidence-eae8cc1a7be1d1ac26529a55"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5337f8ec0ab9cb1bd56bffb9",
+            "evidence-5f70639037a80b3d3e242fd8"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b7f8f70906ed723b213041cd",
+            "evidence-fd9cd58485f24ba32655d1e4"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b7f8f70906ed723b213041cd",
+            "evidence-fd9cd58485f24ba32655d1e4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80adea594a427b2476585109",
+            "evidence-92f693e6c17c1580f5f2dede"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80adea594a427b2476585109",
+            "evidence-92f693e6c17c1580f5f2dede"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-46cd623102837dcd61d576ae",
+            "evidence-746c74344abc11926da3aa73"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-46cd623102837dcd61d576ae",
+            "evidence-746c74344abc11926da3aa73"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e",
+            "evidence-fb45177631d9eede502efe73"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e",
+            "evidence-fb45177631d9eede502efe73"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1cfdefcb97ff0e9e9939dbd0",
+            "evidence-c5cc742d708905a4cd3f0848"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1cfdefcb97ff0e9e9939dbd0",
+            "evidence-c5cc742d708905a4cd3f0848"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e1e662587a6bce4670f46e30",
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e1e662587a6bce4670f46e30",
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ]
+        }
+      ]
+    }
+  ]
+}

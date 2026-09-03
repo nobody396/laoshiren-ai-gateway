@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "plan",
+  "production_write": false,
+  "contract_write": false,
+  "contracts_changed": 0,
+  "events": 0,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "4c1314a0f7bb9d33409fccfe4d05507893afe86ef4631fe4b1a281f345176360",
+  "changes": []
+}

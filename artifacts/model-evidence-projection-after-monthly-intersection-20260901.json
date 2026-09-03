@@ -1,0 +1,1006 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 15,
+  "events": 60,
+  "group_access": {
+    "changed": 45,
+    "verified": 45,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "793f0fd777d263415aa9a122933b60f009abee266046e4aa09703d2e3eb503ca",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-030cf979e352986d589a9dd8",
+            "evidence-0e3f06835b216bb8c176f5c5",
+            "evidence-9ffa922abd968d4696662b3e"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-13b4604315ffb115770454d5",
+            "evidence-156a0bb28be26dfd134c39b0",
+            "evidence-9ea5e258566775799c9b9b58"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-357467dd28de12a935026fb8",
+            "evidence-ae79864810288fbb41376332",
+            "evidence-e14d21b75a461fd61f4770f0"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2597ed46ccd448235c5e568e",
+            "evidence-2910f249bcd70fe7068ca254",
+            "evidence-543f3efaacca65d10c5fb3eb",
+            "evidence-679e41a7d513ee248a859fe7",
+            "evidence-90cef262905cd422e8db0e8f",
+            "evidence-9ea5e258566775799c9b9b58",
+            "evidence-9ffa922abd968d4696662b3e",
+            "evidence-ae79864810288fbb41376332",
+            "evidence-c8104df9e4d1be7a8dd449c3",
+            "evidence-d3054c46dcae20d4604d3646"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-72c11a05043fbe3e8c5794c4",
+            "evidence-90b8c87c4e04212381d5f235",
+            "evidence-960561efd7f03b01cf530dcd"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-052c849f978185c307a27148",
+            "evidence-6c885ff915f533829f6f9750",
+            "evidence-8b1c692f473dac066748b8f5"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9b73220f9ec2f61c4849c896",
+            "evidence-bd7c2b24a6250d77cece047e",
+            "evidence-d898723846132bbe7684c5ed"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6c885ff915f533829f6f9750",
+            "evidence-72c11a05043fbe3e8c5794c4",
+            "evidence-7cca991177454073504c4864",
+            "evidence-9b73220f9ec2f61c4849c896"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5892e23be16286b67a137857",
+            "evidence-60c820246ebea3c6629ff580",
+            "evidence-d7c701b60a7c2e0b09471a5e"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3a5b34256d5bea5443b7ff8b",
+            "evidence-bf1c1e228306fabc6bea026b",
+            "evidence-c6913eca408d0c331e8c34ea"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8d3fb6352c9594f4b4ee902c",
+            "evidence-c8f31e125d351c265cb69845",
+            "evidence-dc307aafa604ef590c94b99f"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01bdaa354155498075d555cf",
+            "evidence-142a66db1308c23c84db36d4",
+            "evidence-15a2b4b2b9716581a3347efd",
+            "evidence-1d49c7fcc1b248a312789a5b",
+            "evidence-4a966835bb7dcf2c79efc36b",
+            "evidence-5892e23be16286b67a137857",
+            "evidence-6e29c0437e98bfbb319dc5ec",
+            "evidence-8d3fb6352c9594f4b4ee902c",
+            "evidence-c40d7a0e680b05059c080d82",
+            "evidence-c6913eca408d0c331e8c34ea"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6fd476fef0bc8633f4b25cf1",
+            "evidence-740c4707ada358e799083cd6",
+            "evidence-9120c8a49b75730ac546a269",
+            "evidence-c2535d9f719b644aa4dfa19b",
+            "evidence-d2331af5e2d9d262515acf48"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-26e585422e02ffacbc770c29",
+            "evidence-54349de48c366e59d6283a4c",
+            "evidence-6d5e665bea5f789d2773107b",
+            "evidence-706c248e7c77aa5c009b0704",
+            "evidence-9c62d39e4f1aba0ba12723ae"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-466b54b673869b86ca255ceb",
+            "evidence-4b82ef9396c83afc094cae12",
+            "evidence-b46099b1a1f781a2d96b9215",
+            "evidence-dd843ae9749088dc04c79308",
+            "evidence-f3be46265340695c86693a15"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-21d1822a765ae2c6a4a68a91",
+            "evidence-3acc5a1ec6779a12c9236cae",
+            "evidence-466b54b673869b86ca255ceb",
+            "evidence-4a0e0eade14a49a9ec296254",
+            "evidence-4b82ef9396c83afc094cae12",
+            "evidence-54349de48c366e59d6283a4c",
+            "evidence-5ccde039d539c302351c3be2",
+            "evidence-601048974020e6db866ad45b",
+            "evidence-80632aa21484f68fbdb44ac8",
+            "evidence-9a68a0ac4a9eb4a006f3115d",
+            "evidence-9c62d39e4f1aba0ba12723ae",
+            "evidence-b420ec86f9fdffa6261840ff",
+            "evidence-c2535d9f719b644aa4dfa19b",
+            "evidence-d2331af5e2d9d262515acf48",
+            "evidence-d6f9cd559b374b7f554dc9a9"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2021f50cd9189d26e713b1f6",
+            "evidence-3c554d8c8bf3c3191d6aec80",
+            "evidence-da54126556f0d349a821e5f3"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-420373d485dd69fab9ccc12e",
+            "evidence-861779e0150d2e972c33df8d",
+            "evidence-de42e814a69214c189832bad"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1840dc4aa9b60c6427cb8147",
+            "evidence-3b98d655c17bd528f7860121",
+            "evidence-ca8881be7fd13192f71d964a"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0628964019b029c294507552",
+            "evidence-2021f50cd9189d26e713b1f6",
+            "evidence-2f05245e97ad88310677845e",
+            "evidence-32e7d4764f33d132108963a4",
+            "evidence-3b98d655c17bd528f7860121",
+            "evidence-3d20f643630239ac5ed8ef02",
+            "evidence-3e7684407282e0ef7806f5c9",
+            "evidence-456d41c011075bc6a747d874",
+            "evidence-572634c19ed35f681d8c5af9",
+            "evidence-8f10c4c6d6cfe40a425380cb",
+            "evidence-de42e814a69214c189832bad"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-63ed6f41074cbee039494103",
+            "evidence-cafdce3c0a609efb6e1848af",
+            "evidence-efd03b9b699ae5e4d34eb91a"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9cfdffd76be6f6a116395e3b",
+            "evidence-b0732eddd54e026ce0e46e31",
+            "evidence-fe9537ae922c90d72f080f43"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-026a91dd21fd3472e998176a",
+            "evidence-378e90ed5a4048a8cc0f3a54",
+            "evidence-423e465087a35faf0b4f1bb2"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-00d2d12fafaf9c3ebb0ca558",
+            "evidence-2479446128400bd6f74fbc20",
+            "evidence-378e90ed5a4048a8cc0f3a54",
+            "evidence-4c518011d2f759cfbd8739c3",
+            "evidence-4fa9a2729642c17a5a057913",
+            "evidence-5de72a7bdbf39db68063b3cb",
+            "evidence-63ed6f41074cbee039494103",
+            "evidence-6868b0e5bdfb4e4f023581de",
+            "evidence-97ac9a7efa4c72dd834a751f",
+            "evidence-b0732eddd54e026ce0e46e31",
+            "evidence-d66d2b914471e00c1cf57404"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-76a6eec24a27973e2cf05c56",
+            "evidence-9f0bc41e0aff859fca6cfeae",
+            "evidence-fd33ba903d265775886e8982"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-afb8ec9e3bb3ee9c9c069b06",
+            "evidence-d3e2cdc663c3883e11bd5cfa",
+            "evidence-d9ddddbcc9a05551c04e20b4"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1efce40547490d9da3d3a3e9",
+            "evidence-6d0e0b6063ad3aeaf6fad074",
+            "evidence-8c296ed80a8b13544fb1c0b5"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01875ad20d13d58fcc93f4e8",
+            "evidence-1762f3075765aa9bbf42f164",
+            "evidence-413118602d1930c80336a6b9",
+            "evidence-41bd76b2c2a83577d70e3fff",
+            "evidence-4435a06c5743621f9a2523c5",
+            "evidence-60dfb69f4508763f8df04d83",
+            "evidence-8c296ed80a8b13544fb1c0b5",
+            "evidence-9f0bc41e0aff859fca6cfeae",
+            "evidence-ab6abcdb1137f1453a571c5a",
+            "evidence-afb8ec9e3bb3ee9c9c069b06",
+            "evidence-cc619a9c8e2957610f2f3dcb"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "group_access",
+          "path": "Claude Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1a798264c977ace7a1c65191",
+            "evidence-e501bffa0f85d4cac830eced",
+            "evidence-ea8cf7c41ba13e2995f4ef7b"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "group_access",
+          "path": "Claude Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7f8d87c31f095b69be86fce1",
+            "evidence-c00dd06a06b23147077e48b0",
+            "evidence-d8cec755de89e33fb75e8d18"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "group_access",
+          "path": "Claude Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-27badd6c3658ad3d6b61bca4",
+            "evidence-7200e8ca658799000aaac820",
+            "evidence-bb465cdf3655843ba63d44b8"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e44ba523ab3e2e90ae77fad",
+            "evidence-3a6f11268d15421999a4bb34",
+            "evidence-3ff394af63569fadc55e520b",
+            "evidence-7457f28e347a649bf2ae04b6",
+            "evidence-a2a3ebe48f89a0df64324121",
+            "evidence-bb465cdf3655843ba63d44b8",
+            "evidence-c00dd06a06b23147077e48b0",
+            "evidence-ea8cf7c41ba13e2995f4ef7b",
+            "evidence-ec26d722b1a57d681bda1c51"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "group_access",
+          "path": "GPT Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0f53d92d7c9ccf8c40fbd18b",
+            "evidence-67ea1c1ba1464a266e110113",
+            "evidence-fa292ab0f9179b59d615fbe7"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "group_access",
+          "path": "GPT Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0f2c690d5f0890e79f1711cf",
+            "evidence-391dd556be119de39d99a9c8",
+            "evidence-d57970b278d862bc6d4ecb4c"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "group_access",
+          "path": "GPT Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-87867f13d82be4061f2fc932",
+            "evidence-92235b847f56ff44290b9b14",
+            "evidence-9f4e385b0154534cd186e582"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1b9a3e0af9f0895cc8d7b533",
+            "evidence-391dd556be119de39d99a9c8",
+            "evidence-82e0a19b23ee07e9c556b969",
+            "evidence-87867f13d82be4061f2fc932",
+            "evidence-d4ea40f86be94bb94c5d0a56",
+            "evidence-eb0321111bebfbb690c16c7a",
+            "evidence-fa292ab0f9179b59d615fbe7"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "group_access",
+          "path": "GPT Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-16f12a91639b22a34e1aca03",
+            "evidence-4b95a217bef5e941a42f806b",
+            "evidence-4ec69893437539cba69d2cbd",
+            "evidence-7c3e1c053002d15649670aa7",
+            "evidence-a79e05141f60cd8ee44c0bd8"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "group_access",
+          "path": "GPT Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-144cf46cf9a323eb4b033956",
+            "evidence-154ce930cb08a2260592a482",
+            "evidence-5bb8ecb0a7e1f89316336106",
+            "evidence-9f64fed5a58f8cc786986e84",
+            "evidence-b7f5435013e745daf9516a7c"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "group_access",
+          "path": "GPT Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-215260ad909040b8664deea6",
+            "evidence-27941cd3771d88295eb377b7",
+            "evidence-778b743e33951bd332975d86",
+            "evidence-93f7a883d69d4e771f9161ae",
+            "evidence-aa8dbd643503d595530d6d4e"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-144cf46cf9a323eb4b033956",
+            "evidence-154ce930cb08a2260592a482",
+            "evidence-457a512a48b4fb7ca203d067",
+            "evidence-4ec69893437539cba69d2cbd",
+            "evidence-5b36dfabbba716541d2fdcb3",
+            "evidence-778b743e33951bd332975d86",
+            "evidence-85298ee57bda902b3395cd92",
+            "evidence-9cbfdae2378a38e278ebe7fc",
+            "evidence-a49aabb391b10755f8c5fc26",
+            "evidence-a79e05141f60cd8ee44c0bd8",
+            "evidence-aa8dbd643503d595530d6d4e",
+            "evidence-d0147fe424a40923b11b5683",
+            "evidence-dc9737bdea7c019574284c70"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "group_access",
+          "path": "GPT Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-907b8e32e3e76a6f781fa04f",
+            "evidence-ba8e339e8be616d19bbd36d8",
+            "evidence-f391341cb45d0b3ebf344be3"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "group_access",
+          "path": "GPT Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1c384c8efe44e8af917c818f",
+            "evidence-b9bce460a53cd4da2b4ce6aa",
+            "evidence-cc86c9ea0afdb20651945005"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "group_access",
+          "path": "GPT Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4044db671b85c9a7df9c9845",
+            "evidence-4e4a3788b3a630d3cf653153",
+            "evidence-78e146d8429876e148fb6eac"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4150925bed4d7254e7f97f44",
+            "evidence-47a28e1c4d0653892dba5191",
+            "evidence-55c18c22f9d9ec6682890115",
+            "evidence-617906d5fbb9b1e69706bf95",
+            "evidence-6becdd582b44ba46ea9ce762",
+            "evidence-78e146d8429876e148fb6eac",
+            "evidence-9ef0e0586b6f7ec2f3cb6eb1",
+            "evidence-b9bce460a53cd4da2b4ce6aa",
+            "evidence-be42e063b9ad83fdc3c99c0d",
+            "evidence-f391341cb45d0b3ebf344be3",
+            "evidence-f7617d7442bedd0ca40fd955"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "group_access",
+          "path": "GPT Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1d155975da1b0be9b2c22477",
+            "evidence-6dd08d5889ffdcae6c534add",
+            "evidence-b99f83bb9fa154c44beafd16"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "group_access",
+          "path": "GPT Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0d13759f5a36cb025ad8a4fa",
+            "evidence-5b75c176c8a51cfb76410ca4",
+            "evidence-e07d3196ed05c96400e9687a"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "group_access",
+          "path": "GPT Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-16a68f5e144ebbd872647c03",
+            "evidence-948bc1e7e6fd64e5ec77167a",
+            "evidence-e5ea36a4542d55305527ca9c"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0d13759f5a36cb025ad8a4fa",
+            "evidence-192d057793298215db43b036",
+            "evidence-2b874f43eb438d4dfae0a042",
+            "evidence-32b6f86611563b0959e08191",
+            "evidence-536eebf22f0392289ad1edc0",
+            "evidence-558f4d27acc4d5afa0c7c230",
+            "evidence-6dd08d5889ffdcae6c534add",
+            "evidence-72022dea1d53b049440fc707",
+            "evidence-7eef2cc89fe4b7f86a8dbfd0",
+            "evidence-964416382e609237c6dda42b",
+            "evidence-e5ea36a4542d55305527ca9c",
+            "evidence-ead5043f85ccaf95071c3d69",
+            "evidence-fab2eb58982486e9e88ce82b"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "group_access",
+          "path": "GPT Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4514755a13476bd52dfb6a02",
+            "evidence-4b33dcfbf819cfdf562f292e",
+            "evidence-67a7e6d9b74e940983260dfc"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "group_access",
+          "path": "GPT Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2706cff825d81b9dd7a9ad19",
+            "evidence-9d6f33d057b2c7df765fe854",
+            "evidence-d918b1e8782f8b9eaba51dee"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "group_access",
+          "path": "GPT Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-133aec70a138dd194bbcaf4a",
+            "evidence-314f90847706c0570272ef4d",
+            "evidence-e04b5ffcf7673a207995c867"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-05713b097a5331c5290a97ee",
+            "evidence-133aec70a138dd194bbcaf4a",
+            "evidence-67a7e6d9b74e940983260dfc",
+            "evidence-8c5df25c11436f88c8841f7b",
+            "evidence-9d6f33d057b2c7df765fe854",
+            "evidence-ba45722c5a3b3c2a217fd032",
+            "evidence-e1e0ad02765bfe9b0711845c",
+            "evidence-e98e581658efc58daa1cdb40",
+            "evidence-edf099138b93a2d55074bc94"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "group_access",
+          "path": "Grok Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0382721dd711fa1d82b5945d",
+            "evidence-2bb52f64e7cfdd2d030b8665",
+            "evidence-a086eebeebb5c9aaa9002b15",
+            "evidence-a5213dee15e3e5c21dbd11a6",
+            "evidence-ecb4bdc5b90c6bc31ac35616"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified"
+          }
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "group_access",
+          "path": "Grok Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2ac085d498bedf6b82032851",
+            "evidence-7f48118bfff21fdba847ecfe",
+            "evidence-b1611c6ff135adfbf2dcd90d",
+            "evidence-c714a0c8a730038bf864ddb1",
+            "evidence-da9a4574587043d3812fec40"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified"
+          }
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "group_access",
+          "path": "Grok Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0ae9f0e5d72ba5937605efde",
+            "evidence-1ce3172ccc482d507561139e",
+            "evidence-1de30a37ddab1747eb8524ba",
+            "evidence-6cdcd28b3a799c0aadf2248f",
+            "evidence-f61c96df934228692a0a13c1"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified"
+          }
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0382721dd711fa1d82b5945d",
+            "evidence-1ce3172ccc482d507561139e",
+            "evidence-1de30a37ddab1747eb8524ba",
+            "evidence-2ac085d498bedf6b82032851",
+            "evidence-73b7f542608265b242df019e",
+            "evidence-748d70a91d0e51db9e160cf0",
+            "evidence-a086eebeebb5c9aaa9002b15",
+            "evidence-da9a4574587043d3812fec40"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "group_access",
+          "path": "Grok Max 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-00e3172da38c44abf44b043b",
+            "evidence-3d8baa294e48bb4c7e09fddc",
+            "evidence-75d2091386726b719a3295eb"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified"
+          }
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "group_access",
+          "path": "Grok Plus 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-33aa48c20c804a8f4b6a0b41",
+            "evidence-de0df74500c0f6afa7a9ece6",
+            "evidence-e1bae1ad523b75e84198d59e"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified"
+          }
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "group_access",
+          "path": "Grok Pro 月卡组",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-66550cd804c31374ef298691",
+            "evidence-71a74ca0945febbd7a23a4f6",
+            "evidence-9ba20189787815afaa49d85b"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified"
+          }
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-33aa48c20c804a8f4b6a0b41",
+            "evidence-3d8baa294e48bb4c7e09fddc",
+            "evidence-66550cd804c31374ef298691",
+            "evidence-ea3db596a642fa8a093830f6"
+          ]
+        }
+      ]
+    }
+  ]
+}

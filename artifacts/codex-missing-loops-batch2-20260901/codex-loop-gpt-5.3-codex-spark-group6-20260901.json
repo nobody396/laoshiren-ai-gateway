@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "codex",
+  "client_version": "cli:0.151.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.3-codex-spark",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 6,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T22:25:14+00:00",
+  "finished_at": "2026-08-31T22:25:27+00:00",
+  "duration_ms": 10878,
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "thread.started": 1,
+    "item.completed": 5,
+    "turn.started": 1,
+    "item.started": 1,
+    "turn.completed": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "stdout_sha256": "6a4f4f741ff9d7e68328c81864cb6851e63ee1c00ff80e121625ca0f8dccab72",
+  "stderr_sha256": "d2a6844ba30947f035e271a3c62202accac08a9ec64ddcf63e87dead50f58d49",
+  "stdout_bytes": 1912,
+  "stderr_bytes": 1222,
+  "restored_group_id": 6,
+  "passed": true,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/codex-missing-loops-batch2-20260901/codex-usage-gpt-5.3-codex-spark-group6-20260901.json",
+    "artifact_sha256": "f31bfb91127ec83c315f4be5ebe74859a0032410f2e6dd8fbdacced6f1b8acce",
+    "usage_rows": 2,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "artifact_sha256": "4d8fb963b1489ae011991d6d3ffab7540e7b6aa7c19fb2d5f529f094798bfd3a"
+}

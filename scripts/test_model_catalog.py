@@ -29,16 +29,18 @@ class ModelCatalogTest(unittest.TestCase):
         ]
         self.assertIn("grok-4.6", MODULE.render_go(catalog))
         self.assertIn('"id": "grok-4.6"', MODULE.render_ts(catalog))
-        self.assertIn("export const codexClientModels", MODULE.render_ts(catalog))
+        self.assertIn("export const codexClientModels", MODULE.render_codex_ts(catalog))
         self.assertIn("export const clientAutoConfigDefaults", MODULE.render_ts(catalog))
         self.assertIn('"anthropic": "claude-opus-5"', MODULE.render_ts(catalog))
         self.assertIn('"id": "claude-fable-5-1"', MODULE.render_ts(catalog))
-        self.assertIn('"claude-fable-5-1": {InputPricePerToken: 10e-6', MODULE.render_go(catalog))
+        self.assertRegex(MODULE.render_go(catalog), r'"claude-fable-5-1":\s+\{InputPricePerToken: 10e-6')
         self.assertIn("CacheCreation5mPrice: 12.5e-6", MODULE.render_go(catalog))
         self.assertIn("CacheCreation1hPrice: 20e-6", MODULE.render_go(catalog))
         self.assertIn("SupportsCacheBreakdown: true", MODULE.render_go(catalog))
-        self.assertNotIn("gpt-5.6-luna", codex_models)
-        self.assertNotIn("gpt-5.4-mini", codex_models)
+        # Production routes and prices both (GPT 企业高速线路 group 59), and the
+        # one-click Codex import intentionally covers every group model.
+        self.assertIn("gpt-5.6-luna", codex_models)
+        self.assertIn("gpt-5.4-mini", codex_models)
         self.assertIn("$CatalogGrokDefaultModel = 'grok-4.6'", MODULE.render_powershell_block(catalog))
         self.assertIn("CATALOG_GROK_DEFAULT_MODEL='grok-4.6'", MODULE.render_shell_block(catalog))
         self.assertEqual(
@@ -109,7 +111,7 @@ class ModelCatalogTest(unittest.TestCase):
             merged = MODULE.merge_manifest(catalog, path)
         row = grok_default_row(merged)
         self.assertEqual(row["public_group"]["preferred_name"], "Grok")
-        self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.6", "Grok 4.5"])
+        self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.6", "Grok 4.5", "Grok"])
 
     def test_new_default_replaces_prior_platform_default(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)

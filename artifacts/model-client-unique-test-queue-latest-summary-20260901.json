@@ -1,0 +1,45 @@
+{
+  "raw_audit_failures": 1883,
+  "derived_failure_count": 399,
+  "queue_count": 1992,
+  "execution_batch_count": 1078,
+  "counts_by_matrix": {
+    "client_config_os": 59,
+    "client_protocol": 38,
+    "client_reasoning": 199,
+    "group_access": 104,
+    "model_protocol": 612,
+    "model_reasoning": 139,
+    "public_model": 169,
+    "test_evidence": 672
+  },
+  "terminal_reuse_count": 463,
+  "satisfied_case_count": 403,
+  "terminal_fail_case_count": 8,
+  "partial_evidence_case_count": 0,
+  "candidate_evidence_links": 19963,
+  "queue_sha256": "c8515e533705bc62ecbf3f600dfd4d61e71e618c0212ffc84faaecb8b204f4ab",
+  "semantic_dedupe": {
+    "case_count_before": 2122,
+    "case_count_after": 1992,
+    "duplicates_removed": 130,
+    "batch_count_before": 1113,
+    "batch_count_after": 1113,
+    "batch_work_items_before": 2122,
+    "batch_work_items_after": 1992
+  },
+  "coverage_audit": {
+    "raw_failure_count": 1883,
+    "derived_failure_count": 399,
+    "actionable_failure_count": 1484,
+    "actionable_case_key_count": 966,
+    "covered_actionable_failure_count": 1484,
+    "unmapped_actionable_failures": [],
+    "semantic_target_count": 1992,
+    "unique_semantic_target_count": 1992,
+    "semantic_duplicates_remaining": 0,
+    "config_qa_target_count": 51,
+    "unique_config_qa_target_count": 51,
+    "complete": true
+  }
+}

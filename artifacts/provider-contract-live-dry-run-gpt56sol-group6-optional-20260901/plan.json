@@ -1,0 +1,77 @@
+{
+  "case_count": 3,
+  "cases": [
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "b4c1c869a84e50f9bee02dfd8934a235ca7662b1fdaaafa34d37f9c3610dcccf",
+      "case_key": "6:gpt-5.6-sol:responses:P-07:default",
+      "context_window": 1050000,
+      "declared_status": "blocked",
+      "group_id": 6,
+      "group_name": "GPT 标准线路",
+      "marker": "LSR_CONTRACT_6B48E4FB012348BE",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-sol",
+      "name": "prompt_cache",
+      "p_id": "P-07",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-dry-run-gpt56sol-group6-optional-20260901/cases/6_gpt-5.6-sol_responses_P-07_default-a27f8ba27b12.json",
+      "source_case_keys": [],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "250b9d3d93916299f140ea0b1ed0917193d54244d452c742c8e04c36f275b75b",
+      "case_key": "6:gpt-5.6-sol:responses:P-08:default",
+      "context_window": 1050000,
+      "declared_status": "verified",
+      "group_id": 6,
+      "group_name": "GPT 标准线路",
+      "marker": "LSR_CONTRACT_733C26B142564A53",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-sol",
+      "name": "image_input",
+      "p_id": "P-08",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-dry-run-gpt56sol-group6-optional-20260901/cases/6_gpt-5.6-sol_responses_P-08_default-5eeee1b75232.json",
+      "source_case_keys": [],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "d455d1b49771cd27879c1a2f5d55fb2b0e2c55da1f4fca5a2a6c6b48bd695f5f",
+      "case_key": "6:gpt-5.6-sol:responses:P-11:default",
+      "context_window": 1050000,
+      "declared_status": "verified",
+      "group_id": 6,
+      "group_name": "GPT 标准线路",
+      "marker": "LSR_CONTRACT_ED9B828ACE40E7A8",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-sol",
+      "name": "web_search",
+      "p_id": "P-11",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-dry-run-gpt56sol-group6-optional-20260901/cases/6_gpt-5.6-sol_responses_P-11_default-b9ab283a3d96.json",
+      "source_case_keys": [],
+      "state": "planned"
+    }
+  ],
+  "kind": "provider_contract_live_plan",
+  "network_execution": "disabled",
+  "owned_identity": {
+    "key_id": 205,
+    "restore_group_id": 6,
+    "user_id": 1
+  },
+  "paid_request_upper_bound": 4,
+  "plan_sha256": "f5e7121b681da6fbde7c1480c144ec26fcbc87207944a3b2875a3e56afee2470",
+  "schema_version": 1,
+  "secret_source": "Agent Switch name only: LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+  "status_counts": {
+    "planned": 3,
+    "resumable": 0
+  }
+}

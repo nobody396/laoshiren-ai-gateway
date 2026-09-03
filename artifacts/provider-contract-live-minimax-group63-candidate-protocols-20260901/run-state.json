@@ -1,0 +1,92 @@
+{
+  "cases": {
+    "63:minimax-m3:messages:P-01:default": {
+      "artifact_sha256": "79f9192275f2ef45ece4a302cfea295c680b1973bcb1879bb4e3984a187c49c9",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-01_default-6774e280ef70.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:messages:P-02:default": {
+      "artifact_sha256": "0b002b71aa2d81e07b888f7e13c4cd293968d1c20dd558cd8966604138298060",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-02_default-0de5ab8dcb6f.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:messages:P-03:default": {
+      "artifact_sha256": "e7ecc978e65f35e9ac87ca3bfe4d87d16fc0e48721e0291856a77459f5d154bb",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-03_default-6be05ac13558.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:messages:P-04:default": {
+      "artifact_sha256": "4b13a89d800e91db02c9f7ed2a91638c6399a2d780c0163d8ea66acc75b27c51",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-04_default-b6895bb8fac1.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:messages:P-05:default": {
+      "artifact_sha256": "ef74a097f083b1b451ca6331014d9b65a6251cb576598e3ad0156d34d2d3d5ad",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-05_default-ddab9d3030f2.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:messages:P-06:adaptive": {
+      "artifact_sha256": "056918c4fbb8f31ff7c8ef346997a3904da66102c6e776a08fadb82476abc2af",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-06_adaptive-3f4d02221f9c.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:messages:P-12:default": {
+      "artifact_sha256": "321dafc6fd4e335bd76d2187e50787f45c1073d5d5559518eb2fe506adec0a01",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-12_default-5a9cef883291.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:messages:P-15:default": {
+      "artifact_sha256": "ccb85b9b15034a2ce2b1683f39f94b0b604d8399f590c3314ddcd5154833e0b3",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_messages_P-15_default-a7a4345c6885.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:responses:P-01:default": {
+      "artifact_sha256": "fb409b4a5865cba508734f1011fdc4e719692d3eabfc60283d0cdeab18afc35e",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-01_default-87693fde9efc.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:responses:P-02:default": {
+      "artifact_sha256": "1bd65ab74c8c5d1417ccfe63ec29e7c32b383195ec710428c7301da703e36eda",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-02_default-5bb6d7099ff2.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:responses:P-03:default": {
+      "artifact_sha256": "7d2e398f3a95a5be7a4d76a941a71c99c0dc6d2ce1555a7a45f043f09ea9bd10",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-03_default-40f3dedd04e6.json",
+      "status": "blocked"
+    },
+    "63:minimax-m3:responses:P-04:default": {
+      "artifact_sha256": "fed07e9875a95b3a4459a7a4bae200910b261f22ce93805a9bb1fcfc24863ff8",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-04_default-d1ab042dacd5.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:responses:P-05:default": {
+      "artifact_sha256": "fa17ea18a464461e905812aea25cffd9c0ceeb2a34a356db990c73c57bd6e8ff",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-05_default-d480fcfaa334.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:responses:P-06:adaptive": {
+      "artifact_sha256": "f77146c4cc7ee0a06d0401147bc83ad8bca9f4bce504f23e1899c3fc70651a89",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-06_adaptive-194c9bf5b69b.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:responses:P-12:default": {
+      "artifact_sha256": "1e304ef535fc75740d47191e84b68dd9a641e67a597a4ca73fc96268b7e3bb65",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-12_default-f54314166d47.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:responses:P-15:default": {
+      "artifact_sha256": "e7c20f1fc49c93c19adf0b278dbce8d53d299d9d6a58e7aea0e738f65ba34182",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/cases/63_minimax-m3_responses_P-15_default-8df7f3a4b969.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:14:33.340+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "49b9e15d2d326f6a",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:13:30.996+00:00"
+}

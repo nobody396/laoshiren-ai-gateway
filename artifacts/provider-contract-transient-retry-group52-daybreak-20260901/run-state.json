@@ -1,0 +1,17 @@
+{
+  "cases": {
+    "52:gpt-daybreak-blue-latest:responses:P-04:default": {
+      "artifact_sha256": "96d3707cad54074cbb38dc1f2a68984255b581ee41b3828f0df9f8765e75e591",
+      "receipt": "artifacts/provider-contract-transient-retry-group52-daybreak-20260901/cases/52_gpt-daybreak-blue-latest_responses_P-04_default-2d95c1bcae4b.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-09-01T03:11:04.949+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "2cd596e200164eaf",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-09-01T03:10:52.111+00:00"
+}

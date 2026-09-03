@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.4",
+  "protocol": "responses",
+  "api_backend": "responses",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 6,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "group": {
+    "id": 6,
+    "name": "GPT 标准线路",
+    "platform": "openai",
+    "subscription_type": "standard",
+    "rate_multiplier": 0.5
+  },
+  "group_readback": {
+    "id": 205,
+    "user_id": 1,
+    "status": "active",
+    "group_id": 6
+  },
+  "model_discovery": {
+    "url": "https://api.laoshirenai.com/v1/models",
+    "http_status": 200,
+    "request_id": null,
+    "body_sha256": "9aa85eddfe701041d84a9e320b90205f4f260a60c1d259db8c60b3672e6aaae7",
+    "model_ids": [
+      "gpt-5.3-codex-spark",
+      "gpt-5.4",
+      "gpt-5.5",
+      "gpt-5.6",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra"
+    ],
+    "model_count": 6,
+    "error": null
+  },
+  "observed_at": "2026-08-31T23:08:10+00:00",
+  "finished_at": "2026-08-31T23:08:27+00:00",
+  "duration_ms": 14792,
+  "command_shape": [
+    "grok",
+    "--always-approve",
+    "--permission-mode",
+    "bypassPermissions",
+    "--disable-web-search",
+    "--single",
+    "[prompt]",
+    "--output-format",
+    "streaming-json",
+    "--model",
+    "laoshirenai-responses",
+    "--cwd",
+    "[temporary-workspace]",
+    "--max-turns",
+    "10"
+  ],
+  "config_contract": {
+    "path": "[temporary-home]/.grok/config.toml",
+    "env_key": "LAOSHIRENAI_GROK_API_KEY",
+    "api_backend": "responses",
+    "base_url": "https://api.laoshirenai.com",
+    "key_in_config": false,
+    "key_in_argv": false
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "available_commands": 6,
+    "usage": 4,
+    "tool_call": 3,
+    "tool_call_update": 7,
+    "text": 7,
+    "end": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": false,
+  "stdout_sha256": "4d206ff9e7b9d0d94112654bf49d893a40eb7d987d4b284943c0abf3062ed109",
+  "stderr_sha256": "11ccf7c0ce5bc881707853a87ea31cfa2d5ac63c9ec43b119052ba63a1316bae",
+  "stdout_bytes": 8571,
+  "stderr_bytes": 1634,
+  "restored_group_id": 6,
+  "passed": false,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/grok-build-representative-loops-retry3-20260901/grok-build-usage-gpt-5.4-responses-group6-20260901.json",
+    "artifact_sha256": "ffdca4fa360441bb295aba585f4e6a907af18fa4802e6cc625cba6067dc9f400",
+    "usage_rows": 4,
+    "inbound_endpoint": "/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "artifact_sha256": "daec26ea02e459483940b5280e2b17fc7f122e959253b70f4fc2436ba9dd4536"
+}

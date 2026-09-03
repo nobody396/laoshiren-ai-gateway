@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "kind": "provider_candidate_protocol_terminal_boundary",
+  "observed_at": "2026-09-01T03:45:00+00:00",
+  "rows": [
+    {
+      "model_id": "glm-5.2",
+      "protocol": "generate_content",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "glm-5.2",
+      "protocol": "generate_content",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "glm-5.2",
+      "protocol": "generate_content",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "glm-5.2",
+      "protocol": "generate_content",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "glm-5.2",
+      "protocol": "generate_content",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "glm-5.2",
+      "protocol": "generate_content",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "generate_content",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "generate_content",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "generate_content",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "generate_content",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "generate_content",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "generate_content",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "messages",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "messages",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "messages",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "messages",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "messages",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "messages",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "responses",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "responses",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "responses",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "responses",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "responses",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "responses",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "generate_content",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "generate_content",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "generate_content",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "generate_content",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "generate_content",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "generate_content",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "responses",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "responses",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "responses",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "responses",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "responses",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "responses",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "generate_content",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "generate_content",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "generate_content",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "generate_content",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "generate_content",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "generate_content",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "responses",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "responses",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "responses",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "responses",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "responses",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "responses",
+      "test_case_id": "usage"
+    },
+    {
+      "model_id": "minimax-m3",
+      "protocol": "generate_content",
+      "test_case_id": "invalid_request"
+    },
+    {
+      "model_id": "minimax-m3",
+      "protocol": "generate_content",
+      "test_case_id": "minimal_text"
+    },
+    {
+      "model_id": "minimax-m3",
+      "protocol": "generate_content",
+      "test_case_id": "streaming_terminal"
+    },
+    {
+      "model_id": "minimax-m3",
+      "protocol": "generate_content",
+      "test_case_id": "tool_call"
+    },
+    {
+      "model_id": "minimax-m3",
+      "protocol": "generate_content",
+      "test_case_id": "tool_result_continuation"
+    },
+    {
+      "model_id": "minimax-m3",
+      "protocol": "generate_content",
+      "test_case_id": "usage"
+    }
+  ],
+  "decision": "These protocol candidates are not declared supported routes; their base checks are terminally unsupported and must not be published.",
+  "secret_free": true
+}

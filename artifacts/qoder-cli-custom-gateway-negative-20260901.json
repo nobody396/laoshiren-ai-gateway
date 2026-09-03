@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "client_protocol_negative",
+  "secret_free": true,
+  "client_id": "qoder",
+  "client_version": "cli:1.1.38",
+  "protocol": "chat_completions",
+  "os": "macos",
+  "observed_at": "2026-09-01T02:44:10.683109+00:00",
+  "command_contract": {
+    "command": "qoder --config-dir <isolated> --list-models",
+    "credential": "none"
+  },
+  "exit_code": 1,
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 0,
+  "stderr_sha256": "6b82cdd1c77a172d783b8f3071857736c51714a124d6726c5cf56f226a54df3a",
+  "stderr_bytes": 53,
+  "custom_provider_available": false,
+  "result": "unsupported",
+  "reason": "Exact CLI requires a Qoder account/live BYOK catalog before models are available; no documented arbitrary Base URL credential store can be populated headlessly."
+}

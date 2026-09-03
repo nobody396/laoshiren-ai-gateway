@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 12,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "72adaa88ac4efef1575861984a46426cf28d784de75107a6fcd20bc8bb545001",
+  "changes": [
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d517f4751f02802cb71b0179"
+          ]
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-62472d2bc20c7b0f5222889d"
+          ]
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-76f2c08f2d2cd63a5c3be807"
+          ]
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5343a590bba14a0a981e46a0"
+          ]
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-865c965ccd887af13face950"
+          ]
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-91a10752cb1cadf5a3822fe4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-24b1cb8440febca04377e367"
+          ]
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f8d89451b5351b962a93ddca"
+          ]
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b0a704dda3a12273c82058b1"
+          ]
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0050636590881d941478837c"
+          ]
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-db79e7053594f56ef8952212"
+          ]
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-df4a59823173a4818fe182d7"
+          ]
+        }
+      ]
+    }
+  ]
+}

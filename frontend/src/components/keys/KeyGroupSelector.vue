@@ -14,6 +14,7 @@
           v-if="selectedOption"
           :name="selectedOption.label"
           :platform="selectedOption.platform"
+          :display-model="selectedOption.displayModel"
           :subscription-type="selectedOption.subscriptionType"
           :rate-multiplier="shouldShowMeta(selectedOption) ? selectedOption.rate : undefined"
           :user-rate-multiplier="shouldShowMeta(selectedOption) ? selectedOption.userRate : null"
@@ -27,6 +28,7 @@
           v-if="selectedOption"
           :name="selectedOption.label"
           :platform="selectedOption.platform"
+          :display-model="selectedOption.displayModel"
           :subscription-type="selectedOption.subscriptionType"
           :rate-multiplier="selectedOption.rate"
           :user-rate-multiplier="selectedOption.userRate"
@@ -135,6 +137,8 @@
               <GroupOptionItem
                 :name="option.label"
                 :platform="option.platform"
+                :display-model="option.displayModel"
+                :protocol-label="option.displayProtocol ? groupDisplayProtocolLabel(option.displayProtocol) : null"
                 :subscription-type="option.subscriptionType"
                 :rate-multiplier="shouldShowMeta(option) ? option.rate : undefined"
                 :user-rate-multiplier="shouldShowMeta(option) ? option.userRate : null"
@@ -162,6 +166,10 @@ import { useI18n } from 'vue-i18n'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 import {
+  groupDisplayProtocolLabel,
+  type GroupDisplayProtocol
+} from '@/utils/groupDisplayProtocol'
+import {
   buildGroupOptionFamilies,
   buildGroupOptionSections,
   isMonthlyGroupOption,
@@ -173,6 +181,8 @@ import {
 interface KeyGroupSelectorOption extends SectionableGroupOption {
   value: number
   description: string | null
+  displayModel?: string
+  displayProtocol?: GroupDisplayProtocol
   cacheHitRatePct: number | null
   cacheWindowDays: number
 }

@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "0e617ad864088420d67791c2581d94f272eaa79a5f1e5ce4a295534cd9d6c4df",
+  "case_count": 2,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "8e67eaf71ee6fe5b",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-kimi-group62-optional-20260901/run-state.json",
+  "status_counts": {
+    "pass": 2
+  }
+}

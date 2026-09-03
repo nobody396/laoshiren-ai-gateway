@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 1,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "20cb545c3ec477473a1ea12df88069f9cc14d14a35ed7f418edf128d3cf49e32",
+  "changes": [
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-9a0b2bf8c2903b9a0614f11c"
+          ]
+        }
+      ]
+    }
+  ]
+}

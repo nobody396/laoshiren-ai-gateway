@@ -517,7 +517,7 @@ onUnmounted(() => {
 }
 
 .select-dropdown-portal .select-options {
-  @apply max-h-60 overflow-y-auto py-1 outline-none;
+  @apply max-h-96 overflow-y-auto py-1 outline-none;
 }
 
 .select-dropdown-portal .select-option {

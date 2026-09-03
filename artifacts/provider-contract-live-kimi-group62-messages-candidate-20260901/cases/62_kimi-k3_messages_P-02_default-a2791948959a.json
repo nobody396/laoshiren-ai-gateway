@@ -1,0 +1,69 @@
+{
+  "artifact_sha256": "7fb46d3a2c2dbeadfe3b0e82387979195b1e1fdee14e9c2c5efaa5192fae2b33",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "62:kimi-k3:messages:P-02:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 62,
+    "group_name": "Kimi 企业高速线路",
+    "marker": "LSR_CONTRACT_D9552B61F8A4B140",
+    "max_output_tokens": 1048576,
+    "model_id": "kimi-k3",
+    "name": "streaming_sse",
+    "p_id": "P-02",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "be06f4b3061ad006abb76365ce013a04c98263f421709d1ae1971582bd60b8e1",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:12:22.104+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:12:20.753+00:00",
+  "offline_verifier": {
+    "reason": "stream is not valid SSE",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 62,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "stream is not valid SSE",
+  "request": {
+    "payload_sha256": "0d96cf2419220f30b44a43bb72fb73dc1e4db236ef08323b81e9a47400c30326",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "a7ef776e440660ca32db49876054b0a9eb7f643a7e55d285b3e2ddcc53b87120"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "380f96b24b21cca4c54cfe81a15a08173d7ca530ea07f4d936ede1834fa00cec",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 1,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "9c1126a5-4198-4312-9263-e2deb03b3a41",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

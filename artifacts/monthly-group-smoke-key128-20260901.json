@@ -1,0 +1,786 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 2,
+    "key_id": 128,
+    "key_name": "一键安装 · Codex",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY_USER2",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 40,
+      "name": "GPT Plus 月卡组",
+      "platform": "openai",
+      "subscription_type": "credit",
+      "rate_multiplier": 0.5
+    },
+    {
+      "id": 41,
+      "name": "Claude Plus 月卡组",
+      "platform": "anthropic",
+      "subscription_type": "credit",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 48,
+      "name": "Grok Plus 月卡组",
+      "platform": "grok",
+      "subscription_type": "credit",
+      "rate_multiplier": 0.4
+    },
+    {
+      "id": 42,
+      "name": "GPT Pro V3 月卡组",
+      "platform": "openai",
+      "subscription_type": "credit",
+      "rate_multiplier": 0.5
+    },
+    {
+      "id": 43,
+      "name": "Claude Pro V3 月卡组",
+      "platform": "anthropic",
+      "subscription_type": "credit",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 49,
+      "name": "Grok Pro V3 月卡组",
+      "platform": "grok",
+      "subscription_type": "credit",
+      "rate_multiplier": 0.4
+    },
+    {
+      "id": 44,
+      "name": "GPT Max V3 月卡组",
+      "platform": "openai",
+      "subscription_type": "credit",
+      "rate_multiplier": 0.5
+    },
+    {
+      "id": 45,
+      "name": "Claude Max V3 月卡组",
+      "platform": "anthropic",
+      "subscription_type": "credit",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 50,
+      "name": "Grok Max V3 月卡组",
+      "platform": "grok",
+      "subscription_type": "credit",
+      "rate_multiplier": 0.4
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T23:59:05+00:00",
+      "group": {
+        "id": 40,
+        "name": "GPT Plus 月卡组",
+        "platform": "openai",
+        "subscription_type": "credit",
+        "rate_multiplier": 0.5
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 40
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "9aa85eddfe701041d84a9e320b90205f4f260a60c1d259db8c60b3672e6aaae7",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.4",
+          "protocol": "responses",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "75d1cdde4815033058182dea2e72e5664106903c886e598e5fb3ccba0722fe1f",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T23:59:13+00:00",
+      "group": {
+        "id": 41,
+        "name": "Claude Plus 月卡组",
+        "platform": "anthropic",
+        "subscription_type": "credit",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 41
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "72a6ec4691b8d62c3abb457c24295b01be84942d42e0721e560b24d7de7b1d94",
+        "model_ids": [
+          "claude-haiku-4-5",
+          "claude-opus-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-opus-4-7",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "e4c784de25d220e5ab6066057383786bc78a31420a11605e441dbd7500bdd400",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T23:59:22+00:00",
+      "group": {
+        "id": 48,
+        "name": "Grok Plus 月卡组",
+        "platform": "grok",
+        "subscription_type": "credit",
+        "rate_multiplier": 0.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 48
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "db410410439cb32ba1c41acce55551efe33d1989f4dbe427bf104e3b1b89c3f3",
+        "model_ids": [
+          "grok-4.5",
+          "grok-4.6"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "grok-4.5",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "f321dd65a0f64da78a8f24cd86d4a9b45adf04ff5d53101388b4be4cbbde0164",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "system_fingerprint",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T23:59:31+00:00",
+      "group": {
+        "id": 42,
+        "name": "GPT Pro V3 月卡组",
+        "platform": "openai",
+        "subscription_type": "credit",
+        "rate_multiplier": 0.5
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 42
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "9aa85eddfe701041d84a9e320b90205f4f260a60c1d259db8c60b3672e6aaae7",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.4",
+          "protocol": "responses",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "6d02d57fa791ccdc11a9119d243fdbf7802870e7bd3e7687aa5e7d348bad223e",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T23:59:38+00:00",
+      "group": {
+        "id": 43,
+        "name": "Claude Pro V3 月卡组",
+        "platform": "anthropic",
+        "subscription_type": "credit",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 43
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "72a6ec4691b8d62c3abb457c24295b01be84942d42e0721e560b24d7de7b1d94",
+        "model_ids": [
+          "claude-haiku-4-5",
+          "claude-opus-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-opus-4-7",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "a58673117c97cd097b94e0dda2090c252037711b129f895fd0bf2589d201c78d",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T23:59:45+00:00",
+      "group": {
+        "id": 49,
+        "name": "Grok Pro V3 月卡组",
+        "platform": "grok",
+        "subscription_type": "credit",
+        "rate_multiplier": 0.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 49
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "db410410439cb32ba1c41acce55551efe33d1989f4dbe427bf104e3b1b89c3f3",
+        "model_ids": [
+          "grok-4.5",
+          "grok-4.6"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "grok-4.5",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "485f2a5b69cb52b3fb618b7bf277088a831356de73373298100f634613b97fac",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "service_tier",
+              "system_fingerprint",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T23:59:55+00:00",
+      "group": {
+        "id": 44,
+        "name": "GPT Max V3 月卡组",
+        "platform": "openai",
+        "subscription_type": "credit",
+        "rate_multiplier": 0.5
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 44
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "9aa85eddfe701041d84a9e320b90205f4f260a60c1d259db8c60b3672e6aaae7",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.4",
+          "protocol": "responses",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "432fd118a2602b35c112a5bba9f6717ed049ff4cdeb53a9f50292991f9a1871d",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-09-01T00:00:03+00:00",
+      "group": {
+        "id": 45,
+        "name": "Claude Max V3 月卡组",
+        "platform": "anthropic",
+        "subscription_type": "credit",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 45
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "72a6ec4691b8d62c3abb457c24295b01be84942d42e0721e560b24d7de7b1d94",
+        "model_ids": [
+          "claude-haiku-4-5",
+          "claude-opus-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-opus-4-7",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "e606bc39d9dfe5259abb69c05b05984420b605f202b41b31b4e8d311d2c49890",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-09-01T00:00:13+00:00",
+      "group": {
+        "id": 50,
+        "name": "Grok Max V3 月卡组",
+        "platform": "grok",
+        "subscription_type": "credit",
+        "rate_multiplier": 0.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 50
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "db410410439cb32ba1c41acce55551efe33d1989f4dbe427bf104e3b1b89c3f3",
+        "model_ids": [
+          "grok-4.5",
+          "grok-4.6"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "grok-4.5",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "42deead93bfac03c968f391c7a6985866f9d94e114e7b44250fae24589350125",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "system_fingerprint",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 40,
+      "model_id": "gpt-5.4",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 42,
+      "model_id": "gpt-5.4",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 44,
+      "model_id": "gpt-5.4",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 41,
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 43,
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 45,
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 48,
+      "model_id": "grok-4.5",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 49,
+      "model_id": "grok-4.5",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 50,
+      "model_id": "grok-4.5",
+      "protocol": "chat_completions"
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": true,
+  "artifact_sha256": "fc43f0bb688f4d9b9d6447af7623d6796f7001b0c67c3c0d8a3ec38d5c6db275"
+}

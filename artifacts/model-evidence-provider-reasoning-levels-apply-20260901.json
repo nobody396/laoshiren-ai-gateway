@@ -1,0 +1,466 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 30,
+  "events": 32,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "be83ef1c95985978178d0b9ad1af7585b805b95e7d312d913b9dc034d047ae53",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4d8de47b90ea7471cc183889"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fa054351551a81c64657b9b4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e4153716fd1d1bb6d4be7f4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6c940e9edceb48bc520b3ad8"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b7670e51e9ab4cee766b6649"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b61e9ecb4b15487ccd20f727"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-12e3fce9157edff40925007d"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/high",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b89a52339c44e3e72ca64458",
+            "evidence-c2daf1a492276517cc773789"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/high",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4d65fb854db9ae1869e0c362",
+            "evidence-71e9330e718109d06dc511ad"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-661dfd16a626b569759b0992"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-23124dd25c48bb49f26e0123"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9c3f22a7046fe98737528fa6",
+            "evidence-a67a455c8d8a86092ddc2d3a",
+            "evidence-ba8d93a0a166d8e310cefa7d"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.3.json",
+      "events": [
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/high",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0212d8434295ab4a546fd2b4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/none",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d4f26c8e3d2e01fb7ab3c31e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/none",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-aa9b11f72ef90e4f365b13d6"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-58d3a2fc8a9b319f6251e559"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f6446f8535513360e2662d3e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-dfe16ce6e0553fdaefbb524f"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8a5fb23b19256bdbd8395178"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-776e9a5213c9d1b3f517e063"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-13bf25bd63f4f79c7edc4764"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/always_on",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-ad2b83f7a92ecb74a10f59a9",
+            "evidence-f82dc8ff81c5d68cc0c9ecbe"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4b28529f07463cdc416fe3af",
+            "evidence-51c9766e7ea030d2ddfebe4b",
+            "evidence-f910c584052271695477d5c1"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/high",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a30767bff932f7b11e57b489",
+            "evidence-b45e2513a8465f56d8164989",
+            "evidence-e1d519f3a9f40cabfe1912fa"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/low",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ad0af881c75bb2f7dbba55d8"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/adaptive",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a4856eacea1211b4298a47ad",
+            "evidence-b90a6a824b77f62564cdd84f",
+            "evidence-fc2436ca1443cbbc8a622ee1"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8f9adfbd4e0d1a35b21ccbc3"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d7a66e89452a7ef4353c0cf5"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4038a79dfb4dac28c258698e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ec1d836275a5ed555c155be1"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3b21f39a8e1b7d3763e2e5d3"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.8-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7ce9402eacf223c8d67b65ad"
+          ]
+        }
+      ]
+    }
+  ]
+}

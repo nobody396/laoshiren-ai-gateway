@@ -1,0 +1,80 @@
+{
+  "architecture": "arm64",
+  "artifact_sha256": "e23828b4e43b5fc8e2e0a889f8f0719380134f3b7536b293f29108507f0cec2c",
+  "assistant_text_bytes": 32,
+  "assistant_text_sha256": "e92436a8448ed385b8fecdb6456220459aad6f9047649413e2e2583473905011",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "client_id": "opencode",
+  "client_version": "cli:1.18.15",
+  "command_contract": {
+    "auto": true,
+    "client_version": "1.18.15",
+    "model": "claude-sonnet-5",
+    "output_format": "json",
+    "provider_id": "laoshirenai-messages",
+    "provider_package": "@ai-sdk/anthropic",
+    "pure": true
+  },
+  "duration_ms": 30541,
+  "event_count": 15,
+  "event_types": {
+    "step_finish": 5,
+    "step_start": 5,
+    "text": 1,
+    "tool_use": 4
+  },
+  "exit_code": 0,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "finished_at": "2026-08-31T23:37:15+00:00",
+  "group_id": 15,
+  "kind": "real_client_loop",
+  "model_id": "claude-sonnet-5",
+  "observed_at": "2026-08-31T23:36:42+00:00",
+  "os": "macos",
+  "owned_key": {
+    "key_id": 128,
+    "name": "一键安装 · Codex",
+    "user_id": 2
+  },
+  "passed": true,
+  "protocol": "messages",
+  "protocol_attribution": {
+    "artifact_sha256": "f4d4d85fd48e1f3e36d4315e5da38e91082671dc9b9c86423761a7d39c9a12f1",
+    "artifact_uri": "artifacts/opencode-messages-responses-key128-20260901/opencode-messages-claude-sonnet-5-group15-20260901-usage.json",
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoint": "/v1/messages",
+    "usage_rows": 6,
+    "verified": true
+  },
+  "read_tool_verified": true,
+  "restored_group_id": 6,
+  "schema_version": 1,
+  "secret_free": true,
+  "shell_file_verified": true,
+  "shell_tool_verified": true,
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 7447,
+  "stdout_sha256": "52b64b88b2a82fc77e68c066b447da640ca80d569943e06bddb9b61f062afd8d",
+  "successful_tools": [
+    "bash",
+    "glob",
+    "read"
+  ],
+  "temporary_config": {
+    "api_key_source": "child env LAOSHIRENAI_OPENCODE_KEY",
+    "literal_key_written": false,
+    "path": "~/.config/opencode/opencode.json",
+    "removed_with_temporary_home": true,
+    "sha256": "097fdfd547a77c1263ee07f1ff4820eef7ac5135957332f93a282f457de1bcc7"
+  },
+  "timed_out": false,
+  "tool_names": [
+    "bash",
+    "glob",
+    "read"
+  ],
+  "tool_result_observed": true,
+  "tool_use_observed": true
+}

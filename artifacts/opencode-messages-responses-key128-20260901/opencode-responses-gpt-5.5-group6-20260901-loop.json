@@ -1,0 +1,80 @@
+{
+  "architecture": "arm64",
+  "artifact_sha256": "ca5e341e9875bb0f7060a32c49ee8277b6bf6376919a57df3b509c506d19bea6",
+  "assistant_text_bytes": 206,
+  "assistant_text_sha256": "94aacdd2ddb7a4211cf42dd2d8a2f338bdee7ffbe3c36b45b3e7484a135dc8f1",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "client_id": "opencode",
+  "client_version": "cli:1.18.15",
+  "command_contract": {
+    "auto": true,
+    "client_version": "1.18.15",
+    "model": "gpt-5.5",
+    "output_format": "json",
+    "provider_id": "laoshirenai-responses",
+    "provider_package": "@ai-sdk/openai",
+    "pure": true
+  },
+  "duration_ms": 24961,
+  "event_count": 18,
+  "event_types": {
+    "step_finish": 5,
+    "step_start": 5,
+    "text": 3,
+    "tool_use": 5
+  },
+  "exit_code": 0,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "finished_at": "2026-08-31T23:38:41+00:00",
+  "group_id": 6,
+  "kind": "real_client_loop",
+  "model_id": "gpt-5.5",
+  "observed_at": "2026-08-31T23:38:13+00:00",
+  "os": "macos",
+  "owned_key": {
+    "key_id": 128,
+    "name": "一键安装 · Codex",
+    "user_id": 2
+  },
+  "passed": true,
+  "protocol": "responses",
+  "protocol_attribution": {
+    "artifact_sha256": "3d29494db52588518e54e5cb739dd2749eeefbd99430d411bb573c6be2839916",
+    "artifact_uri": "artifacts/opencode-messages-responses-key128-20260901/opencode-responses-gpt-5.5-group6-20260901-usage.json",
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "usage_rows": 6,
+    "verified": true
+  },
+  "read_tool_verified": true,
+  "restored_group_id": 6,
+  "schema_version": 1,
+  "secret_free": true,
+  "shell_file_verified": true,
+  "shell_tool_verified": true,
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 9458,
+  "stdout_sha256": "6457a785044c08b74f68d55f0fb72f9feb7b7e848a133e6cce6b76a5a27e724d",
+  "successful_tools": [
+    "bash",
+    "glob",
+    "read"
+  ],
+  "temporary_config": {
+    "api_key_source": "child env LAOSHIRENAI_OPENCODE_KEY",
+    "literal_key_written": false,
+    "path": "~/.config/opencode/opencode.json",
+    "removed_with_temporary_home": true,
+    "sha256": "f1e36e4951164c9b0eec045a98beff3dc695d616a8363f365d0cf9e55fffd6a7"
+  },
+  "timed_out": false,
+  "tool_names": [
+    "bash",
+    "glob",
+    "read"
+  ],
+  "tool_result_observed": true,
+  "tool_use_observed": true
+}

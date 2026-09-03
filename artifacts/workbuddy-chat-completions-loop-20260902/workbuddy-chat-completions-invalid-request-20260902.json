@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_protocol_probe",
+  "secret_free": true,
+  "client_id": "workbuddy",
+  "client_version": "app:5.5.1+cli:2.137.1",
+  "os": "macos",
+  "model_id": "workbuddy-invalid-model-000",
+  "protocol": "chat_completions",
+  "probe": "invalid_request",
+  "observed_at": "2026-09-02T13:45:26+00:00",
+  "duration_ms": 102651,
+  "exit_code": 0,
+  "timed_out": false,
+  "error_surfaced": true,
+  "note": "client retried with backoff then surfaced the gateway error with request id on stderr",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha256": "d2b503f2cd091bc8cc4c1bf1caeaeeea082cf73a94cac59b8878c8c34b80e09a",
+  "stdout_bytes": 0,
+  "stderr_bytes": 155,
+  "passed": true,
+  "artifact_sha256": "bc40f697197e4ba4f4bc30c23395b43003aa6ea8be47f9c15ff545fc1b9a8a45"
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "claude-code",
+  "client_version": "2.1.251",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-sonnet-5",
+  "protocol": "messages",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 15,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T22:10:56+00:00",
+  "finished_at": "2026-08-31T22:11:19+00:00",
+  "duration_ms": 20981,
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "system": 3,
+    "assistant": 5,
+    "user": 3,
+    "result": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "stdout_sha256": "3e5d0f33ad2069f5685f91f074c50b67ca5eec5e0280c1105dd4b47b313d72c6",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 9634,
+  "stderr_bytes": 0,
+  "restored_group_id": 6,
+  "passed": true,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/claude-code-missing-loops-retry3-20260901/claude-code-usage-claude-sonnet-5-group15-20260901.json",
+    "artifact_sha256": "b451e2ff15dbb869cf10128620ec3d524e015ea163d09ebfd8d97cc5e03b709a",
+    "usage_rows": 5,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoint": "/v1/messages",
+    "verified": true
+  },
+  "artifact_sha256": "4f85ca3b09883c6edb8bbb8960937d745fd30206cd95afb91b9e6e39e3b47ba0"
+}

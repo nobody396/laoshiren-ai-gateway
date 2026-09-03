@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "antigravity",
+  "client_version": "1.1.22",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gemini-3.7-flash",
+  "protocol": "generate_content",
+  "group_id": 57,
+  "observed_at": "2026-08-31T18:15:22+00:00",
+  "finished_at": "2026-08-31T18:15:30+00:00",
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901"
+  },
+  "group_readback": null,
+  "model_discovery": null,
+  "command_contract": {
+    "executable": "agy",
+    "model": "gemini-3.7-flash",
+    "approval": "dangerously-skip-permissions",
+    "output_format": "stream-json"
+  },
+  "final_marker": "LSRAI_ANTIGRAVITY_DONE_6ab6ad5ca043",
+  "exit_code": 1,
+  "timed_out": false,
+  "run_error": "AdminCLIError: fetch failed",
+  "passed": false,
+  "event_count": 0,
+  "event_types": [],
+  "tool_names": [],
+  "successful_tools": [],
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_verified": false,
+  "shell_result_verified": false,
+  "final_marker_verified": false,
+  "assistant_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assistant_text_bytes": 0,
+  "assistant_text_summary": "",
+  "stdout_bytes": 0,
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 20,
+  "stderr_sha256": "8cc22bff3f96bf3d7ecd4ed13965a01bb1978fe3570a40bf7a0d0294e34a8d61",
+  "stderr_summary": "client did not start",
+  "usage_endpoint": {
+    "path": "/admin/usage?page=1&page_size=100&api_key_id=205&group_id=57&model=gemini-3.7-flash&sort_by=id&sort_order=desc&exact_total=true",
+    "baseline_rows": 0,
+    "new_rows": 0,
+    "attribution_verified": false,
+    "rows": []
+  },
+  "restoration": {
+    "group_id": 6,
+    "status": "active",
+    "model_discovery_http_status": 200,
+    "model_count": 6
+  }
+}

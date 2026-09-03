@@ -1,0 +1,71 @@
+{
+  "artifact_sha256": "3b89dc0dfe2094d2d15046fc7a59f419cef9ffdc57571bbf8821380a25ccb4de",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "61:deepseek-v4-flash-0731:chat_completions:P-05:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 61,
+    "group_name": "DeepSeek 企业高速线路",
+    "marker": "LSR_CONTRACT_F471E84CB721E276",
+    "max_output_tokens": 393216,
+    "model_id": "deepseek-v4-flash-0731",
+    "name": "tool_result_continuation",
+    "p_id": "P-05",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:deepseek-v4-flash-0731/chat_completions/tool_result_continuation"
+    ]
+  },
+  "case_fingerprint": "42582590be7b1146b181480a85e2ca0935e6e9a929e3d17c2cdb42a9140a101f",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T18:56:21.448+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T18:56:06.274+00:00",
+  "offline_verifier": {
+    "reason": "tool result must be correlated and continue to final text",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 61,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "tool result must be correlated and continue to final text",
+  "request": {
+    "payload_sha256": "d68b0b4eb3956bd300eb3570ba50d6a05888d37fb0916251227ce42797b4d5aa",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "b82461a1af8317f9db67988b6cb5d32cca537d019c6b89d3181a673b33509a8f"
+  },
+  "response": {
+    "body_bytes": 209,
+    "body_sha256": "48c58d2637ab57897ce7274e30c08d9df34c3453775d66d99a10a02e02a65f74",
+    "complete": true,
+    "content_type": "text/event-stream; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": false,
+    "request_id": "cd1b361a-d3ef-9842-8ea1-54d942966c02",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

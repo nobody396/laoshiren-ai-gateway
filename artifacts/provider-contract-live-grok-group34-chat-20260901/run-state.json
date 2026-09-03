@@ -1,0 +1,82 @@
+{
+  "cases": {
+    "34:grok-4.5:chat_completions:P-02:default": {
+      "artifact_sha256": "501b176eb1ffaff4eb466910e384c66399d21d808d61a05e41da0bd66e1cd547",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-02_default-0bc71fd560f9.json",
+      "status": "pass"
+    },
+    "34:grok-4.5:chat_completions:P-03:default": {
+      "artifact_sha256": "2244bd2b5275df558c6b85c9f0e0ff109328155545b312dc91f9a2f66265aca8",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-03_default-de13bdcd8216.json",
+      "status": "blocked"
+    },
+    "34:grok-4.5:chat_completions:P-04:default": {
+      "artifact_sha256": "4a7179bf2860920d896117c0b5e98886575a531c621bce3fd9c5daa53a0a4b93",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-04_default-6c7780cd711f.json",
+      "status": "blocked"
+    },
+    "34:grok-4.5:chat_completions:P-05:default": {
+      "artifact_sha256": "ea0b14d2c7c7b4e6f6ef16205a52cf93fb5b824f009a42cc00ab74d313a7bc49",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-05_default-78e355972146.json",
+      "status": "pass"
+    },
+    "34:grok-4.5:chat_completions:P-06:medium": {
+      "artifact_sha256": "1c8861083152c48453f151cf8f4868c727c52c46cc5ab597332307aba03a50fe",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-06_medium-b28f09fb00f2.json",
+      "status": "pass"
+    },
+    "34:grok-4.5:chat_completions:P-12:default": {
+      "artifact_sha256": "45f6abcec8092cea62273562fe15a694e083528a8b439f19160abfc456a483b5",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-12_default-8cc7aab56e9a.json",
+      "status": "blocked"
+    },
+    "34:grok-4.5:chat_completions:P-15:default": {
+      "artifact_sha256": "1cef61fb685e26e5286550d6125bd64d2038e7a3825d613a07cc4e1f52b7200d",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-15_default-ba8293ea49fe.json",
+      "status": "pass"
+    },
+    "34:grok-4.6:chat_completions:P-02:default": {
+      "artifact_sha256": "408312f2562d65c9ee07d966e802bd52b6cf4c836c50326926496bf60a3eab25",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-02_default-a891bf5c1981.json",
+      "status": "pass"
+    },
+    "34:grok-4.6:chat_completions:P-03:default": {
+      "artifact_sha256": "7cc21c34a2bff1a7ef504ce5d75ade6fcfbee1395d0de217a26b92bad3b054e2",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-03_default-28c0c11849b2.json",
+      "status": "blocked"
+    },
+    "34:grok-4.6:chat_completions:P-04:default": {
+      "artifact_sha256": "6ac6a0bf7774a0d690e397d2bafb29618d6a0511fd3cf70f374ef77004ab176f",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-04_default-841f9ec30604.json",
+      "status": "blocked"
+    },
+    "34:grok-4.6:chat_completions:P-05:default": {
+      "artifact_sha256": "48ee2bb62e8bd85d5cd86a2782e3f36c548ec39d7bfac2d5c3bcf32f33072dda",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-05_default-38c60aa74b31.json",
+      "status": "blocked"
+    },
+    "34:grok-4.6:chat_completions:P-06:medium": {
+      "artifact_sha256": "da44594d5c335bf9083e43b904ae64f31c725ce901197d33ee3a2a76c19d2919",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-06_medium-dcd3f80ec96f.json",
+      "status": "pass"
+    },
+    "34:grok-4.6:chat_completions:P-12:default": {
+      "artifact_sha256": "ed3ce2c4a119c17e19f9b608185464e415eeb8eca454438a1f2cfdb2a11df559",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-12_default-2efdcdd2e0c3.json",
+      "status": "pass"
+    },
+    "34:grok-4.6:chat_completions:P-15:default": {
+      "artifact_sha256": "85f82c025ea9021ae7b3575f28563773022885c1e6352c8d8f3596f46ad3e671",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-15_default-bcc5c699b1ca.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:33:34.751+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "abcf52d1ac618c26",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T19:31:12.751+00:00"
+}

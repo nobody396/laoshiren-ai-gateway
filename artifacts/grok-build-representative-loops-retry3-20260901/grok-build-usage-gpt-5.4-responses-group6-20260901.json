@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 6,
+  "protocol": "responses",
+  "observed_at": "2026-08-31T23:08:27+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T07:08:16.115124+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 9645,
+      "output_tokens": 37,
+      "account_id": 80,
+      "request_id": "client:84e890d6-7ba5-475d-b555-b0083ba375b7"
+    },
+    {
+      "created_at": "2026-09-01T07:08:19.576315+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 489,
+      "output_tokens": 59,
+      "account_id": 80,
+      "request_id": "client:c424d0b9-a8f7-406b-a29a-bb3b58d64b67"
+    },
+    {
+      "created_at": "2026-09-01T07:08:22.179076+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 675,
+      "output_tokens": 37,
+      "account_id": 80,
+      "request_id": "client:b3d004ac-a158-4c39-8583-6c1a03525c44"
+    },
+    {
+      "created_at": "2026-09-01T07:08:24.498866+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 227,
+      "output_tokens": 11,
+      "account_id": 80,
+      "request_id": "client:aa40356a-70e0-4c7a-8cb3-84de65d973a8"
+    }
+  ],
+  "artifact_sha256": "521e406e297f41821e6bfc5f47517dc7e9e66988505d5841993ecedd11610172"
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 15,
+  "protocol": "messages",
+  "observed_at": "2026-08-31T23:03:15+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T07:02:58.991368+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 6,
+      "output_tokens": 85,
+      "account_id": 13,
+      "request_id": "generated:r3l15la8umlfjw-7pw"
+    },
+    {
+      "created_at": "2026-09-01T07:03:05.135427+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 1,
+      "output_tokens": 130,
+      "account_id": 13,
+      "request_id": "generated:r3l15la8umlfjw-7pz"
+    },
+    {
+      "created_at": "2026-09-01T07:03:11.294465+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 1,
+      "output_tokens": 71,
+      "account_id": 36,
+      "request_id": "18af0b33-9b04-46f8-a543-70e012ee5470"
+    },
+    {
+      "created_at": "2026-09-01T07:03:13.532955+08:00",
+      "model": "claude-opus-4-7",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 1,
+      "output_tokens": 26,
+      "account_id": 36,
+      "request_id": "03f85f3e-f0a9-4796-b1cc-d027fd25651b"
+    }
+  ],
+  "artifact_sha256": "da4a0c4c8235f047df9a6218ec5bb6f56d07f764dcc8d1721a07c23b29a0808b"
+}

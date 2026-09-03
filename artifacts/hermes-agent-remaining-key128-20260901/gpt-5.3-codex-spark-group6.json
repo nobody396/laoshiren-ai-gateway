@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.3-codex-spark",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 6,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-08-31T23:48:19+00:00",
+  "finished_at": "2026-08-31T23:48:49+00:00",
+  "duration_ms": 17283,
+  "command_contract": {
+    "executable": "hermes",
+    "provider": "openai-api",
+    "toolsets": "terminal",
+    "max_turns": 10,
+    "isolated_home": true
+  },
+  "target_group_readback": {
+    "group_id": 6
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stdout_bytes": 145,
+  "stdout_sha256": "52290149b475058e49bf6dbea9c06f64ea413305a7c71e8e26149a8677726140",
+  "stderr_bytes": 36,
+  "stderr_sha256": "0679faa80a027206c06310569ffaa38e186392d3a87b608ff3187d4c9af31ab7",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/hermes-agent-remaining-key128-20260901/gpt-5.3-codex-spark-group6-usage-attribution.json",
+    "artifact_sha256": "64378fff1f6169dea9023a86783bd853474da9f395fc1beea32333035d4267d4",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "restoration": {
+    "group_id": 6,
+    "verified": true
+  },
+  "restored_group_id": 6,
+  "passed": true,
+  "artifact_sha256": "089444f21a7508bdbb0ebb8b687081c21230bfc1af1c39345b19a68b908ad55f"
+}

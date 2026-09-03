@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "claude-opus-4-8",
+    "upstream_id": "claude-opus-4-8",
+    "display_name": "Claude Opus 4.8",
+    "platform": "anthropic",
+    "context_window": 1000000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "pricing": {
+    "input_per_mtok_usd": 5.0,
+    "cached_input_per_mtok_usd": 0.5,
+    "output_per_mtok_usd": 25.0,
+    "long_context": null,
+    "evidence_url": "https://platform.claude.com/docs/en/models/opus-4-8/overview"
+  },
+  "production": {
+    "group_name": "Claude 标准线路",
+    "legacy_group_names": [],
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "managed_predecessor_models": []
+  },
+  "evidence": {
+    "public_pricing_snapshot": "artifacts/public-model-pricing-20260831.json",
+    "contract": "model-doc-contracts/claude-opus-4-8.json"
+  }
+}

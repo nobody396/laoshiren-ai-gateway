@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 8,
+  "events": 8,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "63640fd2968de624b46e7b87c58ff5fac3d1d5495b6077a408689e88732c9ae1",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f40b440936c9ff36a53a0c1e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6b49e36d69ec61acfe28de84",
+            "evidence-811494b8ea6f96ec9b9109df"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-751bbd71284066622e6085c4",
+            "evidence-901a16ccf0281371f4dec9c5"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3188064a2e324f13a2bc2071",
+            "evidence-820c959adb28b2d68d0de73c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-17ea3f3d35ae398b601e1e17",
+            "evidence-98b06979ffc9d28224216067"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-dfbd7bba17595e37be347d4f",
+            "evidence-f3b02f4c8155b1e8bd3cb816"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5b74275426daae31db60a70f",
+            "evidence-f742feddaf90541fb0460854"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0e77747aff080cd5e511127f",
+            "evidence-2dc04ebd8c51ddc41dd371df"
+          ]
+        }
+      ]
+    }
+  ]
+}

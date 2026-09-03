@@ -1,0 +1,728 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com",
+    "groups": [
+      {
+        "multiplier": 0.6,
+        "name": "Gemini 标准线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "Antigravity",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "M8 receipts: evidence-78ac8b5c425f5006ca55d956, evidence-d0cb976bcf85c4a274d15f02, evidence-eb6ea687a9ac7b93b1c92c04",
+      "evidence_ids": [
+        "evidence-78ac8b5c425f5006ca55d956",
+        "evidence-d0cb976bcf85c4a274d15f02",
+        "evidence-eb6ea687a9ac7b93b1c92c04"
+      ],
+      "failure_evidence_ids": [
+        "evidence-78ac8b5c425f5006ca55d956"
+      ],
+      "name": "Gemini CLI",
+      "protocols": [
+        "generate_content"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "Kimi Code",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "M8 receipts: evidence-1e0bc50459ae7ad4e3e51835, evidence-a689d6cb306ab1398ed99749",
+      "evidence_ids": [
+        "evidence-1e0bc50459ae7ad4e3e51835",
+        "evidence-a689d6cb306ab1398ed99749"
+      ],
+      "name": "OpenCode",
+      "protocols": [
+        "generate_content"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "artifact_sha256": "f89f8b3ffb80e8e8db06433cc6d8420d6b73a0092f1030541464a6e1994f22e2",
+      "artifact_uri": "artifacts/gemini-cli-tool-loop-key205-gemini31-final-20260901.json",
+      "evidence": "M8 receipts: evidence-78ac8b5c425f5006ca55d956, evidence-d0cb976bcf85c4a274d15f02, evidence-eb6ea687a9ac7b93b1c92c04",
+      "evidence_ids": [
+        "evidence-78ac8b5c425f5006ca55d956",
+        "evidence-d0cb976bcf85c4a274d15f02",
+        "evidence-eb6ea687a9ac7b93b1c92c04"
+      ],
+      "failure_evidence_ids": [
+        "evidence-78ac8b5c425f5006ca55d956"
+      ],
+      "name": "Gemini CLI",
+      "protocol": "generate_content",
+      "recommended": true,
+      "status": "verified",
+      "version": "0.57.0"
+    },
+    {
+      "name": "OpenCode",
+      "recommended": false,
+      "version": "1.18.15",
+      "protocol": "generate_content",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-1e0bc50459ae7ad4e3e51835",
+        "evidence-a689d6cb306ab1398ed99749"
+      ],
+      "evidence": "M8 receipts: evidence-1e0bc50459ae7ad4e3e51835, evidence-a689d6cb306ab1398ed99749"
+    }
+  ],
+  "model": {
+    "context_window": 1048576,
+    "display_name": "Gemini 3.1 Pro",
+    "family": "gemini",
+    "id": "gemini-3.1-pro",
+    "input_modalities": [
+      "text",
+      "image",
+      "video"
+    ],
+    "max_output_tokens": 65536,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "existing production Gemini GenerateContent matrix passed non-stream text, terminal streaming, function call, tool-result continuation, usage parsing and error parsing",
+      "name": "generate_content",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_mappings": [],
+    "model_levels": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "recommended_protocol": "generate_content",
+  "recommended_protocol_reason": "GenerateContent is the model-native and only verified 老实人AI public protocol for gemini-3.1-pro; the existing owned Agent loop evidence is on Gemini CLI 0.57.0.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Antigravity": {
+        "generate_content": {
+          "macos": {
+            "client_version": "cli:1.1.22",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-0381005d6810f07d2da36233, evidence-16f57a1f7be78180de7c2a52, evidence-1e28786409e20a397ab2fcc6, evidence-22681ac6b7e1db5a7de33220, evidence-259dc2bcc71bb6506f9a9fca, evidence-47abaf6c9bdd7e4407401ebc, evidence-4bc86b02f29296ff329a8eb8, evidence-6c4bbf9612aa4110a988610a, evidence-712d28f3b6622b97751311f9, evidence-74ff7e7767253815f90634f3, evidence-7e31c922552a7d332375ba0b, evidence-96de7a08c5bfaacd4c300b94, evidence-c6f2fb380b635548eab2709d, evidence-dd2646ad1e5f724c5b1cc724, evidence-e2aede89d90d1cd9472b62ed, evidence-e590331699897dc7b4079f81, evidence-e74156476daadeee5a233a24, evidence-e9df8981f7f9718826287d3c",
+            "legacy_status": "blocked",
+            "model_id": "gemini-3.1-pro",
+            "os": "macos",
+            "protocol": "generate_content",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-0381005d6810f07d2da36233",
+              "evidence-16f57a1f7be78180de7c2a52",
+              "evidence-1e28786409e20a397ab2fcc6",
+              "evidence-22681ac6b7e1db5a7de33220",
+              "evidence-259dc2bcc71bb6506f9a9fca",
+              "evidence-47abaf6c9bdd7e4407401ebc",
+              "evidence-4bc86b02f29296ff329a8eb8",
+              "evidence-6c4bbf9612aa4110a988610a",
+              "evidence-712d28f3b6622b97751311f9",
+              "evidence-74ff7e7767253815f90634f3",
+              "evidence-7e31c922552a7d332375ba0b",
+              "evidence-96de7a08c5bfaacd4c300b94",
+              "evidence-c6f2fb380b635548eab2709d",
+              "evidence-dd2646ad1e5f724c5b1cc724",
+              "evidence-e2aede89d90d1cd9472b62ed",
+              "evidence-e590331699897dc7b4079f81",
+              "evidence-e74156476daadeee5a233a24",
+              "evidence-e9df8981f7f9718826287d3c"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-0381005d6810f07d2da36233"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "generate_content": {
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gemini-3.1-pro public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gemini-3.1-pro",
+            "os": "linux",
+            "protocol": "generate_content",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gemini-3.1-pro public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gemini-3.1-pro",
+            "os": "macos",
+            "protocol": "generate_content",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gemini-3.1-pro public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gemini-3.1-pro",
+            "os": "windows",
+            "protocol": "generate_content",
+            "status": "blocked"
+          }
+        }
+      },
+      "Gemini CLI": {
+        "generate_content": {
+          "macos": {
+            "artifact_sha256": "f89f8b3ffb80e8e8db06433cc6d8420d6b73a0092f1030541464a6e1994f22e2",
+            "artifact_uri": "artifacts/gemini-cli-tool-loop-key205-gemini31-final-20260901.json",
+            "client_version": "cli:0.57.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-78ac8b5c425f5006ca55d956, evidence-d0cb976bcf85c4a274d15f02, evidence-eb6ea687a9ac7b93b1c92c04",
+            "evidence_ids": [
+              "evidence-78ac8b5c425f5006ca55d956",
+              "evidence-d0cb976bcf85c4a274d15f02",
+              "evidence-eb6ea687a9ac7b93b1c92c04"
+            ],
+            "failure_evidence_ids": [
+              "evidence-78ac8b5c425f5006ca55d956"
+            ],
+            "model_id": "gemini-3.1-pro",
+            "os": "macos",
+            "protocol": "generate_content",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "pass_evidence_ids": [
+              "evidence-eb6ea687a9ac7b93b1c92c04"
+            ]
+          }
+        }
+      },
+      "Kimi Code": {
+        "generate_content": {
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-16f57a1f7be78180de7c2a52, evidence-22681ac6b7e1db5a7de33220, evidence-259dc2bcc71bb6506f9a9fca, evidence-336eaef92cf443ca4b00d745, evidence-47abaf6c9bdd7e4407401ebc, evidence-4bc86b02f29296ff329a8eb8, evidence-6c4bbf9612aa4110a988610a, evidence-712d28f3b6622b97751311f9, evidence-74ff7e7767253815f90634f3, evidence-7e31c922552a7d332375ba0b, evidence-96de7a08c5bfaacd4c300b94, evidence-c6f2fb380b635548eab2709d, evidence-dd2646ad1e5f724c5b1cc724, evidence-e2aede89d90d1cd9472b62ed, evidence-e590331699897dc7b4079f81, evidence-e74156476daadeee5a233a24, evidence-e9df8981f7f9718826287d3c",
+            "legacy_status": "blocked",
+            "model_id": "gemini-3.1-pro",
+            "os": "macos",
+            "protocol": "generate_content",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-16f57a1f7be78180de7c2a52",
+              "evidence-22681ac6b7e1db5a7de33220",
+              "evidence-259dc2bcc71bb6506f9a9fca",
+              "evidence-336eaef92cf443ca4b00d745",
+              "evidence-47abaf6c9bdd7e4407401ebc",
+              "evidence-4bc86b02f29296ff329a8eb8",
+              "evidence-6c4bbf9612aa4110a988610a",
+              "evidence-712d28f3b6622b97751311f9",
+              "evidence-74ff7e7767253815f90634f3",
+              "evidence-7e31c922552a7d332375ba0b",
+              "evidence-96de7a08c5bfaacd4c300b94",
+              "evidence-c6f2fb380b635548eab2709d",
+              "evidence-dd2646ad1e5f724c5b1cc724",
+              "evidence-e2aede89d90d1cd9472b62ed",
+              "evidence-e590331699897dc7b4079f81",
+              "evidence-e74156476daadeee5a233a24",
+              "evidence-e9df8981f7f9718826287d3c"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-336eaef92cf443ca4b00d745"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "OpenCode": {
+        "generate_content": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-1e0bc50459ae7ad4e3e51835, evidence-a689d6cb306ab1398ed99749",
+            "legacy_status": "blocked",
+            "model_id": "gemini-3.1-pro",
+            "os": "macos",
+            "protocol": "generate_content",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-1e0bc50459ae7ad4e3e51835",
+              "evidence-a689d6cb306ab1398ed99749"
+            ],
+            "pass_evidence_ids": [
+              "evidence-a689d6cb306ab1398ed99749"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-08-31"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "Gemini 标准线路": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: generate_content=verified",
+        "evidence_ids": [
+          "evidence-16f57a1f7be78180de7c2a52",
+          "evidence-259dc2bcc71bb6506f9a9fca",
+          "evidence-6c4bbf9612aa4110a988610a",
+          "evidence-712d28f3b6622b97751311f9",
+          "evidence-74ff7e7767253815f90634f3",
+          "evidence-7e31c922552a7d332375ba0b",
+          "evidence-c6f2fb380b635548eab2709d",
+          "evidence-e74156476daadeee5a233a24"
+        ],
+        "model_id": "gemini-3.1-pro",
+        "multiplier": 0.6,
+        "protocol_evidence": {
+          "generate_content": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-16f57a1f7be78180de7c2a52",
+              "evidence-259dc2bcc71bb6506f9a9fca",
+              "evidence-6c4bbf9612aa4110a988610a",
+              "evidence-712d28f3b6622b97751311f9",
+              "evidence-74ff7e7767253815f90634f3",
+              "evidence-7e31c922552a7d332375ba0b",
+              "evidence-c6f2fb380b635548eab2709d",
+              "evidence-e74156476daadeee5a233a24"
+            ],
+            "pass_evidence_ids": [
+              "evidence-16f57a1f7be78180de7c2a52",
+              "evidence-259dc2bcc71bb6506f9a9fca",
+              "evidence-6c4bbf9612aa4110a988610a",
+              "evidence-712d28f3b6622b97751311f9",
+              "evidence-74ff7e7767253815f90634f3",
+              "evidence-7e31c922552a7d332375ba0b",
+              "evidence-c6f2fb380b635548eab2709d",
+              "evidence-e74156476daadeee5a233a24"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:20:40+00:00"
+          }
+        },
+        "protocols": [
+          "generate_content"
+        ],
+        "recommended_protocol": "generate_content",
+        "recommended_protocol_reason": "GenerateContent is the model-native and only verified 老实人AI public protocol for gemini-3.1-pro; the existing owned Agent loop evidence is on Gemini CLI 0.57.0.",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "Google official model page publishes input token limit 1048576: https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "Google official model page publishes output token limit 65536: https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "legacy modality declaration: https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+        "status": "verified"
+      },
+      "text": {
+        "evidence": "legacy modality declaration: https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "legacy modality declaration: https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+        "status": "verified"
+      }
+    },
+    "pricing": {
+      "Gemini 标准线路": {
+        "cache_read_price": 0,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "Live public customer-price inventory readback at 2026-08-31T11:36:37.816099323Z: https://api.laoshirenai.com/api/v1/public/model-pricing; this is a public price snapshot, not a production pricing mutation.",
+        "input_price": 1.2,
+        "output_price": 7.2,
+        "source_url": "https://api.laoshirenai.com/api/v1/public/model-pricing",
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "generate_content": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-55857823e31bb0c6fd86fd98, evidence-581735c16c0aee36526a3f62, evidence-ae531c99305f214e5cd9ff6a",
+          "evidence_ids": [
+            "evidence-55857823e31bb0c6fd86fd98",
+            "evidence-581735c16c0aee36526a3f62",
+            "evidence-ae531c99305f214e5cd9ff6a"
+          ],
+          "status": "verified",
+          "pass_evidence_ids": [
+            "evidence-55857823e31bb0c6fd86fd98",
+            "evidence-ae531c99305f214e5cd9ff6a"
+          ],
+          "failure_evidence_ids": [
+            "evidence-581735c16c0aee36526a3f62"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-3928bca32c62a188fd457474, evidence-7461e41e9b07bce418d0d5b8",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3928bca32c62a188fd457474",
+            "evidence-7461e41e9b07bce418d0d5b8"
+          ],
+          "pass_evidence_ids": [
+            "evidence-3928bca32c62a188fd457474",
+            "evidence-7461e41e9b07bce418d0d5b8"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-215fa906574bb26e776cb34f, evidence-4a6c850158c73ec4d1e27b57",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-215fa906574bb26e776cb34f",
+            "evidence-4a6c850158c73ec4d1e27b57"
+          ],
+          "pass_evidence_ids": [
+            "evidence-215fa906574bb26e776cb34f",
+            "evidence-4a6c850158c73ec4d1e27b57"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-2710490a453a50c31c358dfb, evidence-8e0bfed3cd196b775a77ad87, evidence-93b4a61b86935ab4e3247daf",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2710490a453a50c31c358dfb",
+            "evidence-8e0bfed3cd196b775a77ad87",
+            "evidence-93b4a61b86935ab4e3247daf"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-2710490a453a50c31c358dfb",
+            "evidence-8e0bfed3cd196b775a77ad87",
+            "evidence-93b4a61b86935ab4e3247daf"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-227056e41ad400e77fa99f8b, evidence-3f16b6fba70dfa4423df4683",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-227056e41ad400e77fa99f8b",
+            "evidence-3f16b6fba70dfa4423df4683"
+          ],
+          "pass_evidence_ids": [
+            "evidence-227056e41ad400e77fa99f8b",
+            "evidence-3f16b6fba70dfa4423df4683"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-40234d7f228407be33f0d72a",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-40234d7f228407be33f0d72a"
+          ],
+          "pass_evidence_ids": [
+            "evidence-40234d7f228407be33f0d72a"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-f8094ef416ec7479ff5504c1",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f8094ef416ec7479ff5504c1"
+          ],
+          "pass_evidence_ids": [
+            "evidence-f8094ef416ec7479ff5504c1"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "structured_output": {
+          "evidence": "M8 receipts: evidence-02bcbaaab9ef91d7bbd153d4, evidence-33879cf848a885e65a2c03e2, evidence-f16993f23879827ccb98c50a",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-02bcbaaab9ef91d7bbd153d4",
+            "evidence-33879cf848a885e65a2c03e2",
+            "evidence-f16993f23879827ccb98c50a"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-02bcbaaab9ef91d7bbd153d4",
+            "evidence-33879cf848a885e65a2c03e2",
+            "evidence-f16993f23879827ccb98c50a"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-b01b1c6ea8d918fbc77e340c",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b01b1c6ea8d918fbc77e340c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-b01b1c6ea8d918fbc77e340c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-2bee4280e8025abf91373957, evidence-d467008060803cc3c77b84f8, evidence-f706b8e9860ceea7ce0adc2f",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2bee4280e8025abf91373957",
+            "evidence-d467008060803cc3c77b84f8",
+            "evidence-f706b8e9860ceea7ce0adc2f"
+          ],
+          "pass_evidence_ids": [
+            "evidence-2bee4280e8025abf91373957",
+            "evidence-d467008060803cc3c77b84f8",
+            "evidence-f706b8e9860ceea7ce0adc2f"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "generate_content": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-60ac2f44d980d9bf9253a054, evidence-cbae9ec3e839270c0cb1c0c3",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-60ac2f44d980d9bf9253a054",
+            "evidence-cbae9ec3e839270c0cb1c0c3"
+          ],
+          "pass_evidence_ids": [
+            "evidence-60ac2f44d980d9bf9253a054",
+            "evidence-cbae9ec3e839270c0cb1c0c3"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-291d203a4418bb29272f7928, evidence-6c4bbf9612aa4110a988610a, evidence-74ff7e7767253815f90634f3",
+          "evidence_ids": [
+            "evidence-291d203a4418bb29272f7928",
+            "evidence-6c4bbf9612aa4110a988610a",
+            "evidence-74ff7e7767253815f90634f3"
+          ],
+          "status": "verified",
+          "pass_evidence_ids": [
+            "evidence-291d203a4418bb29272f7928",
+            "evidence-6c4bbf9612aa4110a988610a",
+            "evidence-74ff7e7767253815f90634f3"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-2c945214e3a8c7a66555d0f1, evidence-96de7a08c5bfaacd4c300b94, evidence-e2aede89d90d1cd9472b62ed",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2c945214e3a8c7a66555d0f1",
+            "evidence-96de7a08c5bfaacd4c300b94",
+            "evidence-e2aede89d90d1cd9472b62ed"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-2c945214e3a8c7a66555d0f1",
+            "evidence-96de7a08c5bfaacd4c300b94",
+            "evidence-e2aede89d90d1cd9472b62ed"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-47abaf6c9bdd7e4407401ebc, evidence-7795ced5da8a4e551e7ab0eb, evidence-dd2646ad1e5f724c5b1cc724, evidence-e590331699897dc7b4079f81, evidence-e9df8981f7f9718826287d3c",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-47abaf6c9bdd7e4407401ebc",
+            "evidence-7795ced5da8a4e551e7ab0eb",
+            "evidence-dd2646ad1e5f724c5b1cc724",
+            "evidence-e590331699897dc7b4079f81",
+            "evidence-e9df8981f7f9718826287d3c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-47abaf6c9bdd7e4407401ebc"
+          ],
+          "failure_evidence_ids": [
+            "evidence-7795ced5da8a4e551e7ab0eb",
+            "evidence-dd2646ad1e5f724c5b1cc724",
+            "evidence-e590331699897dc7b4079f81",
+            "evidence-e9df8981f7f9718826287d3c"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-22681ac6b7e1db5a7de33220, evidence-4bc86b02f29296ff329a8eb8, evidence-91827f224ff6494626251ba6",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-22681ac6b7e1db5a7de33220",
+            "evidence-4bc86b02f29296ff329a8eb8",
+            "evidence-91827f224ff6494626251ba6"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-22681ac6b7e1db5a7de33220",
+            "evidence-4bc86b02f29296ff329a8eb8",
+            "evidence-91827f224ff6494626251ba6"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-0a9cba81f11cf375bc3ac7da, evidence-64a04d6ad19cc1e382f0e53c, evidence-c7fdd91d6f00f9797bfadd91",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-0a9cba81f11cf375bc3ac7da",
+            "evidence-64a04d6ad19cc1e382f0e53c",
+            "evidence-c7fdd91d6f00f9797bfadd91"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-0a9cba81f11cf375bc3ac7da",
+            "evidence-64a04d6ad19cc1e382f0e53c",
+            "evidence-c7fdd91d6f00f9797bfadd91"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Antigravity": {
+          "generate_content": {
+            "client_levels": [
+              "low",
+              "high"
+            ],
+            "evidence": "Derived from verified model levels and documented explicit client mapping policy.",
+            "mappings": [],
+            "status": "verified",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "DeepSeek Harness": {
+          "generate_content": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gemini-3.1-pro public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "Gemini CLI": {
+          "generate_content": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "generate_content": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "Derived from verified model levels and documented explicit client mapping policy.",
+            "mappings": [
+              {
+                "client": "Kimi Code",
+                "protocol": "generate_content",
+                "from": "xhigh",
+                "to": "high"
+              },
+              {
+                "client": "Kimi Code",
+                "protocol": "generate_content",
+                "from": "max",
+                "to": "high"
+              }
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "OpenCode": {
+          "generate_content": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        }
+      },
+      "model_levels": {
+        "high": {
+          "evidence": "Google official Gemini thinking guide lists low, medium, and high for this model; minimal is unsupported.",
+          "status": "verified"
+        },
+        "low": {
+          "evidence": "Google official Gemini thinking guide lists low, medium, and high for this model; minimal is unsupported.",
+          "status": "verified"
+        },
+        "medium": {
+          "evidence": "M8 receipts: evidence-661dfd16a626b569759b0992",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-661dfd16a626b569759b0992"
+          ],
+          "pass_evidence_ids": [
+            "evidence-661dfd16a626b569759b0992"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        }
+      }
+    }
+  },
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "verified"
+    },
+    "official_spec_url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+    "verified_at": "2026-08-31"
+  }
+}

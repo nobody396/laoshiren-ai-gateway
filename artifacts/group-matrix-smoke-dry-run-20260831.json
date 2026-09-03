@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": true,
+  "production_write": false,
+  "identity": {
+    "user_id": 2,
+    "key_id": 12,
+    "key_name": "测试专属2",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 5,
+      "name": "Claude 标准线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 6,
+      "name": "GPT 标准线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.5
+    },
+    {
+      "id": 15,
+      "name": "Claude 兼容线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.6
+    },
+    {
+      "id": 34,
+      "name": "Grok 标准线路",
+      "platform": "grok",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.4
+    },
+    {
+      "id": 52,
+      "name": "GPT Daybreak Blue 安全研究线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 2
+    },
+    {
+      "id": 57,
+      "name": "Gemini 标准线路",
+      "platform": "gemini",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.6
+    },
+    {
+      "id": 58,
+      "name": "GPT 经济线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.35
+    },
+    {
+      "id": 59,
+      "name": "GPT 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    },
+    {
+      "id": 60,
+      "name": "GLM 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    },
+    {
+      "id": 61,
+      "name": "DeepSeek 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 62,
+      "name": "Kimi 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 63,
+      "name": "MiniMax 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 64,
+      "name": "Qwen 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 65,
+      "name": "Claude 经济线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    }
+  ],
+  "results": [],
+  "planned_smoke_probes": [
+    {
+      "group_id": 5,
+      "model_id": "claude-sonnet-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 6,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-sonnet-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 34,
+      "model_id": "grok-4.6",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 52,
+      "model_id": "gpt-daybreak-blue-latest",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 57,
+      "model_id": "gemini-3.7-flash",
+      "protocol": "generate_content"
+    },
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.6-terra",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 60,
+      "model_id": "glm-5.3",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 61,
+      "model_id": "deepseek-v4-pro-0813",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 62,
+      "model_id": "kimi-k3",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 63,
+      "model_id": "minimax-m3",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.8-max",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-opus-4-5",
+      "protocol": "messages"
+    }
+  ],
+  "restored_group_id": null,
+  "secret_free": true
+}

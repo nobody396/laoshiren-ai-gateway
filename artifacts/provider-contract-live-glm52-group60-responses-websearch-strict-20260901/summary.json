@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "9969039f96cc425892a646601de5a92e65335d80719d15c148c2aa246ba16854",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "976ec862806429ec",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-glm52-group60-responses-websearch-strict-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1
+  }
+}

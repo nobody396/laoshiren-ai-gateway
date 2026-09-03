@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "execution_plan_audit",
+  "plan": {
+    "checked": 368,
+    "unchecked": 0
+  },
+  "scope": {
+    "models": 34,
+    "clients": 14
+  },
+  "one_click": {
+    "ready": 4,
+    "prototype": 10
+  },
+  "protocol_feature_cells": {
+    "verified": 325,
+    "unsupported": 186,
+    "not_published": 1,
+    "not_exposed": 4,
+    "not_applicable": 1
+  },
+  "exact_client_cells": {
+    "verified": 126,
+    "blocked": 423,
+    "unsupported": 90
+  },
+  "client_config_os_evidence": {
+    "verified": 41,
+    "unsupported": 1
+  },
+  "runtime_os_receipts": {
+    "macos": 9
+  },
+  "shortest_path_queue": {
+    "cases": 1400,
+    "satisfied": 1400,
+    "remaining_batches": 0,
+    "statuses": {
+      "satisfied": 1400
+    },
+    "remaining_by_case_type": {},
+    "semantic_duplicates": 0
+  },
+  "remaining_release_gates": []
+}

@@ -1,0 +1,102 @@
+{
+  "artifact_sha256": "7b5aa95f9cc734dc37fa0b0f4d197fd8c1698881383514717c218eea9cdd9eda",
+  "billing_attribution": {
+    "actual_cost": 0.0037962,
+    "status": "verified",
+    "total_cost": 0.003996,
+    "usage_row_ids": [
+      "241584"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "64:qwen3.8-max:chat_completions:P-02:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 64,
+    "group_name": "Qwen 企业高速线路",
+    "marker": "LSR_CONTRACT_C8C29C8C58F8292B",
+    "max_output_tokens": 131072,
+    "model_id": "qwen3.8-max",
+    "name": "streaming_sse",
+    "p_id": "P-02",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:qwen3.8-max/chat_completions/streaming_terminal"
+    ]
+  },
+  "case_fingerprint": "f14f88fc673d9a6f84b156ec8c321208050c517fac345c854470a9cfd0244cbc",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:19:43.796+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:19:38.163+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 64,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "d30b4ef9e05d5f1a4749bcca8907ae618f8b5ce829d2ac42cb052265f8b1a2f6",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "cc0fb2515f25442847fbde23b57bfcefe18d0b7b6ec87679dd3703fe35248776"
+  },
+  "response": {
+    "body_bytes": 1667,
+    "body_sha256": "bfa3b722ee8d7658c00dbbb29b7a3a042a59ebdc2a341fb14e7b5d944f4be41a",
+    "complete": true,
+    "content_type": "text/event-stream",
+    "error": null,
+    "event_count": 9,
+    "http_status": 200,
+    "marker_present": false,
+    "request_id": "9684522d-2475-98aa-8acb-59de28aa16ce",
+    "sse_framing": true,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 1,
+    "rows": [
+      {
+        "account_id": 75,
+        "account_rate_multiplier": 1,
+        "actual_cost": 0.0037962,
+        "api_key_id": 205,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 0,
+        "cache_read_tokens": 0,
+        "created_at": "2026-09-01T03:19:42.189276+08:00",
+        "duration_ms": 2153,
+        "first_token_ms": 784,
+        "group_id": 64,
+        "id": 241584,
+        "inbound_endpoint": "/v1/chat/completions",
+        "input_cost": 0.001404,
+        "input_tokens": 117,
+        "model": "qwen3.8-max",
+        "output_cost": 0.002592,
+        "output_tokens": 72,
+        "rate_multiplier": 0.95,
+        "request_id": "client:efdafe3a-1b25-40bc-9f0a-ce0d20d09c53",
+        "request_type": "stream",
+        "stream": true,
+        "total_cost": 0.003996,
+        "upstream_endpoint": "/v1/chat/completions",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/47fdc203e560989c case/c1272381c1eb"
+      }
+    ],
+    "status": "verified"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "eb1ba7a76ac02e964a1cb9101594eedc5a75b71d7b22d879785b1c87ca473dd9",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "65:claude-opus-4-5:messages:P-15:default",
+    "context_window": 200000,
+    "declared_status": null,
+    "group_id": 65,
+    "group_name": "Claude 经济线路",
+    "marker": "LSR_CONTRACT_C83FE2C93C7147C5",
+    "max_output_tokens": 64000,
+    "model_id": "claude-opus-4-5",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:claude-opus-4-5/messages/invalid_request"
+    ]
+  },
+  "case_fingerprint": "6111fe322dcd84cfdf7772a25a8f7a645a7825ba9f2f4f51be7df87ed955e243",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:39:49.019+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:39:47.203+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 65,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "36de30ce22681430052cb373319032df6f947531ab995c241f3ff51506f62599",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "6508d76e74302f3ff8a95a14d5b9b24178963f8949d150d24f1d4d9444c17258"
+  },
+  "response": {
+    "body_bytes": 198,
+    "body_sha256": "95f093ee029e99c5fa38b098497afe714c83e0a14308aba8f4e7da5b5c60d118",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "b24ce332-af2f-4756-a2da-b4e9e56a6340",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

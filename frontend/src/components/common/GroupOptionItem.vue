@@ -6,16 +6,18 @@
       <GroupBadge
         :name="name"
         :platform="platform"
+        :display-model="displayModel"
         :subscription-type="subscriptionType"
         :show-rate="false"
         class="groupOptionItemBadge"
       />
       <!-- Row 2: description with top spacing -->
       <span
-        v-if="description"
+        v-if="protocolLabel || description"
         class="mt-1.5 w-full text-left text-xs leading-relaxed text-gray-500 dark:text-gray-400 line-clamp-2"
       >
-        {{ description }}
+        <template v-if="protocolLabel">模型协议类型：{{ protocolLabel }}</template>
+        <template v-else>{{ description }}</template>
       </span>
     </div>
 
@@ -69,6 +71,8 @@ import type { SubscriptionType, GroupPlatform } from '@/types'
 interface Props {
   name: string
   platform: GroupPlatform
+  displayModel?: string
+  protocolLabel?: string | null
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null
@@ -115,8 +119,10 @@ const cacheHitRateLabel = computed(() => {
   })
 })
 
-// Rate pill color matches platform badge color
+// Keep the multiplier quiet; model identity belongs to the official icon.
 const ratePillClass = computed(() => {
+  if (props.displayModel) return 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-dark-300'
+
   switch (props.platform) {
     case 'anthropic':
       return 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'

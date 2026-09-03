@@ -1,0 +1,27 @@
+{
+  "cases": {
+    "64:qwen3.6-flash:chat_completions:P-03:default": {
+      "artifact_sha256": "d7b1079e63e9ecd43530c534878cf25461457ea4d447f90698e445d3c27beab2",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-terminal-retry-20260901/cases/64_qwen3.6-flash_chat_completions_P-03_default-a5f5e499c670.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-max:chat_completions:P-03:default": {
+      "artifact_sha256": "7ffdd9851a9ce34227aaf0657e7ecbe2d521cca54048a96d5ed8c82869d03b2d",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-terminal-retry-20260901/cases/64_qwen3.7-max_chat_completions_P-03_default-10699b17077d.json",
+      "status": "blocked"
+    },
+    "64:qwen3.7-plus:chat_completions:P-03:default": {
+      "artifact_sha256": "f2cd345247e1053d1442dd29f781c3948a3bd4b05ba4dd88690bf515b7c4dd88",
+      "receipt": "artifacts/provider-contract-live-qwen-group64-chat-terminal-retry-20260901/cases/64_qwen3.7-plus_chat_completions_P-03_default-11fd3ff366fd.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-08-31T21:37:24.076+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "cd0a7f27738aad36",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T21:35:20.400+00:00"
+}

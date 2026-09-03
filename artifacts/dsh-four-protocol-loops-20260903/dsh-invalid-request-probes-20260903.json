@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_protocol_probe",
+  "secret_free": true,
+  "client_id": "deepseek-harness",
+  "client_version": "cli:0.1.1-rc.2",
+  "os": "macos",
+  "probe": "invalid_request",
+  "model_id": "dsh-invalid-model-000",
+  "observed_at": "2026-09-03T04:15:45+00:00",
+  "key_group_id": 6,
+  "probes": {
+    "chat_completions": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 2286,
+      "error_surfaced": true,
+      "stdout_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "stderr_sha256": "02598e4b74e782a5f03d14b22d57f3bb06de07ae70c2b471d451ac04f977f9dd",
+      "stdout_bytes": 1,
+      "stderr_bytes": 362,
+      "passed": true
+    },
+    "messages": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 3735,
+      "error_surfaced": true,
+      "stdout_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "stderr_sha256": "4b9e07d895c217247a98e4cbd026396f623943d5eba1a009515c0887cbf071b3",
+      "stdout_bytes": 1,
+      "stderr_bytes": 310,
+      "passed": true
+    },
+    "generate_content": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 697,
+      "error_surfaced": false,
+      "stdout_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "stderr_sha256": "52864a9fa3724f528ac74353eb4851c10be9a1a7a7a7cf3441db727e095aa555",
+      "stdout_bytes": 1,
+      "stderr_bytes": 58,
+      "passed": false
+    },
+    "responses": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 2451,
+      "error_surfaced": true,
+      "stdout_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "stderr_sha256": "5164634d54dc35e23432a892c92ef07ae13204e521ce6e1a1684a65ca84be4db",
+      "stdout_bytes": 1,
+      "stderr_bytes": 381,
+      "passed": true
+    }
+  },
+  "passed": false,
+  "artifact_sha256": "142b75525eb54ae58a4b81484d2c0f17895f2e3e3e59e2df8ed472912feae8cf"
+}

@@ -1,0 +1,17 @@
+{
+  "cases": {
+    "65:claude-opus-4-6:messages:P-03:default": {
+      "artifact_sha256": "827f4942a26dd8cd4d7338290072d82b0472777bc83392740bca74b4d423436b",
+      "receipt": "artifacts/provider-contract-live-claude-opus46-stream-terminal-20260901/cases/65_claude-opus-4-6_messages_P-03_default-bd729f770a2e.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-08-31T21:30:01.198+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "860e8657634c9b93",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T21:29:47.868+00:00"
+}

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "claude-code",
+  "client_version": "2.1.251",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 65,
+  "observed_at": "2026-08-31T22:10:53+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T06:10:37.899613+08:00",
+      "model": "claude-opus-4-5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.251 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 575,
+      "output_tokens": 13,
+      "reasoning_effort": "high",
+      "account_id": 56
+    },
+    {
+      "created_at": "2026-09-01T06:10:38.537155+08:00",
+      "model": "claude-opus-4-5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.251 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 5773,
+      "output_tokens": 147,
+      "reasoning_effort": "high",
+      "account_id": 56
+    },
+    {
+      "created_at": "2026-09-01T06:10:42.447166+08:00",
+      "model": "claude-opus-4-5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.251 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 5927,
+      "output_tokens": 147,
+      "reasoning_effort": "high",
+      "account_id": 56
+    },
+    {
+      "created_at": "2026-09-01T06:10:46.681538+08:00",
+      "model": "claude-opus-4-5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.251 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 5864,
+      "output_tokens": 104,
+      "reasoning_effort": "high",
+      "account_id": 56
+    },
+    {
+      "created_at": "2026-09-01T06:10:50.759691+08:00",
+      "model": "claude-opus-4-5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.251 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 5944,
+      "output_tokens": 117,
+      "reasoning_effort": "high",
+      "account_id": 56
+    }
+  ],
+  "secret_free": true,
+  "artifact_sha256": "8e768864f094386201e8b3da489585948c8ac7b3685e355fc2518370e8c67d62"
+}

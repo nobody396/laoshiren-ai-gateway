@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "client_installed_refresh",
+  "artifact_id": "workbuddy-installed-refresh-20260902",
+  "observed_at": "2026-09-02",
+  "timezone": "Asia/Shanghai",
+  "secret_free": true,
+  "network_execution": "local_installed_metadata_only",
+  "client": {
+    "id": "workbuddy",
+    "exact_name": "WorkBuddy",
+    "installed_app_version": "5.5.1",
+    "bundled_cli_name": "CodeBuddy Code",
+    "bundled_cli_version": "2.137.1",
+    "bundle_id": "com.workbuddy.workbuddy",
+    "product_class": "general_work_agent_with_bundled_coding_cli",
+    "refresh_reason": "The installed app auto-updated from 5.3.14 (CLI 2.115.0) to 5.5.1 (CLI 2.137.1); the release identity is re-pinned from local installed metadata before any new loop receipt is projected.",
+    "custom_endpoint_contract": {
+      "openai_chat_completions": "supported candidate; bundled 2.137.1 models.md still documents OpenAI-format custom models only, the url field must be a complete path typically ending with /chat/completions, and apiKey supports ${ENV_VAR} references resolved at CLI startup",
+      "openai_responses": "not documented as a custom API format",
+      "anthropic_messages": "not documented as a custom API format",
+      "gemini_generate_content": "not documented as a custom API format",
+      "reasoning": "bundled CLI 2.137.1 --help still exposes --effort minimal, low, medium, high, xhigh, max"
+    },
+    "version_observation": {
+      "cli_version_command": "bin/codebuddy --version",
+      "cli_version_stdout": "2.137.1",
+      "app_version_plist_key": "CFBundleShortVersionString"
+    }
+  },
+  "sources": [
+    {
+      "source_ref": "/Applications/WorkBuddy.app/Contents/Info.plist",
+      "kind": "local_installed_metadata",
+      "sha256": "a3a1e3523370efbcb7ce0fdb193c84f7f76fb7c7bcdfe35c07a1ea246b98dd21"
+    },
+    {
+      "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar.unpacked/cli/product.json",
+      "kind": "local_installed_product_contract",
+      "sha256": "dcf6e9631d4014515f843d1f4c07de862ae7da66a42baa2893c85bc1de94fa76"
+    },
+    {
+      "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar.unpacked/cli/bin/codebuddy",
+      "kind": "local_installed_cli",
+      "sha256": "f8b141c34c85e274a2010db35bcd2d572f2ae416adbe2f1e5f2a6f90e0bcd5a7"
+    },
+    {
+      "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar.unpacked/cli/dist/web-ui/docs/en/cli/models.md",
+      "kind": "bundled_official_documentation",
+      "sha256": "cafa2aef2f8c4d3afe0fd82a0abd40e5fe5c1960c4c65e00ab76169c6b61b408"
+    }
+  ]
+}

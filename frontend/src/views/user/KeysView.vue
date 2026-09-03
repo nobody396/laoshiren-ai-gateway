@@ -1220,6 +1220,11 @@ import {
   type GroupOptionFamilyId,
   type GroupOptionSectionId
 } from '@/utils/groupOptionSections'
+import {
+  resolveGroupDisplayProtocol,
+  type GroupDisplayProtocol
+} from '@/utils/groupDisplayProtocol'
+import { resolveGroupDisplayModel } from '@/utils/groupDisplayModel'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1237,6 +1242,8 @@ interface GroupOption {
   userRate: number | null
   subscriptionType: SubscriptionType
   platform: GroupPlatform
+  displayProtocol: GroupDisplayProtocol
+  displayModel: string
   cacheHitRatePct: number | null
   cacheWindowDays: number
   groupKey: GroupOptionSectionId
@@ -1488,6 +1495,17 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
       userRate: userGroupRates.value[group.id] ?? null,
       subscriptionType,
       platform: group.platform,
+      displayProtocol: resolveGroupDisplayProtocol({
+        name: label,
+        platform: group.platform,
+        defaultMappedModel: group.default_mapped_model,
+        allowMessagesDispatch: group.allow_messages_dispatch
+      }),
+      displayModel: resolveGroupDisplayModel({
+        name: label,
+        platform: group.platform,
+        defaultMappedModel: group.default_mapped_model
+      }),
       cacheHitRatePct: groupCacheHitRateEnabled.value && cacheStats?.has_data ? cacheStats.hit_rate_pct : null,
       cacheWindowDays: groupCacheWindowDays.value,
       groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit'
@@ -1513,6 +1531,17 @@ const getKeyGroupFallbackOption = (key: ApiKey): GroupOption | null => {
     userRate: userGroupRates.value[group.id] ?? null,
     subscriptionType,
     platform: group.platform,
+    displayProtocol: resolveGroupDisplayProtocol({
+      name: label,
+      platform: group.platform,
+      defaultMappedModel: group.default_mapped_model,
+      allowMessagesDispatch: group.allow_messages_dispatch
+    }),
+    displayModel: resolveGroupDisplayModel({
+      name: label,
+      platform: group.platform,
+      defaultMappedModel: group.default_mapped_model
+    }),
     cacheHitRatePct: null,
     cacheWindowDays: groupCacheWindowDays.value,
     groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit' ? 'monthly' : 'payg',

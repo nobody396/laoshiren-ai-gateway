@@ -72,6 +72,13 @@ func TestExtractOpenAIReasoningEffortFromBody(t *testing.T) {
 			wantValue: "xhigh",
 		},
 		{
+			name:      "保留 max 推理强度",
+			body:      []byte(`{"reasoning_effort":"max"}`),
+			model:     "",
+			wantNil:   false,
+			wantValue: "max",
+		},
+		{
 			name:    "minimal 归一化为空",
 			body:    []byte(`{"reasoning":{"effort":"minimal"}}`),
 			model:   "gpt-5-high",
@@ -101,6 +108,30 @@ func TestExtractOpenAIReasoningEffortFromBody(t *testing.T) {
 			}
 			require.NotNil(t, got)
 			require.Equal(t, tt.wantValue, *got)
+		})
+	}
+}
+
+func TestNormalizeQwenResponsesReasoningEffort(t *testing.T) {
+	tests := []struct {
+		model   string
+		effort  string
+		want    string
+		changed bool
+	}{
+		{"qwen3.6-flash", "high", "medium", true},
+		{"qwen3.6-plus", "xhigh", "medium", true},
+		{"QWEN/qwen3.7-flash", "max", "medium", true},
+		{"qwen3.7-flash", "low", "low", false},
+		{"qwen3.7-max", "max", "max", false},
+		{"qwen3.7-plus", "xhigh", "xhigh", false},
+		{"qwen3.8-max", "high", "high", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.model+"_"+tt.effort, func(t *testing.T) {
+			got, changed := normalizeQwenResponsesReasoningEffort(tt.model, tt.effort)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.changed, changed)
 		})
 	}
 }

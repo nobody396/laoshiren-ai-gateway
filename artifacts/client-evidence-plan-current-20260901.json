@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "plan",
+  "production_write": false,
+  "client_matrix_write": false,
+  "changed": true,
+  "events": 10,
+  "matrix_event_counts": {
+    "client_protocol": 10,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "7a42fd3b2257dd05f0b65d58ab69200c563902384870917478b23ad5b2dc3655",
+  "client_matrix_before_sha256": "10ed7d849bd690c7ef8a754df9dffd11c0cdfc55d939ee18aa0bc1732ca59953",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "antigravity",
+      "protocol": "generate_content",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "claude-code",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "codex",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "gemini-cli",
+      "protocol": "generate_content",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "grok-build",
+      "protocol": "chat_completions",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "hermes-agent",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "generate_content",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "responses",
+      "status": "verified"
+    }
+  ],
+  "client_matrix_after_sha256": "c7806af5e6bf74091e1670eb77f9f5f09742c9726ac262d43f95d7cd8fd083fe"
+}

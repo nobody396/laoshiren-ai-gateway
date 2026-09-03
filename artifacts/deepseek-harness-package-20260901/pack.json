@@ -1,0 +1,116 @@
+[
+  {
+    "id": "@deepseek-ai/dsh@0.1.1-rc.2",
+    "name": "@deepseek-ai/dsh",
+    "version": "0.1.1-rc.2",
+    "size": 33675,
+    "unpackedSize": 119971,
+    "shasum": "1a5112369f1c46b13a6e6f21de8af5e6afd45074",
+    "integrity": "sha512-UP1UIh6q3Gme/yXRn/QL2P8IsVlv8Shpg22TRJIZPsCRWLm4CBiA1MUvXmJAfsOEETBMLAl+xWPtFw6ICsN3wg==",
+    "filename": "deepseek-ai-dsh-0.1.1-rc.2.tgz",
+    "files": [
+      {
+        "path": "LICENSE",
+        "size": 1065,
+        "mode": 420
+      },
+      {
+        "path": "README.i18n.yaml",
+        "size": 418,
+        "mode": 420
+      },
+      {
+        "path": "README.md",
+        "size": 3002,
+        "mode": 420
+      },
+      {
+        "path": "README.zh.md",
+        "size": 3179,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/code/agent.cordis.yml",
+        "size": 13605,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/code/preset.yml",
+        "size": 172,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/cordis/agent.cordis.yml",
+        "size": 14185,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/cordis/preset.yml",
+        "size": 180,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/cordis/skills/cordis-plugin-development/SKILL.md",
+        "size": 20923,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/cordis/skills/editing-cordis-compositions/SKILL.md",
+        "size": 14414,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/minimal/agent.cordis.yml",
+        "size": 3673,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/minimal/preset.yml",
+        "size": 113,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/standard/agent.cordis.yml",
+        "size": 13103,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-presets/standard/preset.yml",
+        "size": 176,
+        "mode": 420
+      },
+      {
+        "path": "lib/bin.js",
+        "size": 8274,
+        "mode": 493
+      },
+      {
+        "path": "lib/dump-config-D-jtgwY3.js",
+        "size": 1988,
+        "mode": 420
+      },
+      {
+        "path": "lib/plugin-9h8shc4d.js",
+        "size": 5901,
+        "mode": 420
+      },
+      {
+        "path": "lib/profile-boot-BnJoK_kl.js",
+        "size": 85,
+        "mode": 420
+      },
+      {
+        "path": "lib/profile-boot-DG5t9aNs.js",
+        "size": 11157,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 4358,
+        "mode": 420
+      }
+    ],
+    "entryCount": 20,
+    "bundled": []
+  }
+]

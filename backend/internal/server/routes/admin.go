@@ -2,6 +2,7 @@
 package routes
 
 import (
+	"github.com/bozhouDev/DragonCode-sub2api/internal/adminmatrix"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/handler"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 
@@ -18,6 +19,8 @@ func RegisterAdminRoutes(
 	admin.Use(gin.HandlerFunc(adminAuth))
 	admin.Use(middleware.RequireAPIPermission())
 	{
+		registerModelClientMatrixRoutes(admin)
+
 		// 仪表盘
 		registerDashboardRoutes(admin, h)
 
@@ -112,6 +115,10 @@ func RegisterAdminRoutes(
 
 		registerTeamRoutes(admin, h)
 	}
+}
+
+func registerModelClientMatrixRoutes(admin *gin.RouterGroup) {
+	admin.GET("/model-client-matrix", adminmatrix.Get)
 }
 
 func registerTeamRoutes(admin *gin.RouterGroup, h *handler.Handlers) {

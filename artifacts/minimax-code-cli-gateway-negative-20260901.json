@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "client_protocol_negative",
+  "secret_free": true,
+  "client_id": "minimax-code",
+  "client_version": "cli:0.2.7",
+  "os": "macos",
+  "observed_at": "2026-09-01T02:45:14.466515+00:00",
+  "command_discovery": {
+    "mcode_found": false
+  },
+  "result": "unsupported",
+  "reason": "CLI-only scope: no standalone exact mcode executable is installed, and official 0.2.7 resolves --api-key-env into a raw Key persisted in ~/.minimax/config.yaml; automatic Agent Switch-safe custom gateway configuration is not available."
+}

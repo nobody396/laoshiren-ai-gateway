@@ -882,6 +882,12 @@ const adminNavItems = computed((): NavItem[] => {
       label: resolveAdminMenuLabel('/admin/dashboard', t('nav.dashboard')),
       icon: DashboardIcon
     },
+    {
+      path: '/admin/model-client-matrix',
+      label: resolveAdminMenuLabel('/admin/model-client-matrix', '模型矩阵'),
+      icon: ChartIcon,
+      hideInSimpleMode: true
+    },
     ...(adminSettingsStore.opsMonitoringEnabled
       ? [{
           path: '/admin/ops',

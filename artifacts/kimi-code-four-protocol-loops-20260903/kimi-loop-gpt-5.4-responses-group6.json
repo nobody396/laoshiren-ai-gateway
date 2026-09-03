@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "kimi-code",
+  "client_version": "cli:0.39.1",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.4",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 6,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T03:28:10+00:00",
+  "finished_at": "2026-09-03T03:28:50+00:00",
+  "duration_ms": 27899,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-responses",
+    "provider_type": "openai_responses",
+    "provider_base_url": "https://api.laoshirenai.com/v1",
+    "output_format": "stream-json",
+    "isolated_home": true,
+    "credential": "ephemeral config.toml api_key, mode 0600, destroyed after run"
+  },
+  "target_group_readback": {
+    "group_id": 6
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stream_event_counts": {
+    "system.version": 1,
+    "unknown": 6,
+    "session.resume_hint": 1
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 1340,
+  "stdout_sha256": "3269f3034d9fb955b7d61cebb36f554654b275db619ed18e196f3ce2327480bd",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-loop-gpt-5.4-responses-group6-usage.json",
+    "artifact_sha256": "cdd99fb414ebc817c03dc9d7880156e83f7287964e0ccb14c1aeddf438b85f69",
+    "usage_rows": 3,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoints": [
+      "/v1/responses"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "e4c89367b9fa2b643aed46fe9066535c12689c05c8b26cab8c433f383c548b95"
+}

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.6-sol",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 6,
+  "owned_identity": {
+    "user_id": 1,
+    "key_id": 205
+  },
+  "observed_at": "2026-08-31T22:50:39+00:00",
+  "finished_at": "2026-08-31T22:51:13+00:00",
+  "duration_ms": 21159,
+  "command_contract": {
+    "executable": "hermes",
+    "provider": "openai-api",
+    "toolsets": "terminal",
+    "max_turns": 10,
+    "isolated_home": true
+  },
+  "target_group_readback": {
+    "group_id": 6
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stdout_bytes": 467,
+  "stdout_sha256": "5c7b9207975778e6dde1d2e60abc2eb0961571309799e461823d5ae8f605b833",
+  "stderr_bytes": 36,
+  "stderr_sha256": "11ad94b6957a2a5cf88db64d34eca60d6283d546dcbca5ebf3544f968c17884a",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/hermes-agent-loop-gpt-5.6-sol-group6-recheck-20260901-usage-attribution.json",
+    "artifact_sha256": "a72c4b126aeb1a6e201e61d780726370a0fb460612638675acaed3e84042bb22",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "restoration": {
+    "group_id": 6,
+    "verified": true
+  },
+  "restored_group_id": 6,
+  "passed": true,
+  "artifact_sha256": "de8a76522ef656400906a9360e6e96ef981ec880c0439b0af9f02296892f5242"
+}

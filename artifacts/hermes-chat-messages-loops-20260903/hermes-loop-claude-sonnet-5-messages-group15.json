@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-sonnet-5",
+  "protocol": "messages",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 15,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T03:48:01+00:00",
+  "finished_at": "2026-09-03T03:48:42+00:00",
+  "duration_ms": 26485,
+  "command_contract": {
+    "executable": "hermes",
+    "prompt_mode": true,
+    "provider": "lsr-messages",
+    "transport": "anthropic_messages",
+    "provider_base_url": "https://api.laoshirenai.com",
+    "toolsets": "terminal",
+    "max_turns": 10,
+    "isolated_home": true,
+    "credential": "LAOSHIRENAI_HERMES_E2E environment only, referenced via key_env"
+  },
+  "target_group_readback": {
+    "group_id": 15
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stream_event_counts": {
+    "text": 2
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 139,
+  "stdout_sha256": "05038f5ba9c05ea05d5c52cfca3a8523762a26803ba511b73a34edd44d37fe36",
+  "stderr_bytes": 36,
+  "stderr_sha256": "6646619b4a23dd7ed2e5f4478aba72d7b2d33bc958b35fc05030738a28eed7bb",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/hermes-chat-messages-loops-20260903/hermes-loop-claude-sonnet-5-messages-group15-usage.json",
+    "artifact_sha256": "ca3d6bab53ff32fe53dfc0fdf1c1c1b46f50e81a26b423a9609c8ccd7e75a239",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoints": [
+      "/v1/messages"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "daba5c583fcc94434515c6399cc48c0a782ff3748601d00b19ee0c5c509082ea"
+}

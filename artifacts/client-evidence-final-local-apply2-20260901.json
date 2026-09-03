@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "client_matrix_write": true,
+  "changed": true,
+  "events": 15,
+  "matrix_event_counts": {
+    "client_protocol": 15,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "0461ef9b548ff84bf5620d913a874678c8685a0307d6374c9dfcc9c6082f10d0",
+  "client_matrix_before_sha256": "e0f06acbdfa6afda34b157af46c427639979ab599f37f6976f65d587e673fcf1",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "chat_completions",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "generate_content",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "messages",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "responses",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "grok-build",
+      "protocol": "chat_completions",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "chat_completions",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "generate_content",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "messages",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "responses",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "chat_completions",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "messages",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "responses",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "qoder",
+      "protocol": "chat_completions",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "zcode",
+      "protocol": "chat_completions",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "zcode",
+      "protocol": "messages",
+      "status": "unsupported"
+    }
+  ],
+  "client_matrix_after_sha256": "a78637e929eff4855a973aef8bf2682275eb569531975c27900545e65246a301"
+}

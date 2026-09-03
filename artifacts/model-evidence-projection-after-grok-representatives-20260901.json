@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 3,
+  "events": 5,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "3c91bf2df9ceabf93781396977a818d7a00afb6ef0f6af174e673a23df9d116a",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Grok Build/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-58b86d3fe5126c85b62fd336"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-58b86d3fe5126c85b62fd336",
+            "evidence-5dc4028ee9084ec61aed63cb"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Grok Build/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d49e8191f93ada23ef7bc701"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4b70e025982ed24111e2c9d2",
+            "evidence-d49e8191f93ada23ef7bc701"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-946e94cef1d68113ab3c1cba"
+          ]
+        }
+      ]
+    }
+  ]
+}

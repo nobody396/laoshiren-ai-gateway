@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "client_matrix_write": true,
+  "changed": true,
+  "events": 1,
+  "matrix_event_counts": {
+    "client_protocol": 1,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "98d69e5161f9ba9afcb1ad3df02445c20e149a681cd54c410b98bf496c6bf429",
+  "client_matrix_before_sha256": "3efeee55e1fc8cfef02a1588b6e7cf0b0d5232beadeff4de30bb4598f0fbe521",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "workbuddy",
+      "protocol": "chat_completions",
+      "status": "verified"
+    }
+  ],
+  "client_matrix_after_sha256": "9d0387253fa93cf64a59f5f0821501528db23ede8190b085b21b5e7a63b6512c"
+}

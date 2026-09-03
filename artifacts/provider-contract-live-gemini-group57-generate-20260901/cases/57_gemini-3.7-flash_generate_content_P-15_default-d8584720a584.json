@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "f72dff828864727a78952a99496e87e2ab2b43c1d13480c88434b063a392d65a",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "57:gemini-3.7-flash:generate_content:P-15:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 57,
+    "group_name": "Gemini 标准线路",
+    "marker": "LSR_CONTRACT_8997306298023572",
+    "max_output_tokens": 65536,
+    "model_id": "gemini-3.7-flash",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "generate_content",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:gemini-3.7-flash/generate_content/invalid_request"
+    ]
+  },
+  "case_fingerprint": "184988afc7acde13d07a2b0fdc4f1c0c44d1c8fbe9e51879cd3a9261b349af91",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:36:42.025+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:36:38.692+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 57,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "4b28db9972d8c8f198e7292ea7c12788a4e3c83459b1585b0cf6c6e73badb73c",
+    "url": "https://api.laoshirenai.com/v1beta/models/gemini-3.7-flash:generateContent",
+    "user_agent_sha256": "ca5216d79de789cf0531f334eafedaae6a43ee8259f67a0381229185517fddea"
+  },
+  "response": {
+    "body_bytes": 191,
+    "body_sha256": "b38b20f696763bde53022b1875501031c640cc08ce08af4a6f41769bb7475016",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "code": 400,
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "status": "INVALID_ARGUMENT"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "de034ea6-4277-42af-99ac-e7c29668d34a",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

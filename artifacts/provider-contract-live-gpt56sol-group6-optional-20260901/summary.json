@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "be7cc4438e0232c0b225792835d9681704dc09a3dbd28eda3e42a6cf696449bb",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "901b9123af27194c",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-gpt56sol-group6-optional-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1
+  }
+}

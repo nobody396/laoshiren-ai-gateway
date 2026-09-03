@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "kind": "client_admission_source",
+  "observed_at": "2026-09-01",
+  "beijing_observed_at": "2026-09-01T01:26:44+08:00",
+  "secret_free": true,
+  "clients": [
+    {
+      "client_id": "deepseek-harness",
+      "identity": {
+        "package": "@deepseek-ai/dsh",
+        "executable": "dsh",
+        "version": "0.1.1-rc.2",
+        "git_tag": "dsh-v0.1.1-rc.2",
+        "git_commit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
+        "channel": "developer-preview-rc",
+        "npm_tarball_sha256": "47ec05f45ada5ab87779ae18a90456b5ebff5421dc0ff5c179677d65e1c16057"
+      },
+      "official_sources": [
+        "https://www.deepseek.com/harness/en/",
+        "https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.1-rc.2",
+        "https://deepseek-harness.github.io/deepseek-harness/en/guide/providers",
+        "https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.1-rc.2/packages/llm/llm-pi-ai/src/provider.ts"
+      ],
+      "documented_contract": {
+        "protocols": [
+          "responses",
+          "chat_completions",
+          "messages",
+          "generate_content_catalog_only"
+        ],
+        "base_url": "Custom Provider accepts an explicit baseURL; one Provider ID owns one wire protocol.",
+        "credential": "settings.yaml stores apiKeyEnv only; the managed key is write-only in $DSH_HOME/.credentials.yaml.",
+        "config_files": [
+          "$DSH_HOME/settings.yaml",
+          "$DSH_HOME/.credentials.yaml",
+          "$DSH_HOME/.env",
+          "$DSH_HOME/cordis.patch.yml"
+        ],
+        "agent_loop": "The harness implements tool call, tool result, and continuation loops, but no laoshirenai endpoint receipt exists for this exact release.",
+        "reasoning": "Model-defined intersection; the direct DeepSeek adapter exposes off, low, high, and max and rejects unsupported explicit values before network I/O."
+      },
+      "local_observation": {
+        "node_version": "22.22.3",
+        "installed": false,
+        "pinned_npx_runtime_result": "blocked_no_terminal_result_within_bounded_install_window",
+        "agent_loop": "not_run"
+      }
+    },
+    {
+      "client_id": "cursor-desktop",
+      "identity": {
+        "version": "3.18.9",
+        "quality": "stable",
+        "commit": "2ba48ff3f7514cc4643c52ca9f7b3173d9b66130",
+        "build_date": "2026-08-27T01:42:22.092Z"
+      },
+      "official_sources": [
+        "https://cursor.com/download",
+        "https://cursor.com/help/models-and-usage/api-keys",
+        "https://cursor.com/docs/agent/overview",
+        "https://forum.cursor.com/t/custom-base-urls-for-each-custom-model/147219/13",
+        "https://forum.cursor.com/t/glm-5-2-support/163533/6"
+      ],
+      "documented_contract": {
+        "protocols": [
+          "chat_completions_experimental"
+        ],
+        "unsupported_protocols_for_custom_gateway": [
+          "responses",
+          "messages",
+          "generate_content"
+        ],
+        "base_url": "Cursor Desktop exposes one global Override OpenAI Base URL and appends /chat/completions; it is not per model or per provider.",
+        "model_discovery": "Manual Add Model; no authenticated /v1/models synchronization contract is documented.",
+        "credential": "The API key is stored through Cursor-managed secure UI state. Direct state.vscdb mutation is unsupported.",
+        "agent_loop": "Cursor-managed models have an Agent loop. A custom OpenAI-compatible Base URL tool-result continuation remains unverified and has known request-shape mismatch reports.",
+        "reasoning": "Reasoning effort is unsupported on the custom Base URL surface; do not infer managed-model controls."
+      },
+      "local_observation": {
+        "installed": false,
+        "residual_user_data_is_install_proof": false,
+        "agent_loop": "not_run"
+      }
+    },
+    {
+      "client_id": "vscode-local-agent",
+      "identity": {
+        "vscode_version": "1.135.0",
+        "bundled_copilot_component_version": "0.63.0",
+        "release_date": "2026-08-26"
+      },
+      "official_sources": [
+        "https://code.visualstudio.com/updates/v1_135",
+        "https://github.com/microsoft/vscode/releases/tag/1.135.0",
+        "https://code.visualstudio.com/docs/agent-customization/language-models",
+        "https://code.visualstudio.com/docs/agents/concepts/agent-harnesses",
+        "https://github.com/microsoft/vscode/blob/1.135.0/extensions/copilot/package.json"
+      ],
+      "documented_contract": {
+        "product_boundary": "The supported client is VS Code Stable with its bundled first-party local agent/Copilot component, not bare Code-OSS and not a third-party model extension.",
+        "protocols": [
+          "responses",
+          "chat_completions",
+          "messages"
+        ],
+        "unsupported_protocols": [
+          "generate_content"
+        ],
+        "base_url": "Custom Endpoint accepts explicit URLs and API types. Full endpoint URLs avoid automatic /v1 and method-path ambiguity.",
+        "credential": "chatLanguageModels.json must reference ${input:...}; VS Code secret storage owns the literal key.",
+        "agent_loop": "The bundled local agent supports tools, but no exact laoshirenai model/protocol/OS loop was run. BYOK in Agent Host is experimental.",
+        "reasoning": "Model-defined supportsReasoningEffort and reasoningEffortFormat; actual values must be intersected with the model reasoning matrix."
+      },
+      "local_observation": {
+        "installed": false,
+        "agent_loop": "not_run",
+        "headless_agent_contract": "unsupported; code chat opens an interactive UI"
+      }
+    }
+  ]
+}

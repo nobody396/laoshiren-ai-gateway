@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_protocol_probe",
+  "secret_free": true,
+  "client_id": "kimi-code",
+  "client_version": "cli:0.39.1",
+  "os": "macos",
+  "probe": "invalid_request",
+  "model_id": "kimi-invalid-model-000",
+  "observed_at": "2026-09-03T03:29:16+00:00",
+  "key_group_id": 6,
+  "probes": {
+    "chat_completions": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 4491,
+      "error_surfaced": true,
+      "stdout_sha256": "3cbc1a870faf9117cfca4ab08a15e03b1842fdf4922fe9be25f630fad198199b",
+      "stderr_sha256": "4dccb2f59c8fc4e5bf8140c0a0c7583760cf1f9a788d31128e10b25053288b81",
+      "stdout_bytes": 59,
+      "stderr_bytes": 393,
+      "passed": true
+    },
+    "messages": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 4546,
+      "error_surfaced": true,
+      "stdout_sha256": "3cbc1a870faf9117cfca4ab08a15e03b1842fdf4922fe9be25f630fad198199b",
+      "stderr_sha256": "782131d09f505e335b70611b9591ca8102cd0f2c484c8b5d840c91c76b06aca9",
+      "stdout_bytes": 59,
+      "stderr_bytes": 473,
+      "passed": true
+    },
+    "generate_content": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 3542,
+      "error_surfaced": true,
+      "stdout_sha256": "3cbc1a870faf9117cfca4ab08a15e03b1842fdf4922fe9be25f630fad198199b",
+      "stderr_sha256": "3f503958c6a707ae01f41b70a8541c25fb7ca5f133fd434cf907cb71bd38fc08",
+      "stdout_bytes": 59,
+      "stderr_bytes": 384,
+      "passed": true
+    },
+    "responses": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 3368,
+      "error_surfaced": true,
+      "stdout_sha256": "3cbc1a870faf9117cfca4ab08a15e03b1842fdf4922fe9be25f630fad198199b",
+      "stderr_sha256": "b66fc1516a9accd176772b69c972e00e97822d37debda538be1379c18e9f1827",
+      "stdout_bytes": 59,
+      "stderr_bytes": 386,
+      "passed": true
+    }
+  },
+  "passed": true,
+  "artifact_sha256": "2a2928f6baab2b145ff744e1a098b2f033b02bb7adebf3763ddbceb823f24207"
+}

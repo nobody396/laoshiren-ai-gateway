@@ -1,0 +1,17 @@
+{
+  "cases": {
+    "63:minimax-m3:chat_completions:P-08:default": {
+      "artifact_sha256": "0d08474b4a400f4ab6220a408aac7d75dd6b0c743bd167f989981a7a1f1e8727",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-optional-20260901/cases/63_minimax-m3_chat_completions_P-08_default-26fc4c1913ac.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:04:20.502+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "95c3cd795079e9d5",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:04:06.224+00:00"
+}

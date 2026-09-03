@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "client_installed_refresh",
+  "artifact_id": "kimi-code-installed-refresh-20260903",
+  "observed_at": "2026-09-03",
+  "timezone": "Asia/Shanghai",
+  "secret_free": true,
+  "network_execution": "local_installed_metadata_and_official_docs_only",
+  "client": {
+    "id": "kimi-code",
+    "exact_name": "Kimi Code CLI",
+    "installed_cli_version": "0.39.1",
+    "refresh_reason": "The installed CLI moved from 0.38.0 to 0.39.1 (release supported_range >=0.38.0 still holds); the version pin is refreshed before new loop receipts are projected.",
+    "protocol_contract": {
+      "source": "https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/providers.html",
+      "provider_types": {
+        "openai": "OpenAI Chat Completions and compatible services; base_url and api_key configurable",
+        "openai_responses": "OpenAI Responses API, always streaming; base_url and api_key configurable",
+        "anthropic": "Anthropic Messages; base_url and api_key configurable",
+        "google-genai": "Google GenAI generateContent; base_url accepts a gateway host root and the SDK appends /v1beta/models/<model>:generateContent",
+        "kimi": "Moonshot OpenAI-compatible managed path",
+        "vertexai": "Google GenAI on Vertex, ADC-bound, not usable with a plain API-key gateway"
+      },
+      "credential_priority": "api_key direct field, then [providers.<name>.env] sub-table; shell environment variables are not read for credentials",
+      "headless": "kimi -p/--prompt runs non-interactively; --auto and --yolo are rejected in prompt mode; tools auto-approve in prompt mode; --output-format stream-json streams incremental events"
+    },
+    "version_observation": {
+      "command": "kimi --version",
+      "stdout": "0.39.1",
+      "binary": "~/.kimi-code/bin/kimi",
+      "binary_sha256": "762ee3be8b67796657409b8d5074ab0beed6f42162035bd4a274055ef0c44cdd"
+    }
+  }
+}

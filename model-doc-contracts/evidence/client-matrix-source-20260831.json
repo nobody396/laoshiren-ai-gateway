@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-31",
+  "scope": "client protocol, reasoning, release, OS configuration, and full-access Agent commands",
+  "clients": [
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "version": "cli:2.1.251",
+      "supported_protocols": [
+        "messages"
+      ],
+      "reasoning_control": "model_defined",
+      "reasoning_values": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "claude --dangerously-skip-permissions -p \"$AGENT_CONTRACT_PROMPT\" --output-format stream-json"
+    },
+    {
+      "id": "codex",
+      "name": "Codex",
+      "version": "cli:0.151.0",
+      "supported_protocols": [
+        "responses"
+      ],
+      "reasoning_control": "model_defined",
+      "reasoning_values": [],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "codex exec --dangerously-bypass-approvals-and-sandbox --json \"$AGENT_CONTRACT_PROMPT\""
+    },
+    {
+      "id": "grok-build",
+      "name": "Grok Build",
+      "version": "cli:1.0.13",
+      "supported_protocols": [
+        "responses",
+        "chat_completions",
+        "messages"
+      ],
+      "reasoning_control": "model_defined",
+      "reasoning_values": [],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "grok --always-approve --permission-mode bypassPermissions --single \"$AGENT_CONTRACT_PROMPT\""
+    },
+    {
+      "id": "kimi-code",
+      "name": "Kimi Code",
+      "version": "cli:0.38.0",
+      "supported_protocols": [
+        "responses",
+        "chat_completions",
+        "messages",
+        "generate_content"
+      ],
+      "reasoning_control": "fixed",
+      "reasoning_values": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "kimi -p \"$AGENT_CONTRACT_PROMPT\" --output-format stream-json"
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "version": "cli:1.18.15",
+      "supported_protocols": [
+        "responses",
+        "chat_completions",
+        "messages",
+        "generate_content"
+      ],
+      "reasoning_control": "model_defined",
+      "reasoning_values": [],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "opencode run --auto --pure --format json \"$AGENT_CONTRACT_PROMPT\""
+    },
+    {
+      "id": "zcode",
+      "name": "ZCode",
+      "version": "app:3.10.1+cli:0.16.5",
+      "supported_protocols": [
+        "responses",
+        "chat_completions",
+        "messages"
+      ],
+      "reasoning_control": "model_defined",
+      "reasoning_values": [],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "node \"/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs\" --prompt \"$AGENT_CONTRACT_PROMPT\" --mode yolo --json"
+    },
+    {
+      "id": "gemini-cli",
+      "name": "Gemini CLI",
+      "version": "cli:0.57.0",
+      "supported_protocols": [
+        "generate_content"
+      ],
+      "reasoning_control": "model_defined",
+      "reasoning_values": [],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "npx @google/gemini-cli --yolo -p \"$AGENT_CONTRACT_PROMPT\" --output-format stream-json"
+    },
+    {
+      "id": "antigravity",
+      "name": "Antigravity",
+      "version": "cli:1.1.22",
+      "supported_protocols": [
+        "generate_content"
+      ],
+      "reasoning_control": "fixed",
+      "reasoning_values": [
+        "low",
+        "high"
+      ],
+      "verification_os": [
+        "macos"
+      ],
+      "config_os": [
+        "macos",
+        "linux",
+        "windows"
+      ],
+      "full_access_command": "agy --dangerously-skip-permissions --print \"$AGENT_CONTRACT_PROMPT\""
+    }
+  ],
+  "evidence_summary": "Maintained from owned CLI help/config review and exact real Agent loops on 2026-08-31."
+}

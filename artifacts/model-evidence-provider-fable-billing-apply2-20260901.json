@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 2,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "7a07f2d2deb972007757597095cf39b4499f099d114bbbcfe4ef3f4fd082af66",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7becd7b2d87f616f0a4f4e78"
+          ]
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b5270fb6afafc0b2afb4b46a"
+          ]
+        }
+      ]
+    }
+  ]
+}

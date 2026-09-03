@@ -1,0 +1,107 @@
+{
+  "artifact_sha256": "f6cad508e4073c630f3f3bac461f81bab3eab65bbe7aadcd15618df48fc907bb",
+  "billing_attribution": {
+    "actual_cost": 0.0007048,
+    "status": "verified",
+    "total_cost": 0.001762,
+    "usage_row_ids": [
+      "243389"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "48:grok-4.6:chat_completions:P-10:default",
+    "context_window": 500000,
+    "declared_status": "blocked",
+    "group_id": 48,
+    "group_name": "Grok Plus 月卡组",
+    "marker": "LSR_CONTRACT_35F525070AAA3494",
+    "max_output_tokens": 128000,
+    "model_id": "grok-4.6",
+    "name": "structured_output",
+    "p_id": "P-10",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:grok-4.6/chat_completions/features/structured_output"
+    ]
+  },
+  "case_fingerprint": "78b8c0eec71fb3ce1bcbcd77ef0b5fc4c6bb8a58657c42a11146ada2a23e8832",
+  "classification": "verified",
+  "finished_at": "2026-09-01T02:53:44.788+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T02:53:35.223+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 48,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "14d606e0830dc820cad47416de9e80d41f5f1d23d777d35ca59028023796f0bd",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "fc4c8c3a6bd8ec4cde2ec8a455b7cef0a91627a0d192f9c96960efb0de2f5f45"
+  },
+  "response": {
+    "body_bytes": 812,
+    "body_sha256": "e9ca057ea0c77fbbd68cda964a16dcb054d41f49ec4ca9af1ee1d1ecd84bd6f0",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "2c75b0d8-ad49-46ca-a907-553f6798f45f",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 477
+  },
+  "usage_attribution": {
+    "row_count": 1,
+    "rows": [
+      {
+        "account_id": 82,
+        "account_rate_multiplier": 0.18,
+        "actual_cost": 0.0007048,
+        "api_key_id": 128,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 0,
+        "cache_read_tokens": 0,
+        "created_at": "2026-09-01T10:53:43.145642+08:00",
+        "duration_ms": 3520,
+        "first_token_ms": null,
+        "group_id": 48,
+        "id": 243389,
+        "inbound_endpoint": "/v1/chat/completions",
+        "input_cost": 0.00055,
+        "input_tokens": 275,
+        "model": "grok-4.6",
+        "output_cost": 0.001212,
+        "output_tokens": 202,
+        "rate_multiplier": 0.4,
+        "request_id": "client:388ecba5-07a2-4ac9-b50d-adf82d40003b",
+        "request_type": "sync",
+        "stream": false,
+        "total_cost": 0.001762,
+        "upstream_endpoint": "/v1/responses",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/84a65a48cb8f8375 case/01d99099089c"
+      }
+    ],
+    "status": "verified"
+  }
+}

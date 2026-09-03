@@ -1,0 +1,797 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 0.4,
+        "name": "Grok 标准线路"
+      },
+      {
+        "multiplier": 0.4,
+        "name": "Grok Plus 月卡组"
+      },
+      {
+        "multiplier": 0.4,
+        "name": "Grok Pro 月卡组"
+      },
+      {
+        "multiplier": 0.4,
+        "name": "Grok Max 月卡组"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "No supported canonical client protocol remains for this model.",
+      "name": "Grok Build",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "Kimi Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "OpenCode",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No supported canonical client protocol remains for this model.",
+      "name": "ZCode",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "name": "Hermes Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "WorkBuddy",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [],
+  "model": {
+    "context_window": 500000,
+    "display_name": "Grok 4.6",
+    "family": "grok",
+    "id": "grok-4.6",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "max_output_tokens": 128000,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "production text and streaming calls passed; real Grok Build, OpenCode and ZCode tool-result Agent loops completed",
+      "name": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "evidence": "xAI supports Responses natively, but the current public route repeatedly returned 502 and no healthy Responses failover completed the request; withhold from the public card",
+      "name": "responses",
+      "status": "unsupported"
+    }
+  ],
+  "reasoning": {
+    "client_mappings": [],
+    "model_levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ]
+  },
+  "recommended_protocol": "chat_completions",
+  "recommended_protocol_reason": "Chat Completions is the only currently verified 老实人AI public path for Grok 4.6 and has completed Grok Build, OpenCode, and ZCode Agent loops; xAI also supports Responses natively, but the latest owned public Responses attempts ended in 502 without a healthy failover.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Grok Build": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "migration_gap: legacy client result does not state exact OS (macos required); legacy_evidence: real Shell tool call, tool-result continuation, final answer and clean exit completed",
+            "model_id": "grok-4.6",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        }
+      },
+      "Kimi Code": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.39.1",
+            "model_id": "grok-4.6",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "evidence": "Latest direct receipt is negative: evidence-12c2f31dc3e6530637dac59e",
+            "status": "unsupported",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-12c2f31dc3e6530637dac59e"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-12c2f31dc3e6530637dac59e"
+            ]
+          }
+        }
+      },
+      "OpenCode": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "model_id": "grok-4.6",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "evidence": "Latest direct receipt is negative: evidence-a8ba56d2b0b94381279a3b34",
+            "status": "unsupported",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-a8ba56d2b0b94381279a3b34"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-a8ba56d2b0b94381279a3b34"
+            ]
+          }
+        }
+      },
+      "ZCode": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "legacy:3.10.1",
+            "evidence": "migration_gap: legacy client result does not state exact OS (macos required); exact client version is also missing; legacy_evidence: real Agent tool loop completed",
+            "model_id": "grok-4.6",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "model_id": "grok-4.6",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "evidence": "Latest direct receipt is negative: evidence-b8a1b7715ba3c57e4d9c4397",
+            "status": "unsupported",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-b8a1b7715ba3c57e4d9c4397"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-b8a1b7715ba3c57e4d9c4397"
+            ]
+          }
+        }
+      }
+    },
+    "group_access": {
+      "Grok Max 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: chat_completions=verified",
+        "model_id": "grok-4.6",
+        "multiplier": 0.4,
+        "protocols": [
+          "chat_completions"
+        ],
+        "recommended_protocol": "chat_completions",
+        "recommended_protocol_reason": "Chat Completions is the only currently verified 老实人AI public path for Grok 4.6 and has completed Grok Build, OpenCode, and ZCode Agent loops; xAI also supports Responses natively, but the latest owned public Responses attempts ended in 502 without a healthy failover.",
+        "status": "verified",
+        "verified_at": "2026-09-01",
+        "protocol_evidence": {
+          "chat_completions": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-00e3172da38c44abf44b043b",
+              "evidence-3d8baa294e48bb4c7e09fddc",
+              "evidence-75d2091386726b719a3295eb"
+            ],
+            "pass_evidence_ids": [
+              "evidence-00e3172da38c44abf44b043b",
+              "evidence-3d8baa294e48bb4c7e09fddc",
+              "evidence-75d2091386726b719a3295eb"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-09-01T00:00:13+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-00e3172da38c44abf44b043b",
+          "evidence-3d8baa294e48bb4c7e09fddc",
+          "evidence-75d2091386726b719a3295eb"
+        ]
+      },
+      "Grok Plus 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: chat_completions=verified",
+        "model_id": "grok-4.6",
+        "multiplier": 0.4,
+        "protocols": [
+          "chat_completions"
+        ],
+        "recommended_protocol": "chat_completions",
+        "recommended_protocol_reason": "Chat Completions is the only currently verified 老实人AI public path for Grok 4.6 and has completed Grok Build, OpenCode, and ZCode Agent loops; xAI also supports Responses natively, but the latest owned public Responses attempts ended in 502 without a healthy failover.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "chat_completions": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-33aa48c20c804a8f4b6a0b41",
+              "evidence-de0df74500c0f6afa7a9ece6",
+              "evidence-e1bae1ad523b75e84198d59e"
+            ],
+            "pass_evidence_ids": [
+              "evidence-33aa48c20c804a8f4b6a0b41",
+              "evidence-de0df74500c0f6afa7a9ece6",
+              "evidence-e1bae1ad523b75e84198d59e"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:22+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-33aa48c20c804a8f4b6a0b41",
+          "evidence-de0df74500c0f6afa7a9ece6",
+          "evidence-e1bae1ad523b75e84198d59e"
+        ]
+      },
+      "Grok Pro 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: chat_completions=verified",
+        "model_id": "grok-4.6",
+        "multiplier": 0.4,
+        "protocols": [
+          "chat_completions"
+        ],
+        "recommended_protocol": "chat_completions",
+        "recommended_protocol_reason": "Chat Completions is the only currently verified 老实人AI public path for Grok 4.6 and has completed Grok Build, OpenCode, and ZCode Agent loops; xAI also supports Responses natively, but the latest owned public Responses attempts ended in 502 without a healthy failover.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "chat_completions": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-66550cd804c31374ef298691",
+              "evidence-71a74ca0945febbd7a23a4f6",
+              "evidence-9ba20189787815afaa49d85b"
+            ],
+            "pass_evidence_ids": [
+              "evidence-66550cd804c31374ef298691",
+              "evidence-71a74ca0945febbd7a23a4f6",
+              "evidence-9ba20189787815afaa49d85b"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:45+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-66550cd804c31374ef298691",
+          "evidence-71a74ca0945febbd7a23a4f6",
+          "evidence-9ba20189787815afaa49d85b"
+        ]
+      },
+      "Grok 标准线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: chat_completions=verified",
+        "model_id": "grok-4.6",
+        "multiplier": 0.4,
+        "protocols": [
+          "chat_completions"
+        ],
+        "recommended_protocol": "chat_completions",
+        "recommended_protocol_reason": "Chat Completions is the only currently verified 老实人AI public path for Grok 4.6 and has completed Grok Build, OpenCode, and ZCode Agent loops; xAI also supports Responses natively, but the latest owned public Responses attempts ended in 502 without a healthy failover.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "chat_completions": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-3f236cfdabf37ae5bfda2f25",
+              "evidence-4014f1c17991b95150dc20f2",
+              "evidence-722bd843c66a6316a931d27e",
+              "evidence-b7532c23ff3cbbbd544b8c20",
+              "evidence-be1221d0dba5e8c387f6467d",
+              "evidence-ea3db596a642fa8a093830f6"
+            ],
+            "pass_evidence_ids": [
+              "evidence-3f236cfdabf37ae5bfda2f25",
+              "evidence-4014f1c17991b95150dc20f2",
+              "evidence-722bd843c66a6316a931d27e",
+              "evidence-b7532c23ff3cbbbd544b8c20",
+              "evidence-be1221d0dba5e8c387f6467d",
+              "evidence-ea3db596a642fa8a093830f6"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:20:05+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-3f236cfdabf37ae5bfda2f25",
+          "evidence-4014f1c17991b95150dc20f2",
+          "evidence-722bd843c66a6316a931d27e",
+          "evidence-b7532c23ff3cbbbd544b8c20",
+          "evidence-be1221d0dba5e8c387f6467d",
+          "evidence-ea3db596a642fa8a093830f6"
+        ]
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "xAI official Grok 4.6 page and model registry publish a 500000-token context and text/image input with text output: https://docs.x.ai/developers/grok-4-6",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "The current 老实人AI catalog/import contract configures 128000 as the public maximum output; xAI describes no finite native text-output ceiling, so this value is a gateway/catalog cap rather than an official model limit.",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "legacy modality declaration: https://docs.x.ai/developers/grok-4-6",
+        "status": "verified"
+      },
+      "text": {
+        "evidence": "legacy modality declaration: https://docs.x.ai/developers/grok-4-6",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "legacy modality declaration: https://docs.x.ai/developers/grok-4-6",
+        "status": "unsupported"
+      }
+    },
+    "pricing": {
+      "Grok Max 月卡组": {
+        "cache_read_price": 0.2,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "Live public customer-price inventory readback at 2026-08-31T11:36:37.816099323Z: https://api.laoshirenai.com/api/v1/public/model-pricing; this is a public price snapshot, not a production pricing mutation.",
+        "input_price": 0.8,
+        "output_price": 2.4,
+        "source_url": "https://api.laoshirenai.com/api/v1/public/model-pricing",
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Grok Plus 月卡组": {
+        "cache_read_price": 0.2,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "Live public customer-price inventory readback at 2026-08-31T11:36:37.816099323Z: https://api.laoshirenai.com/api/v1/public/model-pricing; this is a public price snapshot, not a production pricing mutation.",
+        "input_price": 0.8,
+        "output_price": 2.4,
+        "source_url": "https://api.laoshirenai.com/api/v1/public/model-pricing",
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Grok Pro 月卡组": {
+        "cache_read_price": 0.2,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "Live public customer-price inventory readback at 2026-08-31T11:36:37.816099323Z: https://api.laoshirenai.com/api/v1/public/model-pricing; this is a public price snapshot, not a production pricing mutation.",
+        "input_price": 0.8,
+        "output_price": 2.4,
+        "source_url": "https://api.laoshirenai.com/api/v1/public/model-pricing",
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Grok 标准线路": {
+        "cache_read_price": 0.2,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "Live public customer-price inventory readback at 2026-08-31T11:36:37.816099323Z: https://api.laoshirenai.com/api/v1/public/model-pricing; this is a public price snapshot, not a production pricing mutation.",
+        "input_price": 0.8,
+        "output_price": 2.4,
+        "source_url": "https://api.laoshirenai.com/api/v1/public/model-pricing",
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "chat_completions": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-9bcdd6e68d240d3f472e015a, evidence-dc2aee2a3a24f5f1a3a8a404, evidence-f1a18df1b751af131713c18b",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9bcdd6e68d240d3f472e015a",
+            "evidence-dc2aee2a3a24f5f1a3a8a404",
+            "evidence-f1a18df1b751af131713c18b"
+          ],
+          "pass_evidence_ids": [
+            "evidence-9bcdd6e68d240d3f472e015a",
+            "evidence-dc2aee2a3a24f5f1a3a8a404",
+            "evidence-f1a18df1b751af131713c18b"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-4d8f023e6ec75cc40c3b2c00, evidence-db79e7053594f56ef8952212",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4d8f023e6ec75cc40c3b2c00",
+            "evidence-db79e7053594f56ef8952212"
+          ],
+          "pass_evidence_ids": [
+            "evidence-4d8f023e6ec75cc40c3b2c00",
+            "evidence-db79e7053594f56ef8952212"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-ab62a9cfc2aaf487a51fdd59, evidence-cb299e7e50b24257695b42ce",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ab62a9cfc2aaf487a51fdd59",
+            "evidence-cb299e7e50b24257695b42ce"
+          ],
+          "pass_evidence_ids": [
+            "evidence-ab62a9cfc2aaf487a51fdd59",
+            "evidence-cb299e7e50b24257695b42ce"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-278f735e8def2e4a9ce4614a, evidence-378329f0404082d96fe37e00, evidence-68128bc4a95cd40817047295, evidence-773c527919d78502e133438a, evidence-9471c34dcef25205799ebd15, evidence-a90729bea3036c90986681f8",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-278f735e8def2e4a9ce4614a",
+            "evidence-378329f0404082d96fe37e00",
+            "evidence-68128bc4a95cd40817047295",
+            "evidence-773c527919d78502e133438a",
+            "evidence-9471c34dcef25205799ebd15",
+            "evidence-a90729bea3036c90986681f8"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-278f735e8def2e4a9ce4614a",
+            "evidence-378329f0404082d96fe37e00",
+            "evidence-68128bc4a95cd40817047295",
+            "evidence-773c527919d78502e133438a",
+            "evidence-9471c34dcef25205799ebd15",
+            "evidence-a90729bea3036c90986681f8"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-18b0de5aa09c4fe2ea742b47, evidence-df4a59823173a4818fe182d7",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-18b0de5aa09c4fe2ea742b47",
+            "evidence-df4a59823173a4818fe182d7"
+          ],
+          "pass_evidence_ids": [
+            "evidence-18b0de5aa09c4fe2ea742b47",
+            "evidence-df4a59823173a4818fe182d7"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-08050cef3039c0485517e810",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-08050cef3039c0485517e810"
+          ],
+          "pass_evidence_ids": [
+            "evidence-08050cef3039c0485517e810"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-768006902b0f098ed3e00cec",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-768006902b0f098ed3e00cec"
+          ],
+          "pass_evidence_ids": [
+            "evidence-768006902b0f098ed3e00cec"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "structured_output": {
+          "evidence": "M8 receipts: evidence-0782b99ed46ddf93f96c158d, evidence-1316f255e60478f309f51724, evidence-79235373f5d252010d447383, evidence-adec251d93b307b9e5f71744",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0782b99ed46ddf93f96c158d",
+            "evidence-1316f255e60478f309f51724",
+            "evidence-79235373f5d252010d447383",
+            "evidence-adec251d93b307b9e5f71744"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0782b99ed46ddf93f96c158d",
+            "evidence-1316f255e60478f309f51724",
+            "evidence-79235373f5d252010d447383",
+            "evidence-adec251d93b307b9e5f71744"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-21cdb29bce955c3d5b21d76f",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-21cdb29bce955c3d5b21d76f"
+          ],
+          "pass_evidence_ids": [
+            "evidence-21cdb29bce955c3d5b21d76f"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "xAI documents server tools separately, but no current 老实人AI Chat Completions Web Search result was preserved for Grok 4.6.",
+          "status": "not_exposed"
+        }
+      }
+    },
+    "protocols": {
+      "chat_completions": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-863a68392159efd7ff4685ec, evidence-a96210258b453ee3f9a619ea",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-863a68392159efd7ff4685ec",
+            "evidence-a96210258b453ee3f9a619ea"
+          ],
+          "pass_evidence_ids": [
+            "evidence-863a68392159efd7ff4685ec",
+            "evidence-a96210258b453ee3f9a619ea"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-33aa48c20c804a8f4b6a0b41, evidence-3d8baa294e48bb4c7e09fddc, evidence-66550cd804c31374ef298691, evidence-6b8febf43b9e5161c329430a, evidence-ea3db596a642fa8a093830f6",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-33aa48c20c804a8f4b6a0b41",
+            "evidence-3d8baa294e48bb4c7e09fddc",
+            "evidence-66550cd804c31374ef298691",
+            "evidence-6b8febf43b9e5161c329430a",
+            "evidence-ea3db596a642fa8a093830f6"
+          ],
+          "pass_evidence_ids": [
+            "evidence-33aa48c20c804a8f4b6a0b41",
+            "evidence-3d8baa294e48bb4c7e09fddc",
+            "evidence-66550cd804c31374ef298691",
+            "evidence-6b8febf43b9e5161c329430a",
+            "evidence-ea3db596a642fa8a093830f6"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-24b1cb8440febca04377e367, evidence-68f1afdc9ddeaf85968b78b1, evidence-7b9bf683cd895a108ccb4019",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-24b1cb8440febca04377e367",
+            "evidence-68f1afdc9ddeaf85968b78b1",
+            "evidence-7b9bf683cd895a108ccb4019"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-24b1cb8440febca04377e367",
+            "evidence-68f1afdc9ddeaf85968b78b1",
+            "evidence-7b9bf683cd895a108ccb4019"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-239b20de5a56abf98f702f6f, evidence-6e3b452ac0f709c78b0f68df, evidence-729fcfe6b3c41c737aedcfa7, evidence-bf11d0e06064c4544e6da851, evidence-e0ff677ed400c7891ee16298, evidence-f8d89451b5351b962a93ddca",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-239b20de5a56abf98f702f6f",
+            "evidence-6e3b452ac0f709c78b0f68df",
+            "evidence-729fcfe6b3c41c737aedcfa7",
+            "evidence-bf11d0e06064c4544e6da851",
+            "evidence-e0ff677ed400c7891ee16298",
+            "evidence-f8d89451b5351b962a93ddca"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-239b20de5a56abf98f702f6f",
+            "evidence-6e3b452ac0f709c78b0f68df",
+            "evidence-729fcfe6b3c41c737aedcfa7",
+            "evidence-bf11d0e06064c4544e6da851",
+            "evidence-e0ff677ed400c7891ee16298",
+            "evidence-f8d89451b5351b962a93ddca"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-b0a704dda3a12273c82058b1, evidence-eae6934ea67c9e1a877b1ef1, evidence-fdd424e8073cfc4baa63ae10",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-b0a704dda3a12273c82058b1",
+            "evidence-eae6934ea67c9e1a877b1ef1",
+            "evidence-fdd424e8073cfc4baa63ae10"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-b0a704dda3a12273c82058b1",
+            "evidence-eae6934ea67c9e1a877b1ef1",
+            "evidence-fdd424e8073cfc4baa63ae10"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-0050636590881d941478837c, evidence-73d3a3426409c2b7d4dbb9db",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0050636590881d941478837c",
+            "evidence-73d3a3426409c2b7d4dbb9db"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0050636590881d941478837c",
+            "evidence-73d3a3426409c2b7d4dbb9db"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Grok Build": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "chat_completions": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        },
+        "OpenCode": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "chat_completions": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        }
+      },
+      "model_levels": {
+        "high": {
+          "evidence": "xAI official Grok 4.6 registry lists supportedEfforts=[low, medium, high, xhigh].",
+          "status": "verified"
+        },
+        "low": {
+          "evidence": "xAI official Grok 4.6 registry lists supportedEfforts=[low, medium, high, xhigh].",
+          "status": "verified"
+        },
+        "medium": {
+          "evidence": "M8 receipts: evidence-13bf25bd63f4f79c7edc4764",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-13bf25bd63f4f79c7edc4764"
+          ],
+          "pass_evidence_ids": [
+            "evidence-13bf25bd63f4f79c7edc4764"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        },
+        "xhigh": {
+          "evidence": "xAI official Grok 4.6 registry lists supportedEfforts=[low, medium, high, xhigh].",
+          "status": "verified"
+        }
+      }
+    }
+  },
+  "verification": {
+    "gateway_e2e": false,
+    "limits_source": "live",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://docs.x.ai/developers/grok-4-6",
+    "verified_at": "2026-08-31"
+  }
+}

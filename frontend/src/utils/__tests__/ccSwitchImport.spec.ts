@@ -90,12 +90,25 @@ describe('CC Switch provider deeplinks', () => {
     expect(CODEX_CONTEXT_WINDOW_TOKENS).toBe(272000)
     expect(CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT).toBe(95)
     expect(CODEX_AUTO_COMPACT_TOKEN_LIMIT).toBe(258000)
-    for (const model of catalog.models) {
-      expect(model.context_window).toBe(CODEX_CONTEXT_WINDOW_TOKENS)
-      expect(model.max_context_window).toBe(CODEX_CONTEXT_WINDOW_TOKENS)
+    for (const [index, model] of catalog.models.entries()) {
+      const nativeContext = OPENAI_CODEX_MODELS[index].contextWindow
+      expect(model.context_window).toBe(nativeContext)
+      expect(model.max_context_window).toBe(nativeContext)
       expect(model.effective_context_window_percent).toBe(CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT)
-      expect(model.auto_compact_token_limit).toBe(CODEX_AUTO_COMPACT_TOKEN_LIMIT)
+      expect(model.auto_compact_token_limit).toBe(Math.floor(nativeContext * CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT / 100))
     }
+  })
+
+  it('keeps each generated Codex model reasoning list instead of applying one global whitelist', () => {
+    const catalog = JSON.parse(buildCodexModelCatalog())
+    const levels = (model: string) => catalog.models
+      .find((row: { slug: string }) => row.slug === model)
+      .supported_reasoning_levels
+      .map((row: { effort: string }) => row.effort)
+
+    expect(levels('gpt-5.6-sol')).toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max'])
+    expect(levels('gpt-5.3-codex-spark')).toEqual(['none'])
+    expect(levels('qwen3.6-flash')).toEqual(['none', 'minimal', 'low', 'medium'])
   })
 
   it.each(['codex', 'opencode', 'openclaw', 'hermes'] as CcsImportTarget[])(
@@ -106,7 +119,7 @@ describe('CC Switch provider deeplinks', () => {
       expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
       expect(url.searchParams.get('model')).toBe('gpt-5.6-sol')
       expect(url.searchParams.get('usageBaseUrl')).toBe('https://api.laoshirenai.com')
-      if (target === 'codex') expect(url.searchParams.get('name')).toContain('272K')
+      if (target === 'codex') expect(url.searchParams.get('name')).toContain('原生上下文')
     }
   )
 
@@ -122,19 +135,13 @@ describe('CC Switch provider deeplinks', () => {
       expect(config.modelCatalog.models[index]).toEqual({ ...generated, visibility: 'list' })
     })
     const importedModels = config.modelCatalog.models.map((model: { model: string }) => model.model)
-    expect(importedModels).toEqual([
-      'gpt-5.6-sol',
-      'gpt-5.6-terra',
-      'gpt-5.6',
-      'gpt-5.5',
-      'gpt-5.4'
-    ])
-    expect(importedModels).not.toContain('gpt-5.6-luna')
-    expect(importedModels).not.toContain('gpt-5.4-mini')
-    expect(importedModels).not.toContain('gpt-5.3-codex-spark')
+    expect(importedModels).toEqual(OPENAI_CODEX_MODELS.map(model => model.model))
+    expect(importedModels).toContain('gpt-5.6-luna')
+    expect(importedModels).toContain('gpt-5.4-mini')
+    expect(importedModels).toContain('gpt-5.3-codex-spark')
     expect(config.config).toContain('model = "gpt-5.6-sol"')
-    expect(config.config).toContain('model_context_window = 272000')
-    expect(config.config).toContain('model_auto_compact_token_limit = 258000')
+    expect(config.config).toContain('model_context_window = 1050000')
+    expect(config.config).toContain('model_auto_compact_token_limit = 997500')
     expect(config.config).toContain('base_url = "https://api.laoshirenai.com/v1"')
     expect(config.config).not.toContain('sk-test-not-a-secret')
   })
@@ -179,7 +186,7 @@ describe('CC Switch provider deeplinks', () => {
     }
     // Generated catalog entries keep their provider-owned display names.
     const sol = config.modelCatalog.models.find((model: { model: string }) => model.model === 'gpt-5.6-sol')
-    expect(sol.displayName).toBe('GPT-5.6-Sol')
+    expect(sol.displayName).toBe(OPENAI_CODEX_MODELS.find(model => model.model === 'gpt-5.6-sol')?.displayName)
     // Fallback entries derive a readable display name.
     const autoReview = config.modelCatalog.models.find((model: { model: string }) => model.model === 'codex-auto-review')
     expect(autoReview.displayName).toBe('Codex Auto Review')
@@ -231,9 +238,9 @@ describe('CC Switch provider deeplinks', () => {
     expect(config.config).toContain('model_context_window = 1000000')
     expect(config.config).toContain('model_auto_compact_token_limit = 900000')
     expect(url.searchParams.get('name')).toContain('1M')
+    const sol = OPENAI_CODEX_MODELS.find(model => model.model === 'gpt-5.6-sol')!
     expect(config.modelCatalog.models).toEqual([{
-      model: 'gpt-5.6-sol',
-      displayName: 'GPT-5.6-Sol',
+      ...sol,
       contextWindow: 1000000,
       visibility: 'list'
     }])

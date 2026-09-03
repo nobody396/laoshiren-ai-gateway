@@ -1,0 +1,76 @@
+{
+  "architecture": "arm64",
+  "artifact_sha256": "67530686adb6c24d3188a9c7302607701bdd05c64fbe7e0eef368a74f3543ec0",
+  "assistant_text_bytes": 52,
+  "assistant_text_sha256": "f8d4969e192e25d3a7cb56ceee3df8380a6425905e4d2e7a9ac6d8cb75244d3e",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "client_id": "opencode",
+  "client_version": "cli:1.18.15",
+  "command_contract": {
+    "auto": true,
+    "client_version": "1.18.15",
+    "model": "claude-sonnet-4-6",
+    "output_format": "json",
+    "provider_id": "laoshirenai-messages",
+    "provider_package": "@ai-sdk/anthropic",
+    "pure": true
+  },
+  "duration_ms": 300046,
+  "event_count": 4,
+  "event_types": {
+    "step_finish": 1,
+    "step_start": 1,
+    "text": 1,
+    "tool_use": 1
+  },
+  "exit_code": 124,
+  "file_marker_verified": true,
+  "final_marker_verified": false,
+  "finished_at": "2026-08-31T23:27:24+00:00",
+  "group_id": 15,
+  "kind": "real_client_loop",
+  "model_id": "claude-sonnet-4-6",
+  "observed_at": "2026-08-31T23:22:21+00:00",
+  "os": "macos",
+  "owned_key": {
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901",
+    "user_id": 1
+  },
+  "passed": false,
+  "protocol": "messages",
+  "protocol_attribution": {
+    "artifact_sha256": "81b90fd30ed3e1b594296974b2695f12821ed4fd2b2c69519feb945a1f63c285",
+    "artifact_uri": "artifacts/opencode-remaining-loops-20260901/opencode-messages-claude-sonnet-4-6-group15-20260901-usage.json",
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoint": "/v1/messages",
+    "usage_rows": 2,
+    "verified": true
+  },
+  "read_tool_verified": true,
+  "restored_group_id": null,
+  "schema_version": 1,
+  "secret_free": true,
+  "shell_file_verified": false,
+  "shell_tool_verified": false,
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 2213,
+  "stdout_sha256": "caa1a0d6c6100bf03af4f4d67d1ad4585db54f2e7324ac5678adba026f592a5b",
+  "successful_tools": [
+    "read"
+  ],
+  "temporary_config": {
+    "api_key_source": "child env LAOSHIRENAI_OPENCODE_KEY",
+    "literal_key_written": false,
+    "path": "~/.config/opencode/opencode.json",
+    "removed_with_temporary_home": true,
+    "sha256": "5b58c55bc948b23d4bd51066f712529daf17a6a95147b01c5276544a42aca608"
+  },
+  "timed_out": true,
+  "tool_names": [
+    "read"
+  ],
+  "tool_result_observed": true,
+  "tool_use_observed": true
+}

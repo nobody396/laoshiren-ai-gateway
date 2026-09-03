@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "artifact_id": "client-candidates-trae-doubao-work-workbuddy-20260901",
+  "observed_at": "2026-09-01",
+  "timezone": "Asia/Shanghai",
+  "secret_free": true,
+  "network_execution": "read_only_official_pages_only",
+  "clients": [
+    {
+      "id": "traecode",
+      "exact_name": "TraeCode",
+      "installed_product_name": "Trae",
+      "installed_app_version": "3.5.66",
+      "embedded_core_version": "1.107.1",
+      "embedded_commit": "d2e2138fe4eecab29cb2cd7e02ddae37bed2d5fb",
+      "bundle_id": "com.trae.app",
+      "product_class": "coding_agent_ide",
+      "official_custom_endpoint_contract": {
+        "openai_chat_completions": "supported candidate; custom configuration accepts either a full /v1/chat/completions URL or an OpenAI base URL",
+        "anthropic_messages": "supported candidate; custom configuration accepts either a full /v1/messages URL or an Anthropic base URL",
+        "openai_responses": "not offered as a custom API format",
+        "gemini_generate_content": "not offered as a custom API format; Google is a preset provider and Gemini-3 is a model-series optimization, not a documented custom GenerateContent adapter",
+        "model_discovery": "manual model ID plus connection validation; authenticated /v1/models discovery is not documented"
+      },
+      "reasoning_contract": "No generic user-selectable reasoning-effort list is documented for custom models. Gemini-3 optimization parses provider reasoning content but is not a canonical effort control.",
+      "os_contract": "Official quickstart documents macOS 12+, Windows 10/11 x64, and Linux x64/ARM64. Only the installed macOS build was inspected; safe storage paths for Linux and Windows remain unverified.",
+      "configuration_safety": "Custom models are managed through Settings > Models. The installed macOS build stores application state in an opaque globalStorage database; direct database mutation is not a supported configuration contract.",
+      "agent_acceptance": "No 老实人AI gateway Agent loop was executed. Supported protocols are candidates only and all transport-feature cells remain unverified."
+    },
+    {
+      "id": "doubao-work",
+      "exact_name": "豆包工作",
+      "web_version": "1.0.4.7048",
+      "web_commit": "2c389e688f933884acc59d7d97f5ddff6b629ce8",
+      "web_version_code": "20800",
+      "product_class": "managed_web_work_agent_not_verified_as_coding_client",
+      "official_custom_endpoint_contract": "The official public product surface exposes no user-supplied OpenAI, Anthropic, or Gemini endpoint or external model API key. For the current integration contract all four external protocol adapters are unsupported; this is not a claim about private/internal services.",
+      "reasoning_contract": "No external-model reasoning control was found on the public surface.",
+      "os_contract": "Web surface only; there is no OS-specific local external-model configuration or safe mutation path, so all three client_config_os cells are unsupported for this integration.",
+      "agent_acceptance": "No authenticated task and no coding-agent tool-result loop was executed."
+    },
+    {
+      "id": "workbuddy",
+      "exact_name": "WorkBuddy",
+      "installed_app_version": "5.3.14",
+      "bundled_cli_name": "CodeBuddy Code",
+      "bundled_cli_version": "2.115.0",
+      "bundle_id": "com.workbuddy.workbuddy",
+      "product_class": "general_work_agent_with_bundled_coding_cli",
+      "official_custom_endpoint_contract": {
+        "openai_chat_completions": "supported candidate; default mode validates/appends /chat/completions and custom-protocol mode sends to the exact full URL",
+        "openai_responses": "not documented as a custom API format",
+        "anthropic_messages": "not documented as a custom API format",
+        "gemini_generate_content": "not documented as a custom API format",
+        "model_discovery": "provider presets may populate model lists; Custom requires URL, API key, and model name. Authenticated /v1/models discovery is not documented"
+      },
+      "reasoning_contract": "The bundled exact CLI exposes --effort minimal, low, medium, high, xhigh, and max. The WorkBuddy GUI also names fast, balanced, and extreme product modes, but no evidence maps those modes to canonical wire values.",
+      "os_contract": "Official WorkBuddy guides cover macOS 12+ and Windows 10+. No Linux desktop guide was found. The exact macOS app/CLI tuple was locally inspected.",
+      "configuration_safety": "Official UI manages user ~/.codebuddy/models.json and can retain workspace .codebuddy/models.json entries. Direct file writes are not enabled for one-click until the JSON shape, backup, atomic merge, readback, and idempotency are tested.",
+      "agent_acceptance": "No 老实人AI gateway Agent loop was executed. Chat Completions is a protocol candidate; every transport feature remains unverified."
+    }
+  ],
+  "sources": [
+    {
+      "source_ref": "https://docs.trae.ai/ide/models",
+      "kind": "official_documentation",
+      "sha256": "bc55ac5ac24dee9ae7dddb0da360279211e79d41f91e7af489ea054d7c797214"
+    },
+    {
+      "source_ref": "https://docs.trae.ai/ide/set-up-trae",
+      "kind": "official_documentation",
+      "sha256": "7570afb4c82d50c2b9368744950f7fddd8d4313c2b4775663ca68fc2e9373ae0"
+    },
+    {
+      "source_ref": "/Applications/Trae.app/Contents/Info.plist",
+      "kind": "local_installed_metadata",
+      "sha256": "9a19a62d24725fc40a22548271c2625b73a68087f04a99da8f8d0cec96d73427"
+    },
+    {
+      "source_ref": "/Applications/Trae.app/Contents/Resources/app/product.json",
+      "kind": "local_installed_metadata",
+      "sha256": "5438c0f9735f30faec4430e7bab06139e59fda7b103b54a778b23af7eceabf83"
+    },
+    {
+      "source_ref": "https://www.doubao.com/work",
+      "kind": "official_product_surface",
+      "sha256": "9756e7a5810fd6717e42f076066d3c503ca6ac5e34681dd00c1eef2725138560"
+    },
+    {
+      "source_ref": "https://www.workbuddy.cn/docs/workbuddy/Overview",
+      "kind": "official_documentation",
+      "sha256": "ccda3363385f4d8077edc25cc1de3f64778dc4756f51c1206380fc01ad1a64bc"
+    },
+    {
+      "source_ref": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Model",
+      "kind": "official_documentation",
+      "sha256": "c843eb6e740c2431954cbb08c820d809921de3228fece357e0113075946d33b8"
+    },
+    {
+      "source_ref": "/Applications/WorkBuddy.app/Contents/Info.plist",
+      "kind": "local_installed_metadata",
+      "sha256": "ef244259099465f704a8b7b60bf0e913fb62cc1e641109f1afe926419d655595"
+    },
+    {
+      "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar.unpacked/cli/product.json",
+      "kind": "local_installed_product_contract",
+      "sha256": "548ba3b51f32afa72ca651cf37d8b181865e3386a3a5aaf4e2ffd73bd257dd00"
+    },
+    {
+      "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar.unpacked/cli/dist/codebuddy.js",
+      "kind": "local_installed_cli",
+      "sha256": "4120898f1ded86ac545316721d216c827a325c2513a8fae4bcd8c8bbbf211afd"
+    }
+  ]
+}

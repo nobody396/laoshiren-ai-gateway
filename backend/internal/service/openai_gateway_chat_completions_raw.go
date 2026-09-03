@@ -40,7 +40,6 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		return nil, fmt.Errorf("missing model in request")
 	}
 	clientStream := gjson.GetBytes(body, "stream").Bool()
-	reasoningEffort := extractOpenAIReasoningEffortFromBody(body, originalModel)
 
 	billingModel := resolveOpenAIForwardModel(account, originalModel, defaultMappedModel)
 	upstreamModel := normalizeOpenAIModelForUpstream(account, billingModel)
@@ -65,6 +64,19 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		return nil, policyErr
 	}
 	upstreamBody = updatedBody
+	normalizedBody, _, normalizeErr := normalizeGLM53ChatReasoningEffort(upstreamBody, upstreamModel)
+	if normalizeErr != nil {
+		return nil, fmt.Errorf("normalize GLM-5.3 reasoning_effort: %w", normalizeErr)
+	}
+	upstreamBody = normalizedBody
+	normalizedBody, _, normalizeErr = normalizeQwenChatReasoningEffort(upstreamBody, upstreamModel)
+	if normalizeErr != nil {
+		return nil, fmt.Errorf("normalize Qwen reasoning_effort: %w", normalizeErr)
+	}
+	upstreamBody = normalizedBody
+	// Attribution must record the effective value sent upstream, not the
+	// unsupported client alias that was rewritten above.
+	reasoningEffort := extractOpenAIReasoningEffortFromBody(upstreamBody, upstreamModel)
 	serviceTier := extractOpenAIServiceTierFromBody(upstreamBody)
 
 	authToken, tokenKind, err := s.getRequestCredential(ctx, c, account)
@@ -217,6 +229,52 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		result.UpstreamEndpoint = grokChatRawEndpoint
 	}
 	return result, err
+}
+
+// normalizeGLM53ChatReasoningEffort adapts common OpenAI client aliases to the
+// values accepted by Alibaba's ZHIPU/GLM-5.3 Chat endpoint. GLM-5.3 is always
+// in thinking mode and rejects medium/none/minimal/xhigh with HTTP 400.
+func normalizeGLM53ChatReasoningEffort(body []byte, upstreamModel string) ([]byte, bool, error) {
+	model := strings.ToLower(strings.TrimSpace(upstreamModel))
+	if model != "glm-5.3" && !strings.HasSuffix(model, "/glm-5.3") {
+		return body, false, nil
+	}
+	raw := strings.ToLower(strings.TrimSpace(gjson.GetBytes(body, "reasoning_effort").String()))
+	var mapped string
+	switch raw {
+	case "medium":
+		mapped = "high"
+	case "none", "minimal":
+		mapped = "low"
+	case "xhigh", "extra-high", "extrahigh":
+		mapped = "max"
+	default:
+		return body, false, nil
+	}
+	updated, err := sjson.SetBytes(body, "reasoning_effort", mapped)
+	if err != nil {
+		return nil, false, err
+	}
+	return updated, true, nil
+}
+
+// normalizeQwenChatReasoningEffort keeps Kimi Code and other generic Chat
+// clients inside the exact reasoning set accepted by the current Qwen aliases.
+// The same model-level mapping is used by native Responses requests.
+func normalizeQwenChatReasoningEffort(body []byte, upstreamModel string) ([]byte, bool, error) {
+	raw := strings.ToLower(strings.TrimSpace(gjson.GetBytes(body, "reasoning_effort").String()))
+	if raw == "" {
+		return body, false, nil
+	}
+	mapped, changed := normalizeQwenResponsesReasoningEffort(upstreamModel, raw)
+	if !changed {
+		return body, false, nil
+	}
+	updated, err := sjson.SetBytes(body, "reasoning_effort", mapped)
+	if err != nil {
+		return nil, false, err
+	}
+	return updated, true, nil
 }
 
 func (s *OpenAIGatewayService) streamRawChatCompletions(

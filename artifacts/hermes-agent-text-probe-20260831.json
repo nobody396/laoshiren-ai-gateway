@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_probe",
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.6-sol",
+  "protocol": "responses",
+  "observed_at": "2026-08-31T16:06:49+00:00",
+  "command_shape": [
+    "hermes",
+    "-z",
+    "<prompt>",
+    "--provider",
+    "openai-api",
+    "--model",
+    "gpt-5.6-sol",
+    "--ignore-user-config",
+    "--ignore-rules"
+  ],
+  "exit_code": 0,
+  "stdout": "HERMES_GATEWAY_OK",
+  "stderr": "",
+  "expected_marker": "HERMES_GATEWAY_OK",
+  "passed": true,
+  "secret_free": true,
+  "usage_attribution_ref": "local/worktrees/newcomer-public-preview-20260829/artifacts/hermes-agent-usage-attribution-20260831.json",
+  "observed_endpoints": [
+    "/v1/responses"
+  ],
+  "artifact_sha256": "c8d6e2947ff26db0fed540b688d37197b572c70f330b7828378e368ed193f66e"
+}

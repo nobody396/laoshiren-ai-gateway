@@ -32,4 +32,14 @@ describe('getGatewayModels', () => {
     await expect(getGatewayModels('https://api.laoshirenai.com', 'test-key-placeholder'))
       .rejects.toThrow(/HTTP 503/)
   })
+
+  it('explains exhausted API-key quota instead of reporting a generic 429', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      code: 'API_KEY_QUOTA_EXHAUSTED',
+      message: 'API key 额度已用完'
+    }), { status: 429, headers: { 'content-type': 'application/json' } })))
+
+    await expect(getGatewayModels('https://api.laoshirenai.com', 'test-key-placeholder'))
+      .rejects.toThrow('这把 API Key 设置的额度已用完')
+  })
 })

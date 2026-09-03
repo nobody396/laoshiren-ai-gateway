@@ -363,12 +363,81 @@ func (s *BillingService) initFallbackPricing() {
 		SupportsCacheBreakdown:         false,
 	}
 	s.fallbackPrices["gpt-5.3-codex"] = s.fallbackPrices["gpt-5.1-codex"]
-	for model, price := range generatedCatalogBillingPrices {
-		s.fallbackPrices[model] = price
-	}
 	s.fallbackPrices["grok-4.5"] = &ModelPricing{InputPricePerToken: 2e-6, OutputPricePerToken: 6e-6, CacheReadPricePerToken: 0.5e-6}
 	s.fallbackPrices["grok-4.3"] = &ModelPricing{InputPricePerToken: 1.25e-6, OutputPricePerToken: 2.5e-6, CacheReadPricePerToken: 0.2e-6}
 	s.fallbackPrices["grok-build-0.1"] = &ModelPricing{InputPricePerToken: 1e-6, OutputPricePerToken: 2e-6, CacheReadPricePerToken: 0.2e-6}
+	for model, price := range generatedCatalogBillingPrices {
+		// The catalog owns reviewed base/cache-read/long-context prices. Keep
+		// richer runtime-only fields (cache creation, priority, fast/flex) from
+		// the existing fallback until those components are first-class catalog
+		// fields. This prevents generation from silently zeroing billable tiers.
+		s.fallbackPrices[model] = mergeGeneratedCatalogPricing(price, s.fallbackPrices[model])
+	}
+}
+
+// mergeGeneratedCatalogPricing makes the generated catalog authoritative for
+// fields it owns while preserving positive runtime-only pricing components.
+func mergeGeneratedCatalogPricing(catalog, auxiliary *ModelPricing) *ModelPricing {
+	if catalog == nil {
+		return auxiliary
+	}
+	out := *catalog
+	if auxiliary == nil {
+		return &out
+	}
+	if auxiliary.InputPricePerTokenPriority > 0 {
+		out.InputPricePerTokenPriority = auxiliary.InputPricePerTokenPriority
+	}
+	if auxiliary.OutputPricePerTokenPriority > 0 {
+		out.OutputPricePerTokenPriority = auxiliary.OutputPricePerTokenPriority
+	}
+	if auxiliary.CacheCreationPricePerToken > 0 {
+		out.CacheCreationPricePerToken = auxiliary.CacheCreationPricePerToken
+	}
+	if auxiliary.CacheReadPricePerTokenPriority > 0 {
+		out.CacheReadPricePerTokenPriority = auxiliary.CacheReadPricePerTokenPriority
+	}
+	if auxiliary.FastMultiplier != nil {
+		out.FastMultiplier = auxiliary.FastMultiplier
+	}
+	if auxiliary.FlexMultiplier != nil {
+		out.FlexMultiplier = auxiliary.FlexMultiplier
+	}
+	if auxiliary.CacheCreation5mPrice > 0 {
+		out.CacheCreation5mPrice = auxiliary.CacheCreation5mPrice
+	}
+	if auxiliary.CacheCreation1hPrice > 0 {
+		out.CacheCreation1hPrice = auxiliary.CacheCreation1hPrice
+	}
+	out.SupportsCacheBreakdown = auxiliary.SupportsCacheBreakdown
+	if auxiliary.ImageOutputPricePerToken > 0 {
+		out.ImageOutputPricePerToken = auxiliary.ImageOutputPricePerToken
+	}
+	return &out
+}
+
+func modelPricingFromLiteLLM(pricing *LiteLLMModelPricing) *ModelPricing {
+	if pricing == nil {
+		return nil
+	}
+	price5m := pricing.CacheCreationInputTokenCost
+	price1h := pricing.CacheCreationInputTokenCostAbove1hr
+	return &ModelPricing{
+		InputPricePerToken:             pricing.InputCostPerToken,
+		InputPricePerTokenPriority:     pricing.InputCostPerTokenPriority,
+		OutputPricePerToken:            pricing.OutputCostPerToken,
+		OutputPricePerTokenPriority:    pricing.OutputCostPerTokenPriority,
+		CacheCreationPricePerToken:     pricing.CacheCreationInputTokenCost,
+		CacheReadPricePerToken:         pricing.CacheReadInputTokenCost,
+		CacheReadPricePerTokenPriority: pricing.CacheReadInputTokenCostPriority,
+		CacheCreation5mPrice:           price5m,
+		CacheCreation1hPrice:           price1h,
+		SupportsCacheBreakdown:         price1h > 0 && price1h > price5m,
+		LongContextInputThreshold:      pricing.LongContextInputTokenThreshold,
+		LongContextInputMultiplier:     pricing.LongContextInputCostMultiplier,
+		LongContextOutputMultiplier:    pricing.LongContextOutputCostMultiplier,
+		ImageOutputPricePerToken:       pricing.OutputCostPerImageToken,
+	}
 }
 
 // getFallbackPricing 根据模型系列获取回退价格
@@ -487,8 +556,13 @@ func (s *BillingService) GetModelPricing(model string) (*ModelPricing, error) {
 	}
 	// Catalog-managed releases pin their reviewed rate card ahead of dynamic
 	// pricing so a stale external catalog cannot underbill a newly added model.
-	if fallback := generatedCatalogBillingPrice(model); fallback != nil {
-		return fallback, nil
+	// Dynamic pricing may still contribute tier fields absent from the catalog.
+	if catalog := generatedCatalogBillingPrice(model); catalog != nil {
+		merged := mergeGeneratedCatalogPricing(catalog, s.fallbackPrices[model])
+		if s.pricingService != nil {
+			merged = mergeGeneratedCatalogPricing(merged, modelPricingFromLiteLLM(s.pricingService.GetModelPricing(model)))
+		}
+		return s.applyModelSpecificPricingPolicy(model, merged), nil
 	}
 
 	// GPT-5.5 业务定价固定为 GPT-5.4 的 2 倍，不能被动态价格覆盖。
@@ -502,28 +576,7 @@ func (s *BillingService) GetModelPricing(model string) (*ModelPricing, error) {
 	if s.pricingService != nil {
 		litellmPricing := s.pricingService.GetModelPricing(model)
 		if litellmPricing != nil {
-			// 启用 5m/1h 分类计费的条件：
-			// 1. 存在 1h 价格
-			// 2. 1h 价格 > 5m 价格（防止 LiteLLM 数据错误导致少收费）
-			price5m := litellmPricing.CacheCreationInputTokenCost
-			price1h := litellmPricing.CacheCreationInputTokenCostAbove1hr
-			enableBreakdown := price1h > 0 && price1h > price5m
-			return s.applyModelSpecificPricingPolicy(model, &ModelPricing{
-				InputPricePerToken:             litellmPricing.InputCostPerToken,
-				InputPricePerTokenPriority:     litellmPricing.InputCostPerTokenPriority,
-				OutputPricePerToken:            litellmPricing.OutputCostPerToken,
-				OutputPricePerTokenPriority:    litellmPricing.OutputCostPerTokenPriority,
-				CacheCreationPricePerToken:     litellmPricing.CacheCreationInputTokenCost,
-				CacheReadPricePerToken:         litellmPricing.CacheReadInputTokenCost,
-				CacheReadPricePerTokenPriority: litellmPricing.CacheReadInputTokenCostPriority,
-				CacheCreation5mPrice:           price5m,
-				CacheCreation1hPrice:           price1h,
-				SupportsCacheBreakdown:         enableBreakdown,
-				LongContextInputThreshold:      litellmPricing.LongContextInputTokenThreshold,
-				LongContextInputMultiplier:     litellmPricing.LongContextInputCostMultiplier,
-				LongContextOutputMultiplier:    litellmPricing.LongContextOutputCostMultiplier,
-				ImageOutputPricePerToken:       litellmPricing.OutputCostPerImageToken,
-			}), nil
+			return s.applyModelSpecificPricingPolicy(model, modelPricingFromLiteLLM(litellmPricing)), nil
 		}
 	}
 

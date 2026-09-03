@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "f11d109550a9002093ffbe7d43e199a33ec3c32e5ae445d5b780d325cbd5809c",
+  "case_count": 3,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "cd0a7f27738aad36",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-qwen-group64-chat-terminal-retry-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 3
+  }
+}

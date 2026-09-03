@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 6,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "67852bfb6ebf3033afbcdd184a482a8ad08dfd1740cf269d10525804aead559d",
+  "changes": [
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-133c00225226c9c661f38518"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-55ecd86cedc78742c085bc9b"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2ad441f98a1e392c90bb1ffd"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6c98e3a66449a2fdcb7b75e3"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fe8587f37bb65b3803389744"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cae54c18d00447698147a20e"
+          ]
+        }
+      ]
+    }
+  ]
+}

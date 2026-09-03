@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "deepseek-harness",
+  "client_version": "cli:0.1.1-rc.2",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.4-mini",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 6,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T04:28:17+00:00",
+  "finished_at": "2026-09-03T04:29:29+00:00",
+  "duration_ms": 2813,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-responses",
+    "api": "openai-responses",
+    "provider_base_url": "https://api.laoshirenai.com/v1",
+    "profile": "headless",
+    "isolated_dsh_home": true,
+    "credential": "apiKeyEnv reference, key only in child env"
+  },
+  "target_group_readback": {
+    "group_id": 6
+  },
+  "exit_code": 1,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": false,
+  "final_marker_verified": false,
+  "final_text_present": false,
+  "final_marker_note": "final exact-marker is the strict oracle; claude-sonnet-5 over the messages route drifts to an identity reply, so pass/fail keys on final_text_present",
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "tool_result_continuation_verified": false,
+  "usage_stream_flags": [],
+  "streaming_observed": false,
+  "stdout_bytes": 1,
+  "stdout_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+  "stderr_bytes": 372,
+  "stderr_sha256": "06763dbaa0a57058f3f550e9d43f19d0a1f10dc56989c35020a31f1a193a5db4",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/dsh-four-protocol-loops-20260903/dsh-loop-gpt-5.4-mini-responses-group6-usage.json",
+    "artifact_sha256": "aa66e74b6340eb36c33a7808813f51572b2b934871cf582b9eced8de5cc3fed9",
+    "usage_rows": 0,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoints": [],
+    "verified": false
+  },
+  "passed": false,
+  "artifact_sha256": "291e604debd985b79561e5a1416452c2a13bf8ef65f76888b3e36046540a1259"
+}

@@ -1,0 +1,162 @@
+{
+  "cases": {
+    "61:deepseek-v4-flash-0731:chat_completions:P-01:default": {
+      "artifact_sha256": "e0ad91c2a534db70a9c7686ca6502a671fbbe2ca0f15bd5d25ea2caad0f570cc",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-01_default-c47c16509aa2.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:chat_completions:P-02:default": {
+      "artifact_sha256": "91d95aff1f1e18d1823de68ff2daebd9a0e8a688839542a5313bae149a5d60a3",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-02_default-56768a33a68b.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:chat_completions:P-03:default": {
+      "artifact_sha256": "a3963613bbc5bd4c9ea84f42bea8c0f4b27b9a814175bea40e97bfac396917fd",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-03_default-56d9b4a0fe42.json",
+      "status": "blocked"
+    },
+    "61:deepseek-v4-flash-0731:chat_completions:P-04:default": {
+      "artifact_sha256": "190227263944736baffcd1667672fc13ef2e8924f05903e9ed08795d043d65e4",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-04_default-2cffa086d97f.json",
+      "status": "blocked"
+    },
+    "61:deepseek-v4-flash-0731:chat_completions:P-05:default": {
+      "artifact_sha256": "3b89dc0dfe2094d2d15046fc7a59f419cef9ffdc57571bbf8821380a25ccb4de",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-05_default-54bc628179a6.json",
+      "status": "blocked"
+    },
+    "61:deepseek-v4-flash-0731:chat_completions:P-06:high": {
+      "artifact_sha256": "b9f9a067999f49ff7945caa6f1ed459209f77a34e48aeac84bdca04d625d4122",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-06_high-a652a30c4616.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:chat_completions:P-12:default": {
+      "artifact_sha256": "a31afc3fb897853ee4f5873023d3fb3d36ec450f53d476eb7c8f23af104157dc",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-12_default-85c77cb87461.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:chat_completions:P-15:default": {
+      "artifact_sha256": "90d75504ca5480aa2e3172aba776f876768e956da75d8dd09aa34908e66b21e1",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-15_default-7037076787dc.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:responses:P-02:default": {
+      "artifact_sha256": "6a251f5a04b48dd7a340e038e14eb1df78c7b593f59a573812fcc78a903d9141",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_responses_P-02_default-3310f306e554.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:responses:P-03:default": {
+      "artifact_sha256": "56a1dede7bc0615fbef7c4554c4f707fc8087ffcadc3a28618f8a645be7c71ee",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_responses_P-03_default-50c9c0eff2f5.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:responses:P-04:default": {
+      "artifact_sha256": "e64af9a3bc80a320c0c610d132c4d8c9472c556691e31cf75122aa61a9e95c26",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_responses_P-04_default-f8e2a1d95229.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:responses:P-05:default": {
+      "artifact_sha256": "6b642104aa83c944aaec06746d81e1e76e34c0a19760f09de68a2e3cb9858a84",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_responses_P-05_default-db9a08f8c46d.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:responses:P-06:high": {
+      "artifact_sha256": "3c403ae5c3a4e22229eaf427a5f45f7dde47ffe0bc0bfe603655859fb8bc93d3",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_responses_P-06_high-a7746597d139.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:responses:P-12:default": {
+      "artifact_sha256": "610fca7e89f782678a26e7d56a7ae9b5b091f413b0815fd4ec0c76cc0aa7d599",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_responses_P-12_default-a29101aa3e41.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-flash-0731:responses:P-15:default": {
+      "artifact_sha256": "03c36088aa15cfb2d14dedc903008603b61197bc633c73abf48dc199314642b9",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-flash-0731_responses_P-15_default-62113fd41c99.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-01:default": {
+      "artifact_sha256": "df7cd9fe659896f7892ac2d606c58218fad3aeeb7f6bb364519cc047f5c10db2",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-01_default-f64f65805435.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-02:default": {
+      "artifact_sha256": "d4fea08e91d263d57695bf083a69c21300b6fb9a8c7d4bd3c961f6997444042d",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-02_default-092370c74ca1.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-03:default": {
+      "artifact_sha256": "30371d75753a1b7b32f701b8f99a78edbdd1570c323ed1c51e6e92974185cf6f",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-03_default-7c3c0310cc54.json",
+      "status": "blocked"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-04:default": {
+      "artifact_sha256": "4ada7338b1e9f0d563119b293a6e4226385162cf649309e5fcfdb49f1783e71a",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-04_default-b7f1fba78e0f.json",
+      "status": "blocked"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-05:default": {
+      "artifact_sha256": "b18917e950ecee7b305d5aac3c3fee0a3d0eb9fb959f2fe709e35bb47923a623",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-05_default-c38408f1347d.json",
+      "status": "blocked"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-06:high": {
+      "artifact_sha256": "3de6236e9f65cfb193e9e0c980e549eef70967876365c8688edce630641dc5d1",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-06_high-9d9e53cd57ae.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-12:default": {
+      "artifact_sha256": "0d139ce999c11a31fbf4b44e53787b011e12815d1675cc2564ad6cea947d9b25",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-12_default-13d7fdd19365.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-15:default": {
+      "artifact_sha256": "657e4481ae7c579f09fef1991cfdac5fec76f1b5c69eb8382dc5d10ee94caa8a",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-15_default-90f10195f0cd.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:responses:P-02:default": {
+      "artifact_sha256": "af81a02872223a34e385b63529613ecf047b21fd1e93cab108ce6ee9f89b0245",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_responses_P-02_default-de15fd1b9088.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:responses:P-03:default": {
+      "artifact_sha256": "cd4e9a23a65b0d6813a4ad18c3b8b495833156849fe1bb0e5829873300f98071",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_responses_P-03_default-16cddaabeb9c.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:responses:P-04:default": {
+      "artifact_sha256": "8d8134685d76d1f094cdf4dfe63b4510d221994c99348473e3f67b16abd1f330",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_responses_P-04_default-60bd15bba75b.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:responses:P-05:default": {
+      "artifact_sha256": "cd0bfe96c486982c6a4b750104cf9f2c789e3db6cea277e722402f995988e8ee",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_responses_P-05_default-eafc112ae4a4.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:responses:P-06:high": {
+      "artifact_sha256": "e3c0079e480939094cb288cb8d6f712e48ca62834925132bb1ab39006b8009e8",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_responses_P-06_high-c552eb7a7d3b.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:responses:P-12:default": {
+      "artifact_sha256": "d4b2430b6a7dee63742f327eb8d53a636263aeeda244517bcc034c24013e9296",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_responses_P-12_default-7dfe9ab2008b.json",
+      "status": "pass"
+    },
+    "61:deepseek-v4-pro-0813:responses:P-15:default": {
+      "artifact_sha256": "4a776ab78da5c82248c95fc3687446574b8de8cad948dd31c36bedec782fb5ef",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-batch-20260901/cases/61_deepseek-v4-pro-0813_responses_P-15_default-a66f317f08e3.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:00:09.296+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "637734901d4acba8",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T18:54:02.764+00:00"
+}

@@ -1,0 +1,318 @@
+{
+  "case_count": 14,
+  "cases": [
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "cae2f4e9c297f982b1dbbe9a7e1ff2a04b2ce81de611cc59774b22deb0d602d2",
+      "case_key": "59:gpt-5.4-mini:responses:P-02:default",
+      "context_window": 400000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_D8A3D578ACFEAB2F",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.4-mini",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-02_default-77583f0ba6b3.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.4-mini/responses/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "0b2baddbd0e897fcc20aafbd14067c1fc14e9f31902d12949b5699ce323c81e5",
+      "case_key": "59:gpt-5.4-mini:responses:P-03:default",
+      "context_window": 400000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_77C132B968914DC0",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.4-mini",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-03_default-27deac3c5f24.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.4-mini/responses/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "d292a86b3d606bc0af9cf5e83c800a84cebe97c57706b4d87f39219f4ad9055d",
+      "case_key": "59:gpt-5.4-mini:responses:P-04:default",
+      "context_window": 400000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_E1991BDFD8FB565E",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.4-mini",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-04_default-89b77e3e95b1.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.4-mini/responses/tool_call",
+        "model_protocol:gpt-5.4-mini/responses/tools/function_calling"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "b39896e3e6ecb3e2d20d2d623f19c45d8bcef345c8460cd6b86c991e4c4aaf5e",
+      "case_key": "59:gpt-5.4-mini:responses:P-05:default",
+      "context_window": 400000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_5D0C1F4C0E91E1C3",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.4-mini",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-05_default-015560396e65.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.4-mini/responses/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "2bed285987f634cc820cc2569b633105373e33c92676426fb55042a1e7b90745",
+      "case_key": "59:gpt-5.4-mini:responses:P-06:none",
+      "context_window": 400000,
+      "declared_status": "blocked",
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_02AF1276936FDC0B",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.4-mini",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "responses",
+      "reasoning_level": "none",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-06_none-02af1276936f.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.4-mini/responses/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "a4738066a58b791f9f68a973f8e3850302bcc8324b201ffe5dc00515a4f22845",
+      "case_key": "59:gpt-5.4-mini:responses:P-12:default",
+      "context_window": 400000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_43B159A078E4FCD5",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.4-mini",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-12_default-8a4e94bb36d6.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.4-mini/responses/features/billing",
+        "model_protocol:gpt-5.4-mini/responses/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "22637f9b4e7edb78edfc0040b4f383901ab7101909ed8fffcc3a64a354f783b3",
+      "case_key": "59:gpt-5.4-mini:responses:P-15:default",
+      "context_window": 400000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_72C88B894BEA4FDE",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.4-mini",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-15_default-87ae5c991b4c.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.4-mini/responses/invalid_request"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "3a0bb418cf90666969d040c94be7ce28c749009d54d32fce03866f75ef6106f1",
+      "case_key": "59:gpt-5.6-luna:responses:P-02:default",
+      "context_window": 1050000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_EB3D4E2C13DCFF9F",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-luna",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-02_default-3fd0d9eb4904.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.6-luna/responses/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "e1e104a3fafe64dcb289e8be99818ccd87542e859c44216e8f8d5522eb57e24e",
+      "case_key": "59:gpt-5.6-luna:responses:P-03:default",
+      "context_window": 1050000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_23BC744C41AAE1A4",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-luna",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-03_default-5da6e35f0892.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.6-luna/responses/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "9a91271461abc117d88a7befad93140d5bb7e201e866259feeb3797c0a54e069",
+      "case_key": "59:gpt-5.6-luna:responses:P-04:default",
+      "context_window": 1050000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_943B38060B096ABD",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-luna",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-04_default-9d202714f9ef.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.6-luna/responses/tool_call",
+        "model_protocol:gpt-5.6-luna/responses/tools/function_calling"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "c8dad8b7c748dea8c511c926c24bc6982320f73f102400dbcd43bd89798741d8",
+      "case_key": "59:gpt-5.6-luna:responses:P-05:default",
+      "context_window": 1050000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_043CF966AFE182D4",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-luna",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-05_default-531fac7569ca.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.6-luna/responses/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "fdb08d7f40665fa37fe200d1b59858f38dcea712d06de38ccc155bbed1f4be8b",
+      "case_key": "59:gpt-5.6-luna:responses:P-06:medium",
+      "context_window": 1050000,
+      "declared_status": "blocked",
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_BA57B628B827CCD8",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-luna",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "responses",
+      "reasoning_level": "medium",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-06_medium-ba57b628b827.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.6-luna/responses/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "eba090172e6080aa37c3c6667f7e7e5a5156d052117cf2ebf7bae5b47f7351ca",
+      "case_key": "59:gpt-5.6-luna:responses:P-12:default",
+      "context_window": 1050000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_00324C88C038607D",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-luna",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-12_default-62c1b7ce3716.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.6-luna/responses/features/billing",
+        "model_protocol:gpt-5.6-luna/responses/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "f0389d2d13291c2f7a56a9a49a9e5f96dcdf3731683d998618fca3819d703c4e",
+      "case_key": "59:gpt-5.6-luna:responses:P-15:default",
+      "context_window": 1050000,
+      "declared_status": null,
+      "group_id": 59,
+      "group_name": "GPT 企业高速线路",
+      "marker": "LSR_CONTRACT_FF45F63A4D33C72E",
+      "max_output_tokens": 128000,
+      "model_id": "gpt-5.6-luna",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "responses",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-15_default-197319108239.json",
+      "source_case_keys": [
+        "model_protocol:gpt-5.6-luna/responses/invalid_request"
+      ],
+      "state": "planned"
+    }
+  ],
+  "kind": "provider_contract_live_plan",
+  "network_execution": "disabled",
+  "owned_identity": {
+    "key_id": 205,
+    "restore_group_id": 6,
+    "user_id": 1
+  },
+  "paid_request_upper_bound": 16,
+  "plan_sha256": "be8c42e21bb5f204c9fc17af36ff68b16839a1ae0c422b5b6674b025c77267e3",
+  "schema_version": 1,
+  "secret_source": "Agent Switch name only: LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+  "status_counts": {
+    "planned": 14,
+    "resumable": 0
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "kind": "client_protocol_negative",
+  "secret_free": true,
+  "client_id": "deepseek-harness",
+  "client_version": "cli:0.1.1-rc.2",
+  "os": "macos",
+  "architecture": "arm64",
+  "observed_at": "2026-09-03T04:18:30+00:00",
+  "protocol": "generate_content",
+  "command_contract": {
+    "profile": "headless",
+    "settings": "llm-pi-ai custom route with api: google-generative-ai, baseURL host root, model gemini-3.7-flash"
+  },
+  "exit_code": 1,
+  "terminal_error": "dsh: NO_ADAPTER: no adapter registered for provider \"lsr\"",
+  "result": "unsupported",
+  "reason": "The 0.1.1-rc.2 headless/base bundle registers no google-generative-ai adapter; a custom pi-ai route with api=google-generative-ai fails at activation (NO_ADAPTER) before any network I/O. Gemini access is catalog-bound in this release.",
+  "artifact_sha256": "892b81af1af87421cbdcd11ebcf185e5cf2c2738e270d0da5ac90295659d923c"
+}

@@ -1,0 +1,803 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 2,
+    "key_id": 12,
+    "key_name": "测试专属2",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 5,
+      "name": "Claude 标准线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 6,
+      "name": "GPT 标准线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.5
+    },
+    {
+      "id": 15,
+      "name": "Claude 兼容线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.6
+    },
+    {
+      "id": 34,
+      "name": "Grok 标准线路",
+      "platform": "grok",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.4
+    },
+    {
+      "id": 52,
+      "name": "GPT Daybreak Blue 安全研究线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 2
+    },
+    {
+      "id": 57,
+      "name": "Gemini 标准线路",
+      "platform": "gemini",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.6
+    },
+    {
+      "id": 58,
+      "name": "GPT 经济线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.35
+    },
+    {
+      "id": 59,
+      "name": "GPT 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    },
+    {
+      "id": 60,
+      "name": "GLM 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    },
+    {
+      "id": 61,
+      "name": "DeepSeek 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 62,
+      "name": "Kimi 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 63,
+      "name": "MiniMax 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 64,
+      "name": "Qwen 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 65,
+      "name": "Claude 经济线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T15:42:49+00:00",
+      "group": {
+        "id": 5,
+        "name": "Claude 标准线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 5
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "7ca2f90bb7e0fef4c92336aed83d30e4e23515cf2f7d0be9cbacd21192503dd1",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-sonnet-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 400,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "479c4457b8daf4ffe52ee9d6da4fa92fd7ec5a27a2220584101a56aebe25cfab",
+          "error": {
+            "type": "invalid_request_error",
+            "message": "The request could not be processed. Please verify the request and try again."
+          },
+          "passed": false
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:43:00+00:00",
+      "group": {
+        "id": 6,
+        "name": "GPT 标准线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.5
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 6
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "9aa85eddfe701041d84a9e320b90205f4f260a60c1d259db8c60b3672e6aaae7",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "8497854405ab42677af55e1788a7c93557f3bc2a91b544d49193673b946344ae",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:43:10+00:00",
+      "group": {
+        "id": 15,
+        "name": "Claude 兼容线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.6
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 15
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "7ca2f90bb7e0fef4c92336aed83d30e4e23515cf2f7d0be9cbacd21192503dd1",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-sonnet-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "c177ff996c6df5c677a89d03c8ae9bd2d38036adcd151bc84cb848fb24161d2e",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:43:24+00:00",
+      "group": {
+        "id": 34,
+        "name": "Grok 标准线路",
+        "platform": "grok",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.4
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 34
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "db410410439cb32ba1c41acce55551efe33d1989f4dbe427bf104e3b1b89c3f3",
+        "model_ids": [
+          "grok-4.5",
+          "grok-4.6"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "grok-4.6",
+          "protocol": "chat_completions",
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "b090a0f3b256b1bbd4a94e3482e3a095c93d4fe2151bfe42a7c2a504704ba8fc",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:43:36+00:00",
+      "group": {
+        "id": 52,
+        "name": "GPT Daybreak Blue 安全研究线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 2
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 52
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "5d7de5e98293ed14e8c7b108e66a6bcc78d2f6e00ea4ed77d3ae13493464efb7",
+        "model_ids": [
+          "gpt-5.6-sol",
+          "gpt-daybreak-blue-latest"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 503,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "83a88576c9a853ef1b6b360e5bc660ab493b5fa9e615fcde21b69249ccc1c82c",
+          "error": {
+            "type": "overloaded_error",
+            "message": "The service is currently busy. Please try again later."
+          },
+          "passed": false
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:43:45+00:00",
+      "group": {
+        "id": 57,
+        "name": "Gemini 标准线路",
+        "platform": "gemini",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.6
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 57
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "62f898aad64c7ae613fbcd4bfc0eb2cec9fb0a0d5e35fdf2448258cadcbee962",
+        "model_ids": [
+          "gemini-3.1-pro",
+          "gemini-3.7-flash"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "protocol": "generate_content",
+          "url": "https://api.laoshirenai.com/v1beta/models/gemini-3.7-flash:generateContent",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "71c950dcadd4939db3d910ab9b7527fce62ca3d2bed688e4d1fd770d4a82fba2",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:43:55+00:00",
+      "group": {
+        "id": 58,
+        "name": "GPT 经济线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.35
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 58
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "8c4b2a2196235432f053f670b5105d3d763952d0802a7659b2c97fe82663c07c",
+        "model_ids": [
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 5,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "55d56475364fb80c299fd7b945ffb3c323dbeae4f70a92126c6203cee1e423a7",
+          "error": null,
+          "passed": false
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:44:15+00:00",
+      "group": {
+        "id": 59,
+        "name": "GPT 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 59
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "bc0eba5fa47bef4292b2d1ac7f4d4480a6dee2469628b824dc0e670ce969c800",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.4-mini",
+          "gpt-5.5",
+          "gpt-5.6-luna",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 7,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "1b46d149fc2c62f2e2d01a344e43e7d564c93d20abf03eed2833dfcc8f52d1c8",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:44:25+00:00",
+      "group": {
+        "id": 60,
+        "name": "GLM 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 60
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "a661dcf6fe14405f3653ae55eb64f8b9523cacea8cc1a3d89e04141893cd5f9b",
+        "model_ids": [
+          "glm-5.2",
+          "glm-5.3"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "glm-5.3",
+          "protocol": "chat_completions",
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "f80a0a2e60eaa258988926799f04e8ec75f5e9aae8f5bf97e020083682eff932",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:44:37+00:00",
+      "group": {
+        "id": 61,
+        "name": "DeepSeek 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 61
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "70a9e11f45093e86b3b7d7d31a0442c967b193a94b1e6562a049181f715ea6dc",
+        "model_ids": [
+          "deepseek-v4-flash-0731",
+          "deepseek-v4-pro-0813"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "c5d3d7bc52f38accd40654e51f9aa90259099ba87ae14b408e858e1ee31b932e",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:44:46+00:00",
+      "group": {
+        "id": 62,
+        "name": "Kimi 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 62
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "06a4e48da3f73d2492bcb9db4c07693756396733d02e174721403f1de91dbba5",
+        "model_ids": [
+          "kimi-k2.7-code",
+          "kimi-k3"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "kimi-k3",
+          "protocol": "chat_completions",
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "d054faa683010694e8ad13fe2447be620a4cf29afe615b8f2c55db73ec7d3240",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:44:56+00:00",
+      "group": {
+        "id": 63,
+        "name": "MiniMax 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 63
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "ef90e952d379d11627010f8518c131ed75053583b0286804bc502d02fe86bfe5",
+        "model_ids": [
+          "minimax-m3"
+        ],
+        "model_count": 1,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "minimax-m3",
+          "protocol": "chat_completions",
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "ec0de1870e5af97a6ed1379e34e678aad0cb5934f2fd109d2a17b3c0298aecbe",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:45:07+00:00",
+      "group": {
+        "id": 64,
+        "name": "Qwen 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 64
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "5f5ff31dcdd97bbc34473fa4e01b7a8b82cb511efed48adb4e5d6364ad86b249",
+        "model_ids": [
+          "qwen3.6-flash",
+          "qwen3.6-plus",
+          "qwen3.7-flash",
+          "qwen3.7-max",
+          "qwen3.7-plus",
+          "qwen3.8-max"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "qwen3.8-max",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "7ca394564e8f025308b3d38da4da51161b78e730f7af1805a9779177bd2851d2",
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T15:45:16+00:00",
+      "group": {
+        "id": 65,
+        "name": "Claude 经济线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 65
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "72a6ec4691b8d62c3abb457c24295b01be84942d42e0721e560b24d7de7b1d94",
+        "model_ids": [
+          "claude-haiku-4-5",
+          "claude-opus-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-opus-4-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "3cf7e0cf24eab94ef63ff317c82d74d64af4aca8e745df80bac76ae2e3853043",
+          "error": null,
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 5,
+      "model_id": "claude-sonnet-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 6,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-sonnet-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 34,
+      "model_id": "grok-4.6",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 52,
+      "model_id": "gpt-daybreak-blue-latest",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 57,
+      "model_id": "gemini-3.7-flash",
+      "protocol": "generate_content"
+    },
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 59,
+      "model_id": "gpt-5.6-terra",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 60,
+      "model_id": "glm-5.3",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 61,
+      "model_id": "deepseek-v4-pro-0813",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 62,
+      "model_id": "kimi-k3",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 63,
+      "model_id": "minimax-m3",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.8-max",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-opus-4-5",
+      "protocol": "messages"
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": false,
+  "artifact_sha256": "386c36bc5cbf8d014f65a43fafddd7c9c6714efc40ef352c64d2ab7011eef3e4"
+}

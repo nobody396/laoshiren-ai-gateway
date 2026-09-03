@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "ccb85b9b15034a2ce2b1683f39f94b0b604d8399f590c3314ddcd5154833e0b3",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "63:minimax-m3:messages:P-15:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 63,
+    "group_name": "MiniMax 企业高速线路",
+    "marker": "LSR_CONTRACT_425DEC5C9CE17F9B",
+    "max_output_tokens": 524288,
+    "model_id": "minimax-m3",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "b3f770a27ea3ec904611ffaee44233651b0eba64ca9d4afa9fd0c7842a0f95f7",
+  "classification": "verified",
+  "finished_at": "2026-08-31T20:13:47.942+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:13:46.554+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 63,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "aa11815f94e7b847cc749926bd1078c412e14fff06a972d4ac8616a285ec8103",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "7561f4e0c296a74e472bd4758d6985af04565ff77f403d9601e22422096f0a9a"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "195fd5f7a824b5737a2255456719fbcec86ffb9dcdd1f8cbb50cf03aa4b0e2a8",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "7973c874-7652-40e8-9676-c9fd661d196c",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

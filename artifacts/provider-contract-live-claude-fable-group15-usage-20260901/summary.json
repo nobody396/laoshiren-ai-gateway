@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "43017e9ee0b221d94f0cd2079a2a3a8bfef0fd4be110c47f577bcf532287c139",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "380ed223335d59a1",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-claude-fable-group15-usage-20260901/run-state.json",
+  "status_counts": {
+    "pass": 1
+  }
+}

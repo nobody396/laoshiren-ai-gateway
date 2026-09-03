@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "e0581e290ab1d64a2f7fa4568ea46e0af696745d642c312a1b1cdce270f39552",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "62:kimi-k2.7-code:messages:P-06:always_on",
+    "context_window": 262144,
+    "declared_status": "blocked",
+    "group_id": 62,
+    "group_name": "Kimi 企业高速线路",
+    "marker": "LSR_CONTRACT_06C97F76637640AE",
+    "max_output_tokens": 16384,
+    "model_id": "kimi-k2.7-code",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "messages",
+    "reasoning_level": "always_on",
+    "source_case_keys": []
+  },
+  "case_fingerprint": "cb38fc47ef2442b7fd485ed9b3a0261ae9962eca1217b96f60eab5897f57fd8a",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:12:16.266+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:12:14.574+00:00",
+  "offline_verifier": {
+    "reason": "provider request did not return a complete HTTP 200 terminal result",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 62,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "provider request did not return a complete HTTP 200 terminal result",
+  "request": {
+    "payload_sha256": "0fb2eb84bfe9cfc9e6b81810c6861f51d65ff8cc3065eb76635b3505e2de2864",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "3d8be5d73fab88114ec330770d67712b65036201345ae256f9f5ab587ecfa016"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "d5e17403b971a6467e4bb47a194ef2bfd23842b29f94ae24f958a0c3a351381f",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "121c76e5-a1eb-43d9-a75b-306029b9b58b",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

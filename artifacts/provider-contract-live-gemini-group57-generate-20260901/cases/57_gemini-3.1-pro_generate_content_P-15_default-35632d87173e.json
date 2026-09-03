@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "ceb3ea38b13e6c50ce9fd6cdaa6bed3e75725d1b6e19321ee9cdef123f33883e",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "57:gemini-3.1-pro:generate_content:P-15:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 57,
+    "group_name": "Gemini 标准线路",
+    "marker": "LSR_CONTRACT_FBBA860F92ACF851",
+    "max_output_tokens": 65536,
+    "model_id": "gemini-3.1-pro",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "generate_content",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:gemini-3.1-pro/generate_content/invalid_request"
+    ]
+  },
+  "case_fingerprint": "088bbc2571f70425de87bf7b317244bda69ef416d121873ffb741577d9cfcb79",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:35:53.667+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:35:52.112+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 57,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "4b28db9972d8c8f198e7292ea7c12788a4e3c83459b1585b0cf6c6e73badb73c",
+    "url": "https://api.laoshirenai.com/v1beta/models/gemini-3.1-pro:generateContent",
+    "user_agent_sha256": "a8e13e6d88b8453b0483bbf5f3e2b84225f0cc9ade788baf0b59f820e5fe97a6"
+  },
+  "response": {
+    "body_bytes": 191,
+    "body_sha256": "4157e2a3c9daf06118831483b52d5df69502d40c66e14760b1e58882a9c78a03",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "code": 400,
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "status": "INVALID_ARGUMENT"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "a53c101b-1797-4e58-a301-d288129bed01",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

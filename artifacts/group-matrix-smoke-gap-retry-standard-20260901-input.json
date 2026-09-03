@@ -1,0 +1,82 @@
+[
+  {
+    "group_id": 5,
+    "model_id": "claude-fable-5",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 5,
+    "model_id": "claude-opus-4-6",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 5,
+    "model_id": "claude-opus-4-8",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 5,
+    "model_id": "claude-opus-5",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 5,
+    "model_id": "claude-sonnet-4-6",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 5,
+    "model_id": "claude-sonnet-5",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 65,
+    "model_id": "claude-opus-4-7",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 58,
+    "model_id": "gpt-5.6-sol",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 61,
+    "model_id": "deepseek-v4-flash-0731",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 61,
+    "model_id": "deepseek-v4-pro-0813",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.6-flash",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.6-plus",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.7-flash",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.7-max",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.7-plus",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.8-max",
+    "protocol": "chat_completions"
+  }
+]

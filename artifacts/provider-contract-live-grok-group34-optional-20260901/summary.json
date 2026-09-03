@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "9ec64756008066e5d05f1656ea60e6f341b4be209b03dcf8a5b6364023e3c40d",
+  "case_count": 2,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "d8c9d32b6f9b50a2",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-grok-group34-optional-20260901/run-state.json",
+  "status_counts": {
+    "pass": 2
+  }
+}

@@ -13,13 +13,7 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export interface CodexClientModel {
-  model: string
-  displayName: string
-  contextWindow: number
-}
-
-export const clientAutoConfigVersion = "0.7.14"
+export const clientAutoConfigVersion = "0.7.15"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",
@@ -29,6 +23,22 @@ export const clientAutoConfigDefaults = {
 } as const
 
 export const modelCatalog: readonly CatalogModel[] = [
+  {
+    "id": "claude-fable-5",
+    "upstreamId": "claude-fable-5",
+    "displayName": "Claude Fable 5",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-fable-5",
+      "to": "claude-fable-5",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
   {
     "id": "claude-fable-5-1",
     "upstreamId": "claude-fable-5-1",
@@ -46,6 +56,134 @@ export const modelCatalog: readonly CatalogModel[] = [
     }
   },
   {
+    "id": "claude-haiku-4-5",
+    "upstreamId": "claude-haiku-4-5",
+    "displayName": "Claude Haiku 4.5",
+    "platform": "anthropic",
+    "contextWindow": 200000,
+    "maxOutputTokens": 64000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-haiku-4-5",
+      "to": "claude-haiku-4-5",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-opus-4-5",
+    "upstreamId": "claude-opus-4-5",
+    "displayName": "Claude Opus 4.5",
+    "platform": "anthropic",
+    "contextWindow": 200000,
+    "maxOutputTokens": 64000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude Plus 月卡组",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-opus-4-5",
+      "to": "claude-opus-4-5",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-opus-4-6",
+    "upstreamId": "claude-opus-4-6",
+    "displayName": "Claude Opus 4.6",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-opus-4-6",
+      "to": "claude-opus-4-6",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-opus-4-7",
+    "upstreamId": "claude-opus-4-7",
+    "displayName": "Claude Opus 4.7",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-opus-4-7",
+      "to": "claude-opus-4-7",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-opus-4-8",
+    "upstreamId": "claude-opus-4-8",
+    "displayName": "Claude Opus 4.8",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-opus-4-8",
+      "to": "claude-opus-4-8",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-opus-5",
+    "upstreamId": "claude-opus-5",
+    "displayName": "Claude Opus 5",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-opus-5",
+      "to": "claude-opus-5",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-sonnet-4-6",
+    "upstreamId": "claude-sonnet-4-6",
+    "displayName": "Claude Sonnet 4.6",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-sonnet-4-6",
+      "to": "claude-sonnet-4-6",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-sonnet-5",
+    "upstreamId": "claude-sonnet-5",
+    "displayName": "Claude Sonnet 5",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-sonnet-5",
+      "to": "claude-sonnet-5",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
     "id": "glm-5.2",
     "upstreamId": "glm-5.2",
     "displayName": "GLM 5.2",
@@ -53,27 +191,13 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1048576,
     "maxOutputTokens": 131072,
     "clientDefault": false,
-    "preferredGroupName": "GLM 5.2",
-    "legacyGroupNames": [],
+    "preferredGroupName": "GLM 企业高速线路",
+    "legacyGroupNames": [
+      "GLM 5.2"
+    ],
     "preset": {
       "from": "glm-5.2",
       "to": "glm-5.2",
-      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
-    }
-  },
-  {
-    "id": "glm-5.3",
-    "upstreamId": "glm-5.3",
-    "displayName": "GLM 5.3",
-    "platform": "anthropic",
-    "contextWindow": 1048576,
-    "maxOutputTokens": 131072,
-    "clientDefault": false,
-    "preferredGroupName": "GLM 5.2",
-    "legacyGroupNames": [],
-    "preset": {
-      "from": "glm-5.3",
-      "to": "glm-5.3",
       "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
     }
   },
@@ -98,11 +222,13 @@ export const modelCatalog: readonly CatalogModel[] = [
     "upstreamId": "gemini-3.1-pro",
     "displayName": "Gemini 3.1 Pro",
     "platform": "gemini",
-    "contextWindow": 256000,
-    "maxOutputTokens": 8192,
+    "contextWindow": 1048576,
+    "maxOutputTokens": 65536,
     "clientDefault": false,
-    "preferredGroupName": "Gemini",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Gemini 标准线路",
+    "legacyGroupNames": [
+      "Gemini"
+    ],
     "preset": {
       "from": "gemini-3.1-pro",
       "to": "gemini-3.1-pro",
@@ -114,11 +240,13 @@ export const modelCatalog: readonly CatalogModel[] = [
     "upstreamId": "gemini-3.7-flash",
     "displayName": "Gemini 3.7 Flash",
     "platform": "gemini",
-    "contextWindow": 128000,
-    "maxOutputTokens": 8192,
+    "contextWindow": 1048576,
+    "maxOutputTokens": 65536,
     "clientDefault": true,
-    "preferredGroupName": "Gemini",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Gemini 标准线路",
+    "legacyGroupNames": [
+      "Gemini"
+    ],
     "preset": {
       "from": "gemini-3.7-flash",
       "to": "gemini-3.7-flash",
@@ -158,6 +286,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     }
   },
   {
+    "id": "grok-4.5",
+    "upstreamId": "grok-4.5",
+    "displayName": "Grok 4.5",
+    "platform": "grok",
+    "contextWindow": 500000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Grok 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "grok-4.5",
+      "to": "grok-4.5",
+      "color": "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300"
+    }
+  },
+  {
     "id": "grok-4.6",
     "upstreamId": "grok-4.6",
     "displayName": "Grok 4.6",
@@ -165,10 +309,11 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 500000,
     "maxOutputTokens": 128000,
     "clientDefault": true,
-    "preferredGroupName": "Grok",
+    "preferredGroupName": "Grok 标准线路",
     "legacyGroupNames": [
       "Grok 4.6",
-      "Grok 4.5"
+      "Grok 4.5",
+      "Grok"
     ],
     "preset": {
       "from": "grok-4.6",
@@ -200,8 +345,10 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1000000,
     "maxOutputTokens": 393216,
     "clientDefault": false,
-    "preferredGroupName": "DeepSeek",
-    "legacyGroupNames": [],
+    "preferredGroupName": "DeepSeek 企业高速线路",
+    "legacyGroupNames": [
+      "DeepSeek"
+    ],
     "preset": {
       "from": "deepseek-v4-flash-0731",
       "to": "deepseek-v4-flash-0731",
@@ -216,11 +363,143 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1000000,
     "maxOutputTokens": 393216,
     "clientDefault": false,
-    "preferredGroupName": "DeepSeek",
-    "legacyGroupNames": [],
+    "preferredGroupName": "DeepSeek 企业高速线路",
+    "legacyGroupNames": [
+      "DeepSeek"
+    ],
     "preset": {
       "from": "deepseek-v4-pro-0813",
       "to": "deepseek-v4-pro-0813",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "glm-5.3",
+    "upstreamId": "glm-5.3",
+    "displayName": "GLM 5.3",
+    "platform": "openai",
+    "contextWindow": 1048576,
+    "maxOutputTokens": 131072,
+    "clientDefault": false,
+    "preferredGroupName": "GLM 企业高速线路",
+    "legacyGroupNames": [
+      "GLM 5.2"
+    ],
+    "preset": {
+      "from": "glm-5.3",
+      "to": "glm-5.3",
+      "color": "bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400"
+    }
+  },
+  {
+    "id": "gpt-5.4",
+    "upstreamId": "gpt-5.4",
+    "displayName": "GPT-5.4",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-5.4",
+      "to": "gpt-5.4",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-5.4-mini",
+    "upstreamId": "gpt-5.4-mini",
+    "displayName": "GPT-5.4 Mini",
+    "platform": "openai",
+    "contextWindow": 400000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 企业高速线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-5.4-mini",
+      "to": "gpt-5.4-mini",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "upstreamId": "gpt-5.5",
+    "displayName": "GPT-5.5",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-5.5",
+      "to": "gpt-5.5",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-5.6-luna",
+    "upstreamId": "gpt-5.6-luna",
+    "displayName": "GPT-5.6 Luna",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 企业高速线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-5.6-luna",
+      "to": "gpt-5.6-luna",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-5.6-sol",
+    "upstreamId": "gpt-5.6-sol",
+    "displayName": "GPT-5.6 Sol",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-5.6-sol",
+      "to": "gpt-5.6-sol",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-5.6-terra",
+    "upstreamId": "gpt-5.6-terra",
+    "displayName": "GPT-5.6 Terra",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-5.6-terra",
+      "to": "gpt-5.6-terra",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-daybreak-blue-latest",
+    "upstreamId": "gpt-daybreak-blue-latest",
+    "displayName": "GPT Daybreak Blue Latest",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT Daybreak Blue 安全研究线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-daybreak-blue-latest",
+      "to": "gpt-daybreak-blue-latest",
       "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
     }
   },
@@ -232,8 +511,10 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 262144,
     "maxOutputTokens": 16384,
     "clientDefault": false,
-    "preferredGroupName": "Kimi",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Kimi 企业高速线路",
+    "legacyGroupNames": [
+      "Kimi"
+    ],
     "preset": {
       "from": "kimi-k2.7-code",
       "to": "kimi-k2.7-code",
@@ -248,8 +529,10 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1048576,
     "maxOutputTokens": 1048576,
     "clientDefault": false,
-    "preferredGroupName": "Kimi",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Kimi 企业高速线路",
+    "legacyGroupNames": [
+      "Kimi"
+    ],
     "preset": {
       "from": "kimi-k3",
       "to": "kimi-k3",
@@ -280,8 +563,10 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1000000,
     "maxOutputTokens": 65536,
     "clientDefault": false,
-    "preferredGroupName": "千问 Qwen",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Qwen 企业高速线路",
+    "legacyGroupNames": [
+      "千问 Qwen"
+    ],
     "preset": {
       "from": "qwen3.6-flash",
       "to": "qwen3.6-flash",
@@ -296,8 +581,10 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1000000,
     "maxOutputTokens": 65536,
     "clientDefault": false,
-    "preferredGroupName": "千问 Qwen",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Qwen 企业高速线路",
+    "legacyGroupNames": [
+      "千问 Qwen"
+    ],
     "preset": {
       "from": "qwen3.6-plus",
       "to": "qwen3.6-plus",
@@ -310,10 +597,12 @@ export const modelCatalog: readonly CatalogModel[] = [
     "displayName": "Qwen 3.7 Flash",
     "platform": "openai",
     "contextWindow": 1000000,
-    "maxOutputTokens": 65536,
+    "maxOutputTokens": 131072,
     "clientDefault": false,
-    "preferredGroupName": "千问 Qwen",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Qwen 企业高速线路",
+    "legacyGroupNames": [
+      "千问 Qwen"
+    ],
     "preset": {
       "from": "qwen3.7-flash",
       "to": "qwen3.7-flash",
@@ -328,8 +617,10 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1000000,
     "maxOutputTokens": 131072,
     "clientDefault": false,
-    "preferredGroupName": "千问 Qwen",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Qwen 企业高速线路",
+    "legacyGroupNames": [
+      "千问 Qwen"
+    ],
     "preset": {
       "from": "qwen3.7-max",
       "to": "qwen3.7-max",
@@ -344,8 +635,10 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1000000,
     "maxOutputTokens": 131072,
     "clientDefault": false,
-    "preferredGroupName": "千问 Qwen",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Qwen 企业高速线路",
+    "legacyGroupNames": [
+      "千问 Qwen"
+    ],
     "preset": {
       "from": "qwen3.7-plus",
       "to": "qwen3.7-plus",
@@ -360,41 +653,15 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 1000000,
     "maxOutputTokens": 131072,
     "clientDefault": false,
-    "preferredGroupName": "千问 Qwen",
-    "legacyGroupNames": [],
+    "preferredGroupName": "Qwen 企业高速线路",
+    "legacyGroupNames": [
+      "千问 Qwen"
+    ],
     "preset": {
       "from": "qwen3.8-max",
       "to": "qwen3.8-max",
       "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
     }
-  }
-]
-
-export const codexClientModels: readonly CodexClientModel[] = [
-  {
-    "model": "gpt-5.6-sol",
-    "displayName": "GPT-5.6-Sol",
-    "contextWindow": 272000
-  },
-  {
-    "model": "gpt-5.6-terra",
-    "displayName": "GPT-5.6-Terra",
-    "contextWindow": 272000
-  },
-  {
-    "model": "gpt-5.6",
-    "displayName": "GPT-5.6",
-    "contextWindow": 272000
-  },
-  {
-    "model": "gpt-5.5",
-    "displayName": "GPT-5.5",
-    "contextWindow": 272000
-  },
-  {
-    "model": "gpt-5.4",
-    "displayName": "GPT-5.4",
-    "contextWindow": 272000
   }
 ]
 

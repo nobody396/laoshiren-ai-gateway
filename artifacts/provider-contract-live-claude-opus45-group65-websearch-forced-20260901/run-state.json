@@ -1,0 +1,17 @@
+{
+  "cases": {
+    "65:claude-opus-4-5:messages:P-11:default": {
+      "artifact_sha256": "69a0eeaf937f45ae55c1131e608e30f1d936303bb5d33e51a502d6b80ace0a32",
+      "receipt": "artifacts/provider-contract-live-claude-opus45-group65-websearch-forced-20260901/cases/65_claude-opus-4-5_messages_P-11_default-b6bd83abd567.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:25:31.414+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "d32d7432d333b4d1",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:25:17.142+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "d5ecafe8d6fbe03019949fec6ce9bd7e1b7f6d7992e190be398d57783fef11b4",
+  "case_count": 14,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "d6b3aa27334c29a4",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-glm-group60-chat-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 3,
+    "pass": 11
+  }
+}

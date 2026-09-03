@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 2,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "7109423d3f2a091ad523586f7f9b781f1746f15c88e94ca3d1e9866a5732b1ad",
+  "changes": [
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5d4868f6d5ac403bd288812b"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-78c86b9bfc240f3c826f227a",
+            "evidence-bb3c0c5d2abf5f8d156d1b84"
+          ]
+        }
+      ]
+    }
+  ]
+}

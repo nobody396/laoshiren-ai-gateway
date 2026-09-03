@@ -1,0 +1,78 @@
+{
+  "architecture": "arm64",
+  "artifact_sha256": "ae7927860d7d76ae96f974b1ca813837ab393f7ddc123c50d7774ca4fc479847",
+  "assistant_text_bytes": 109,
+  "assistant_text_sha256": "def5674f5154050e0b5cdfd172bcea3dd040fc2e923d91165bf2b89cdb6dbd81",
+  "base_url": "https://api.laoshirenai.com/v1beta",
+  "client_id": "opencode",
+  "client_version": "cli:1.18.15",
+  "command_contract": {
+    "auto": true,
+    "client_version": "1.18.15",
+    "model": "gemini-3.7-flash",
+    "output_format": "json",
+    "provider_id": "laoshirenai-generate-content",
+    "provider_package": "@ai-sdk/google",
+    "pure": true
+  },
+  "duration_ms": 13928,
+  "event_count": 13,
+  "event_types": {
+    "step_finish": 4,
+    "step_start": 4,
+    "text": 2,
+    "tool_use": 3
+  },
+  "exit_code": 0,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "finished_at": "2026-08-31T23:44:42+00:00",
+  "group_id": 57,
+  "kind": "real_client_loop",
+  "model_id": "gemini-3.7-flash",
+  "observed_at": "2026-08-31T23:44:25+00:00",
+  "os": "macos",
+  "owned_key": {
+    "key_id": 128,
+    "name": "一键安装 · Codex",
+    "user_id": 2
+  },
+  "passed": true,
+  "protocol": "generate_content",
+  "protocol_attribution": {
+    "artifact_sha256": "2b7666e0058b4a58af8a888355f9cd2983cb362088d4f1fb9628b59b1397fe8d",
+    "artifact_uri": "artifacts/opencode-gemini37-key128-20260901/opencode-generate_content-gemini-3.7-flash-group57-20260901-usage.json",
+    "inbound_endpoint": "/v1beta/models",
+    "upstream_endpoint": "/v1beta/models",
+    "usage_rows": 5,
+    "verified": true
+  },
+  "read_tool_verified": true,
+  "restored_group_id": 6,
+  "schema_version": 1,
+  "secret_free": true,
+  "shell_file_verified": true,
+  "shell_tool_verified": true,
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 6140,
+  "stdout_sha256": "4ccd350f52231c8d1afe6eb44f18b19332ac2299675e90548796a32a43a17113",
+  "successful_tools": [
+    "bash",
+    "read"
+  ],
+  "temporary_config": {
+    "api_key_source": "child env LAOSHIRENAI_OPENCODE_KEY",
+    "literal_key_written": false,
+    "path": "~/.config/opencode/opencode.json",
+    "removed_with_temporary_home": true,
+    "sha256": "47d4083963fa6bf7db63692ad519f7139e5d91814a30dad3a5d314149f23bd25"
+  },
+  "timed_out": false,
+  "tool_names": [
+    "bash",
+    "read"
+  ],
+  "tool_result_observed": true,
+  "tool_use_observed": true
+}

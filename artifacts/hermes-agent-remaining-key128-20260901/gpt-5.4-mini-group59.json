@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.4-mini",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 59,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-08-31T23:48:49+00:00",
+  "finished_at": "2026-08-31T23:49:21+00:00",
+  "duration_ms": 19305,
+  "command_contract": {
+    "executable": "hermes",
+    "provider": "openai-api",
+    "toolsets": "terminal",
+    "max_turns": 10,
+    "isolated_home": true
+  },
+  "target_group_readback": {
+    "group_id": 59
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stdout_bytes": 509,
+  "stdout_sha256": "5427610750125ecb06433f2fdaaedd0782f93dcbc2c6311bc45262187c53a840",
+  "stderr_bytes": 36,
+  "stderr_sha256": "bb3799aeec1a8b576d026f76dd3e9802034eeccce2a2bba7a0502eac6230c109",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/hermes-agent-remaining-key128-20260901/gpt-5.4-mini-group59-usage-attribution.json",
+    "artifact_sha256": "92fc26cbf9b4376ba02e5f16a4379edf5e7639a488375c97aa654d8d9cc91f0b",
+    "usage_rows": 3,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "restoration": {
+    "group_id": 6,
+    "verified": true
+  },
+  "restored_group_id": 6,
+  "passed": true,
+  "artifact_sha256": "6eaa9d328035cb97da09ab1e23b12f4bd0cc77aa22c2892f13d7039e8c575534"
+}

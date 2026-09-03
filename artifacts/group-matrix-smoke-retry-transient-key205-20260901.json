@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 15,
+      "name": "Claude 兼容线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.6
+    },
+    {
+      "id": 52,
+      "name": "GPT Daybreak Blue 安全研究线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 2
+    },
+    {
+      "id": 58,
+      "name": "GPT 经济线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.35
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T17:28:05+00:00",
+      "group": {
+        "id": 15,
+        "name": "Claude 兼容线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.6
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 15
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "7ca2f90bb7e0fef4c92336aed83d30e4e23515cf2f7d0be9cbacd21192503dd1",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-fable-5",
+          "protocol": "messages",
+          "requested_max_output_tokens": 4096,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "0c48486f6ec07675b0a7709dc1a756e7cfc16983b818d25d8836b688e6994712",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 2
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:28:24+00:00",
+      "group": {
+        "id": 52,
+        "name": "GPT Daybreak Blue 安全研究线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 2
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 52
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "5d7de5e98293ed14e8c7b108e66a6bcc78d2f6e00ea4ed77d3ae13493464efb7",
+        "model_ids": [
+          "gpt-5.6-sol",
+          "gpt-daybreak-blue-latest"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "protocol": "responses",
+          "requested_max_output_tokens": 64,
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 503,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "fd11f10c9293c75f096d5d1bf94958536fd1caccd982daabcfea844cef712609",
+          "error": {
+            "type": "overloaded_error",
+            "message": "The service is currently busy. Please try again later."
+          },
+          "response_shape": {
+            "top_level_keys": [
+              "error"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:28:31+00:00",
+      "group": {
+        "id": 58,
+        "name": "GPT 经济线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.35
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 58
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "8c4b2a2196235432f053f670b5105d3d763952d0802a7659b2c97fe82663c07c",
+        "model_ids": [
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 5,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.5",
+          "protocol": "responses",
+          "requested_max_output_tokens": 64,
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "e84d246e2eada71a1eac9cffeedf056a852499e08c5e56c8deed569adc6b15f2",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "created_at",
+              "id",
+              "model",
+              "object",
+              "output",
+              "status",
+              "usage"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 15,
+      "model_id": "claude-fable-5",
+      "protocol": "messages",
+      "max_output_tokens": 4096
+    },
+    {
+      "group_id": 52,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses",
+      "max_output_tokens": 64
+    },
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.5",
+      "protocol": "responses",
+      "max_output_tokens": 64
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": false,
+  "artifact_sha256": "70c1fb3650918763ab47b4becdd161872c57e653c57a638028d9d1a4f71891e1"
+}

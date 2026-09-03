@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "network_execution": "explicit_live",
+  "client_id": "kimi-code",
+  "client_version": "cli:0.38.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "grok-4.5",
+  "protocol": "chat_completions",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 34,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T23:13:09+00:00",
+  "finished_at": "2026-08-31T23:13:45+00:00",
+  "duration_ms": 35660,
+  "command_contract": {
+    "executable": "kimi",
+    "version": "0.38.0",
+    "provider_type": "openai",
+    "credential": "KIMI_MODEL_API_KEY environment only",
+    "temporary_home": true,
+    "automatic_permissions": true,
+    "output_format": "stream-json"
+  },
+  "group_readback": {
+    "id": 205,
+    "user_id": 1,
+    "status": "active",
+    "group_id": 34
+  },
+  "model_discovery": {
+    "http_status": 200,
+    "model_count": 2,
+    "model_ids": [
+      "grok-4.5",
+      "grok-4.6"
+    ]
+  },
+  "exit_code": 1,
+  "timed_out": false,
+  "event_count": 0,
+  "event_types": {},
+  "tool_names": [],
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_observed_after_tool": false,
+  "final_marker_verified": false,
+  "assistant_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assistant_text_bytes": 0,
+  "shell_file_verified": false,
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 0,
+  "stderr_sha256": "253797722f7f920066c60574f92b96c3b7cc3ca293c2aad801fd04bcc8a8f8c1",
+  "stderr_bytes": 44,
+  "credential_policy": {
+    "key_transport": "environment_only",
+    "config_path": "home/.kimi-code/config.toml",
+    "plaintext_persistence_detected": false,
+    "plaintext_stream_echo_detected": false,
+    "detected_files": [],
+    "blocker": null
+  },
+  "usage_attribution": {
+    "path": "/admin/usage?page=1&page_size=200&api_key_id=205&group_id=34&model=grok-4.5&sort_by=id&sort_order=desc&exact_total=true",
+    "expected_endpoint": "/v1/chat/completions",
+    "rows": [],
+    "row_count": 0,
+    "verified": false
+  },
+  "restored_group_id": 6,
+  "passed": false,
+  "restoration_error": null,
+  "artifact_sha256": "eadcafe0acebcfe6a03d666392447668df7e47be79916c6959ddc56b20c4e5c1"
+}

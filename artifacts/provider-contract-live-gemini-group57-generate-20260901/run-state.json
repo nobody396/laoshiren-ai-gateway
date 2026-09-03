@@ -1,0 +1,82 @@
+{
+  "cases": {
+    "57:gemini-3.1-pro:generate_content:P-02:default": {
+      "artifact_sha256": "f2f9e035a33b51d89e546c2a924055276dcea9a954f4567da98dbcaca8470577",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-02_default-f56343824cbc.json",
+      "status": "blocked"
+    },
+    "57:gemini-3.1-pro:generate_content:P-03:default": {
+      "artifact_sha256": "f0de2e8da12cf55fc56133bfb311a92f787279bcd2896a7743a5381f568663ea",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-03_default-f03134eb682d.json",
+      "status": "blocked"
+    },
+    "57:gemini-3.1-pro:generate_content:P-04:default": {
+      "artifact_sha256": "c37050b7f424ab6025f16973371595b33195b7a1303fb7719f33bf55762f666e",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-04_default-00cac3aeeda3.json",
+      "status": "pass"
+    },
+    "57:gemini-3.1-pro:generate_content:P-05:default": {
+      "artifact_sha256": "9c3984de424b6d2b23369527e621d8663725bb90baa3c3a0c37dc289386ba55d",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-05_default-ed59e004a717.json",
+      "status": "blocked"
+    },
+    "57:gemini-3.1-pro:generate_content:P-06:medium": {
+      "artifact_sha256": "18ad696f306648e27e7282f25adfe4bcc656fa8838fca804abcbbd67b5b9a3ae",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-06_medium-2de631e5aab5.json",
+      "status": "pass"
+    },
+    "57:gemini-3.1-pro:generate_content:P-12:default": {
+      "artifact_sha256": "4b81e32fc509af07fa7dcdcd1a2a91ba841a95d61559b17045c6a18abe4c8bea",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-12_default-1f12833d4f51.json",
+      "status": "blocked"
+    },
+    "57:gemini-3.1-pro:generate_content:P-15:default": {
+      "artifact_sha256": "ceb3ea38b13e6c50ce9fd6cdaa6bed3e75725d1b6e19321ee9cdef123f33883e",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-15_default-35632d87173e.json",
+      "status": "pass"
+    },
+    "57:gemini-3.7-flash:generate_content:P-02:default": {
+      "artifact_sha256": "4e77b04b7def0cf6b1d76ad5f41af255177c72947253b22bb55d98bc4466a515",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-02_default-0a667c2afc80.json",
+      "status": "blocked"
+    },
+    "57:gemini-3.7-flash:generate_content:P-03:default": {
+      "artifact_sha256": "3548baca5a0c22df6fee9c7b6c035dfe96ecf1cedfacf72a1009218cecf4c624",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-03_default-ac4fb9366f79.json",
+      "status": "blocked"
+    },
+    "57:gemini-3.7-flash:generate_content:P-04:default": {
+      "artifact_sha256": "e4d4fd0e5b7871201e852906ab101a72fefaa10a270dc17769fa223e0aadb129",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-04_default-fc86c4d7b577.json",
+      "status": "pass"
+    },
+    "57:gemini-3.7-flash:generate_content:P-05:default": {
+      "artifact_sha256": "9d910c062168e7fafecbe6a1fc769f9d2c701f9bf69968c572208015ea9100c4",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-05_default-ef564f1bcd22.json",
+      "status": "pass"
+    },
+    "57:gemini-3.7-flash:generate_content:P-06:medium": {
+      "artifact_sha256": "ae5cab29a907cee77761383bb532bc3d0fdc0b6ef47b69cb4a30c831d058fb45",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-06_medium-e1c8523e54aa.json",
+      "status": "pass"
+    },
+    "57:gemini-3.7-flash:generate_content:P-12:default": {
+      "artifact_sha256": "0f26da8eb1c2ad7c77f166c76d42887f9204ea9ab95eebda982f01569b2ebddd",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-12_default-4f6900e80f4c.json",
+      "status": "blocked"
+    },
+    "57:gemini-3.7-flash:generate_content:P-15:default": {
+      "artifact_sha256": "f72dff828864727a78952a99496e87e2ab2b43c1d13480c88434b063a392d65a",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-15_default-d8584720a584.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:36:45.213+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "6ffcb606c5440c12",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T19:34:57.306+00:00"
+}

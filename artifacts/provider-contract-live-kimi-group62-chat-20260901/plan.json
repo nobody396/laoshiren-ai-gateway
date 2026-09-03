@@ -1,0 +1,318 @@
+{
+  "case_count": 14,
+  "cases": [
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "f22a44d6955bf983c6a8e9136bb6df40dcc0aae677a98e8e14d3fda296c57a4c",
+      "case_key": "62:kimi-k2.7-code:chat_completions:P-02:default",
+      "context_window": 262144,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_E2BA9C2ACA84A4A8",
+      "max_output_tokens": 16384,
+      "model_id": "kimi-k2.7-code",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k2.7-code_chat_completions_P-02_default-80f40cc92885.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k2.7-code/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "123fe66fe3c82851672ff0fcd82c0f38f061dae028e1d6d502e588648855811e",
+      "case_key": "62:kimi-k2.7-code:chat_completions:P-03:default",
+      "context_window": 262144,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_F185CDFF64026712",
+      "max_output_tokens": 16384,
+      "model_id": "kimi-k2.7-code",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k2.7-code_chat_completions_P-03_default-15556a53b5ab.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k2.7-code/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "3787702c1825f132c7e31c334909ca566018c8fe0b8f738d7cf21272d4aac499",
+      "case_key": "62:kimi-k2.7-code:chat_completions:P-04:default",
+      "context_window": 262144,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_7B7EC6E30FEB243D",
+      "max_output_tokens": 16384,
+      "model_id": "kimi-k2.7-code",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k2.7-code_chat_completions_P-04_default-1feea5e27106.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k2.7-code/chat_completions/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "dd970fd9269d0d184840bbe3fda92d26eae42b61523214c4841834cda7487d1d",
+      "case_key": "62:kimi-k2.7-code:chat_completions:P-05:default",
+      "context_window": 262144,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_F4A52C63B6400773",
+      "max_output_tokens": 16384,
+      "model_id": "kimi-k2.7-code",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k2.7-code_chat_completions_P-05_default-a6b9f7572810.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k2.7-code/chat_completions/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "788dfb9d01bb139f16fb789f5349df5549bb8902f9106d40972f7e4725168b8a",
+      "case_key": "62:kimi-k2.7-code:chat_completions:P-06:always_on",
+      "context_window": 262144,
+      "declared_status": "verified",
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_DB432A536896822D",
+      "max_output_tokens": 16384,
+      "model_id": "kimi-k2.7-code",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "chat_completions",
+      "reasoning_level": "always_on",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k2.7-code_chat_completions_P-06_always_on-db432a536896.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k2.7-code/chat_completions/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "466336e461d86d7a395d3b2887a2f818436509634135280c191cb084f6814b7c",
+      "case_key": "62:kimi-k2.7-code:chat_completions:P-12:default",
+      "context_window": 262144,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_02FDAE3AA574B497",
+      "max_output_tokens": 16384,
+      "model_id": "kimi-k2.7-code",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k2.7-code_chat_completions_P-12_default-ec442bf8e963.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k2.7-code/chat_completions/features/billing",
+        "model_protocol:kimi-k2.7-code/chat_completions/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "b6dddef3220d7db49b12c90254ce7570b309255306f6e8d0acfc6e186eec1f37",
+      "case_key": "62:kimi-k2.7-code:chat_completions:P-15:default",
+      "context_window": 262144,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_C313AA51B760A863",
+      "max_output_tokens": 16384,
+      "model_id": "kimi-k2.7-code",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k2.7-code_chat_completions_P-15_default-34e857a85540.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k2.7-code/chat_completions/features/error_passthrough",
+        "model_protocol:kimi-k2.7-code/chat_completions/invalid_request"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "67bb8f1fcee1bf4869027900216995d06ab16ab8ecfee60ee1ab2932af4099d6",
+      "case_key": "62:kimi-k3:chat_completions:P-02:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_C8E6BD519AEDE0E0",
+      "max_output_tokens": 1048576,
+      "model_id": "kimi-k3",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k3_chat_completions_P-02_default-41a9d7653b84.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k3/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "e6306cdd0bad156e53449f294c92f3e497efc55e36f9dc979aaef05e31060125",
+      "case_key": "62:kimi-k3:chat_completions:P-03:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_3AAEA66AD7CBC05E",
+      "max_output_tokens": 1048576,
+      "model_id": "kimi-k3",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k3_chat_completions_P-03_default-c919be30fd1f.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k3/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "0d63b66afcf408c5e7f3b384052c7043f7a1af1f5bb301298448f7f162e758d0",
+      "case_key": "62:kimi-k3:chat_completions:P-04:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_1109208EFD344FFC",
+      "max_output_tokens": 1048576,
+      "model_id": "kimi-k3",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k3_chat_completions_P-04_default-f216214015aa.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k3/chat_completions/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "1f0ce4327893ed0fd5f90cef43b4e533e6ad2ddc872e97f324bb284866e0f90f",
+      "case_key": "62:kimi-k3:chat_completions:P-05:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_D6F340C62313524B",
+      "max_output_tokens": 1048576,
+      "model_id": "kimi-k3",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k3_chat_completions_P-05_default-1323a23d13de.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k3/chat_completions/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "a5debe651cd5596f7953f170af9beaf7e2542cd5ef4e48abe714309e4e9be3bb",
+      "case_key": "62:kimi-k3:chat_completions:P-06:high",
+      "context_window": 1048576,
+      "declared_status": "blocked",
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_B1434D5A04FFC64E",
+      "max_output_tokens": 1048576,
+      "model_id": "kimi-k3",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "chat_completions",
+      "reasoning_level": "high",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k3_chat_completions_P-06_high-b1434d5a04ff.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k3/chat_completions/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "2aed68bb595fd1c41cd9aaf846df0469aa9ed7152aa7e02b284820a8b7ee5f50",
+      "case_key": "62:kimi-k3:chat_completions:P-12:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_67CD4A1F3C8873AD",
+      "max_output_tokens": 1048576,
+      "model_id": "kimi-k3",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k3_chat_completions_P-12_default-eb722fb3a3cc.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k3/chat_completions/features/billing",
+        "model_protocol:kimi-k3/chat_completions/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "790c673634ff9cb8aeb41b9171bdb566a24c107506acc568c489c9db569d23c5",
+      "case_key": "62:kimi-k3:chat_completions:P-15:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 62,
+      "group_name": "Kimi 企业高速线路",
+      "marker": "LSR_CONTRACT_B40D7C96D36FC692",
+      "max_output_tokens": 1048576,
+      "model_id": "kimi-k3",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-kimi-group62-chat-20260901/cases/62_kimi-k3_chat_completions_P-15_default-41ffb8c642f7.json",
+      "source_case_keys": [
+        "model_protocol:kimi-k3/chat_completions/features/error_passthrough",
+        "model_protocol:kimi-k3/chat_completions/invalid_request"
+      ],
+      "state": "planned"
+    }
+  ],
+  "kind": "provider_contract_live_plan",
+  "network_execution": "disabled",
+  "owned_identity": {
+    "key_id": 205,
+    "restore_group_id": 6,
+    "user_id": 1
+  },
+  "paid_request_upper_bound": 16,
+  "plan_sha256": "74f5e61fa5266e479f1132ffabddad8c4b0cb9bc6733a724e80f062ed71cfa6f",
+  "schema_version": 1,
+  "secret_source": "Agent Switch name only: LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+  "status_counts": {
+    "planned": 14,
+    "resumable": 0
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "artifact_sha256": "ac7e4ab53ecca8cc65bf2fdfc0835e13a8b6776042ec05853db1382a08296b2b",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "60:glm-5.2:responses:P-11:default",
+    "context_window": 1048576,
+    "declared_status": "blocked",
+    "group_id": 60,
+    "group_name": "GLM 企业高速线路",
+    "marker": "LSR_CONTRACT_E9C43C1D556FD657",
+    "max_output_tokens": 131072,
+    "model_id": "glm-5.2",
+    "name": "web_search",
+    "p_id": "P-11",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "a09a4831ab144f6fdfd16b945b497402673692dc76d7307f28a345249150be5b",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:53:53.085+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:53:51.219+00:00",
+  "offline_verifier": {
+    "reason": "web search response lacks a protocol-native server tool or grounding record",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 60,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "web search response lacks a protocol-native server tool or grounding record",
+  "request": {
+    "payload_sha256": "fbdea51924bc5531b983e05d4b18fb62eda5e808d0e60c5b944d8a385984e2b4",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "55184ac0278fa3faadb97936b607d281dd9225d1f9cf67074448a75395908303"
+  },
+  "response": {
+    "body_bytes": 180,
+    "body_sha256": "e5ab9ed5d5f42618f5f5befedbcb5b76ae141be958154b252666081c8651c0fa",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "responses server tool \"web_search\" requires a native Responses upstream",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "fe19ff91-efc2-4934-a6d9-22b62388f4ae",
+    "server_tool_observed": false,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

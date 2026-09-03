@@ -1,0 +1,106 @@
+{
+  "artifact_sha256": "4be935e45fcfbb5764c70f6cdf3181aad1dda5a3d1292cb032c6ae55c90c64a8",
+  "billing_attribution": {
+    "actual_cost": 0.07513155,
+    "status": "verified",
+    "total_cost": 0.02889675,
+    "usage_row_ids": [
+      "242542"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "15:claude-sonnet-4-6:messages:P-11:default",
+    "context_window": 1000000,
+    "declared_status": "verified",
+    "group_id": 15,
+    "group_name": "Claude 兼容线路",
+    "marker": "LSR_CONTRACT_4AD91E1E39506E47",
+    "max_output_tokens": 128000,
+    "model_id": "claude-sonnet-4-6",
+    "name": "web_search",
+    "p_id": "P-11",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "a69ed3767da826802162b269ab61e08b147c492a4d4dbe1a121afd9db29d3835",
+  "classification": "verified",
+  "finished_at": "2026-08-31T20:34:36.905+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:34:22.037+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 15,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "14f65678bee03f2f19f323117208ec211d45ab1a8c96054216947602a884eb8a",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "a4c9e5c9882b87fbed9145caf699e24d2135fe3756064be7bd7e768dd81cd368"
+  },
+  "response": {
+    "body_bytes": 17293,
+    "body_sha256": "6cbe7ca95818601d40d15da0f04de6ed913fb848d641d13dda14b371f99e31a0",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "1cd7f502-9687-4444-913d-0447e0727f5e",
+    "server_tool_observed": true,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 2335,
+    "input_tokens": 20,
+    "output_tokens": 263,
+    "total_tokens": 283
+  },
+  "usage_attribution": {
+    "row_count": 1,
+    "rows": [
+      {
+        "account_id": 36,
+        "account_rate_multiplier": 1.2,
+        "actual_cost": 0.07513155,
+        "api_key_id": 205,
+        "cache_creation_cost": 0.02419125,
+        "cache_creation_tokens": 6451,
+        "cache_read_cost": 0.0007005,
+        "cache_read_tokens": 2335,
+        "created_at": "2026-09-01T04:34:35.094333+08:00",
+        "duration_ms": 6635,
+        "first_token_ms": null,
+        "group_id": 15,
+        "id": 242542,
+        "inbound_endpoint": "/v1/messages",
+        "input_cost": 6e-05,
+        "input_tokens": 20,
+        "model": "claude-sonnet-4-6",
+        "output_cost": 0.003945,
+        "output_tokens": 263,
+        "rate_multiplier": 2.6,
+        "request_id": "1cd7f502-9687-4444-913d-0447e0727f5e",
+        "request_type": "sync",
+        "stream": false,
+        "total_cost": 0.02889675,
+        "upstream_endpoint": "/v1/messages",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/20bc915d4c7893ca case/a77515e9c0e3"
+      }
+    ],
+    "status": "verified"
+  }
+}

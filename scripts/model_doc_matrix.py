@@ -41,6 +41,13 @@ REQUIRED_PROTOCOL_FEATURES = {
     "web_search", "reasoning", "prompt_cache", "image_input", "context_window",
     "error_passthrough", "stream_disconnect", "timeout", "retry", "billing", "structured_output",
 }
+# The public contract-card badge answers a narrower question than release
+# acceptance: do the protocol, reasoning and price claims shown on the card
+# carry terminal evidence? Release acceptance (full_acceptance=True) keeps the
+# full feature set plus the owned gateway E2E requirement; the catalog
+# projection passes full_acceptance=False so cards verified under the
+# display-claim standard keep their verified badge.
+PUBLICATION_PROTOCOL_FEATURES = {"web_search", "reasoning", "image_input", "billing"}
 PRICE_FIELDS = {"input_price", "output_price", "cache_write_price", "cache_read_price"}
 OPTIONAL_PRICE_FIELDS = {"long_context", "context_intervals", "time_pricing"}
 FINAL_STATUSES = {"verified", "unsupported"}
@@ -429,9 +436,10 @@ def audit_contract_sections(
     as_of: date | None = None,
     max_age_days: int = DEFAULT_MAX_EVIDENCE_AGE_DAYS,
     canonical_price_rows: list[dict[str, Any]] | None = None,
+    full_acceptance: bool = True,
 ) -> dict[str, list[str]]:
     sections = _new_sections()
-    if contract.get("verification", {}).get("gateway_e2e") is not True:
+    if full_acceptance and contract.get("verification", {}).get("gateway_e2e") is not True:
         _add(sections, "group_access", "owned gateway E2E has not passed")
     model = contract.get("model")
     model_id = model.get("id") if isinstance(model, dict) else None
@@ -516,7 +524,8 @@ def audit_contract_sections(
         if not isinstance(features, dict):
             _add(sections, "model_protocol", f"{model_id}/{protocol}: protocol feature matrix missing")
         else:
-            for feature in REQUIRED_PROTOCOL_FEATURES:
+            required_features = REQUIRED_PROTOCOL_FEATURES if full_acceptance else PUBLICATION_PROTOCOL_FEATURES
+            for feature in required_features:
                 evidence_entry(
                     features.get(feature),
                     f"{model_id}/{protocol}/features/{feature}",

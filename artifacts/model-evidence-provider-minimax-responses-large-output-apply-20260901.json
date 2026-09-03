@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 3,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "d94b08f867ddc25d8b0957e536b93bd41f993eeaebcc14269289da1237ffc11d",
+  "changes": [
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-39ed93ea01c04cd82c80e55a",
+            "evidence-9de4666c5c4717b3e903355d"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-984dd586eabf5256e1b7613d",
+            "evidence-a433f28929091a8e73c575fe",
+            "evidence-b7d1aba544091e962cf46db8",
+            "evidence-b8d80442d7c41aae99be8a29"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "protocols/responses",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-11389760763b80b6c2626421",
+            "evidence-21667eb39344293febd21126",
+            "evidence-238225ff1a2396409a28a0b8",
+            "evidence-39ed93ea01c04cd82c80e55a",
+            "evidence-776a0ad83e697ab7c059206e",
+            "evidence-83cb686bb4d026731af25b71",
+            "evidence-984dd586eabf5256e1b7613d",
+            "evidence-9de4666c5c4717b3e903355d",
+            "evidence-a433f28929091a8e73c575fe",
+            "evidence-b7d1aba544091e962cf46db8",
+            "evidence-b8d80442d7c41aae99be8a29"
+          ]
+        }
+      ]
+    }
+  ]
+}

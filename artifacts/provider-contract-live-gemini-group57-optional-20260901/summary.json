@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "0285baefac2fcdcee56d077e803f0a7990ff02461e454f97d04fc890a44dbb71",
+  "case_count": 4,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "6b9ab82d1c4321c3",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-gemini-group57-optional-20260901/run-state.json",
+  "status_counts": {
+    "pass": 4
+  }
+}

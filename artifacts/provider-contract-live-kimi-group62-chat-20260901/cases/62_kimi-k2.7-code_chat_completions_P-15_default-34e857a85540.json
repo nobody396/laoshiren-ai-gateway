@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "843f27cc35c994dfb58e2e4b9953ca3610051e9e76c7026e2efa311339f3cfe3",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "62:kimi-k2.7-code:chat_completions:P-15:default",
+    "context_window": 262144,
+    "declared_status": null,
+    "group_id": 62,
+    "group_name": "Kimi 企业高速线路",
+    "marker": "LSR_CONTRACT_C313AA51B760A863",
+    "max_output_tokens": 16384,
+    "model_id": "kimi-k2.7-code",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:kimi-k2.7-code/chat_completions/features/error_passthrough",
+      "model_protocol:kimi-k2.7-code/chat_completions/invalid_request"
+    ]
+  },
+  "case_fingerprint": "b6dddef3220d7db49b12c90254ce7570b309255306f6e8d0acfc6e186eec1f37",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:26:25.582+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:26:23.999+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 62,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "78a42ac814e17eba0f95cf66dd139e2d7a2c18a27e86fcd20ba0dc5bb02432f1",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "8ab499887808ed92d56802d18d95f1500f181226fc5dcea005338deaf0f80241"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "95b687457ae5a3cdac9da68c2dae895a3c8bd656c99c1ed4144438f8847d8d83",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "19961ed1-d712-469e-b082-bc04070acf7a",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

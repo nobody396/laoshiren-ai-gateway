@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "kind": "windows_client_config_qa",
+  "secret_free": true,
+  "commit": "e19164a7ca557501af8a77ae90fa298ebeae50a1",
+  "runner_os": "Windows",
+  "runner_arch": "X64",
+  "pwsh_version": "7.6.5",
+  "clients": [
+    "Claude Code",
+    "Codex",
+    "Grok Build",
+    "Gemini CLI"
+  ],
+  "features": [
+    "safe_write",
+    "backup_recovery",
+    "idempotency",
+    "restricted_execution_policy",
+    "powershell_5_1",
+    "powershell_7"
+  ],
+  "result": "pass"
+}

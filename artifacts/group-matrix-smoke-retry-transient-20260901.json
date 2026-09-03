@@ -1,0 +1,5 @@
+[
+  {"group_id": 15, "model_id": "claude-fable-5", "protocol": "messages", "max_output_tokens": 4096},
+  {"group_id": 52, "model_id": "gpt-5.6-sol", "protocol": "responses", "max_output_tokens": 64},
+  {"group_id": 58, "model_id": "gpt-5.5", "protocol": "responses", "max_output_tokens": 64}
+]

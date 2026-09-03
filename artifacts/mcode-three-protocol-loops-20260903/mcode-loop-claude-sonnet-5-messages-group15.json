@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "minimax-code",
+  "client_version": "cli:0.2.7",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-sonnet-5",
+  "protocol": "messages",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 15,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T04:02:53+00:00",
+  "finished_at": "2026-09-03T04:03:42+00:00",
+  "duration_ms": 34453,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-messages",
+    "api_format": "anthropic-messages",
+    "provider_base_url": "https://api.laoshirenai.com",
+    "output_format": "stream-json",
+    "isolated_home": true,
+    "credential": "ephemeral config.yaml custom_provider apiKey, mode 0600, destroyed after run"
+  },
+  "target_group_readback": {
+    "group_id": 15
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stream_event_counts": {
+    "exec.started": 1,
+    "session.started": 1,
+    "turn.started": 1,
+    "item.started": 4,
+    "item.updated": 3,
+    "item.completed": 4,
+    "turn.completed": 1,
+    "exec.completed": 1
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 8436,
+  "stdout_sha256": "d99ea99895772d30e86c2966c46b2bf1fa0c7966bf6097a6ec57e8d4884fd8dd",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/mcode-three-protocol-loops-20260903/mcode-loop-claude-sonnet-5-messages-group15-usage.json",
+    "artifact_sha256": "f3fbbdcf9e3359ca536ca9af5e22157b9432de304b433f8957b990f029fa4017",
+    "usage_rows": 5,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoints": [
+      "/v1/messages"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "d5318ebe6905c87e6b9c2279e737f26c0202a115713d296e64414d215f465595"
+}

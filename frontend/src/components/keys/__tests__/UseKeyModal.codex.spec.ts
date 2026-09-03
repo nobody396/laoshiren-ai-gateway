@@ -23,6 +23,7 @@ vi.mock('@/api/gatewayModels', () => ({
 }))
 
 import UseKeyModal from '../UseKeyModal.vue'
+import { codexClientModels } from '@/generated/codexClientCatalog'
 
 const mountModal = (overrideProps: Record<string, unknown> = {}) =>
   mount(UseKeyModal, {
@@ -164,9 +165,9 @@ describe('UseKeyModal Codex catalog', () => {
     await flushPromises()
 
     const catalog = catalogBlock(wrapper)
-    expect(catalog.match(/"slug":/g)).toHaveLength(5)
+    expect(catalog.match(/"slug":/g)).toHaveLength(codexClientModels.length)
     expect(catalog).toContain('"slug": "gpt-5.6-sol"')
-    expect(catalog).not.toContain('gpt-5.6-luna')
+    expect(catalog).toContain('gpt-5.6-luna')
     expect(configBlock(wrapper)).toContain('model = "gpt-5.6-sol"')
   })
 })

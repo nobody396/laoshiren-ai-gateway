@@ -1,0 +1,47 @@
+{
+  "cases": {
+    "15:claude-haiku-4-5:messages:P-11:default": {
+      "artifact_sha256": "6108b3479f8ff28aa69fe4e309b2e85b57aafd32ab85774773baf4f1d19437e4",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-20260901/cases/15_claude-haiku-4-5_messages_P-11_default-57531266c314.json",
+      "status": "pass"
+    },
+    "15:claude-opus-4-6:messages:P-11:default": {
+      "artifact_sha256": "1d4d74a9781f9f570bcfaeeeb763ac4199a544e635b63b2d4a4b9b860a1fa9a9",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-20260901/cases/15_claude-opus-4-6_messages_P-11_default-dfed09b76d2d.json",
+      "status": "pass"
+    },
+    "15:claude-opus-4-7:messages:P-11:default": {
+      "artifact_sha256": "3ec184049fdc5b9a29a77029e12c907ea057e639c7cd735cabd9c41d7347dcf7",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-20260901/cases/15_claude-opus-4-7_messages_P-11_default-3dbcf591c583.json",
+      "status": "pass"
+    },
+    "15:claude-opus-4-8:messages:P-11:default": {
+      "artifact_sha256": "41af1c1020d4a857a873d9917a1a361944ebc443fb2031c55b188be6da769cb5",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-20260901/cases/15_claude-opus-4-8_messages_P-11_default-07c7f7f01081.json",
+      "status": "pass"
+    },
+    "15:claude-opus-5:messages:P-11:default": {
+      "artifact_sha256": "909fbf90be8c86f65f296b9b48cb11fc161aa8674a52f1052ed5bd25ac1b654b",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-20260901/cases/15_claude-opus-5_messages_P-11_default-713cefd4d970.json",
+      "status": "pass"
+    },
+    "15:claude-sonnet-4-6:messages:P-11:default": {
+      "artifact_sha256": "a47c177c3819b63a50e69a5484ea881434b0bc440917532a7349ee7a5a291cca",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-20260901/cases/15_claude-sonnet-4-6_messages_P-11_default-a77515e9c0e3.json",
+      "status": "pass"
+    },
+    "15:claude-sonnet-5:messages:P-11:default": {
+      "artifact_sha256": "a4f3fc55ece5f2987c9e4b107fba886062938e1673575a31e3c1270b0ecb6aeb",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-20260901/cases/15_claude-sonnet-5_messages_P-11_default-c96a9b0a7fb0.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:20:28.262+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "fda4eea0f1bfd0c2",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:18:44.296+00:00"
+}

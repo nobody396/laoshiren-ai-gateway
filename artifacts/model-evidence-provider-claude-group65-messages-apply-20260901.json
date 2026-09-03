@@ -1,0 +1,668 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 8,
+  "events": 55,
+  "group_access": {
+    "changed": 7,
+    "verified": 6,
+    "blocked": 1
+  },
+  "evidence_index_sha256": "8d538fe175de9c609038aad1eeee4e4039276269ec5d826f650785ad5f1fdc61",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0a43e0b85aac77386534d215",
+            "evidence-2597ed46ccd448235c5e568e",
+            "evidence-2910f249bcd70fe7068ca254",
+            "evidence-31f2aebb2f8b858040b3f628",
+            "evidence-86879a2baaff3814e7e48f0f",
+            "evidence-b9249af20b5080608927e8db",
+            "evidence-bc17ab1286ff58b731daf07e",
+            "evidence-d3054c46dcae20d4604d3646",
+            "evidence-eafd36a39e5de00c627a5e80"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2597ed46ccd448235c5e568e",
+            "evidence-2910f249bcd70fe7068ca254",
+            "evidence-543f3efaacca65d10c5fb3eb",
+            "evidence-679e41a7d513ee248a859fe7",
+            "evidence-90cef262905cd422e8db0e8f",
+            "evidence-c8104df9e4d1be7a8dd449c3",
+            "evidence-d3054c46dcae20d4604d3646"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-57c975087e82c7c3d7c969f1"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9f41e7f596d69a42e85b7355"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-08032b42b82c3e4b4d47944e"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-398596b300b145b52f6acdca"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9a1556877281aa1a202259b3"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9a08c57dc4d56dea327ea755"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2a910d948eae2a66dc3be549"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1568f88c817132a6f2c06c24"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a59b8ab55baddc9aad022bb9"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0c7f5752069d13ebd0b816bd"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-40bd2990c8d3bdb99230133f"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3b6b519189a9ac40526bdcc5",
+            "evidence-4a966835bb7dcf2c79efc36b",
+            "evidence-4d586d76ee6ec1dd7d83b897",
+            "evidence-52f4b86b6295e797f29f4a40",
+            "evidence-6e29c0437e98bfbb319dc5ec",
+            "evidence-a20c7ef3dab2315f859f4702",
+            "evidence-b04da4645398511db258368c",
+            "evidence-c40d7a0e680b05059c080d82",
+            "evidence-fe8b7632f78a9b473fb1cffa"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01bdaa354155498075d555cf",
+            "evidence-15a2b4b2b9716581a3347efd",
+            "evidence-1d49c7fcc1b248a312789a5b",
+            "evidence-4a966835bb7dcf2c79efc36b",
+            "evidence-6e29c0437e98bfbb319dc5ec",
+            "evidence-c40d7a0e680b05059c080d82"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-94c384dda5ce602d4414deb3"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-540ec6978009f9dea385acf8"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-95438bb01a2320a11e5f9ad4"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b1b0f6b41a5c9727af179f66"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e7db1aa16c6d55abe1e39e59"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-1146dda9baff80a891a09e70",
+            "evidence-3acc5a1ec6779a12c9236cae",
+            "evidence-4a0e0eade14a49a9ec296254",
+            "evidence-5b70821e19450aef697e7d92",
+            "evidence-80632aa21484f68fbdb44ac8",
+            "evidence-b5374ff7fad0747662a318a9",
+            "evidence-ce0313c0cc24f1ba7aa2a1a9",
+            "evidence-f2e97aaf101e9b01a31bc856",
+            "evidence-fec12b5bc82306bd214703b6"
+          ],
+          "protocol_status": {
+            "messages": "blocked"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-21d1822a765ae2c6a4a68a91",
+            "evidence-3acc5a1ec6779a12c9236cae",
+            "evidence-4a0e0eade14a49a9ec296254",
+            "evidence-601048974020e6db866ad45b",
+            "evidence-80632aa21484f68fbdb44ac8",
+            "evidence-9a68a0ac4a9eb4a006f3115d",
+            "evidence-b420ec86f9fdffa6261840ff"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-bebcfe45e61510789dd57867"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-246d84daf8a22f98cbc92f51"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7454cfb7338b6f81afc9add6"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b5710d9b0e101fbfb5473e2b"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9c436d26a0365ab4373ec085"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2d52395ff2108cdc9da43d9e",
+            "evidence-32e7d4764f33d132108963a4",
+            "evidence-456d41c011075bc6a747d874",
+            "evidence-572634c19ed35f681d8c5af9",
+            "evidence-6242b07c2f8c588f2cb15242",
+            "evidence-664fcb2c4fb8ab30064c1dc9",
+            "evidence-66f1ba25ea507cf4f94b6ac8",
+            "evidence-7364294e6c3b536ea11a75fd",
+            "evidence-c9e402f58530604e28c5145a"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0628964019b029c294507552",
+            "evidence-2f05245e97ad88310677845e",
+            "evidence-32e7d4764f33d132108963a4",
+            "evidence-3d20f643630239ac5ed8ef02",
+            "evidence-3e7684407282e0ef7806f5c9",
+            "evidence-456d41c011075bc6a747d874",
+            "evidence-572634c19ed35f681d8c5af9"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ecdc8b933141d8f77f2e84f5"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8b10dba9d3c8e61c892c39ad"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-54a4b3e97b6e3c7ec7d996bd"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-47047911e9d905ee46f1a571"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fc49f856f2f3b27c7ae55c14"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-00d2d12fafaf9c3ebb0ca558",
+            "evidence-0bfc04ce3bb4ce08f1b333bb",
+            "evidence-4ae81babbad9e453b0904987",
+            "evidence-4c518011d2f759cfbd8739c3",
+            "evidence-97ac9a7efa4c72dd834a751f",
+            "evidence-a3b678a28fea6d12eeab5eec",
+            "evidence-a48f74bd34fe6177fc2a7d6e",
+            "evidence-c467aab51b7f6da4653edf45",
+            "evidence-ec7a8801d5ee36c2b0e9a105"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-00d2d12fafaf9c3ebb0ca558",
+            "evidence-2479446128400bd6f74fbc20",
+            "evidence-4c518011d2f759cfbd8739c3",
+            "evidence-4fa9a2729642c17a5a057913",
+            "evidence-5de72a7bdbf39db68063b3cb",
+            "evidence-97ac9a7efa4c72dd834a751f",
+            "evidence-d66d2b914471e00c1cf57404"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-92a6db915697be11f562199a"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e0d75e28ad3bc3333994dc5"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e01a55b9af984e84041bd58c"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a61d20ae2a7be732737eb049"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3be0345369458afc5391e39c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01875ad20d13d58fcc93f4e8",
+            "evidence-1762f3075765aa9bbf42f164",
+            "evidence-22676b33c8644afcef85dead",
+            "evidence-22d426c8de909eab87d6e61a",
+            "evidence-9161833712ae93208ace3170",
+            "evidence-ab6abcdb1137f1453a571c5a",
+            "evidence-c27ba06525ae3f5ac50d0fc7",
+            "evidence-c4aa3e1c9a0af5ebaf7f974e",
+            "evidence-ce8c517326e82b2b3176bc0d"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01875ad20d13d58fcc93f4e8",
+            "evidence-1762f3075765aa9bbf42f164",
+            "evidence-413118602d1930c80336a6b9",
+            "evidence-41bd76b2c2a83577d70e3fff",
+            "evidence-4435a06c5743621f9a2523c5",
+            "evidence-60dfb69f4508763f8df04d83",
+            "evidence-ab6abcdb1137f1453a571c5a"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-14b90ca746ccc94d4c7b8b6e"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a8aa089f78883e7bef8e1f47"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-39a854140b0575aecc9f7a32"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-281ccb124b4d6f9dedb24bd6"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d94ab97eb06ed38e96a192b1"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e44ba523ab3e2e90ae77fad",
+            "evidence-3a6f11268d15421999a4bb34",
+            "evidence-53f094c394b5aacf7f320d5a",
+            "evidence-5710e7245f10b0c5bd460bba",
+            "evidence-77fb431715353ae126aa4820",
+            "evidence-a2a3ebe48f89a0df64324121",
+            "evidence-aa41560bbce637fe9a254de5",
+            "evidence-da1f7f64f135bc3ad9c01583",
+            "evidence-df9e0ee3b5a27f88cb8f27fc"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e44ba523ab3e2e90ae77fad",
+            "evidence-3a6f11268d15421999a4bb34",
+            "evidence-7457f28e347a649bf2ae04b6",
+            "evidence-a2a3ebe48f89a0df64324121",
+            "evidence-ec26d722b1a57d681bda1c51"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-630745928d7b95cf42abef8e"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-044571833c2e6da533b68604"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-92fc4c445fd8496be1a1e1b0"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3b783d867bb4b30dbb1ad46d"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c463ada79c4a044800279db7"
+          ]
+        }
+      ]
+    }
+  ]
+}

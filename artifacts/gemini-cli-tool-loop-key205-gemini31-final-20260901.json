@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "gemini-cli",
+  "client_version": "0.57.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gemini-3.1-pro",
+  "protocol": "generate_content",
+  "group_id": 57,
+  "observed_at": "2026-08-31T18:14:21+00:00",
+  "finished_at": "2026-08-31T18:15:08+00:00",
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901"
+  },
+  "group_readback": {
+    "id": 205,
+    "user_id": 1,
+    "status": "active",
+    "group_id": 57
+  },
+  "model_discovery": {
+    "url": "https://api.laoshirenai.com/v1/models",
+    "http_status": 200,
+    "request_id": null,
+    "body_sha256": "62f898aad64c7ae613fbcd4bfc0eb2cec9fb0a0d5e35fdf2448258cadcbee962",
+    "model_ids": [
+      "gemini-3.1-pro",
+      "gemini-3.7-flash"
+    ],
+    "model_count": 2,
+    "error": null
+  },
+  "command_contract": {
+    "executable": "npx @google/gemini-cli@0.57.0",
+    "model": "gemini-3.1-pro",
+    "approval": "yolo",
+    "output_format": "stream-json"
+  },
+  "final_marker": "LSRAI_GEMINI_CLI_DONE_8996bbb7db92",
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error": null,
+  "passed": true,
+  "event_count": 8,
+  "event_types": [
+    "init",
+    "message",
+    "result",
+    "tool_result",
+    "tool_use"
+  ],
+  "tool_names": [
+    "read_file",
+    "run_shell_command"
+  ],
+  "successful_tools": [
+    "read_file",
+    "run_shell_command"
+  ],
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "shell_result_verified": true,
+  "final_marker_verified": true,
+  "assistant_text_sha256": "b146f5c9b2e40563b46b0aeb47e7cedc4f30b676362391f4e2bb11727a042cf9",
+  "assistant_text_bytes": 34,
+  "assistant_text_summary": "LSRAI_GEMINI_CLI_DONE_8996bbb7db92",
+  "stdout_bytes": 1826,
+  "stdout_sha256": "904c11dc689c9bfe1a3871b73fac7f310021685691533567707ef9647858af77",
+  "stderr_bytes": 428,
+  "stderr_sha256": "73845ddfddf75b620edc13c641710b5e7d015759d9b2266c1f1f44adaa3437c7",
+  "stderr_summary": "Warning: Basic terminal detected (TERM=dumb). Visual rendering will be limited. For the best experience, use a terminal emulator with truecolor support. Warning: 256-color support not detected. Using a terminal with at least 256-color support is recommended for a better visual experience. YOLO mode is enabled. All tool calls will be automatically approved. YOLO mode is enabled. All tool calls will be automatically approved.",
+  "usage_endpoint": {
+    "path": "/admin/usage?page=1&page_size=100&api_key_id=205&group_id=57&model=gemini-3.1-pro&sort_by=id&sort_order=desc&exact_total=true",
+    "baseline_rows": 4,
+    "new_rows": 2,
+    "attribution_verified": true,
+    "rows": [
+      {
+        "id": 240786,
+        "created_at": "2026-09-01T02:14:59.257388+08:00",
+        "user_id": 1,
+        "api_key_id": 205,
+        "group_id": 57,
+        "account_id": 48,
+        "model": "gemini-3.1-pro",
+        "inbound_endpoint": "/v1beta/models",
+        "upstream_endpoint": "/v1beta/models",
+        "input_tokens": 11023,
+        "output_tokens": 346,
+        "duration_ms": 11145,
+        "first_token_ms": 11052,
+        "stream": true,
+        "request_id": "generated:r3l15la8umlfjw-3jp",
+        "user_agent": "GeminiCLI-tui/0.57.0/gemini-3.1-pro (darwin; arm64; terminal)",
+        "total_cost": 0.026198,
+        "actual_cost": 0.0157188,
+        "billing_type": 0
+      },
+      {
+        "id": 240784,
+        "created_at": "2026-09-01T02:14:46.583597+08:00",
+        "user_id": 1,
+        "api_key_id": 205,
+        "group_id": 57,
+        "account_id": 48,
+        "model": "gemini-3.1-pro",
+        "inbound_endpoint": "/v1beta/models",
+        "upstream_endpoint": "/v1beta/models",
+        "input_tokens": 10574,
+        "output_tokens": 665,
+        "duration_ms": 14562,
+        "first_token_ms": 14560,
+        "stream": true,
+        "request_id": "generated:r3l15la8umlfjw-3jk",
+        "user_agent": "GeminiCLI-tui/0.57.0/gemini-3.1-pro (darwin; arm64; terminal)",
+        "total_cost": 0.029128,
+        "actual_cost": 0.0174768,
+        "billing_type": 0
+      }
+    ]
+  },
+  "restoration": {
+    "group_id": 6,
+    "status": "active",
+    "model_discovery_http_status": 200,
+    "model_count": 6
+  },
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/gemini-cli-usage-attribution-key205-gemini31-20260901.json",
+    "artifact_sha256": "2b6cbb23f77efd82380c59bf0927afe4bd43e37123d4e63148e322a925a9e6f5",
+    "usage_rows": 2,
+    "verified": true
+  }
+}

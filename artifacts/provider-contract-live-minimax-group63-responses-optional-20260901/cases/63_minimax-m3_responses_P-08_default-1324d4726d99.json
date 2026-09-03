@@ -1,0 +1,105 @@
+{
+  "artifact_sha256": "df218a091a429b127708ab544f6781ec0061be41fda34d92dc7cea1e33828ba6",
+  "billing_attribution": {
+    "actual_cost": 0.001363782,
+    "status": "verified",
+    "total_cost": 0.00143556,
+    "usage_row_ids": [
+      "242600"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "63:minimax-m3:responses:P-08:default",
+    "context_window": 1048576,
+    "declared_status": "blocked",
+    "group_id": 63,
+    "group_name": "MiniMax 企业高速线路",
+    "marker": "LSR_CONTRACT_9DB103BD26D9F0CC",
+    "max_output_tokens": 524288,
+    "model_id": "minimax-m3",
+    "name": "image_input",
+    "p_id": "P-08",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "18326ec5c303ac6c62c23ce5f6199a7885ef6d77915a6cd35872a16996e70e23",
+  "classification": "verified",
+  "finished_at": "2026-08-31T21:31:58.250+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T21:31:50.961+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 63,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "a79ec652172c83483528d979f99b350d5ad83a9660a0b67de8b911d4451d7640",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "e67a04de9b261f016511b61141e7a246c251f27709b0ddc68cae259953be8c49"
+  },
+  "response": {
+    "body_bytes": 680,
+    "body_sha256": "dabc768c5c705cedeb72b5049682c392ba113dec85836595ffcc588cfbd262a3",
+    "complete": true,
+    "content_type": "text/event-stream",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "2a2eb7e0-7c05-91bc-9c65-0e1db5e9bbcc",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 233,
+    "output_tokens": 57,
+    "total_tokens": 290
+  },
+  "usage_attribution": {
+    "row_count": 1,
+    "rows": [
+      {
+        "account_id": 75,
+        "account_rate_multiplier": 1,
+        "actual_cost": 0.001363782,
+        "api_key_id": 205,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 0.00012516,
+        "cache_read_tokens": 149,
+        "created_at": "2026-09-01T05:31:56.429457+08:00",
+        "duration_ms": 3216,
+        "first_token_ms": null,
+        "group_id": 63,
+        "id": 242600,
+        "inbound_endpoint": "/v1/responses",
+        "input_cost": 0.0003528,
+        "input_tokens": 84,
+        "model": "minimax-m3",
+        "output_cost": 0.0009576,
+        "output_tokens": 57,
+        "rate_multiplier": 0.95,
+        "request_id": "client:fabc3ed9-9224-4e31-a34f-e827cbbe41c4",
+        "request_type": "sync",
+        "stream": false,
+        "total_cost": 0.00143556,
+        "upstream_endpoint": "/v1/chat/completions",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/454e07c10ac080b5 case/1324d4726d99"
+      }
+    ],
+    "status": "verified"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "365f99958fc5e14abe82903ee40a8ff438296433963758ce382318cd5d18efad",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "62:kimi-k3:messages:P-12:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 62,
+    "group_name": "Kimi 企业高速线路",
+    "marker": "LSR_CONTRACT_E1BE1EBAAB54D7EB",
+    "max_output_tokens": 1048576,
+    "model_id": "kimi-k3",
+    "name": "usage",
+    "p_id": "P-12",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "d26dbd383f93561aaa1dcc86f7eb7772c079a5241405c693afd9bbc21e215af4",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:12:29.363+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:12:28.001+00:00",
+  "offline_verifier": {
+    "reason": "usage object is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 62,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "usage object is required",
+  "request": {
+    "payload_sha256": "8e1bf86b1931f8d7f46afeffc6c7d00277abdbc41b41e9f16fdd7e1ab856560b",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "aae2b6fdefcb066ee554a29bfcc87417f81685316ad64e1765a2dd449db817f7"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "63018cb71e8b44c3d8940e5f189228b9269e5ec9243906ab48f3b8b36326aa78",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "4ea1d15c-fbd8-48b4-8173-ebecf977ee4a",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

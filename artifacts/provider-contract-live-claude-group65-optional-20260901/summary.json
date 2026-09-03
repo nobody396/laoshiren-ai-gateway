@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "bd56065c698ec5a2ab7b84ebe6095658684932b063e78d003d60f224a4093144",
+  "case_count": 16,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "4dfd2be6b25acd41",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-claude-group65-optional-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 8,
+    "pass": 8
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "gateway_model_discovery_receipt",
+  "observed_at": "2026-08-31T15:15:03+00:00",
+  "request": {
+    "method": "GET",
+    "url": "https://api.laoshirenai.com/v1/models",
+    "auth": "owned_agent_switch_secret_name_only",
+    "secret_name": "LAOSHIRENAI_CC_SWITCH_E2E_KEY"
+  },
+  "response": {
+    "http_status": 403,
+    "content_type": null,
+    "request_id": null,
+    "body_sha256": "8cfcbeb494e29a69d01fe3492f417acb45d1e51d33d5123934cfd1907c8401c7",
+    "model_ids": [],
+    "model_count": 0,
+    "error": {
+      "code": "GROUP_DISABLED",
+      "message": "API Key 所属分组已停用"
+    }
+  },
+  "claims": {
+    "model_discovery_only": true,
+    "capability_proof": false
+  },
+  "secret_free": true,
+  "artifact_sha256": "fa203283ba8e36597fe11e49e12feb737cfa34442118e3302c5c69997b4d725e"
+}

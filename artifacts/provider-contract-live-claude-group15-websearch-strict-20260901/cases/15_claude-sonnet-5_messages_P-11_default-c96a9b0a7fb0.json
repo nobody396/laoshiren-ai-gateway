@@ -1,0 +1,73 @@
+{
+  "artifact_sha256": "daeaa83538c1defa7572d53e0b3875edb6ac6133952a089734239431190761fd",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "15:claude-sonnet-5:messages:P-11:default",
+    "context_window": 1000000,
+    "declared_status": "verified",
+    "group_id": 15,
+    "group_name": "Claude 兼容线路",
+    "marker": "LSR_CONTRACT_ABB3CFDBB4B3764D",
+    "max_output_tokens": 128000,
+    "model_id": "claude-sonnet-5",
+    "name": "web_search",
+    "p_id": "P-11",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "7e9ab1774986a0044358854fda6e2bd060cd2e9b3d2edd1f313df745051a5523",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:34:43.107+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:34:36.906+00:00",
+  "offline_verifier": {
+    "reason": "web search response lacks a protocol-native server tool or grounding record",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 15,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "web search response lacks a protocol-native server tool or grounding record",
+  "request": {
+    "payload_sha256": "b57abe633a06c52bcfbe90ad2c541689a4028f07d95dff088dc2ca6dad293849",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "15bd64b429256242a35f915f0e3b6d8d269e6a1bacddf42b5b6191eb02a281ef"
+  },
+  "response": {
+    "body_bytes": 198,
+    "body_sha256": "5eb0e6d059cf4df2d37cdf80113d1beaca75666a40d514334920f4bd1c995de6",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "8aab5363-0326-46dd-a19d-224e55943725",
+    "server_tool_observed": false,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

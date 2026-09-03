@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "c1a49c570cbb670c54a232a9bf3ef4588b2c69ace4846094836a8e6254135321",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "64:qwen3.6-flash:chat_completions:P-03:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 64,
+    "group_name": "Qwen 企业高速线路",
+    "marker": "LSR_CONTRACT_8A9EBF266286EF55",
+    "max_output_tokens": 65536,
+    "model_id": "qwen3.6-flash",
+    "name": "streaming_terminal",
+    "p_id": "P-03",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:qwen3.6-flash/chat_completions/streaming_terminal"
+    ]
+  },
+  "case_fingerprint": "17cf0587aefe802f00abf0ad7fbde2449c0603df8541a799dc100dc273073960",
+  "classification": "timeout",
+  "finished_at": "2026-08-31T19:09:08.162+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:07:32.727+00:00",
+  "offline_verifier": {
+    "reason": "streaming_terminal requires events",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 64,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "streaming_terminal requires events",
+  "request": {
+    "payload_sha256": "133955f01628848cba3c772400b0ef56a05002d202b0eefa3048b2a4a6f53652",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "a4afd28cb4aad7014f5084dd7feab3728ba8786129936bb412cb0145b68d5cdb"
+  },
+  "response": {
+    "body_bytes": 0,
+    "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "complete": false,
+    "content_type": null,
+    "error": {
+      "message": "The read operation timed out",
+      "type": "TimeoutError"
+    },
+    "event_count": 0,
+    "http_status": 0,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": true
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

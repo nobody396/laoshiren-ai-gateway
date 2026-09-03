@@ -1,0 +1,47 @@
+{
+  "cases": {
+    "63:minimax-m3:chat_completions:P-02:default": {
+      "artifact_sha256": "7b8ad9a8fe9b65f00654d6a4f05b9bda5c93c93cf22b7c80489609ab8571ea8f",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-02_default-42e6ea6b5918.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:chat_completions:P-03:default": {
+      "artifact_sha256": "7cfdf56f66da722cfde4ced67df66db2798c83a30e46df6eadcb9d130b9ec945",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-03_default-03ebfb165c22.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:chat_completions:P-04:default": {
+      "artifact_sha256": "91320ad1e6abadf3bd5f00189a22d44f643be78107ae474990f5f33f9f98addc",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-04_default-ca6eac1fb3ae.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:chat_completions:P-05:default": {
+      "artifact_sha256": "7c09041c67717c1a3b0f83aef6a3f1ad979e824afc1d6f9bf84459bd2adf1b36",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-05_default-24f8dd6fbb7f.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:chat_completions:P-06:adaptive": {
+      "artifact_sha256": "155eac2d778bb9051f8923d73f06c966b3b065badb137c51ed82c69761641035",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-06_adaptive-32a60b5ba36a.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:chat_completions:P-12:default": {
+      "artifact_sha256": "ea6bfb8f2aaf9870e8f7ba642e89adf6e323ddc5964b567144e5eb230a08fbb8",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-12_default-07b5f230ca8c.json",
+      "status": "pass"
+    },
+    "63:minimax-m3:chat_completions:P-15:default": {
+      "artifact_sha256": "0ee600c1bd36cee3584a68b79bb2fd1d9b058fa244b7e8dadf7735fc8d6b6698",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-15_default-a53ea74fa7c2.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:30:10.685+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "379ad7d25bec48f8",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T19:29:24.546+00:00"
+}

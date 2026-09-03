@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "minimax-code",
+  "client_version": "cli:0.2.7",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.4",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 6,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T04:03:42+00:00",
+  "finished_at": "2026-09-03T04:04:24+00:00",
+  "duration_ms": 29976,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-responses",
+    "api_format": "openai-responses",
+    "provider_base_url": "https://api.laoshirenai.com/v1",
+    "output_format": "stream-json",
+    "isolated_home": true,
+    "credential": "ephemeral config.yaml custom_provider apiKey, mode 0600, destroyed after run"
+  },
+  "target_group_readback": {
+    "group_id": 6
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stream_event_counts": {
+    "exec.started": 1,
+    "session.started": 1,
+    "turn.started": 1,
+    "item.started": 6,
+    "item.updated": 36,
+    "item.completed": 6,
+    "turn.completed": 1,
+    "exec.completed": 1
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 22333,
+  "stdout_sha256": "5a32993dddb4d92ba6b25ed7013c9227a4b8a5132df5f3e9ecdb9bfc38d61589",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/mcode-three-protocol-loops-20260903/mcode-loop-gpt-5.4-responses-group6-usage.json",
+    "artifact_sha256": "7c5276660c9eafb69a21a608a986e675bddee2478116e2fcbfbd461ed58b90dc",
+    "usage_rows": 5,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoints": [
+      "/v1/responses"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "487af05295938a147861dffa97648c272dec2ca525e991c3952d146b4e2a3a5e"
+}

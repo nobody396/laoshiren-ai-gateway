@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_protocol_probe",
+  "secret_free": true,
+  "client_id": "minimax-code",
+  "client_version": "cli:0.2.7",
+  "os": "macos",
+  "probe": "invalid_request",
+  "model_id": "mcode-invalid-model-000",
+  "observed_at": "2026-09-03T04:06:20+00:00",
+  "key_group_id": 6,
+  "probes": {
+    "chat_completions": {
+      "exit_code": 4,
+      "timed_out": false,
+      "duration_ms": 29882,
+      "error_surfaced": true,
+      "stdout_sha256": "b4a7a35f95d6c6da1b7d2b53e737ec33e3ca8ec156c9bfa684fcb9cf7056ec10",
+      "stderr_sha256": "16a4a3649b9dabcc357551072d1ea8ba872bba763143553e8c1ce5339cfd4c17",
+      "stdout_bytes": 2079,
+      "stderr_bytes": 336,
+      "passed": true
+    },
+    "messages": {
+      "exit_code": 4,
+      "timed_out": false,
+      "duration_ms": 36723,
+      "error_surfaced": true,
+      "stdout_sha256": "bbe8a0798311e96dacfc7703927b4015c0b6c7efe07283eb7053cb94e28d173d",
+      "stderr_sha256": "e09253801ca2b719d40fa6e4f222fcfb48b6c2c4d25fffc1a63b687614fa9265",
+      "stdout_bytes": 1847,
+      "stderr_bytes": 222,
+      "passed": true
+    },
+    "responses": {
+      "exit_code": 4,
+      "timed_out": false,
+      "duration_ms": 35097,
+      "error_surfaced": true,
+      "stdout_sha256": "e94e40a0e6c793eb1fa41768ef43541a73993849ca9befa0f8f6ef1f2c4c33dc",
+      "stderr_sha256": "f64cc1f1496073fcdb581d7ffc1eb8a3fdaa8b8247e61aaf4cf0f0598f0af671",
+      "stdout_bytes": 2125,
+      "stderr_bytes": 360,
+      "passed": true
+    }
+  },
+  "passed": true,
+  "artifact_sha256": "57f66d80a0b08214d5fa320f70335eb3913935eb8b48896815171b08d7378158"
+}

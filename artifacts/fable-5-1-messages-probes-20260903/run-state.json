@@ -1,0 +1,22 @@
+{
+  "cases": {
+    "15:claude-fable-5-1:messages:P-01:default": {
+      "artifact_sha256": "b07df325fa66f4d46efdacde2b9926de3ddac937f9bcbf46237a320d3adc38c0",
+      "receipt": "artifacts/fable-5-1-messages-probes-20260903/cases/15_claude-fable-5-1_messages_P-01_default-10e8579f66d6.json",
+      "status": "pass"
+    },
+    "15:claude-fable-5-1:messages:P-12:default": {
+      "artifact_sha256": "96aace5f8693f8b1eb1c8d218e36d87393a11355f936d6e5fb70404a53e6e20d",
+      "receipt": "artifacts/fable-5-1-messages-probes-20260903/cases/15_claude-fable-5-1_messages_P-12_default-dd07cde5b7b1.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-09-03T07:41:50.282+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "e9aa80b7fe02fafd",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-09-03T07:41:29.095+00:00"
+}

@@ -1,11 +1,34 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.14",
+  "client_auto_config_version": "0.7.15",
+  "pricing_contract": {
+    "default_scope": "provider_public",
+    "provider_public_source": "provider_pricing when present, otherwise pricing",
+    "gateway_base_default_source": "pricing",
+    "null_semantics": "unknown_unless_component_status_is_not_applicable",
+    "component_statuses": [
+      "verified",
+      "unknown",
+      "blocked",
+      "not_applicable",
+      "not_published",
+      "not_exposed"
+    ]
+  },
+  "price_gaps": [
+    {
+      "model_id": "gpt-5.3-codex-spark",
+      "price_scope": "provider_public",
+      "status": "not_published",
+      "reason": "OpenAI documents GPT-5.3-Codex-Spark as a research preview whose pricing is not final; no provider-public numeric price is published.",
+      "evidence_url": "https://help.openai.com/en/articles/20001415"
+    }
+  ],
   "models": [
     {
-      "id": "claude-fable-5-1",
-      "upstream_id": "claude-fable-5-1",
-      "display_name": "Claude Fable 5.1",
+      "id": "claude-fable-5",
+      "upstream_id": "claude-fable-5",
+      "display_name": "Claude Fable 5",
       "platform": "anthropic",
       "context_window": 1000000,
       "max_output_tokens": 128000,
@@ -20,19 +43,273 @@
         "codex_catalog_entry": null
       },
       "pricing": {
-        "input_per_mtok_usd": 10,
-        "cached_input_per_mtok_usd": 0.25,
-        "cache_write_5m_per_mtok_usd": 12.5,
-        "cache_write_1h_per_mtok_usd": 20,
-        "output_per_mtok_usd": 50,
+        "input_per_mtok_usd": 10.0,
+        "cached_input_per_mtok_usd": 1.0,
+        "output_per_mtok_usd": 50.0,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://platform.claude.com/docs/en/models/fable-5-1/overview"
+        "evidence_url": "https://platform.claude.com/docs/en/models/fable-5/overview"
       },
       "preset": {
-        "from": "claude-fable-5-1",
-        "to": "claude-fable-5-1",
+        "from": "claude-fable-5",
+        "to": "claude-fable-5",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-haiku-4-5",
+      "upstream_id": "claude-haiku-4-5",
+      "display_name": "Claude Haiku 4.5",
+      "platform": "anthropic",
+      "context_window": 200000,
+      "max_output_tokens": 64000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 1.0,
+        "cached_input_per_mtok_usd": 0.1,
+        "output_per_mtok_usd": 5.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/haiku-4-5/overview"
+      },
+      "preset": {
+        "from": "claude-haiku-4-5",
+        "to": "claude-haiku-4-5",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-opus-4-5",
+      "upstream_id": "claude-opus-4-5",
+      "display_name": "Claude Opus 4.5",
+      "platform": "anthropic",
+      "context_window": 200000,
+      "max_output_tokens": 64000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude Plus 月卡组",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.5,
+        "output_per_mtok_usd": 25.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/opus-4-5/overview"
+      },
+      "preset": {
+        "from": "claude-opus-4-5",
+        "to": "claude-opus-4-5",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-opus-4-6",
+      "upstream_id": "claude-opus-4-6",
+      "display_name": "Claude Opus 4.6",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.5,
+        "output_per_mtok_usd": 25.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/opus-4-6/overview"
+      },
+      "preset": {
+        "from": "claude-opus-4-6",
+        "to": "claude-opus-4-6",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-opus-4-7",
+      "upstream_id": "claude-opus-4-7",
+      "display_name": "Claude Opus 4.7",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.5,
+        "output_per_mtok_usd": 25.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/opus-4-7/overview"
+      },
+      "preset": {
+        "from": "claude-opus-4-7",
+        "to": "claude-opus-4-7",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-opus-4-8",
+      "upstream_id": "claude-opus-4-8",
+      "display_name": "Claude Opus 4.8",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.5,
+        "output_per_mtok_usd": 25.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/opus-4-8/overview"
+      },
+      "preset": {
+        "from": "claude-opus-4-8",
+        "to": "claude-opus-4-8",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-opus-5",
+      "upstream_id": "claude-opus-5",
+      "display_name": "Claude Opus 5",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.5,
+        "output_per_mtok_usd": 25.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/opus-5/overview"
+      },
+      "preset": {
+        "from": "claude-opus-5",
+        "to": "claude-opus-5",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "upstream_id": "claude-sonnet-4-6",
+      "display_name": "Claude Sonnet 4.6",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 3.0,
+        "cached_input_per_mtok_usd": 0.3,
+        "output_per_mtok_usd": 15.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/sonnet-4-6/overview"
+      },
+      "preset": {
+        "from": "claude-sonnet-4-6",
+        "to": "claude-sonnet-4-6",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-sonnet-5",
+      "upstream_id": "claude-sonnet-5",
+      "display_name": "Claude Sonnet 5",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 3.0,
+        "cached_input_per_mtok_usd": 0.3,
+        "output_per_mtok_usd": 15.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/sonnet-5/overview"
+      },
+      "preset": {
+        "from": "claude-sonnet-5",
+        "to": "claude-sonnet-5",
         "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
       }
     },
@@ -45,8 +322,10 @@
       "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
-        "preferred_name": "GLM 5.2",
-        "legacy_names": []
+        "preferred_name": "GLM 企业高速线路",
+        "legacy_names": [
+          "GLM 5.2"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -69,38 +348,6 @@
       }
     },
     {
-      "id": "glm-5.3",
-      "upstream_id": "glm-5.3",
-      "display_name": "GLM 5.3",
-      "platform": "anthropic",
-      "context_window": 1048576,
-      "max_output_tokens": 131072,
-      "client_default": false,
-      "public_group": {
-        "preferred_name": "GLM 5.2",
-        "legacy_names": []
-      },
-      "client_config": {
-        "managed_predecessor_ids": [],
-        "managed_predecessor_models": [],
-        "codex_catalog_entry": null
-      },
-      "pricing": {
-        "input_per_mtok_usd": 8,
-        "cached_input_per_mtok_usd": 2,
-        "output_per_mtok_usd": 28,
-        "long_context_input_threshold": null,
-        "long_context_input_multiplier": null,
-        "long_context_output_multiplier": null,
-        "evidence_url": "https://help.aliyun.com/zh/model-studio/glm-5-3-by-zhipu"
-      },
-      "preset": {
-        "from": "glm-5.3",
-        "to": "glm-5.3",
-        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
-      }
-    },
-    {
       "id": "glm-5.3-flash",
       "upstream_id": "glm-5.3-flash",
       "display_name": "GLM 5.3 Flash",
@@ -108,6 +355,7 @@
       "context_window": 1000000,
       "max_output_tokens": 131072,
       "client_default": false,
+      "public_price_visibility": "hidden",
       "public_group": {
         "preferred_name": "GLM 5.2",
         "legacy_names": []
@@ -137,12 +385,14 @@
       "upstream_id": "gemini-3.1-pro",
       "display_name": "Gemini 3.1 Pro",
       "platform": "gemini",
-      "context_window": 256000,
-      "max_output_tokens": 8192,
+      "context_window": 1048576,
+      "max_output_tokens": 65536,
       "client_default": false,
       "public_group": {
-        "preferred_name": "Gemini",
-        "legacy_names": []
+        "preferred_name": "Gemini 标准线路",
+        "legacy_names": [
+          "Gemini"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -151,11 +401,33 @@
       },
       "pricing": {
         "input_per_mtok_usd": 2,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 0,
         "output_per_mtok_usd": 12,
+        "component_status": {
+          "cached_input": "verified",
+          "long_context": "verified"
+        },
         "long_context_input_threshold": 200000,
         "long_context_input_multiplier": 2,
         "long_context_output_multiplier": 1.5,
+        "evidence_url": "https://ai.google.dev/gemini-api/docs/pricing"
+      },
+      "provider_pricing": {
+        "price_scope": "provider_public",
+        "input_per_mtok_usd": 2,
+        "cached_input_per_mtok_usd": 0.2,
+        "output_per_mtok_usd": 12,
+        "long_context_input_threshold": 200000,
+        "long_context_input_multiplier": 2,
+        "long_context_cached_input_multiplier": 2,
+        "long_context_output_multiplier": 1.5,
+        "component_status": {
+          "input": "verified",
+          "cached_input": "verified",
+          "cache_write": "not_applicable",
+          "output": "verified",
+          "long_context": "verified"
+        },
         "evidence_url": "https://ai.google.dev/gemini-api/docs/pricing"
       },
       "preset": {
@@ -169,12 +441,14 @@
       "upstream_id": "gemini-3.7-flash",
       "display_name": "Gemini 3.7 Flash",
       "platform": "gemini",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 1048576,
+      "max_output_tokens": 65536,
       "client_default": true,
       "public_group": {
-        "preferred_name": "Gemini",
-        "legacy_names": []
+        "preferred_name": "Gemini 标准线路",
+        "legacy_names": [
+          "Gemini"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -183,11 +457,33 @@
       },
       "pricing": {
         "input_per_mtok_usd": 0.75,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 0,
         "output_per_mtok_usd": 3.75,
+        "component_status": {
+          "cached_input": "verified",
+          "long_context": "not_applicable"
+        },
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
+        "evidence_url": "https://ai.google.dev/gemini-api/docs/pricing"
+      },
+      "provider_pricing": {
+        "price_scope": "provider_public",
+        "input_per_mtok_usd": 0.75,
+        "cached_input_per_mtok_usd": 0.075,
+        "output_per_mtok_usd": 3.75,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_cached_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "component_status": {
+          "input": "verified",
+          "cached_input": "verified",
+          "cache_write": "not_applicable",
+          "output": "verified",
+          "long_context": "not_applicable"
+        },
         "evidence_url": "https://ai.google.dev/gemini-api/docs/pricing"
       },
       "preset": {
@@ -226,6 +522,38 @@
         "from": "gemini-3.7-flash-high",
         "to": "gemini-3.7-flash-high",
         "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+      }
+    },
+    {
+      "id": "grok-4.5",
+      "upstream_id": "grok-4.5",
+      "display_name": "Grok 4.5",
+      "platform": "grok",
+      "context_window": 500000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Grok 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 2.0,
+        "cached_input_per_mtok_usd": 0.3,
+        "output_per_mtok_usd": 6.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://docs.x.ai/developers/models/grok-4.5"
+      },
+      "preset": {
+        "from": "grok-4.5",
+        "to": "grok-4.5",
+        "color": "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300"
       }
     },
     {
@@ -271,10 +599,11 @@
       "max_output_tokens": 128000,
       "client_default": true,
       "public_group": {
-        "preferred_name": "Grok",
+        "preferred_name": "Grok 标准线路",
         "legacy_names": [
           "Grok 4.6",
-          "Grok 4.5"
+          "Grok 4.5",
+          "Grok"
         ]
       },
       "client_config": {
@@ -312,6 +641,7 @@
       "context_window": 128000,
       "max_output_tokens": 8192,
       "client_default": false,
+      "public_price_visibility": "hidden",
       "public_group": {
         "preferred_name": "DeepSeek",
         "legacy_names": []
@@ -345,8 +675,10 @@
       "max_output_tokens": 393216,
       "client_default": false,
       "public_group": {
-        "preferred_name": "DeepSeek",
-        "legacy_names": []
+        "preferred_name": "DeepSeek 企业高速线路",
+        "legacy_names": [
+          "DeepSeek"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -377,8 +709,10 @@
       "max_output_tokens": 393216,
       "client_default": false,
       "public_group": {
-        "preferred_name": "DeepSeek",
-        "legacy_names": []
+        "preferred_name": "DeepSeek 企业高速线路",
+        "legacy_names": [
+          "DeepSeek"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -401,6 +735,264 @@
       }
     },
     {
+      "id": "glm-5.3",
+      "upstream_id": "glm-5.3",
+      "display_name": "GLM 5.3",
+      "platform": "openai",
+      "context_window": 1048576,
+      "max_output_tokens": 131072,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GLM 企业高速线路",
+        "legacy_names": [
+          "GLM 5.2"
+        ]
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 8,
+        "cached_input_per_mtok_usd": 2,
+        "output_per_mtok_usd": 28,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/glm-5-3-by-zhipu"
+      },
+      "preset": {
+        "from": "glm-5.3",
+        "to": "glm-5.3",
+        "color": "bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400"
+      }
+    },
+    {
+      "id": "gpt-5.4",
+      "upstream_id": "gpt-5.4",
+      "display_name": "GPT-5.4",
+      "platform": "openai",
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GPT 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 2.5,
+        "cached_input_per_mtok_usd": 0.25,
+        "output_per_mtok_usd": 15.0,
+        "long_context_input_threshold": 272000,
+        "long_context_input_multiplier": 2,
+        "long_context_output_multiplier": 1.5,
+        "evidence_url": "https://developers.openai.com/api/docs/models/gpt-5.4"
+      },
+      "preset": {
+        "from": "gpt-5.4",
+        "to": "gpt-5.4",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "upstream_id": "gpt-5.4-mini",
+      "display_name": "GPT-5.4 Mini",
+      "platform": "openai",
+      "context_window": 400000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GPT 企业高速线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 0.75,
+        "cached_input_per_mtok_usd": 0.075,
+        "output_per_mtok_usd": 4.5,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini"
+      },
+      "preset": {
+        "from": "gpt-5.4-mini",
+        "to": "gpt-5.4-mini",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "gpt-5.5",
+      "upstream_id": "gpt-5.5",
+      "display_name": "GPT-5.5",
+      "platform": "openai",
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GPT 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.5,
+        "output_per_mtok_usd": 30.0,
+        "long_context_input_threshold": 272000,
+        "long_context_input_multiplier": 2,
+        "long_context_output_multiplier": 1.5,
+        "evidence_url": "https://developers.openai.com/api/docs/models/gpt-5.5"
+      },
+      "preset": {
+        "from": "gpt-5.5",
+        "to": "gpt-5.5",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "upstream_id": "gpt-5.6-luna",
+      "display_name": "GPT-5.6 Luna",
+      "platform": "openai",
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GPT 企业高速线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 0.2,
+        "cached_input_per_mtok_usd": 0.02,
+        "output_per_mtok_usd": 1.2,
+        "long_context_input_threshold": 272000,
+        "long_context_input_multiplier": 2,
+        "long_context_output_multiplier": 1.5,
+        "evidence_url": "https://developers.openai.com/api/docs/models/gpt-5.6-luna"
+      },
+      "preset": {
+        "from": "gpt-5.6-luna",
+        "to": "gpt-5.6-luna",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "upstream_id": "gpt-5.6-sol",
+      "display_name": "GPT-5.6 Sol",
+      "platform": "openai",
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GPT 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.5,
+        "output_per_mtok_usd": 30.0,
+        "long_context_input_threshold": 272000,
+        "long_context_input_multiplier": 2,
+        "long_context_output_multiplier": 1.5,
+        "evidence_url": "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
+      },
+      "preset": {
+        "from": "gpt-5.6-sol",
+        "to": "gpt-5.6-sol",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "upstream_id": "gpt-5.6-terra",
+      "display_name": "GPT-5.6 Terra",
+      "platform": "openai",
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GPT 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 2.0,
+        "cached_input_per_mtok_usd": 0.2,
+        "output_per_mtok_usd": 12.0,
+        "long_context_input_threshold": 272000,
+        "long_context_input_multiplier": 2,
+        "long_context_output_multiplier": 1.5,
+        "evidence_url": "https://developers.openai.com/api/docs/models/gpt-5.6-terra"
+      },
+      "preset": {
+        "from": "gpt-5.6-terra",
+        "to": "gpt-5.6-terra",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "gpt-daybreak-blue-latest",
+      "upstream_id": "gpt-daybreak-blue-latest",
+      "display_name": "GPT Daybreak Blue Latest",
+      "platform": "openai",
+      "context_window": 1050000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GPT Daybreak Blue 安全研究线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 5.0,
+        "cached_input_per_mtok_usd": 0.25,
+        "output_per_mtok_usd": 30.0,
+        "long_context_input_threshold": 272000,
+        "long_context_input_multiplier": 2,
+        "long_context_output_multiplier": 1.5,
+        "evidence_url": "https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest"
+      },
+      "preset": {
+        "from": "gpt-daybreak-blue-latest",
+        "to": "gpt-daybreak-blue-latest",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
       "id": "kimi-k2.7-code",
       "upstream_id": "kimi-k2.7-code",
       "display_name": "Kimi K2.7 Code",
@@ -409,8 +1001,10 @@
       "max_output_tokens": 16384,
       "client_default": false,
       "public_group": {
-        "preferred_name": "Kimi",
-        "legacy_names": []
+        "preferred_name": "Kimi 企业高速线路",
+        "legacy_names": [
+          "Kimi"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -441,8 +1035,10 @@
       "max_output_tokens": 1048576,
       "client_default": false,
       "public_group": {
-        "preferred_name": "Kimi",
-        "legacy_names": []
+        "preferred_name": "Kimi 企业高速线路",
+        "legacy_names": [
+          "Kimi"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -505,8 +1101,10 @@
       "max_output_tokens": 65536,
       "client_default": false,
       "public_group": {
-        "preferred_name": "千问 Qwen",
-        "legacy_names": []
+        "preferred_name": "Qwen 企业高速线路",
+        "legacy_names": [
+          "千问 Qwen"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -537,8 +1135,10 @@
       "max_output_tokens": 65536,
       "client_default": false,
       "public_group": {
-        "preferred_name": "千问 Qwen",
-        "legacy_names": []
+        "preferred_name": "Qwen 企业高速线路",
+        "legacy_names": [
+          "千问 Qwen"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -566,11 +1166,13 @@
       "display_name": "Qwen 3.7 Flash",
       "platform": "openai",
       "context_window": 1000000,
-      "max_output_tokens": 65536,
+      "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
-        "preferred_name": "千问 Qwen",
-        "legacy_names": []
+        "preferred_name": "Qwen 企业高速线路",
+        "legacy_names": [
+          "千问 Qwen"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -601,8 +1203,10 @@
       "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
-        "preferred_name": "千问 Qwen",
-        "legacy_names": []
+        "preferred_name": "Qwen 企业高速线路",
+        "legacy_names": [
+          "千问 Qwen"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -633,8 +1237,10 @@
       "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
-        "preferred_name": "千问 Qwen",
-        "legacy_names": []
+        "preferred_name": "Qwen 企业高速线路",
+        "legacy_names": [
+          "千问 Qwen"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -665,8 +1271,10 @@
       "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
-        "preferred_name": "千问 Qwen",
-        "legacy_names": []
+        "preferred_name": "Qwen 企业高速线路",
+        "legacy_names": [
+          "千问 Qwen"
+        ]
       },
       "client_config": {
         "managed_predecessor_ids": [],
@@ -686,6 +1294,40 @@
         "from": "qwen3.8-max",
         "to": "qwen3.8-max",
         "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "claude-fable-5-1",
+      "upstream_id": "claude-fable-5-1",
+      "display_name": "Claude Fable 5.1",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 10.0,
+        "cached_input_per_mtok_usd": 0.25,
+        "cache_write_5m_per_mtok_usd": 12.5,
+        "cache_write_1h_per_mtok_usd": 20.0,
+        "output_per_mtok_usd": 50.0,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1"
+      },
+      "preset": {
+        "from": "claude-fable-5-1",
+        "to": "claude-fable-5-1",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
       }
     }
   ]

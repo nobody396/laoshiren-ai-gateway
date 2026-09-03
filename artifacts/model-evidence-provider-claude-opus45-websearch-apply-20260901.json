@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 1,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "9cebc366f7e54333a4d8bc797fac61f9fd2a1fcb54e1e82b8bc87d6e3624c064",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ba03d348a7e820d63299a2bd",
+            "evidence-e61bfc10e784f1e503908168"
+          ]
+        }
+      ]
+    }
+  ]
+}

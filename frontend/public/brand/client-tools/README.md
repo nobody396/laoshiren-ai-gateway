@@ -14,5 +14,9 @@ These marks identify third-party clients in the CC Switch import UI. They are no
 | `antigravity.png` | [Google Antigravity official full-color press icon](https://antigravity.google/press?app=antigravity) |
 | `deepseek.svg`, `qwen.svg`, `doubao.svg`, `minimax.svg`, `openai.svg` | MIT-licensed [`@lobehub/icons-static-svg`](https://www.npmjs.com/package/@lobehub/icons-static-svg) v1.94.0 (`deepseek-color`, `qwen-color`, `doubao-color`, `minimax-color`, `openai`), renamed for local use |
 | `glm.svg`, `kimi.svg` | Same `@lobehub/icons-static-svg` source — `zhipu-color` (current Z.ai mark) and monochrome `kimi` (black Moonshot mark, legible on white) |
+| `../../tool-icons/qoder.png` | [Qoder official site](https://qoder.com/) current 412×412 product favicon |
+| `../../tool-icons/minimax-code.png` | [MiniMax Code official download page](https://agent.minimax.io/download) current Apple touch icon |
+| `../../tool-icons/workbuddy.svg` | [Tencent WorkBuddy official documentation](https://www.workbuddy.ai/docs/workbuddy/Quickstart) current product logo |
+| `../../tool-icons/vscode.png` | [Visual Studio Code official brand page](https://code.visualstudio.com/brand) stable blue icon |
 
 Retrieved and verified against the official product sites and repositories through 2026-08-08. All product names and marks belong to their respective owners.

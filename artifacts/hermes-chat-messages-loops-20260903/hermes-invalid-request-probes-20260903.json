@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_protocol_probe",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "probe": "invalid_request",
+  "model_id": "hermes-invalid-model-000",
+  "observed_at": "2026-09-03T03:49:06+00:00",
+  "key_group_id": 6,
+  "probes": {
+    "chat_completions": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 6993,
+      "error_surfaced": true,
+      "stdout_sha256": "a2727f94450c753b657bda48a392d1130f8ab110ef6c1d329a703137b089ea3c",
+      "stderr_sha256": "d971898d784ab745535e102403ba5653428736d4cb066b69ff50573541165d5c",
+      "stdout_bytes": 405,
+      "stderr_bytes": 36,
+      "passed": true
+    },
+    "messages": {
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 11619,
+      "error_surfaced": true,
+      "stdout_sha256": "87e97d8094fabebb6437f51ed541ebf9b3967b675891d21a287e0e41b06fb0f6",
+      "stderr_sha256": "27a44448af3c933ddeb9b2197d1858a424b6c9e44ec1e5f3cdd6fcadc3fc182d",
+      "stdout_bytes": 329,
+      "stderr_bytes": 36,
+      "passed": true
+    }
+  },
+  "passed": true,
+  "artifact_sha256": "c31a9d5a262a4776c085a2f797e1b5f43c6d981ee038c62a84efb4a34223e351"
+}

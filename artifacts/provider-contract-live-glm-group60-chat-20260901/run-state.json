@@ -1,0 +1,82 @@
+{
+  "cases": {
+    "60:glm-5.2:chat_completions:P-02:default": {
+      "artifact_sha256": "8f8050ad99692a9f08e84ee3953eff18364f0b9f9a116e169bdfb1a28efd5f49",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-02_default-329f05696651.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:chat_completions:P-03:default": {
+      "artifact_sha256": "253df5d4cd9e5c04524da98ecdf52fae29780172c96dc31400ee546551fd0c6d",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-03_default-1f87513538fe.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:chat_completions:P-04:default": {
+      "artifact_sha256": "2f3e495f67b4f6bd837684c68d0fb8d0e0a1e2e9572ff4d2e5e0b46b39230f12",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-04_default-0cfb36460f18.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:chat_completions:P-05:default": {
+      "artifact_sha256": "a48df2b1dfc4a8572b70878c045d231b8258e8cdb5dd5a981e3573203dfec75c",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-05_default-f0bdf0d560ea.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:chat_completions:P-06:medium": {
+      "artifact_sha256": "5409e56f65147a149cef49a71fe504d34b669b79b91670927b8ccf1f2ebcb7e5",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-06_medium-784abaaaf6b5.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:chat_completions:P-12:default": {
+      "artifact_sha256": "73f2afb0eda23d0646404e9d4d1db54eac82f41f42ec72e531ef454606800342",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-12_default-c2f0668a1c95.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:chat_completions:P-15:default": {
+      "artifact_sha256": "0affe470234739cdde0104e0bfb3f44593fde9157120cc847b02a39a41edea51",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-15_default-ae503a32b1da.json",
+      "status": "pass"
+    },
+    "60:glm-5.3:chat_completions:P-02:default": {
+      "artifact_sha256": "c86c1879699e065e9274ee6951f4bbd23c5b0a4eec56622240c986ff3aa2fa14",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-02_default-aed6748a6454.json",
+      "status": "pass"
+    },
+    "60:glm-5.3:chat_completions:P-03:default": {
+      "artifact_sha256": "c81b30d745af40362683eaed65b8ed3df0810a6eef020fcb7a9733b97fafa29f",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-03_default-634294154ac1.json",
+      "status": "blocked"
+    },
+    "60:glm-5.3:chat_completions:P-04:default": {
+      "artifact_sha256": "0183d57ea37492db428d7d62a0984d133a2fcd19447d8328932a2adb78c01f00",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-04_default-4f51dd6f5563.json",
+      "status": "pass"
+    },
+    "60:glm-5.3:chat_completions:P-05:default": {
+      "artifact_sha256": "142bf866d0d16b0cf3b83c89b3f8faa64fa1a090da667f55c85848b6355de142",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-05_default-c8c932fd0e68.json",
+      "status": "blocked"
+    },
+    "60:glm-5.3:chat_completions:P-06:high": {
+      "artifact_sha256": "dbec557b375685d1db215a30640ef0a1baf6f6efbbe8361e7896738349cbc794",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-06_high-f7cc521f9528.json",
+      "status": "pass"
+    },
+    "60:glm-5.3:chat_completions:P-12:default": {
+      "artifact_sha256": "3140bf8b1c264c68ca57ba3708330939957880c70d4a61876709505f6118f72a",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-12_default-9436ad11ce39.json",
+      "status": "pass"
+    },
+    "60:glm-5.3:chat_completions:P-15:default": {
+      "artifact_sha256": "35c87f247cf1cf143dae3d3e12d823773dd765ce8d6226d01009b95415c30fd3",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-15_default-ef986a7841f2.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:24:37.819+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "d6b3aa27334c29a4",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T19:23:15.968+00:00"
+}

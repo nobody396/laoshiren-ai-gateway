@@ -1,0 +1,82 @@
+{
+  "cases": {
+    "59:gpt-5.4-mini:responses:P-02:default": {
+      "artifact_sha256": "8cc13c7d5960a1e4e1417cbe157b373e8cafeee74ecf281e1c05278a8cca8cbd",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-02_default-77583f0ba6b3.json",
+      "status": "pass"
+    },
+    "59:gpt-5.4-mini:responses:P-03:default": {
+      "artifact_sha256": "736e77f431baca3427d07e96f8d112dbcbe2943c0404d510dfae925ca5117bda",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-03_default-27deac3c5f24.json",
+      "status": "pass"
+    },
+    "59:gpt-5.4-mini:responses:P-04:default": {
+      "artifact_sha256": "42a8a17076ae397a6c95aa62ec16ee099cf64eb29d5266a917b018face9f72cb",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-04_default-89b77e3e95b1.json",
+      "status": "pass"
+    },
+    "59:gpt-5.4-mini:responses:P-05:default": {
+      "artifact_sha256": "1ba416ccf902084608c143bea5789fb580b542a96ba30a69ab70c86525e31ddf",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-05_default-015560396e65.json",
+      "status": "pass"
+    },
+    "59:gpt-5.4-mini:responses:P-06:none": {
+      "artifact_sha256": "d156e4a6a2c008a6d60925de9b0af120503e0073ef015b379622475d173858f3",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-06_none-02af1276936f.json",
+      "status": "pass"
+    },
+    "59:gpt-5.4-mini:responses:P-12:default": {
+      "artifact_sha256": "5fe3e8f1d72d1ecda79fcb124627728630f2edc332f2027229aa15c83d8b6ac5",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-12_default-8a4e94bb36d6.json",
+      "status": "pass"
+    },
+    "59:gpt-5.4-mini:responses:P-15:default": {
+      "artifact_sha256": "f3dea353b6c0d57584affb50372787ac1920a6b6352477360512f804953e7840",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.4-mini_responses_P-15_default-87ae5c991b4c.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-02:default": {
+      "artifact_sha256": "dc5440269b32731c5dc34116c69e1e338df0c65fa099615156257576928163df",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-02_default-3fd0d9eb4904.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-03:default": {
+      "artifact_sha256": "0ed4aedb96c247cb07bec823195e4a3b8d9a2582e2614f069615070e7f1ca962",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-03_default-5da6e35f0892.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-04:default": {
+      "artifact_sha256": "c27d8e599f087cca3514b051bbc3a73695f5a8627ccebfec42685e7f52c4a486",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-04_default-9d202714f9ef.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-05:default": {
+      "artifact_sha256": "ea793b19b20cffd54e95d6658a566d02db0d992edcf8f8b0f9c2d88e56d33c13",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-05_default-531fac7569ca.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-06:medium": {
+      "artifact_sha256": "4b5cbe04b546e197d04a0916a75dcf3e2ab7cc345189ef092b377e5acdb3b8bc",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-06_medium-ba57b628b827.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-12:default": {
+      "artifact_sha256": "a7ddeb07c476699ff74202a79be282ee23dca09a0d7030354b4105ab035dcdac",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-12_default-62c1b7ce3716.json",
+      "status": "pass"
+    },
+    "59:gpt-5.6-luna:responses:P-15:default": {
+      "artifact_sha256": "258db0efdd8a9fa13ce8661468e70ff46f26c0fedfedbd4c2d64755e7b2814a5",
+      "receipt": "artifacts/provider-contract-live-gpt-enterprise-group59-batch-20260901/cases/59_gpt-5.6-luna_responses_P-15_default-197319108239.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T18:52:59.943+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "be8c42e21bb5f204",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T18:51:43.865+00:00"
+}

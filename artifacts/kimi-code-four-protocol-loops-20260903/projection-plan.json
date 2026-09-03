@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "plan",
+  "production_write": false,
+  "client_matrix_write": false,
+  "changed": true,
+  "events": 4,
+  "matrix_event_counts": {
+    "client_protocol": 4,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "85d2deffad4da34c1c10450b070d4f05811585074bb3c2b081f6d01aad51419e",
+  "client_matrix_before_sha256": "fefdbe6d0a58f86441739b907165cd91454328de63ff839c9204c6a3c2a42670",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "generate_content",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "responses",
+      "status": "verified"
+    }
+  ],
+  "client_matrix_after_sha256": "23ad520feb0912b0ee1bdedc3ac0ec2f62e41a5cfcb2f2dd186b624a1a4a7473"
+}

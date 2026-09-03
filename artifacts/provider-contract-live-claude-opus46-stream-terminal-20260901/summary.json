@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "f7632d237efc8133a1694511fdefe0ae125223b205c8b7d6895d18ae296aece7",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "860e8657634c9b93",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-claude-opus46-stream-terminal-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1
+  }
+}

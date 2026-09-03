@@ -5,8 +5,9 @@
       badgeClass
     ]"
   >
-    <!-- Platform logo -->
-    <PlatformIcon v-if="platform" :platform="platform" size="sm" />
+    <!-- The model family is the visual identity; protocol is secondary text. -->
+    <ModelIcon v-if="displayModel" :model="displayModel" size="16px" />
+    <PlatformIcon v-else-if="platform" :platform="platform" size="sm" />
     <!-- Group name -->
     <span class="truncate">{{ displayName }}</span>
     <!-- Right side label -->
@@ -29,10 +30,12 @@ import { useI18n } from 'vue-i18n'
 import type { SubscriptionType, GroupPlatform } from '@/types'
 import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 import PlatformIcon from './PlatformIcon.vue'
+import ModelIcon from './ModelIcon.vue'
 
 interface Props {
   name: string
   platform?: GroupPlatform
+  displayModel?: string
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null // 用户专属倍率
@@ -113,7 +116,9 @@ const labelClass = computed(() => {
     }
   }
 
-  // 正常状态或无天数：根据平台显示主题色
+  if (props.displayModel) return `${base} bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-dark-300`
+
+  // Legacy callers without a model identity keep their platform theme.
   if (props.platform === 'anthropic') {
     return `${base} bg-orange-200/60 text-orange-800 dark:bg-orange-800/40 dark:text-orange-300`
   }
@@ -134,6 +139,19 @@ const labelClass = computed(() => {
 
 // Badge color based on platform and subscription type
 const badgeClass = computed(() => {
+  if (props.displayModel) {
+    const model = props.displayModel.toLowerCase()
+    if (model.startsWith('claude')) return 'bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-300'
+    if (model.startsWith('glm')) return 'bg-sky-50 text-sky-800 dark:bg-sky-950/30 dark:text-sky-300'
+    if (model.startsWith('deepseek')) return 'bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
+    if (model.startsWith('qwen')) return 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300'
+    if (model.startsWith('minimax')) return 'bg-rose-50 text-rose-800 dark:bg-rose-950/30 dark:text-rose-300'
+    if (model.startsWith('gemini')) return 'bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
+    if (model.startsWith('gpt')) return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+    if (model.startsWith('grok') || model.startsWith('kimi')) return 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
+    return 'bg-gray-50 text-gray-800 dark:bg-dark-800 dark:text-dark-200'
+  }
+
   if (props.platform === 'anthropic') {
     // Claude: orange theme
     return isSubscription.value

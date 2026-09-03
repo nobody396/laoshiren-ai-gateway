@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.14'
+$ScriptVersion = '0.7.15'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -14,7 +14,9 @@ $CatalogGrokManagedModels = @(@{ Id = 'grok-4.5'; DisplayName = 'Grok 4.5'; Cont
 $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
 $CatalogGeminiDefaultModel = 'gemini-3.7-flash'
 $CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')
+$CatalogModelReasoningJson = '{"claude-fable-5-1":["low","medium","high","xhigh","max"],"claude-fable-5":["low","medium","high","xhigh","max"],"claude-haiku-4-5":[],"claude-opus-4-5":["low","medium","high","max"],"claude-opus-4-6":["low","medium","high","max"],"claude-opus-4-7":["low","medium","high","xhigh","max"],"claude-opus-4-8":["low","medium","high","xhigh","max"],"claude-opus-5":["low","medium","high","xhigh","max"],"claude-sonnet-4-6":["low","medium","high","max"],"claude-sonnet-5":["low","medium","high","xhigh","max"],"deepseek-v4-flash-0731":["low","high","max"],"deepseek-v4-pro-0813":["low","high","max"],"gemini-3.1-pro":["low","medium","high"],"gemini-3.7-flash":["low","medium","high"],"gemini-3.8-flash":["low","medium","high"],"glm-5.2":["none","minimal","low","medium","high","xhigh","max"],"glm-5.3":["low","high","max"],"gpt-5.3-codex-spark":["none"],"gpt-5.4-mini":["none","low","medium","high","xhigh"],"gpt-5.4":["none","low","medium","high","xhigh"],"gpt-5.5":["none","low","medium","high","xhigh"],"gpt-5.6-luna":["none","low","medium","high","xhigh","max"],"gpt-5.6-sol":["none","low","medium","high","xhigh","max"],"gpt-5.6-terra":["none","low","medium","high","xhigh","max"],"gpt-daybreak-blue-latest":[],"grok-4.5":["low","medium","high","xhigh"],"grok-4.6":["low","medium","high","xhigh"],"kimi-k2.7-code":["always_on"],"kimi-k3":["low","high","max"],"minimax-m3":["disabled","adaptive"],"qwen3.6-flash":["none","minimal","low","medium"],"qwen3.6-plus":["none","minimal","low","medium"],"qwen3.7-flash":["none","minimal","low","medium"],"qwen3.7-max":["none","minimal","low","medium","high","xhigh","max"],"qwen3.7-plus":["none","minimal","low","medium","high","xhigh","max"],"qwen3.8-max":["none","minimal","low","medium","high","xhigh","max"]}'
 # END GENERATED MODEL CATALOG
+$CatalogOpenAIReasoningEffort = 'high'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -79,6 +81,10 @@ $ForceClientInstall = $env:LAOSHIRENAI_FORCE_CLIENT_INSTALL -eq '1'
 $InstallCodexApp = $env:LAOSHIRENAI_INSTALL_CODEX_APP -eq '1'
 $GrokCcSwitchCompat = $env:LAOSHIRENAI_GROK_CC_SWITCH_COMPAT -eq '1'
 $SetupToken = if ($env:LAOSHIRENAI_SETUP_TOKEN) { $env:LAOSHIRENAI_SETUP_TOKEN } else { '' }
+$SelectedModel = if ($env:LAOSHIRENAI_MODEL_ID) { $env:LAOSHIRENAI_MODEL_ID } else { '' }
+$SelectedProtocol = if ($env:LAOSHIRENAI_PROTOCOL) { $env:LAOSHIRENAI_PROTOCOL } else { '' }
+$SelectedReasoning = if ($env:LAOSHIRENAI_REASONING_EFFORT) { $env:LAOSHIRENAI_REASONING_EFFORT.ToLowerInvariant() } else { '' }
+$script:GrokApiBackend = 'responses'
 $SetupExchangeUrl = if ($env:LAOSHIRENAI_SETUP_EXCHANGE_URL) { $env:LAOSHIRENAI_SETUP_EXCHANGE_URL } else { $DefaultSetupExchangeUrl }
 $CodexManifestUrl = if ($env:LAOSHIRENAI_CODEX_MANIFEST_URL) { $env:LAOSHIRENAI_CODEX_MANIFEST_URL } else { $DefaultCodexManifestUrl }
 $GitForWindowsManifestUrl = if ($env:LAOSHIRENAI_GIT_FOR_WINDOWS_MANIFEST_URL) { $env:LAOSHIRENAI_GIT_FOR_WINDOWS_MANIFEST_URL } else { $DefaultGitForWindowsManifestUrl }
@@ -210,10 +216,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.14 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.15 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.14 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.15 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -307,7 +313,8 @@ function Exchange-SetupTicket {
   if ($null -eq $Data -or
       $Data.target -notin @('claude', 'codex', 'grok', 'gemini') -or
       [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
-      [string]::IsNullOrWhiteSpace([string]$Data.base_url)) {
+      [string]::IsNullOrWhiteSpace([string]$Data.base_url) -or
+      (-not [string]::IsNullOrWhiteSpace([string]$Data.client_id) -and ([string]::IsNullOrWhiteSpace([string]$Data.model_id) -or [string]::IsNullOrWhiteSpace([string]$Data.protocol)))) {
     Stop-Script '服务器返回的一键安装配置格式无效'
   }
   if ([string]$Data.target -ne $script:Tools) {
@@ -315,18 +322,61 @@ function Exchange-SetupTicket {
   }
 
   $script:BaseUrl = [string]$Data.base_url
+  $script:SelectedModel = [string]$Data.model_id
+  $script:SelectedProtocol = [string]$Data.protocol
   if ($Data.target -eq 'claude') {
     $script:ClaudeApiKey = [string]$Data.api_key
+    if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) { $script:CatalogAnthropicDefaultModel = $script:SelectedModel }
   } elseif ($Data.target -eq 'codex') {
     $script:CodexApiKey = [string]$Data.api_key
   } elseif ($Data.target -eq 'gemini') {
     $script:GeminiApiKey = [string]$Data.api_key
+    if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
+      $script:CatalogGeminiDefaultModel = $script:SelectedModel
+      $script:CatalogGeminiManagedModels = @($script:SelectedModel)
+    }
   } else {
     $script:GrokApiKey = [string]$Data.api_key
+    if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
+      $script:CatalogGrokDefaultModel = $script:SelectedModel
+      $script:CatalogGrokDefaultDisplayName = $script:SelectedModel
+      $script:GrokApiBackend = $script:SelectedProtocol
+      $script:CatalogGrokManagedModels = @([pscustomobject]@{ Id = $script:SelectedModel; DisplayName = $script:SelectedModel; ContextWindow = $null })
+      $script:CatalogGrokManagedModelSections = @("model.$($script:SelectedModel)", "model.`"$($script:SelectedModel)`"")
+    }
   }
   $script:SetupToken = ''
   Remove-Item Env:LAOSHIRENAI_SETUP_TOKEN -ErrorAction SilentlyContinue
   Write-Info '专用配置领取成功'
+}
+
+# 手动路径（无一次性票据）下，页面表单选择通过 LAOSHIRENAI_MODEL_ID 等环境变量
+# 传入。这里把它们应用到各客户端真正写入的默认值，与票据路径保持一致；
+# 否则手写配置会静默落回内置默认模型与默认协议。
+function Apply-ManualSelection {
+  if ([string]::IsNullOrWhiteSpace($script:SelectedModel)) { return }
+  switch ($script:Tools) {
+    'claude' {
+      $script:CatalogAnthropicDefaultModel = $script:SelectedModel
+    }
+    'gemini' {
+      $script:CatalogGeminiDefaultModel = $script:SelectedModel
+      $script:CatalogGeminiManagedModels = @($script:SelectedModel)
+    }
+    'grok' {
+      $script:CatalogGrokDefaultModel = $script:SelectedModel
+      $script:CatalogGrokDefaultDisplayName = $script:SelectedModel
+      $script:CatalogGrokManagedModels = @([pscustomobject]@{ Id = $script:SelectedModel; DisplayName = $script:SelectedModel; ContextWindow = $null })
+      $script:CatalogGrokManagedModelSections = @("model.$($script:SelectedModel)", "model.`"$($script:SelectedModel)`"")
+      if (-not [string]::IsNullOrWhiteSpace($script:SelectedProtocol)) {
+        if (@('responses', 'chat_completions', 'messages') -contains $script:SelectedProtocol) {
+          $script:GrokApiBackend = $script:SelectedProtocol
+        } else {
+          Stop-Script "Grok Build 不支持协议: $($script:SelectedProtocol)"
+        }
+      }
+    }
+  }
 }
 
 # 查找一个真正可执行的现有 CLI。Windows npm 同时生成 .cmd 和 .ps1 shim；
@@ -1255,14 +1305,14 @@ function Write-ClaudeConfig {
     try {
       $Config = Get-Content -LiteralPath $ClaudeSettingsPath -Raw | ConvertFrom-Json
     } catch {
-      $Config = [pscustomobject]@{}
+      throw "拒绝覆盖损坏的 Claude settings.json: $($_.Exception.Message)"
     }
   } else {
     $Config = [pscustomobject]@{}
   }
 
-  if ($null -eq $Config) {
-    $Config = [pscustomobject]@{}
+  if ($null -eq $Config -or $Config -is [array]) {
+    throw '拒绝覆盖非对象 Claude settings.json'
   }
 
   # 严格模式下用 Where-Object 检查属性是否存在，避免直接访问 .Name 报错
@@ -1272,13 +1322,47 @@ function Write-ClaudeConfig {
   }
 
   $Config | Add-Member -NotePropertyName model -NotePropertyValue $CatalogAnthropicDefaultModel -Force
-  $Config | Add-Member -NotePropertyName effortLevel -NotePropertyValue 'xhigh' -Force
+  $Config.PSObject.Properties.Remove('effortLevel')
+  $HasModelSettings = $Config.PSObject.Properties | Where-Object { $_.Name -eq 'modelSettings' }
+  if (-not $HasModelSettings -or $null -eq $Config.modelSettings) {
+    $Config | Add-Member -NotePropertyName modelSettings -NotePropertyValue ([pscustomobject]@{}) -Force
+  } elseif ($Config.modelSettings -is [array]) {
+    throw '拒绝覆盖非对象 Claude modelSettings'
+  }
+  $ReasoningCatalog = $CatalogModelReasoningJson | ConvertFrom-Json
+  $LevelsProperty = $ReasoningCatalog.PSObject.Properties | Where-Object { $_.Name -eq $CatalogAnthropicDefaultModel }
+  $Levels = if ($null -ne $LevelsProperty) { @($LevelsProperty.Value) } else { @() }
+  $ModelProperty = $Config.modelSettings.PSObject.Properties | Where-Object { $_.Name -eq $CatalogAnthropicDefaultModel }
+  $ModelSettings = if ($null -ne $ModelProperty -and $null -ne $ModelProperty.Value) { $ModelProperty.Value } else { [pscustomobject]@{} }
+  if ($ModelSettings -is [array]) { throw '拒绝覆盖非对象 Claude modelSettings 条目' }
+  if ($Levels -contains 'high') {
+    $ModelSettings | Add-Member -NotePropertyName effortLevel -NotePropertyValue 'high' -Force
+  } else {
+    $ModelSettings.PSObject.Properties.Remove('effortLevel')
+  }
+  if ($ModelSettings.PSObject.Properties.Count -gt 0) {
+    $Config.modelSettings | Add-Member -NotePropertyName $CatalogAnthropicDefaultModel -NotePropertyValue $ModelSettings -Force
+  } else {
+    $Config.modelSettings.PSObject.Properties.Remove($CatalogAnthropicDefaultModel)
+  }
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_BASE_URL -NotePropertyValue $BaseUrl -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_AUTH_TOKEN -NotePropertyValue $ClaudeApiKey -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_MODEL -NotePropertyValue $CatalogAnthropicDefaultModel -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_OPUS_MODEL -NotePropertyValue $CatalogAnthropicDefaultModel -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_SONNET_MODEL -NotePropertyValue $CatalogAnthropicDefaultModel -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_HAIKU_MODEL -NotePropertyValue $CatalogAnthropicDefaultModel -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_FABLE_MODEL -NotePropertyValue $CatalogAnthropicDefaultModel -Force
   $Config.env | Add-Member -NotePropertyName CLAUDE_CODE_ATTRIBUTION_HEADER -NotePropertyValue '0' -Force
   $Config.env | Add-Member -NotePropertyName CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY -NotePropertyValue '1' -Force
 
-  $Config | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $ClaudeSettingsPath -Encoding UTF8
+  $TemporaryPath = "$ClaudeSettingsPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    $Json = $Config | ConvertTo-Json -Depth 20
+    [System.IO.File]::WriteAllText($TemporaryPath, "$Json`n", [System.Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $ClaudeSettingsPath -Force
+  } finally {
+    Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue
+  }
 }
 
 # 写入 Codex 的 auth.json，并仅覆盖 OPENAI_API_KEY 字段。
@@ -1290,20 +1374,26 @@ function Write-CodexAuthConfig {
     try {
       $Config = Get-Content -LiteralPath $CodexAuthPath -Raw | ConvertFrom-Json
     } catch {
-      $Config = [pscustomobject]@{}
+      throw "拒绝覆盖损坏的 Codex auth.json: $($_.Exception.Message)"
     }
   } else {
     $Config = [pscustomobject]@{}
   }
 
-  if ($null -eq $Config) {
-    $Config = [pscustomobject]@{}
+  if ($null -eq $Config -or $Config -is [array]) {
+    throw '拒绝覆盖非对象 Codex auth.json'
   }
 
   $Config | Add-Member -NotePropertyName OPENAI_API_KEY -NotePropertyValue $CodexApiKey -Force
   # 用无 BOM 的 UTF-8 写入，Windows PowerShell 5 默认带 BOM，Codex (serde_json) 不认 BOM 会报错
   $json = $Config | ConvertTo-Json -Depth 20
-  [System.IO.File]::WriteAllText($CodexAuthPath, $json, [System.Text.UTF8Encoding]::new($false))
+  $TemporaryPath = "$CodexAuthPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [System.IO.File]::WriteAllText($TemporaryPath, "$json`n", [System.Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $CodexAuthPath -Force
+  } finally {
+    Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue
+  }
 }
 
 # 把全局模板裁剪成当前 API Key 所属分组真正开放的模型。未知但已授权的
@@ -1312,7 +1402,8 @@ function Convert-CodexModelCatalog {
   param(
     [Parameter(Mandatory = $true)][string]$SourcePath,
     [Parameter(Mandatory = $true)][string[]]$AuthorizedModels,
-    [Parameter(Mandatory = $true)][string]$OutputPath
+    [Parameter(Mandatory = $true)][string]$OutputPath,
+    [string]$PreferredModel = ''
   )
 
   $Source = Get-Content -LiteralPath $SourcePath -Raw | ConvertFrom-Json
@@ -1330,38 +1421,28 @@ function Convert-CodexModelCatalog {
   if (
     $Models.Count -eq 0 -or
     $HasMissingFields -or
-    @($Models | Where-Object { $_.slug -eq 'gpt-5.3-codex-spark' }).Count -gt 0 -or
     $Authorized.Count -eq 0
   ) {
     throw 'Codex 模型目录或分组模型列表无效'
+  }
+  if (-not [string]::IsNullOrWhiteSpace($PreferredModel) -and $PreferredModel -notin $Authorized) {
+    throw '票据选择的模型不在当前 Key 的模型列表中'
   }
 
   $ById = @{}
   foreach ($Model in $Models) {
     $ById[[string]$Model.slug] = $Model
   }
-  $Template = if ($ById.ContainsKey('gpt-5.6-sol')) { $ById['gpt-5.6-sol'] } else { $Models[0] }
-  $DisplayTokens = @{
-    gpt = 'GPT'; codex = 'Codex'; openai = 'OpenAI'; daybreak = 'Daybreak'
-    blue = 'Blue'; latest = 'Latest'; sol = 'Sol'; terra = 'Terra'; luna = 'Luna'
-  }
   $Filtered = New-Object System.Collections.Generic.List[object]
-  for ($Index = 0; $Index -lt $Authorized.Count; $Index++) {
-    $Id = $Authorized[$Index]
-    if ($ById.ContainsKey($Id)) {
-      $Model = $ById[$Id] | ConvertTo-Json -Depth 100 | ConvertFrom-Json
-    } else {
-      $Model = $Template | ConvertTo-Json -Depth 100 | ConvertFrom-Json
-      $DisplayName = (($Id -split '-') | ForEach-Object {
-        $Token = $_.ToLowerInvariant()
-        if ($DisplayTokens.ContainsKey($Token)) { $DisplayTokens[$Token] } else { $_ }
-      }) -join ' '
-      $Model | Add-Member -NotePropertyName slug -NotePropertyValue $Id -Force
-      $Model | Add-Member -NotePropertyName display_name -NotePropertyValue $DisplayName -Force
-      $Model | Add-Member -NotePropertyName description -NotePropertyValue "$DisplayName coding model." -Force
-    }
-    $Model | Add-Member -NotePropertyName priority -NotePropertyValue ($Index + 1) -Force
+  foreach ($Id in $Authorized) {
+    if (-not $ById.ContainsKey($Id)) { continue }
+    $Model = $ById[$Id] | ConvertTo-Json -Depth 100 | ConvertFrom-Json
+    $Model | Add-Member -NotePropertyName priority -NotePropertyValue ($Filtered.Count + 1) -Force
     $Filtered.Add($Model)
+  }
+  if ($Filtered.Count -eq 0) { throw '当前 Key 没有 Codex 可用的 Responses 模型' }
+  if (-not [string]::IsNullOrWhiteSpace($PreferredModel) -and @($Filtered | Where-Object { $_.slug -eq $PreferredModel }).Count -eq 0) {
+    throw '票据选择的模型不在 Codex Responses 目录中'
   }
 
   $FilteredMissingFields = @($Filtered | Where-Object {
@@ -1375,7 +1456,12 @@ function Convert-CodexModelCatalog {
   $Payload = [pscustomobject]@{ models = $Filtered.ToArray() }
   $Json = $Payload | ConvertTo-Json -Depth 100
   [System.IO.File]::WriteAllText($OutputPath, "$Json`n", [System.Text.UTF8Encoding]::new($false))
-  $script:CatalogOpenAIDefaultModel = if ($Authorized -contains 'gpt-5.6-sol') { 'gpt-5.6-sol' } else { $Authorized[0] }
+  $script:CatalogOpenAIDefaultModel = if (-not [string]::IsNullOrWhiteSpace($PreferredModel)) { $PreferredModel } elseif (@($Filtered | Where-Object { $_.slug -eq 'gpt-5.6-sol' }).Count -gt 0) { 'gpt-5.6-sol' } else { [string]$Filtered[0].slug }
+  $SelectedCatalogModel = @($Filtered | Where-Object { $_.slug -eq $script:CatalogOpenAIDefaultModel })[0]
+  $script:CatalogOpenAIContextWindow = [int64]$SelectedCatalogModel.context_window
+  $script:CatalogOpenAIAutoCompactTokenLimit = [int64]$SelectedCatalogModel.auto_compact_token_limit
+  $Efforts = @($SelectedCatalogModel.supported_reasoning_levels | ForEach-Object { [string]$_.effort })
+  $script:CatalogOpenAIReasoningEffort = if ($Efforts -contains 'high') { 'high' } elseif ($Efforts.Count -gt 0) { $Efforts[0] } else { '' }
 }
 
 # 写入当前分组受支持的模型目录，阻止 Codex 回退到官方缓存后展示网关不支持的模型。
@@ -1394,7 +1480,8 @@ function Write-CodexModelCatalog {
     Convert-CodexModelCatalog `
       -SourcePath $DownloadPath `
       -AuthorizedModels $AuthorizedModels `
-      -OutputPath $DownloadPath
+      -OutputPath $DownloadPath `
+      -PreferredModel $script:SelectedModel
     Move-Item -LiteralPath $DownloadPath -Destination $CodexModelCatalogPath -Force
   } catch {
     Remove-Item -LiteralPath $DownloadPath -Force -ErrorAction SilentlyContinue
@@ -1402,31 +1489,58 @@ function Write-CodexModelCatalog {
   }
 }
 
-# 写入 Codex 的 TOML 主配置，第一版采用备份后确定性覆盖策略。
+# 只更新 Codex 的本站 owned fields 和独立 Provider block，保留用户其他设置。
 function Write-CodexTomlConfig {
   Backup-IfNeeded $CodexConfigPath
   Ensure-Directory (Split-Path -Parent $CodexConfigPath)
-
-  # 用无 BOM 的 UTF-8 写入，同上
-  $toml = @"
-model_provider = "OpenAI"
-model = "$CatalogOpenAIDefaultModel"
-review_model = "$CatalogOpenAIDefaultModel"
-model_reasoning_effort = "xhigh"
-model_catalog_json = "laoshirenai-model-catalog.json"
-disable_response_storage = true
-network_access = "enabled"
-preferred_auth_method = "apikey"
-model_context_window = $CatalogOpenAIContextWindow
-model_auto_compact_token_limit = $CatalogOpenAIAutoCompactTokenLimit
-
-[model_providers.OpenAI]
-name = "OpenAI"
-base_url = "$BaseUrl"
-wire_api = "responses"
-requires_openai_auth = true
-"@
-  [System.IO.File]::WriteAllText($CodexConfigPath, $toml, [System.Text.UTF8Encoding]::new($false))
+  $OwnedRoot = @('model_provider','model','review_model','model_reasoning_effort','model_catalog_json','disable_response_storage','network_access','preferred_auth_method','model_context_window','model_auto_compact_token_limit')
+  $ManagedSection = 'model_providers.laoshirenai_responses'
+  $Lines = if (Test-Path -LiteralPath $CodexConfigPath) { [System.Collections.Generic.List[string]]@(Get-Content -LiteralPath $CodexConfigPath) } else { [System.Collections.Generic.List[string]]@() }
+  $Kept = [System.Collections.Generic.List[string]]::new()
+  $Section = ''
+  $Dropping = $false
+  foreach ($Line in $Lines) {
+    $Trimmed = $Line.Trim()
+    if ($Trimmed.StartsWith('[')) {
+      if ($Trimmed -notmatch '^\[([^\]]+)\](?:\s*#.*)?$') { throw "拒绝覆盖损坏的 Codex TOML 表头: $Trimmed" }
+      $Section = $Matches[1]
+      $Dropping = $Section -eq $ManagedSection
+    }
+    if ($Dropping) { continue }
+    if ($Section -eq '' -and $Trimmed -match '^([A-Za-z0-9_.-]+)\s*=' -and $Matches[1] -in $OwnedRoot) { continue }
+    if ($Trimmed -in @('# BEGIN LAOSHIRENAI CODEX PROVIDER', '# END LAOSHIRENAI CODEX PROVIDER')) { continue }
+    $Kept.Add($Line)
+  }
+  while ($Kept.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Kept[$Kept.Count - 1])) { $Kept.RemoveAt($Kept.Count - 1) }
+  while ($Kept.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Kept[0])) { $Kept.RemoveAt(0) }
+  $Output = [System.Collections.Generic.List[string]]::new()
+  $Output.Add("model_provider = $(ConvertTo-TomlString 'laoshirenai_responses')")
+  $Output.Add("model = $(ConvertTo-TomlString $CatalogOpenAIDefaultModel)")
+  $Output.Add("review_model = $(ConvertTo-TomlString $CatalogOpenAIDefaultModel)")
+  if (-not [string]::IsNullOrWhiteSpace($CatalogOpenAIReasoningEffort)) { $Output.Add("model_reasoning_effort = $(ConvertTo-TomlString $CatalogOpenAIReasoningEffort)") }
+  $Output.Add('model_catalog_json = "laoshirenai-model-catalog.json"')
+  $Output.Add('disable_response_storage = true')
+  $Output.Add('network_access = "enabled"')
+  $Output.Add('preferred_auth_method = "apikey"')
+  $Output.Add("model_context_window = $CatalogOpenAIContextWindow")
+  $Output.Add("model_auto_compact_token_limit = $CatalogOpenAIAutoCompactTokenLimit")
+  $Output.Add('')
+  foreach ($Line in $Kept) { $Output.Add($Line) }
+  if ($Kept.Count -gt 0) { $Output.Add('') }
+  $Output.Add('# BEGIN LAOSHIRENAI CODEX PROVIDER')
+  $Output.Add("[$ManagedSection]")
+  $Output.Add('name = "老实人AI Responses"')
+  $Output.Add("base_url = $(ConvertTo-TomlString $BaseUrl)")
+  $Output.Add('wire_api = "responses"')
+  $Output.Add('requires_openai_auth = true')
+  $Output.Add('# END LAOSHIRENAI CODEX PROVIDER')
+  $TemporaryPath = "$CodexConfigPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [System.IO.File]::WriteAllLines($TemporaryPath, $Output, [System.Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $CodexConfigPath -Force
+  } finally {
+    Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue
+  }
 }
 
 function ConvertTo-TomlString {
@@ -1446,7 +1560,9 @@ function Write-GrokTomlConfig {
   $Kept = [System.Collections.Generic.List[string]]@()
   $DroppingModel = $false
   foreach ($Line in $Lines) {
-    if ($Line.Trim() -match '^\[([^\]]+)\]$') {
+    $Trimmed = $Line.Trim()
+    if ($Trimmed.StartsWith('[') -and $Trimmed -notmatch '^\[([^\]]+)\]$') { throw "拒绝覆盖损坏的 Grok TOML 表头: $Trimmed" }
+    if ($Trimmed -match '^\[([^\]]+)\]$') {
       $DroppingModel = $Matches[1] -in $CatalogGrokManagedModelSections
     }
     if (-not $DroppingModel -and $Line.Trim() -ne '# Managed by laoshirenai one-click setup') {
@@ -1480,6 +1596,8 @@ function Write-GrokTomlConfig {
   }
 
   $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  $GrokProtocolVariable = Get-Variable -Scope Script -Name GrokApiBackend -ErrorAction SilentlyContinue
+  $GrokProtocol = if ($null -ne $GrokProtocolVariable -and -not [string]::IsNullOrWhiteSpace([string]$GrokProtocolVariable.Value)) { [string]$GrokProtocolVariable.Value } else { 'responses' }
   while ($Lines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Lines[$Lines.Count - 1])) {
     $Lines.RemoveAt($Lines.Count - 1)
   }
@@ -1492,8 +1610,10 @@ function Write-GrokTomlConfig {
     $Lines.Add("name = $(ConvertTo-TomlString $ModelProfile.DisplayName)")
     $Lines.Add("description = $(ConvertTo-TomlString $ModelProfile.DisplayName)")
     $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
-    $Lines.Add('api_backend = "responses"')
-    $Lines.Add("context_window = $($ModelProfile.ContextWindow)")
+    $Lines.Add("api_backend = $(ConvertTo-TomlString $GrokProtocol)")
+    if ($null -ne $ModelProfile.ContextWindow -and [int64]$ModelProfile.ContextWindow -gt 0) {
+      $Lines.Add("context_window = $($ModelProfile.ContextWindow)")
+    }
     $Lines.Add('')
   }
 
@@ -1518,6 +1638,11 @@ function Write-GeminiConfig {
   Backup-IfNeeded $GeminiEnvPath
   Backup-IfNeeded $GeminiSettingsPath
   Ensure-Directory $GeminiDir
+  # $SelectedReasoning is assigned by the top-level selection flow; under the
+  # AST-extracted Windows QA harness (or partial sourcing) it may not exist,
+  # so read it defensively instead of relying on dynamic scope.
+  $EffectiveReasoning = if (Get-Variable -Name 'SelectedReasoning' -ErrorAction SilentlyContinue) { [string]$SelectedReasoning } elseif ($env:LAOSHIRENAI_REASONING_EFFORT) { $env:LAOSHIRENAI_REASONING_EFFORT.ToLowerInvariant() } else { '' }
+  $ThinkingLevel = if ($EffectiveReasoning -in @('low','medium','high')) { $EffectiveReasoning.ToUpperInvariant() } else { 'HIGH' }
 
   $ManagedEnv = [ordered]@{
     GEMINI_API_KEY = $script:GeminiApiKey
@@ -1542,19 +1667,25 @@ function Write-GeminiConfig {
       $EnvLines.Add("$Key=$($ManagedEnv[$Key])")
     }
   }
-  [System.IO.File]::WriteAllLines($GeminiEnvPath, [string[]]$EnvLines, [System.Text.UTF8Encoding]::new($false))
+  $EnvTemporaryPath = "$GeminiEnvPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [System.IO.File]::WriteAllLines($EnvTemporaryPath, [string[]]$EnvLines, [System.Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $EnvTemporaryPath -Destination $GeminiEnvPath -Force
+  } finally {
+    Remove-Item -LiteralPath $EnvTemporaryPath -Force -ErrorAction SilentlyContinue
+  }
 
   if (Test-Path -LiteralPath $GeminiSettingsPath) {
     try {
       $Config = Get-Content -LiteralPath $GeminiSettingsPath -Raw | ConvertFrom-Json
     } catch {
-      $Config = [pscustomobject]@{}
+      throw "拒绝覆盖损坏的 Gemini settings.json: $($_.Exception.Message)"
     }
   } else {
     $Config = [pscustomobject]@{}
   }
-  if ($null -eq $Config) {
-    $Config = [pscustomobject]@{}
+  if ($null -eq $Config -or $Config -is [array]) {
+    throw '拒绝覆盖非对象 Gemini settings.json'
   }
 
   # 严格模式下用 Where-Object 检查属性是否存在，避免直接访问 .Name 报错
@@ -1596,14 +1727,20 @@ function Write-GeminiConfig {
     $NewOverrides.Add([pscustomobject]@{
       match = [pscustomobject]@{ model = $ModelId }
       generateContentConfig = [pscustomobject]@{
-        thinkingConfig = [pscustomobject]@{ thinkingLevel = 'HIGH' }
+        thinkingConfig = [pscustomobject]@{ thinkingLevel = $ThinkingLevel }
       }
     })
   }
   $Config.modelConfigs | Add-Member -NotePropertyName overrides -NotePropertyValue $NewOverrides -Force
 
   $json = $Config | ConvertTo-Json -Depth 20
-  [System.IO.File]::WriteAllText($GeminiSettingsPath, $json, [System.Text.UTF8Encoding]::new($false))
+  $SettingsTemporaryPath = "$GeminiSettingsPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [System.IO.File]::WriteAllText($SettingsTemporaryPath, "$json`n", [System.Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $SettingsTemporaryPath -Destination $GeminiSettingsPath -Force
+  } finally {
+    Remove-Item -LiteralPath $SettingsTemporaryPath -Force -ErrorAction SilentlyContinue
+  }
 }
 
 function Get-CcSwitchLaunchTarget {
@@ -1817,6 +1954,60 @@ function Test-ApiKeyReadiness {
   Write-Info "$Label 专用 Key、余额和连通性检查通过"
 }
 
+# 对票据中精确选择的模型和协议执行一次最小真实请求；/models 仅用于发现，
+# 只有这里拿到完整终态与非空文本才算配置闭环。
+function Test-SelectedModelRequest {
+  if ([string]::IsNullOrWhiteSpace($script:SelectedModel) -or [string]::IsNullOrWhiteSpace($script:SelectedProtocol)) { return }
+  $ApiKey = switch ($script:Tools) {
+    'claude' { $script:ClaudeApiKey }
+    'codex' { $script:CodexApiKey }
+    'grok' { $script:GrokApiKey }
+    'gemini' { $script:GeminiApiKey }
+    default { return }
+  }
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  $RootUrl = $ApiBaseUrl -replace '/v1$', ''
+  $Headers = @{}
+  $Body = $null
+  switch ($script:SelectedProtocol) {
+    'responses' {
+      $Uri = "$ApiBaseUrl/responses"
+      $Headers.Authorization = "Bearer $ApiKey"
+      $Body = @{ model = $script:SelectedModel; input = '只回复 CONFIG_OK'; max_output_tokens = 32 }
+    }
+    'chat_completions' {
+      $Uri = "$ApiBaseUrl/chat/completions"
+      $Headers.Authorization = "Bearer $ApiKey"
+      $Body = @{ model = $script:SelectedModel; messages = @(@{ role = 'user'; content = '只回复 CONFIG_OK' }); max_tokens = 32 }
+    }
+    'messages' {
+      $Uri = "$ApiBaseUrl/messages"
+      $Headers['x-api-key'] = $ApiKey
+      $Headers['anthropic-version'] = '2023-06-01'
+      $Body = @{ model = $script:SelectedModel; messages = @(@{ role = 'user'; content = '只回复 CONFIG_OK' }); max_tokens = 32 }
+    }
+    'generate_content' {
+      $Uri = "$RootUrl/v1beta/models/$($script:SelectedModel):generateContent"
+      $Headers['x-goog-api-key'] = $ApiKey
+      $Body = @{ contents = @(@{ role = 'user'; parts = @(@{ text = '只回复 CONFIG_OK' }) }); generationConfig = @{ maxOutputTokens = 32 } }
+    }
+    default { Stop-Script "票据返回了不支持的协议: $($script:SelectedProtocol)" }
+  }
+  try {
+    $Response = Invoke-RestMethod -Uri $Uri -Method POST -Headers $Headers -ContentType 'application/json' -Body ($Body | ConvertTo-Json -Depth 12 -Compress)
+  } catch {
+    Stop-Script "$($script:SelectedModel) 最小验证失败: $($script:SelectedProtocol) 请求失败"
+  }
+  $Complete = switch ($script:SelectedProtocol) {
+    'responses' { $Response.status -eq 'completed' -or -not [string]::IsNullOrWhiteSpace([string]$Response.output_text) -or @($Response.output | Where-Object { $_.type -eq 'message' -and @($_.content | Where-Object { $_.type -eq 'output_text' -and -not [string]::IsNullOrWhiteSpace([string]$_.text) }).Count -gt 0 }).Count -gt 0 }
+    'chat_completions' { -not [string]::IsNullOrWhiteSpace([string]$Response.choices[0].message.content) -and -not [string]::IsNullOrWhiteSpace([string]$Response.choices[0].finish_reason) }
+    'messages' { @($Response.content | Where-Object { $_.type -eq 'text' -and -not [string]::IsNullOrWhiteSpace([string]$_.text) }).Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$Response.stop_reason) }
+    'generate_content' { @($Response.candidates[0].content.parts | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.text) }).Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$Response.candidates[0].finishReason) }
+  }
+  if (-not $Complete) { Stop-Script '最小验证响应缺少完整终态或文本' }
+  Write-Info "$($script:SelectedModel) · $($script:SelectedProtocol) 最小真实请求通过"
+}
+
 function Test-ClaudeApiKey {
   if (Test-UsesClaude) {
     Test-ApiKeyReadiness -Label 'Claude Code' -ApiKey $script:ClaudeApiKey
@@ -1998,6 +2189,13 @@ function Print-Summary {
     }
   }
   Write-Host ''
+  Write-Host '回滚方法（仅显示本次存在的备份）:'
+  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath)) {
+    if (Test-Path -LiteralPath "$RollbackPath.bak") {
+      Write-Host "  Copy-Item -LiteralPath '$RollbackPath.bak' -Destination '$RollbackPath' -Force"
+    }
+  }
+  Write-Host ''
   if ($script:BalanceReady) {
     Write-Host '✅ 余额/套餐额度充足，现在可以直接使用。'
   } else {
@@ -2038,7 +2236,11 @@ function Main {
     Parse-Arguments -ArgsList $args
   }
   Prompt-ApiKeys
-  Exchange-SetupTicket
+  if (-not [string]::IsNullOrWhiteSpace($script:SetupToken)) {
+    Exchange-SetupTicket
+  } else {
+    Apply-ManualSelection
+  }
   Resolve-ClientInstallPlan
   Resolve-ClientUpdatePlan
   if ((Test-NeedsNpmClientInstall) -or ($script:GrokCcSwitchCompat -and (Test-UsesGrok))) {
@@ -2063,6 +2265,7 @@ function Main {
   Test-CodexApiKey
   Test-GrokApiKey
   Test-GeminiApiKey
+  Test-SelectedModelRequest
   Verify-ClientCommands
   Open-CcSwitchIfRequested
   Print-Summary

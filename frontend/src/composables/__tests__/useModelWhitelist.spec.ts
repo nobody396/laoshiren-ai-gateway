@@ -7,26 +7,26 @@ vi.mock('@/api/admin/accounts', () => ({
 import { buildModelMappingObject, getModelsByPlatform } from '../useModelWhitelist'
 
 describe('useModelWhitelist', () => {
-  it('openai 模型列表默认只填充当前官方主力模型', () => {
+  it('openai 模型列表包含当前公开目录模型并排除历史模型', () => {
     const models = getModelsByPlatform('openai')
 
     expect(models).toContain('gpt-5.6-sol')
     expect(models).toContain('gpt-5.6-terra')
-    expect(models).not.toContain('gpt-5.6-luna')
-    expect(models).not.toContain('gpt-5.3-codex-spark')
+    expect(models).toContain('gpt-5.6-luna')
+    expect(models).toContain('gpt-5.3-codex-spark')
     expect(models).toContain('gpt-5.5')
     expect(models).not.toContain('gpt-5.5-pro')
     expect(models).toContain('gpt-5.4')
-    expect(models).not.toContain('gpt-5.4-mini')
+    expect(models).toContain('gpt-5.4-mini')
     expect(models).toContain('gpt-5.1-codex')
     expect(models).not.toContain('gpt-3.5-turbo')
     expect(models).not.toContain('gpt-4')
   })
 
-  it('anthropic 模型列表默认不再包含已下架或历史模型', () => {
+  it('anthropic 模型列表包含当前公开目录模型并排除已下架历史模型', () => {
     const models = getModelsByPlatform('anthropic')
 
-    expect(models).not.toContain('claude-fable-5')
+    expect(models).toContain('claude-fable-5')
     expect(models).toContain('claude-fable-5-1')
     expect(models).toContain('claude-opus-4-8')
     expect(models).not.toContain('claude-opus-latest')

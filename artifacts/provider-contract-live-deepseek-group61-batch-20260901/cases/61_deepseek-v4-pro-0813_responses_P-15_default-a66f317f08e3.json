@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "4a776ab78da5c82248c95fc3687446574b8de8cad948dd31c36bedec782fb5ef",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "61:deepseek-v4-pro-0813:responses:P-15:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 61,
+    "group_name": "DeepSeek 企业高速线路",
+    "marker": "LSR_CONTRACT_9FABDEF8802B5345",
+    "max_output_tokens": 393216,
+    "model_id": "deepseek-v4-pro-0813",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:deepseek-v4-pro-0813/responses/invalid_request"
+    ]
+  },
+  "case_fingerprint": "76d87b76432faa02738e82b9849ec91fea3d1b88ef0fdf5aca208b7c094c3825",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:00:06.625+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:00:04.939+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 61,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "1cd4fb4ad6e92f20938ceb0684015fd676c898c39d35bf380592e070ee323371",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "a0805fd35b94d605ca1a895b074364222e27590b68af18a52183e5f13d6ed96b"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "d0e68d287c61d4763e529df1cbb3eda89e0708e86c666cb3991212068d4dfc3d",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "42ca8e17-afd3-4f8d-bb61-754567cd274c",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

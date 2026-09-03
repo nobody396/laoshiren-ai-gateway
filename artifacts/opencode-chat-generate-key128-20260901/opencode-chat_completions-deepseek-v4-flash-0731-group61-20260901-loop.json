@@ -1,0 +1,77 @@
+{
+  "architecture": "arm64",
+  "artifact_sha256": "00651373412bc361d235c15068670eaf350cb644ff059cfb05164403024c3cb9",
+  "assistant_text_bytes": 0,
+  "assistant_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "client_id": "opencode",
+  "client_version": "cli:1.18.15",
+  "command_contract": {
+    "auto": true,
+    "client_version": "1.18.15",
+    "model": "deepseek-v4-flash-0731",
+    "output_format": "json",
+    "provider_id": "laoshirenai-chat-completions",
+    "provider_package": "@ai-sdk/openai-compatible",
+    "pure": true
+  },
+  "duration_ms": 180041,
+  "event_count": 11,
+  "event_types": {
+    "step_finish": 3,
+    "step_start": 4,
+    "tool_use": 4
+  },
+  "exit_code": 124,
+  "file_marker_verified": true,
+  "final_marker_verified": false,
+  "finished_at": "2026-08-31T23:43:15+00:00",
+  "group_id": 61,
+  "kind": "real_client_loop",
+  "model_id": "deepseek-v4-flash-0731",
+  "observed_at": "2026-08-31T23:40:12+00:00",
+  "os": "macos",
+  "owned_key": {
+    "key_id": 128,
+    "name": "一键安装 · Codex",
+    "user_id": 2
+  },
+  "passed": false,
+  "protocol": "chat_completions",
+  "protocol_attribution": {
+    "artifact_sha256": "6a25538e43ddd64a3d7f8c44d82e963f9ea052aec14db1914f1a4668ac3ab89a",
+    "artifact_uri": "artifacts/opencode-chat-generate-key128-20260901/opencode-chat_completions-deepseek-v4-flash-0731-group61-20260901-usage.json",
+    "inbound_endpoint": "/v1/chat/completions",
+    "upstream_endpoint": "/v1/chat/completions",
+    "usage_rows": 4,
+    "verified": true
+  },
+  "read_tool_verified": true,
+  "restored_group_id": null,
+  "schema_version": 1,
+  "secret_free": true,
+  "shell_file_verified": true,
+  "shell_tool_verified": true,
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 5817,
+  "stdout_sha256": "f5bf3edcfeb1acbf23f4ed3a4748231555cd24d0dfbc3bf6548abe650c448e9e",
+  "successful_tools": [
+    "bash",
+    "read"
+  ],
+  "temporary_config": {
+    "api_key_source": "child env LAOSHIRENAI_OPENCODE_KEY",
+    "literal_key_written": false,
+    "path": "~/.config/opencode/opencode.json",
+    "removed_with_temporary_home": true,
+    "sha256": "5876ba04695020017dcf3d0e986b8b7b7841af103f9b4283a44d29a86cd507bd"
+  },
+  "timed_out": true,
+  "tool_names": [
+    "bash",
+    "read"
+  ],
+  "tool_result_observed": true,
+  "tool_use_observed": true
+}

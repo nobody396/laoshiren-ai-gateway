@@ -82,4 +82,23 @@ class DirectHarnessGatesTest(unittest.TestCase):
         expected=next(x['source_sha256'] for x in lock['files'] if x['path']=='model-doc-contracts/client-matrix.json')
         self.assertEqual(hashlib.sha256((ROOT/'model-doc-contracts/client-matrix.json').read_bytes()).hexdigest(),expected)
 
+
+class ExactFeatureProofTest(unittest.TestCase):
+    def test_basic_request_cannot_be_reused_as_tool_result_or_billing_proof(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);p=root/'source.json'
+            p.write_text(json.dumps({'schema_version':2,'kind':'provider_contract_live_case','network_execution':'explicit_live','observed_at':'2026-09-03','result':'pass','classification':'verified','case':{'model_id':'test','protocol':'generate_content','p_id':'P-01'},'offline_verifier':{'status':'passed'},'response':{'http_status':200}}))
+            ev={'status':'verified','source_ref':'source.json','artifact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'observed_at':'2026-09-03'}
+            for feature in ['tool_result_continuation','billing']:
+                gaps=artifact_gaps(ev,root,as_of=date(2026,9,3),path='test/test_matrix/protocols/generate_content/'+feature)
+                self.assertTrue(gaps)
+
+    def test_empty_price_audit_cannot_pass(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);(root/'catalog.json').write_text('{"models": []}')
+            (root/'inventory.json').write_text('{"currency":"CNY","unit":"per_1m_tokens","groups": []}')
+            result=subprocess.run([sys.executable,str(ROOT/'scripts/model_price_matrix.py'),'audit','--catalog',str(root/'catalog.json'),'--inventory-json',str(root/'inventory.json')],capture_output=True,text=True)
+            self.assertEqual(result.returncode,2)
+            self.assertFalse(json.loads(result.stdout)['complete'])
+
 if __name__=='__main__': unittest.main()

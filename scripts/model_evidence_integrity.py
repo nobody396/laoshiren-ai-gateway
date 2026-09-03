@@ -9,6 +9,11 @@ from typing import Any
 from urllib.parse import urlsplit
 
 TERMINAL = {"verified", "unsupported", "not_published", "not_exposed", "not_applicable"}
+FEATURE_CASES = {"minimal_text":"P-01", "basic_request":"P-01", "streaming_sse":"P-02",
+    "streaming_terminal":"P-03", "terminal_event":"P-03", "tool_call":"P-04", "tool_calls":"P-04",
+    "tool_result_continuation":"P-05", "tool_result_round_trip":"P-05", "reasoning":"P-06",
+    "prompt_cache":"P-07", "image_input":"P-08", "structured_output":"P-10", "web_search":"P-11",
+    "usage":"P-12", "invalid_request":"P-15", "error_passthrough":"P-15"}
 
 
 def fingerprint(value: Any) -> str:
@@ -23,6 +28,9 @@ def artifact_gaps(value: Any, root: Path, *, as_of: date, max_age_days: int = 18
     """
     failures = []
     subject = dict(subject or {})
+    for component in path.split("/"):
+        if component in {"responses","chat_completions","messages","generate_content"}:
+            subject["protocol"] = component
     if isinstance(value, dict):
         model = value.get("model", {})
         access = value.get("access", {})
@@ -107,6 +115,14 @@ def artifact_gaps(value: Any, root: Path, *, as_of: date, max_age_days: int = 18
                                     failures.append(f"{path}: incomplete owned accounting proof")
                             else:
                                 failures.append(f"{path}: unsupported evidence kind")
+                            feature = path.rsplit("/",1)[-1]
+                            if "/test_matrix/clients/" in path and kind != "owned_client_loop":
+                                failures.append(f"{path}: client cell requires a real client loop receipt")
+                            if feature == "billing" and kind != "owned_gateway_e2e":
+                                failures.append(f"{path}: billing requires owned accounting proof, not a protocol/usage receipt")
+                            if feature in FEATURE_CASES:
+                                if kind != "provider_contract_live_case" or target_subject.get("p_id") != FEATURE_CASES[feature]:
+                                    failures.append(f"{path}: artifact does not prove this exact feature case")
                             receipt_time = receipt.get("observed_at")
                             wrapper_time = value.get("observed_at",value.get("verified_at"))
                             if receipt_time != wrapper_time:

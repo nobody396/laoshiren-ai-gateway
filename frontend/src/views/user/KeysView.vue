@@ -446,6 +446,7 @@
             <label><input v-model="keyGroupMode" type="radio" value="multi" /> 多分组 Key</label>
             <label><input v-model="keyGroupMode" type="radio" value="single" /> 单分组 Key（兼容模式）</label>
           </div>
+          <div v-if="keyGroupMode === 'multi' && !groupsLoading && groupsLoadedScope !== activeScope" class="mb-3 text-sm" role="alert">分组加载失败，暂不能创建此 Key。<button type="button" class="btn btn-secondary btn-sm" @click="loadGroups">重新加载</button></div>
           <KeyGroupMultiSelect v-if="keyGroupMode === 'multi'" v-model="selectedGroupIds" :groups="multiGroupOptions" :rates="activeScope === 'personal' ? userGroupRates : {}" :disabled="groupsLoading" />
           <KeyGroupSelector v-else
             v-model="formData.group_id"
@@ -1297,6 +1298,7 @@ const columns = computed<Column[]>(() => [
 const apiKeys = ref<ApiKey[]>([])
 const groups = ref<Group[]>([])
 const groupsLoading = ref(true)
+const groupsLoadedScope = ref<string | null>(null)
 const keyGroupMode = ref<'single' | 'multi'>('multi')
 const selectedGroupIds = ref<number[]>([])
 const multiGroupOptions = computed(() => groups.value.filter(group => group.platform !== 'universal'))
@@ -1740,8 +1742,14 @@ const loadGroups = async () => {
     const loaded = await userGroupsAPI.getAvailable(requestedScope)
     if (requestedScope !== activeScope.value) return
     groups.value = loaded
+    groupsLoadedScope.value = requestedScope
     if (showCreateModal.value) selectedGroupIds.value = defaultKeyGroupIds(groups.value)
   } catch (error) {
+    if (requestedScope === activeScope.value) {
+      groups.value = []
+      selectedGroupIds.value = []
+      groupsLoadedScope.value = null
+    }
     console.error('Failed to load groups:', error)
   } finally {
     if (requestedScope === activeScope.value) groupsLoading.value = false
@@ -1861,7 +1869,7 @@ const confirmDelete = (key: ApiKey) => {
 
 const handleSubmit = async () => {
   // Explicit empty selection must never mean unrestricted access.
-  if (keyGroupMode.value === 'multi' && (groupsLoading.value || selectedGroupIds.value.length === 0)) {
+  if (keyGroupMode.value === 'multi' && (groupsLoading.value || groupsLoadedScope.value !== activeScope.value || selectedGroupIds.value.length === 0)) {
     appStore.showError('请至少选择一个授权分组')
     return
   }
@@ -2258,6 +2266,10 @@ onMounted(() => {
 
 const setScope = async (scope: 'personal' | 'team') => {
   if (activeScope.value === scope) return
+  closeModals()
+  groups.value = []
+  selectedGroupIds.value = []
+  groupsLoadedScope.value = null
   activeScope.value = scope
   pagination.value.page = 1
   filterGroupId.value = ''

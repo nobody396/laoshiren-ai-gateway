@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestAPIKeyGroupIDsExplicitSnapshot(t *testing.T) {
@@ -123,4 +124,70 @@ func TestMultiGroupCreateUpdateAndRevocationUsePayerAuthorization(t *testing.T) 
 	require.NoError(t, err)
 	require.Empty(t, single.GroupIDs)
 	require.Equal(t, &id, single.GroupID)
+}
+
+func TestMultiGroupCatalogUpdatesWithoutReissuingKey(t *testing.T) {
+	channelService := &ChannelService{}
+	gateway := &GatewayService{channelService: channelService}
+	group := &Group{ID: 6, Platform: PlatformOpenAI, Status: StatusActive}
+	key := &APIKey{ID: 10, GroupIDs: []int64{6}}
+	update := func(status string, models []string) {
+		channelService.cache.Store(populateChannelCache([]Channel{{ID: 1, Status: status, GroupIDs: []int64{6}, ModelPricing: []ChannelModelPricing{{Platform: PlatformOpenAI, Models: models}}}}, map[int64]string{6: PlatformOpenAI}))
+	}
+	update(StatusActive, []string{"model-old"})
+	models, err := gateway.MultiGroupModels(context.Background(), group)
+	require.NoError(t, err)
+	require.Equal(t, []string{"model-old"}, models)
+	update(StatusActive, []string{"model-new", "future-family-*"})
+	models, err = gateway.MultiGroupModels(context.Background(), group)
+	require.NoError(t, err)
+	require.NotContains(t, models, "model-old")
+	require.Contains(t, models, "model-new")
+	require.True(t, MultiGroupModelMatches(models, "future-family-unreleased-name"))
+	require.False(t, MultiGroupModelMatches(models, "another-family-model"))
+	require.Equal(t, []int64{6}, key.GroupIDs)
+	update("disabled", []string{"model-new"})
+	_, err = gateway.MultiGroupModels(context.Background(), group)
+	require.Error(t, err, "disabled catalog must not look like no matching model and trigger another funding group")
+	channelService.cache.Store(newEmptyChannelCache())
+	// Missing/error-cached configuration is also fail closed.
+	empty := newEmptyChannelCache()
+	empty.loadedAt = time.Now()
+	channelService.cache.Store(empty)
+	_, err = gateway.MultiGroupModels(context.Background(), group)
+	require.Error(t, err)
+}
+
+func TestMultiGroupTargetUsesCurrentTeamPayerNotActor(t *testing.T) {
+	users := &multiGroupUserStub{user: &User{ID: 2, Status: StatusActive, AllowedGroups: []int64{6}}}
+	service := &APIKeyService{userRepo: users}
+	group := &Group{ID: 6, Platform: PlatformOpenAI, Status: StatusActive, IsExclusive: true}
+	key := &APIKey{UserID: 17, User: &User{ID: 2}, GroupIDs: []int64{6}}
+	payer, err := service.AuthorizeMultiGroupTarget(context.Background(), key, group)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), payer.ID)
+	require.Equal(t, int64(2), users.readID)
+	// Team hydration changes the payer after owner transfer; an actor grant is irrelevant.
+	key.User = &User{ID: 9}
+	users.user = &User{ID: 9, Status: StatusActive}
+	_, err = service.AuthorizeMultiGroupTarget(context.Background(), key, group)
+	require.Error(t, err)
+	require.Equal(t, int64(9), users.readID)
+}
+
+func TestMultiGroupAdminExplicitRebindClearsPreviousAuthorization(t *testing.T) {
+	for _, id := range []int64{0, 57} {
+		keys := &multiGroupKeyRepoStub{key: &APIKey{ID: 42, GroupIDs: []int64{6, 57}}}
+		groups := &multiGroupRepoStub{groups: map[int64]*Group{57: {ID: 57, Status: StatusActive, Platform: PlatformGemini}}}
+		admin := &adminServiceImpl{apiKeyRepo: keys, groupRepo: groups}
+		result, err := admin.AdminUpdateAPIKeyGroupID(context.Background(), 42, &id)
+		require.NoError(t, err)
+		require.Empty(t, result.APIKey.GroupIDs)
+		require.Empty(t, keys.key.GroupIDs)
+		if id == 0 {
+			require.Nil(t, keys.key.GroupID)
+		} else {
+			require.Equal(t, &id, keys.key.GroupID)
+		}
+	}
 }

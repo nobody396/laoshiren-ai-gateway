@@ -8,3 +8,7 @@ Status: implementation branch; NOT deployed. Owner approved one key with explici
 - Phase-one native HTTP endpoints: Messages, Chat, Responses and Gemini generation/counting, plus authorized union model discovery. Unsupported stateful/multipart/media paths fail closed rather than use arbitrary first group; keep legacy keys for them until an explicit tested continuation contract is added.
 - No secrets in logs/fixtures. UI cannot claim every protocol/model/client combination works.
 - Required tests: CRUD authorization/order/empty/duplicate, cache roundtrip, deterministic route selection and no billing fallback, protocol recognition, discovery access, legacy behavior, frontend defaults/order/edit/scope changes, schema migration and CI.
+
+Discovery contract: models are authorized declarations, not a real-time balance/quota or upstream-health guarantee. Expired/revoked grants are filtered; temporarily exhausted quotas remain visible and fail at request admission. Disabled/missing pricing catalogs fail closed rather than cause a change of funding source.
+
+Dynamic catalog requirement: group_ids stores only group authorization/priority, never model names. Exact/prefix rate-card declarations and current account mappings drive model discovery and admission. Adding/removing configured models refreshes the current catalog without reissuing a Key; newly created groups are not silently granted to existing Keys.

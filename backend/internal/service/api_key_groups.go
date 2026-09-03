@@ -74,19 +74,35 @@ func (s *APIKeyService) AuthorizeMultiGroupTarget(ctx context.Context, key *APIK
 // group. Groups without a declared model catalog are deliberately not guessed.
 func (s *GatewayService) MultiGroupModels(ctx context.Context, group *Group) ([]string, error) {
 	if s.channelService == nil || group == nil {
-		return nil, nil
+		return nil, infraerrors.ServiceUnavailable("MULTI_GROUP_CATALOG_UNAVAILABLE", "Multi-group model catalog is unavailable")
 	}
-	lookup, err := s.channelService.lookupGroupChannel(ctx, group.ID)
-	if err != nil || lookup == nil {
+	cache, err := s.channelService.loadCache(ctx)
+	if err != nil {
 		return nil, err
 	}
+	channel := cache.channelByGroupID[group.ID]
+	if channel == nil || !channel.IsActive() {
+		// A missing/disabled catalog is unknown, not proof the first group does
+		// not serve this model. Never skip it and silently switch funding sources.
+		return nil, infraerrors.ServiceUnavailable("MULTI_GROUP_CATALOG_UNAVAILABLE", "An authorized group has no active declared model catalog")
+	}
 	var models []string
-	for _, pricing := range lookup.channel.ModelPricing {
-		if !slices.Contains(matchingPlatforms(lookup.platform), pricing.Platform) {
+	for _, pricing := range channel.ModelPricing {
+		if !slices.Contains(matchingPlatforms(group.Platform), pricing.Platform) {
 			continue
 		}
 		for _, model := range pricing.Models {
-			if !strings.Contains(model, "*") && model != "" {
+			if model != "" {
+				models = append(models, model)
+			}
+		}
+	}
+	// Keep wildcard declarations for request admission; expand only discovery
+	// names from current account mappings, never from a hard-coded model list.
+	if slices.ContainsFunc(models, func(m string) bool { return strings.HasSuffix(m, "*") }) && s.accountRepo != nil {
+		declared := append([]string(nil), models...)
+		for _, model := range s.GetAvailableModels(ctx, &group.ID, group.Platform) {
+			if MultiGroupModelMatches(declared, model) {
 				models = append(models, model)
 			}
 		}
@@ -111,8 +127,22 @@ func MultiGroupProtocolSupported(g *Group, protocol string) bool {
 	case "generate_content":
 		return g.Platform == PlatformGemini || g.Platform == PlatformAntigravity
 	case "":
-		return true
+		return g.Platform == PlatformOpenAI || g.Platform == PlatformAnthropic || g.Platform == PlatformGemini || g.Platform == PlatformAntigravity || g.Platform == PlatformGrok
 	default:
 		return false
 	}
+}
+
+// MultiGroupModelMatches follows the same exact/prefix declarations as the
+// channel rate card, while future model names remain data rather than code.
+func MultiGroupModelMatches(patterns []string, model string) bool {
+	for _, pattern := range patterns {
+		if strings.EqualFold(pattern, model) {
+			return true
+		}
+		if strings.HasSuffix(pattern, "*") && strings.HasPrefix(strings.ToLower(model), strings.ToLower(strings.TrimSuffix(pattern, "*"))) {
+			return true
+		}
+	}
+	return false
 }

@@ -150,3 +150,53 @@ func TestMultiGroupDiscoveryDoesNotAdvertiseBlockedPriorityFallback(t *testing.T
 	require.Equal(t, 200, w.Code)
 	require.NotContains(t, w.Body.String(), "gpt-test")
 }
+
+func TestMultiGroupModelConfigurationChangesAreDynamic(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{}}
+	declared := []string{"model-old"}
+	r := multiRouter(f, &service.APIKey{GroupIDs: []int64{6}, User: &service.User{ID: 2}}, func(context.Context, *service.Group) ([]string, error) {
+		return append([]string(nil), declared...), nil
+	})
+	call := func(model string) int {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"`+model+`"}`)))
+		return w.Code
+	}
+	require.Equal(t, 200, call("model-old"))
+	declared = []string{"model-new"}
+	require.Equal(t, 404, call("model-old"))
+	require.Equal(t, 200, call("model-new"))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("GET", "/v1/models", nil))
+	require.Contains(t, w.Body.String(), "model-new")
+	require.NotContains(t, w.Body.String(), "model-old")
+}
+
+func TestMultiGroupCatalogFailureCannotFallbackToAnotherGroup(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{5: {ID: 5, Platform: service.PlatformOpenAI}, 6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{}}
+	r := multiRouter(f, &service.APIKey{GroupIDs: []int64{5, 6}, User: &service.User{ID: 2}}, func(_ context.Context, g *service.Group) ([]string, error) {
+		if g.ID == 5 {
+			return nil, errors.New("catalog disabled")
+		}
+		t.Fatal("must not choose cheaper/wallet group")
+		return []string{"model-test"}, nil
+	})
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"model-test"}`)))
+	require.Equal(t, 503, w.Code)
+}
+
+func TestMultiGroupWildcardDeclarationBlocksLowerPriorityDiscovery(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{5: {ID: 5, Platform: service.PlatformOpenAI}, 6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{5: true}}
+	r := multiRouter(f, &service.APIKey{GroupIDs: []int64{5, 6}, User: &service.User{ID: 2}}, func(_ context.Context, g *service.Group) ([]string, error) {
+		if g.ID == 5 {
+			return []string{"family-*"}, nil
+		}
+		return []string{"family-new"}, nil
+	})
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("GET", "/v1/models", nil))
+	require.Equal(t, 200, w.Code)
+	require.NotContains(t, w.Body.String(), "family-new")
+	require.NotContains(t, w.Body.String(), "family-*")
+}

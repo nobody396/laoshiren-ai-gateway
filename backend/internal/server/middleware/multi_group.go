@@ -32,6 +32,9 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			return
 		}
 		fail := func(status int, message string) {
+			if status < 400 || status > 599 {
+				status = http.StatusServiceUnavailable
+			}
 			if strings.Contains(c.Request.URL.Path, "/v1beta/") {
 				abortWithGoogleError(c, status, message)
 			} else {
@@ -54,8 +57,15 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			return
 		}
 		forced, _ := GetForcePlatformFromContext(c)
+		if forced == "" && strings.HasPrefix(path, "/antigravity/") {
+			forced = service.PlatformAntigravity
+		}
+		if listing && forced == service.PlatformGPTImage {
+			fail(400, "This media endpoint requires a single-group key")
+			return
+		}
 		var discovered []string
-		seenRoutes := map[string]bool{}
+		priorDeclarations := map[string][]string{}
 		for _, id := range key.GroupIDs {
 			group, loadErr := groups.GetByID(c.Request.Context(), id)
 			if loadErr != nil || group == nil {
@@ -66,6 +76,9 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				continue
 			}
 			if listing {
+				if !service.MultiGroupProtocolSupported(group, "") {
+					continue
+				}
 				if strings.Contains(path, "/v1beta/") && !service.MultiGroupProtocolSupported(group, "generate_content") {
 					continue
 				}
@@ -77,11 +90,11 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				fail(503, "Model catalog is temporarily unavailable")
 				return
 			}
-			if !listing && !slices.Contains(models, model) {
+			if !listing && !service.MultiGroupModelMatches(models, model) {
 				continue
 			}
 			// A lower-priority group must not advertise a route which requests
-			// would reject at a revoked/exhausted higher-priority group.
+			// would reject at a revoked higher-priority group.
 			listingModels := []string{}
 			if listing {
 				protocols := []string{"messages", "responses", "chat_completions", "generate_content"}
@@ -89,16 +102,22 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 					protocols = []string{"generate_content"}
 				}
 				for _, candidate := range models {
+					if strings.Contains(candidate, "*") {
+						continue
+					}
 					fresh := false
 					for _, p := range protocols {
-						routeKey := candidate + "\x00" + p
-						if service.MultiGroupProtocolSupported(group, p) && !seenRoutes[routeKey] {
-							seenRoutes[routeKey] = true
+						if service.MultiGroupProtocolSupported(group, p) && !service.MultiGroupModelMatches(priorDeclarations[p], candidate) {
 							fresh = true
 						}
 					}
 					if fresh {
 						listingModels = append(listingModels, candidate)
+					}
+				}
+				for _, p := range protocols {
+					if service.MultiGroupProtocolSupported(group, p) {
+						priorDeclarations[p] = append(priorDeclarations[p], models...)
 					}
 				}
 			}
@@ -164,7 +183,7 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				if google {
 					data = append(data, gin.H{"name": "models/" + name, "displayName": name, "supportedGenerationMethods": []string{"generateContent", "countTokens"}})
 				} else {
-					data = append(data, gin.H{"id": name, "object": "model", "owned_by": "laoshirenai"})
+					data = append(data, gin.H{"id": name, "object": "model", "created": 0, "owned_by": "laoshirenai"})
 				}
 			}
 			if google {

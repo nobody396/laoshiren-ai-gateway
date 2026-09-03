@@ -1,0 +1,39 @@
+name: One-line WorkBuddy Windows QA
+
+on:
+  push:
+    branches:
+      - qa/one-line-client-setup-windows-20260902
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workbuddy-windows:
+    name: WorkBuddy / PowerShell 5.1 + 7
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Render exact customer command
+        shell: pwsh
+        run: |
+          python qa/one-line-client-setup/scripts/render_setup_command.py --client workbuddy --group-id 58 --group-name 'GPT 经济线路' --os windows | Out-File -FilePath qa/one-line-client-setup/workbuddy-windows-command.txt -Encoding utf8
+      - name: Verify live public group contract
+        shell: pwsh
+        run: |
+          $catalog = Invoke-RestMethod -Uri 'https://api.laoshirenai.com/api/v1/public/model-pricing' -Method Get
+          $group = @($catalog.data.groups | Where-Object { [int64]$_.group_id -eq 58 })[0]
+          if ($null -eq $group) { throw 'GPT 经济线路 group 58 is missing' }
+          $ids = @($group.models | ForEach-Object { [string]$_.model })
+          if ($ids.Count -eq 0) { throw 'GPT 经济线路 exposes no models' }
+          if ($ids -notcontains 'gpt-5.6-sol') { throw 'GPT 经济线路 no longer exposes gpt-5.6-sol' }
+      - name: Execute Windows acceptance in PowerShell 7
+        shell: pwsh
+        run: qa/one-line-client-setup/tests/windows_acceptance.ps1 -CommandPath qa/one-line-client-setup/workbuddy-windows-command.txt
+      - name: Execute Windows acceptance in Windows PowerShell 5.1
+        shell: powershell
+        run: qa/one-line-client-setup/tests/windows_acceptance.ps1 -CommandPath qa/one-line-client-setup/workbuddy-windows-command.txt

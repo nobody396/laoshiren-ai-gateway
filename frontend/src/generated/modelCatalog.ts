@@ -19,7 +19,7 @@ export interface CodexClientModel {
   contextWindow: number
 }
 
-export const clientAutoConfigVersion = "0.7.13"
+export const clientAutoConfigVersion = "0.7.14"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",
@@ -138,6 +138,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     "preset": {
       "from": "gemini-3.7-flash-high",
       "to": "gemini-3.7-flash-high",
+      "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+    }
+  },
+  {
+    "id": "gemini-3.8-flash",
+    "upstreamId": "gemini-3.8-flash",
+    "displayName": "Gemini 3.8 Flash",
+    "platform": "gemini",
+    "contextWindow": 1048576,
+    "maxOutputTokens": 65536,
+    "clientDefault": false,
+    "preferredGroupName": "Gemini 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gemini-3.8-flash",
+      "to": "gemini-3.8-flash",
       "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
     }
   },

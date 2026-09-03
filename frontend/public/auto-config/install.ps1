@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.13'
+$ScriptVersion = '0.7.14'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -13,7 +13,7 @@ $CatalogGrokDefaultContextWindow = 500000
 $CatalogGrokManagedModels = @(@{ Id = 'grok-4.5'; DisplayName = 'Grok 4.5'; ContextWindow = 500000 }, @{ Id = 'grok-4.6'; DisplayName = 'Grok 4.6'; ContextWindow = 500000 })
 $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
 $CatalogGeminiDefaultModel = 'gemini-3.7-flash'
-$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')
+$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')
 # END GENERATED MODEL CATALOG
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
@@ -210,10 +210,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.13 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.14 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.13 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.14 | iex
 
 参数:
   --api-key              Claude Code API Key

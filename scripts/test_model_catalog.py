@@ -266,20 +266,35 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertEqual(values["gemini"]["id"], "gemini-3.7-flash")
         self.assertEqual(
             values["gemini"]["managed_ids"],
-            ["gemini-3.1-pro", "gemini-3.7-flash", "gemini-3.7-flash-high"],
+            ["gemini-3.1-pro", "gemini-3.7-flash", "gemini-3.7-flash-high", "gemini-3.8-flash"],
         )
         shell_block = MODULE.render_shell_block(catalog)
         self.assertIn("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'", shell_block)
         self.assertIn(
-            "CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high'",
+            "CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high gemini-3.8-flash'",
             shell_block,
         )
         powershell_block = MODULE.render_powershell_block(catalog)
         self.assertIn("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'", powershell_block)
         self.assertIn(
-            "$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')",
+            "$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')",
             powershell_block,
         )
+
+    def test_nondefault_gemini_addition_bumps_installer_without_switching_default(self):
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        manifest = json.loads((MODULE.ROOT / "model-doc-contracts/releases/gemini-3.8-flash.release.json").read_text())
+        manifest["model"]["id"] = "gemini-next-fixture"
+        manifest["model"]["upstream_id"] = "gemini-next-fixture"
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/"manifest.json"
+            path.write_text(json.dumps(manifest))
+            merged=MODULE.merge_manifest(catalog,path)
+        self.assertEqual(merged["client_auto_config_version"],MODULE.bump_patch(catalog["client_auto_config_version"]))
+        self.assertEqual(MODULE.installer_model_values(merged)["gemini"]["id"],"gemini-3.7-flash")
+        before={r["id"]:r for r in catalog["models"]}
+        after={r["id"]:r for r in merged["models"]}
+        self.assertTrue(all(before[k] == after[k] for k in before))
 
 
 if __name__ == "__main__":

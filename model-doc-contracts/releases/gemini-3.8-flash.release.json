@@ -1,0 +1,427 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "gemini-3.8-flash",
+    "upstream_id": "gemini-3.8-flash",
+    "display_name": "Gemini 3.8 Flash",
+    "platform": "gemini",
+    "context_window": 1048576,
+    "max_output_tokens": 65536,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "generate_content",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": false,
+    "reasoning_efforts": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 0.75,
+    "cached_input_per_mtok_usd": 0.075,
+    "output_per_mtok_usd": 3.75,
+    "evidence_url": "https://ai.google.dev/gemini-api/docs/pricing",
+    "long_context": null
+  },
+  "lifecycle": {
+    "public_status": "public",
+    "introduced_at": "2026-09-03",
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "generate_content",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Existing native Gemini adapter; direct-provider streaming and tool-result continuation passed. Public gateway acceptance remains pending.",
+      "evidence_ids": [
+        "formal-basic",
+        "formal-terminal",
+        "formal-tools",
+        "formal-tool-result"
+      ]
+    },
+    {
+      "protocol": "chat_completions",
+      "support": "unsupported",
+      "recommendation": "not_applicable",
+      "recommendation_reason": "Not admitted as a direct upstream protocol: valid protocol request repeatedly rejected with contents-is-required. Gateway conversions are a separate post-deploy test.",
+      "evidence_ids": [
+        "formal-chat_completions"
+      ]
+    },
+    {
+      "protocol": "messages",
+      "support": "unsupported",
+      "recommendation": "not_applicable",
+      "recommendation_reason": "Not admitted as a direct upstream protocol: valid protocol request repeatedly rejected with contents-is-required. Gateway conversions are a separate post-deploy test.",
+      "evidence_ids": [
+        "formal-messages"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "support": "unsupported",
+      "recommendation": "not_applicable",
+      "recommendation_reason": "Not admitted as a direct upstream protocol: valid protocol request repeatedly rejected with contents-is-required. Gateway conversions are a separate post-deploy test.",
+      "evidence_ids": [
+        "formal-responses"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "generate_content",
+      "features": {
+        "basic_request": "pass",
+        "billing": "pass",
+        "context_window": "pass",
+        "disconnect": "pass",
+        "error_passthrough": "fail",
+        "image_input": "pass",
+        "prompt_cache": "fail",
+        "reasoning": "pass",
+        "retry": "pass",
+        "streaming": "pass",
+        "structured_output": "pass",
+        "terminal_event": "pass",
+        "timeout": "pass",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "usage": "pass",
+        "web_search": "pass"
+      },
+      "evidence_ids": [
+        "formal-basic",
+        "formal-sse",
+        "formal-terminal",
+        "formal-tools",
+        "formal-tool-result",
+        "formal-low",
+        "formal-medium",
+        "formal-high",
+        "formal-image",
+        "formal-structured",
+        "formal-usage",
+        "formal-invalid",
+        "low-wire",
+        "native-web-search",
+        "native-implicit-cache-negative",
+        "provider-billing",
+        "adapter-regression",
+        "model-spec"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "generate_content",
+      "effort": "low",
+      "support": "supported",
+      "wire_value": "low",
+      "evidence_ids": [
+        "low-wire"
+      ]
+    },
+    {
+      "protocol": "generate_content",
+      "effort": "medium",
+      "support": "supported",
+      "wire_value": "medium",
+      "evidence_ids": [
+        "formal-medium"
+      ]
+    },
+    {
+      "protocol": "generate_content",
+      "effort": "high",
+      "support": "supported",
+      "wire_value": "high",
+      "evidence_ids": [
+        "formal-high"
+      ]
+    }
+  ],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 0.75,
+      "output": 3.75,
+      "cached_input": 0.075,
+      "cache_write": null,
+      "long_context": null,
+      "effective_from": "2026-09-02",
+      "evidence_ids": [
+        "price-source"
+      ]
+    },
+    {
+      "scope": "official-standard-from-2027-01-01",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 1.5,
+      "output": 7.5,
+      "cached_input": 0.15,
+      "cache_write": null,
+      "long_context": null,
+      "effective_from": "2027-01-01",
+      "evidence_ids": [
+        "price-source"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "price-source",
+      "kind": "official_docs",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "observed_at": "2026-09-03T10:47:48.603264+00:00",
+      "subject_version": "gemini-3.8-flash / direct-provider preflight 2026-09-03",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "model-spec",
+      "kind": "official_docs",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
+      "observed_at": "2026-09-03T10:47:48.603264+00:00",
+      "subject_version": "gemini-3.8-flash / direct-provider preflight 2026-09-03",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "formal-basic",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:57:26.933+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "2e166c61e3545882703d4394a037d0f941bb2983f827b694fd21ab1a9551fd8c",
+      "artifact_path": "evidence/gemini-3.8-flash/basic.json"
+    },
+    {
+      "id": "formal-sse",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:57:32.087+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "2f432075ad9f08c7acad532c727e8d7e642699ef8e1a2f40ee151e47c9a41bd4",
+      "artifact_path": "evidence/gemini-3.8-flash/sse.json"
+    },
+    {
+      "id": "formal-terminal",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:59:50.378+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "c5f65c20f61dc1f3763625aa23d0d75873841e533556f40730b2bc411e8a4995",
+      "artifact_path": "evidence/gemini-3.8-flash/terminal.json"
+    },
+    {
+      "id": "formal-tools",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:57:48.639+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "fb4294838cf7ebd808e65d30debaffa3e0149c906980840c59539c522b5807a7",
+      "artifact_path": "evidence/gemini-3.8-flash/tools.json"
+    },
+    {
+      "id": "formal-tool-result",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:57:52.530+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "83f142fda70e14b1992e0011474add476d3e9c43f42dd4f7cd76fbeef5f35284",
+      "artifact_path": "evidence/gemini-3.8-flash/tool-result.json"
+    },
+    {
+      "id": "formal-low",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:59:55.245+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "fail",
+      "artifact_sha256": "c80eb5266bb00a4fcd2cbd552135184046f887a957e9e4b10a9a3ef577343a39",
+      "artifact_path": "evidence/gemini-3.8-flash/low.json"
+    },
+    {
+      "id": "formal-medium",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:00:00.149+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "a1ff068605d9ef070912078ae84b41e9eafd09ea52240f1682454d8ddfe07c1d",
+      "artifact_path": "evidence/gemini-3.8-flash/medium.json"
+    },
+    {
+      "id": "formal-high",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:00:06.143+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "d854a95ae1c00b727e656f5f8013468b2591e2e5ab60f56d50b74c3060212386",
+      "artifact_path": "evidence/gemini-3.8-flash/high.json"
+    },
+    {
+      "id": "formal-image",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:58:12.191+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "6fd213f7c06e8ee888cd4f6cc9f9aee5df82909cdaca29af7165a519921b40ff",
+      "artifact_path": "evidence/gemini-3.8-flash/image.json"
+    },
+    {
+      "id": "formal-structured",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:00:12.493+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "6d6d746f3c35ad7058724be2c6e09e26b1dbd6242c95a6170c850e5ee0c68e2e",
+      "artifact_path": "evidence/gemini-3.8-flash/structured.json"
+    },
+    {
+      "id": "formal-usage",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:58:26.051+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "pass",
+      "artifact_sha256": "b5ee7eb5574afa88b9c086d300d20bf639a763a0ae139ebf16f25c573a7b5dbe",
+      "artifact_path": "evidence/gemini-3.8-flash/usage.json"
+    },
+    {
+      "id": "formal-invalid",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T12:58:29.232+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "fail",
+      "artifact_sha256": "147c8d602f995e108860a5ba40cd65f44972939a704205bec1368bd9de247473",
+      "artifact_path": "evidence/gemini-3.8-flash/invalid.json"
+    },
+    {
+      "id": "formal-chat_completions",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:00:38.187+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "fail",
+      "artifact_sha256": "4f435af642ddac4c973a9a84e43ffde746e7de5302603c8380864aa0e98d3b46",
+      "artifact_path": "evidence/gemini-3.8-flash/chat_completions.json"
+    },
+    {
+      "id": "formal-messages",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:00:39.265+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "fail",
+      "artifact_sha256": "103d4821c5eb5a9d10b21fad37b1d71b51226e1ef8d29fd5957da0cc0371838e",
+      "artifact_path": "evidence/gemini-3.8-flash/messages.json"
+    },
+    {
+      "id": "formal-responses",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:00:40.432+00:00",
+      "subject_version": "gemini-3.8-flash/direct/5971f41fb383",
+      "result": "fail",
+      "artifact_sha256": "adeaabc53ceda0b540efb746568d8559fed4c1c80bc2bcbcc0c199aaa1765509",
+      "artifact_path": "evidence/gemini-3.8-flash/responses.json"
+    },
+    {
+      "id": "low-wire",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:35:14.842+00:00",
+      "subject_version": "gemini-3.8-flash",
+      "result": "pass",
+      "artifact_sha256": "c78f373b67edfe8139d38e6039fa4d2978b2a42747cb9587b555526e854b7300",
+      "artifact_path": "evidence/gemini-3.8-flash-release/low-wire.json"
+    },
+    {
+      "id": "native-web-search",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:11:10.282+00:00",
+      "subject_version": "gemini-3.8-flash",
+      "result": "pass",
+      "artifact_sha256": "955107964b845212d05eb2fa606d148f3da40f49b20cd160f79bcd93606e238f",
+      "artifact_path": "evidence/gemini-3.8-flash-release/web-search.json"
+    },
+    {
+      "id": "native-implicit-cache-negative",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-03T13:10:54.733+00:00",
+      "subject_version": "gemini-3.8-flash",
+      "result": "fail",
+      "artifact_sha256": "09f0dc3eb525b9e6f9687a4305d8d16c83d270b79cd8470f92c62ddc612df033",
+      "artifact_path": "evidence/gemini-3.8-flash-release/implicit-cache.json"
+    },
+    {
+      "id": "provider-billing",
+      "kind": "billing_reconciliation",
+      "url": null,
+      "observed_at": "2026-09-03T13:32:49.500229+00:00",
+      "subject_version": "gemini-3.8-flash",
+      "result": "pass",
+      "artifact_sha256": "1528d22afc496c204cfb670cdc6267efebc1580e89fb3c9bd86e02eeed3717e7",
+      "artifact_path": "evidence/gemini-3.8-flash-release/provider-billing.json"
+    },
+    {
+      "id": "adapter-regression",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-09-03T13:36:32.932123+00:00",
+      "subject_version": "74e9c0ce2/native-Gemini adapter; exact model pre-admission regression; not provider SLA",
+      "result": "pass",
+      "artifact_sha256": "b9e9fd4dbb93f45595e09548bc2f7216dc2cd8b3f26ecbad8fb2895a2724fdc9",
+      "artifact_path": "evidence/gemini-3.8-flash-release/adapter-tests.jsonl"
+    }
+  ],
+  "production": {
+    "account_id": 48,
+    "group_id": 57,
+    "group_name": "Gemini 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "release_notes": {
+    "classification": "catalog-only",
+    "scope": "Existing native Gemini adapter, request/event/usage semantics unchanged. Direct upstream protocol admission; no claim of direct Chat/Messages/Responses support.",
+    "resilience_evidence": "Existing adapter read-error/cancellation/deadline propagation and retry classification verified by focused Go tests; not an upstream availability/SLA measurement.",
+    "cache_boundary": "Repeated-prefix tests did not show a cache hit; no caching capability claim. Cached-token tariff is defined for any actual reported cache usage.",
+    "low_reasoning_boundary": "Low wire accepted with correct arithmetic reasoning task; hidden provider-internal effort is not attested.",
+    "public_card": "Detailed nine-matrix model/client documentation card remains draft; this release adds basic model catalog/pricing/route only.",
+    "post_deploy_required": "Owned public model visibility, complete response, attribution, one usage row/accounting command, tariff and balance reconciliation before claiming released."
+  }
+}

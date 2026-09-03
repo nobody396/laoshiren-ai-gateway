@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.13",
+  "client_auto_config_version": "0.7.14",
   "models": [
     {
       "id": "claude-fable-5-1",
@@ -225,6 +225,40 @@
       "preset": {
         "from": "gemini-3.7-flash-high",
         "to": "gemini-3.7-flash-high",
+        "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+      }
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "upstream_id": "gemini-3.8-flash",
+      "display_name": "Gemini 3.8 Flash",
+      "platform": "gemini",
+      "context_window": 1048576,
+      "max_output_tokens": 65536,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "Gemini 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 0.75,
+        "cached_input_per_mtok_usd": 0.075,
+        "cache_write_5m_per_mtok_usd": null,
+        "cache_write_1h_per_mtok_usd": null,
+        "output_per_mtok_usd": 3.75,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://ai.google.dev/gemini-api/docs/pricing"
+      },
+      "preset": {
+        "from": "gemini-3.8-flash",
+        "to": "gemini-3.8-flash",
         "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
       }
     },

@@ -40,7 +40,6 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		return nil, fmt.Errorf("missing model in request")
 	}
 	clientStream := gjson.GetBytes(body, "stream").Bool()
-	reasoningEffort := extractOpenAIReasoningEffortFromBody(body, originalModel)
 
 	billingModel := resolveOpenAIForwardModel(account, originalModel, defaultMappedModel)
 	upstreamModel := normalizeOpenAIModelForUpstream(account, billingModel)
@@ -77,7 +76,7 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 	upstreamBody = normalizedBody
 	// Attribution must record the effective value sent upstream, not the
 	// unsupported client alias that was rewritten above.
-	reasoningEffort = extractOpenAIReasoningEffortFromBody(upstreamBody, upstreamModel)
+	reasoningEffort := extractOpenAIReasoningEffortFromBody(upstreamBody, upstreamModel)
 	serviceTier := extractOpenAIServiceTierFromBody(upstreamBody)
 
 	authToken, tokenKind, err := s.getRequestCredential(ctx, c, account)

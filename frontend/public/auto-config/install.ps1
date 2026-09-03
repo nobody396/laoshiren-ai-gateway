@@ -1638,7 +1638,11 @@ function Write-GeminiConfig {
   Backup-IfNeeded $GeminiEnvPath
   Backup-IfNeeded $GeminiSettingsPath
   Ensure-Directory $GeminiDir
-  $ThinkingLevel = if ($SelectedReasoning -in @('low','medium','high')) { $SelectedReasoning.ToUpperInvariant() } else { 'HIGH' }
+  # $SelectedReasoning is assigned by the top-level selection flow; under the
+  # AST-extracted Windows QA harness (or partial sourcing) it may not exist,
+  # so read it defensively instead of relying on dynamic scope.
+  $EffectiveReasoning = if (Get-Variable -Name 'SelectedReasoning' -ErrorAction SilentlyContinue) { [string]$SelectedReasoning } elseif ($env:LAOSHIRENAI_REASONING_EFFORT) { $env:LAOSHIRENAI_REASONING_EFFORT.ToLowerInvariant() } else { '' }
+  $ThinkingLevel = if ($EffectiveReasoning -in @('low','medium','high')) { $EffectiveReasoning.ToUpperInvariant() } else { 'HIGH' }
 
   $ManagedEnv = [ordered]@{
     GEMINI_API_KEY = $script:GeminiApiKey

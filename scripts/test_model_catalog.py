@@ -33,7 +33,7 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertIn("export const clientAutoConfigDefaults", MODULE.render_ts(catalog))
         self.assertIn('"anthropic": "claude-opus-5"', MODULE.render_ts(catalog))
         self.assertIn('"id": "claude-fable-5-1"', MODULE.render_ts(catalog))
-        self.assertIn('"claude-fable-5-1": {InputPricePerToken: 10e-6', MODULE.render_go(catalog))
+        self.assertRegex(MODULE.render_go(catalog), r'"claude-fable-5-1":\s+\{InputPricePerToken: 10e-6')
         self.assertIn("CacheCreation5mPrice: 12.5e-6", MODULE.render_go(catalog))
         self.assertIn("CacheCreation1hPrice: 20e-6", MODULE.render_go(catalog))
         self.assertIn("SupportsCacheBreakdown: true", MODULE.render_go(catalog))

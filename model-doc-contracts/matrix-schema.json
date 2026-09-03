@@ -1,0 +1,623 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://laoshirenai.com/schemas/model-compatibility-matrices/v1.json",
+  "title": "老实人AI model release compatibility matrices",
+  "description": "Nine normalized source-of-truth matrices used to derive public model/client imports and the provider contract test plan. Composite uniqueness is declared with x-primary-key and MUST be enforced by the loader.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "matrices"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "matrices": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_model",
+        "model_protocol",
+        "model_reasoning",
+        "client_protocol",
+        "client_reasoning",
+        "group_access",
+        "client_config_os",
+        "test_evidence",
+        "model_price"
+      ],
+      "properties": {
+        "public_model": {
+          "description": "The release inventory. A model participates in public expansion only when publication_status is public.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["model_id"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/publicModelRow"}
+            }
+          }
+        },
+        "model_protocol": {
+          "description": "Model protocol support, protocol feature results, and the explicit recommendation decision. Protocol features intentionally live here rather than in a tenth matrix.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["model_id", "protocol"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/modelProtocolRow"}
+            }
+          }
+        },
+        "model_reasoning": {
+          "description": "Canonical reasoning levels actually exposed by a model, including protocol-specific wire encodings.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["model_id", "reasoning_level"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/modelReasoningRow"}
+            }
+          }
+        },
+        "client_protocol": {
+          "description": "Native protocol and protocol-feature support of a concrete client version.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["client_id", "client_version", "protocol"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/clientProtocolRow"}
+            }
+          }
+        },
+        "client_reasoning": {
+          "description": "Reasoning controls a client version can express and their canonical/wire mapping per protocol.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["client_id", "client_version", "protocol", "control_level"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/clientReasoningRow"}
+            }
+          }
+        },
+        "group_access": {
+          "description": "Exact model/protocol visibility and commercial access for a key group; price-table presence alone is not access.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["group_id", "model_id", "protocol"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/groupAccessRow"}
+            }
+          }
+        },
+        "client_config_os": {
+          "description": "Client configuration contract for each tested OS family.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["client_id", "client_version", "os", "architecture"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/clientConfigOsRow"}
+            }
+          }
+        },
+        "test_evidence": {
+          "description": "Durable, secret-free evidence for specifications, protocol probes, real client loops, configuration QA, and billing checks.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["evidence_id"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/testEvidenceRow"}
+            }
+          }
+        },
+        "model_price": {
+          "description": "Versioned prices separated by provider_public, gateway_base, and group_customer scope. Cross-scope differences are facts, not same-field conflicts.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rows"],
+          "x-primary-key": ["model_id", "price_book_id", "tier_id", "effective_from"],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/modelPriceRow"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protocol": {
+      "enum": ["responses", "chat_completions", "messages", "generate_content"]
+    },
+    "os": {
+      "enum": ["macos", "linux", "windows"]
+    },
+    "cellStatus": {
+      "description": "unknown/planned are non-final; not_published/not_exposed/not_applicable are terminal absence states with evidence; stale must be retested before release.",
+      "enum": ["unknown", "planned", "verified", "unsupported", "blocked", "not_published", "not_exposed", "not_applicable", "stale"]
+    },
+    "evidenceIds": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/nonEmptyString"},
+      "uniqueItems": true
+    },
+    "observedEvidenceRule": {
+      "if": {
+        "properties": {
+          "status": {"enum": ["verified", "unsupported", "blocked", "stale"]}
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "evidence_ids": {"minItems": 1}
+        }
+      }
+    },
+    "versionStamp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_at"],
+      "properties": {
+        "observed_at": {"$ref": "#/$defs/date"},
+        "valid_until": {"$ref": "#/$defs/date"},
+        "catalog_version": {"type": "string"},
+        "gateway_version": {"type": "string"},
+        "provider_model_version": {"type": "string"}
+      }
+    },
+    "featureResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": ["feature", "status", "evidence_ids"],
+      "properties": {
+        "feature": {
+          "enum": [
+            "minimal_text",
+            "streaming_sse",
+            "streaming_terminal",
+            "tool_call",
+            "tool_result_continuation",
+            "reasoning_transport",
+            "prompt_cache",
+            "image_input",
+            "structured_output",
+            "web_search",
+            "usage",
+            "actual_billing",
+            "context_boundary",
+            "error_passthrough",
+            "disconnect",
+            "timeout",
+            "retry"
+          ]
+        },
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "notes": {"type": "string"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "publicModelRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "display_name",
+        "family",
+        "publication_status",
+        "catalog_version",
+        "observed_at",
+        "evidence_ids"
+      ],
+      "properties": {
+        "model_id": {"$ref": "#/$defs/nonEmptyString"},
+        "display_name": {"$ref": "#/$defs/nonEmptyString"},
+        "family": {"$ref": "#/$defs/nonEmptyString"},
+        "aliases": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/nonEmptyString"},
+          "uniqueItems": true
+        },
+        "publication_status": {"enum": ["draft", "public", "hidden", "deprecated"]},
+        "catalog_version": {"$ref": "#/$defs/nonEmptyString"},
+        "observed_at": {"$ref": "#/$defs/date"},
+        "retired_at": {"$ref": "#/$defs/date"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "modelProtocolRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": [
+        "model_id",
+        "protocol",
+        "status",
+        "recommendation",
+        "recommendation_reason",
+        "features",
+        "version",
+        "evidence_ids"
+      ],
+      "properties": {
+        "model_id": {"$ref": "#/$defs/nonEmptyString"},
+        "protocol": {"$ref": "#/$defs/protocol"},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "recommendation": {"enum": ["preferred", "available", "not_recommended"]},
+        "recommendation_reason": {
+          "description": "Required even when merely available so the decision is auditable, e.g. Responses works but lacks native web search, therefore Chat Completions is preferred.",
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "features": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/featureResult"}
+        },
+        "version": {"$ref": "#/$defs/versionStamp"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "protocolEncoding": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": ["protocol", "wire_parameter", "wire_value", "status", "evidence_ids"],
+      "properties": {
+        "protocol": {"$ref": "#/$defs/protocol"},
+        "wire_parameter": {"$ref": "#/$defs/nonEmptyString"},
+        "wire_value": {},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "modelReasoningRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": ["model_id", "reasoning_level", "native_value", "status", "protocol_encodings", "version", "evidence_ids"],
+      "properties": {
+        "model_id": {"$ref": "#/$defs/nonEmptyString"},
+        "reasoning_level": {"$ref": "#/$defs/nonEmptyString"},
+        "native_value": {},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "protocol_encodings": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/protocolEncoding"}
+        },
+        "version": {"$ref": "#/$defs/versionStamp"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "clientProtocolRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": ["client_id", "client_version", "protocol", "status", "features", "observed_at", "evidence_ids"],
+      "properties": {
+        "client_id": {"$ref": "#/$defs/nonEmptyString"},
+        "client_version": {"$ref": "#/$defs/nonEmptyString"},
+        "protocol": {"$ref": "#/$defs/protocol"},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "features": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/featureResult"}
+        },
+        "observed_at": {"$ref": "#/$defs/date"},
+        "valid_until": {"$ref": "#/$defs/date"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "clientReasoningRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": [
+        "client_id",
+        "client_version",
+        "protocol",
+        "control_level",
+        "canonical_level",
+        "wire_parameter",
+        "wire_value",
+        "mapping_strategy",
+        "status",
+        "observed_at",
+        "evidence_ids"
+      ],
+      "properties": {
+        "client_id": {"$ref": "#/$defs/nonEmptyString"},
+        "client_version": {"$ref": "#/$defs/nonEmptyString"},
+        "protocol": {"$ref": "#/$defs/protocol"},
+        "control_level": {"$ref": "#/$defs/nonEmptyString"},
+        "canonical_level": {"$ref": "#/$defs/nonEmptyString"},
+        "wire_parameter": {"$ref": "#/$defs/nonEmptyString"},
+        "wire_value": {},
+        "mapping_strategy": {"enum": ["exact", "alias", "floor", "ceiling", "omit", "reject"]},
+        "mode": {"enum": ["fixed", "model_defined", "workflow"]},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "observed_at": {"$ref": "#/$defs/date"},
+        "valid_until": {"$ref": "#/$defs/date"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "groupAccessRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": [
+        "group_id",
+        "group_name",
+        "model_id",
+        "protocol",
+        "status",
+        "base_url",
+        "billing_multiplier",
+        "key_scope",
+        "observed_at",
+        "evidence_ids"
+      ],
+      "properties": {
+        "group_id": {"$ref": "#/$defs/nonEmptyString"},
+        "group_name": {"$ref": "#/$defs/nonEmptyString"},
+        "model_id": {"$ref": "#/$defs/nonEmptyString"},
+        "protocol": {"$ref": "#/$defs/protocol"},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "base_url": {"type": "string", "format": "uri"},
+        "billing_multiplier": {"type": "number", "exclusiveMinimum": 0},
+        "key_scope": {"enum": ["all_group_keys", "allowlisted_keys", "internal_only"]},
+        "observed_at": {"$ref": "#/$defs/date"},
+        "valid_until": {"$ref": "#/$defs/date"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "clientConfigOsRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{"$ref": "#/$defs/observedEvidenceRule"}],
+      "required": [
+        "client_id",
+        "client_version",
+        "os",
+        "architecture",
+        "status",
+        "config_files",
+        "base_url_rule",
+        "credential_reference",
+        "model_fields",
+        "owned_fields",
+        "merge_strategy",
+        "verification_command",
+        "observed_at",
+        "evidence_ids"
+      ],
+      "properties": {
+        "client_id": {"$ref": "#/$defs/nonEmptyString"},
+        "client_version": {"$ref": "#/$defs/nonEmptyString"},
+        "os": {"$ref": "#/$defs/os"},
+        "os_version": {"type": "string"},
+        "architecture": {"enum": ["x86_64", "arm64", "universal", "any"]},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "config_files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/nonEmptyString"},
+          "uniqueItems": true
+        },
+        "base_url_rule": {"$ref": "#/$defs/nonEmptyString"},
+        "credential_reference": {
+          "description": "Secret name or config-field name only; never store the secret value.",
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "model_fields": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/nonEmptyString"},
+          "uniqueItems": true
+        },
+        "owned_fields": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/nonEmptyString"},
+          "uniqueItems": true
+        },
+        "merge_strategy": {"$ref": "#/$defs/nonEmptyString"},
+        "verification_command": {"$ref": "#/$defs/nonEmptyString"},
+        "observed_at": {"$ref": "#/$defs/date"},
+        "valid_until": {"$ref": "#/$defs/date"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    },
+    "testTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model_id": {"type": "string"},
+        "group_id": {"type": "string"},
+        "protocol": {"$ref": "#/$defs/protocol"},
+        "feature": {"type": "string"},
+        "reasoning_level": {"type": "string"},
+        "client_id": {"type": "string"},
+        "client_version": {"type": "string"},
+        "os": {"$ref": "#/$defs/os"},
+        "architecture": {"type": "string"}
+      }
+    },
+    "testEvidenceRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "evidence_type": {"enum": ["real_client_loop", "config_qa"]}
+            },
+            "required": ["evidence_type"]
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "required": ["client_id", "client_version", "os"]
+              },
+              "versions": {
+                "required": ["client", "os"]
+              }
+            }
+          }
+        }
+      ],
+      "required": [
+        "evidence_id",
+        "evidence_type",
+        "target",
+        "result",
+        "observed_at",
+        "artifact_uri",
+        "artifact_sha256",
+        "versions",
+        "secret_free"
+      ],
+      "properties": {
+        "evidence_id": {"$ref": "#/$defs/nonEmptyString"},
+        "evidence_type": {"enum": ["official_spec", "live_protocol_probe", "real_client_loop", "real_client_protocol", "regression_test", "config_qa", "billing_reconciliation"]},
+        "target": {"$ref": "#/$defs/testTarget"},
+        "result": {"enum": ["pass", "fail", "blocked", "expired", "unsupported"]},
+        "observed_at": {"$ref": "#/$defs/dateTime"},
+        "valid_until": {"$ref": "#/$defs/dateTime"},
+        "artifact_uri": {"$ref": "#/$defs/nonEmptyString"},
+        "artifact_sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"},
+        "evidence_refs": {"$ref": "#/$defs/evidenceIds"},
+        "versions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "catalog": {"type": "string"},
+            "gateway": {"type": "string"},
+            "provider_model": {"type": "string"},
+            "client": {"type": "string"},
+            "os": {"type": "string"}
+          }
+        },
+        "summary": {"type": "string"},
+        "secret_free": {"const": true}
+      }
+    },
+    "priceComponent": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "priceComponentStatus": {
+      "enum": ["verified", "unknown", "blocked", "not_applicable", "not_published", "not_exposed"]
+    },
+    "priceComponentStatusMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "cached_input", "cache_write", "output", "long_context"],
+      "properties": {
+        "input": {"$ref": "#/$defs/priceComponentStatus"},
+        "cached_input": {"$ref": "#/$defs/priceComponentStatus"},
+        "cache_write": {"$ref": "#/$defs/priceComponentStatus"},
+        "output": {"$ref": "#/$defs/priceComponentStatus"},
+        "long_context": {"$ref": "#/$defs/priceComponentStatus"}
+      }
+    },
+    "longContextPrice": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["threshold_tokens", "input_multiplier", "cached_input_multiplier", "output_multiplier"],
+      "properties": {
+        "threshold_tokens": {"type": "integer", "minimum": 1},
+        "input_multiplier": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "cached_input_multiplier": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "output_multiplier": {"type": ["number", "null"], "exclusiveMinimum": 0}
+      }
+    },
+    "modelPriceRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {"$ref": "#/$defs/observedEvidenceRule"},
+        {
+          "if": {
+            "properties": {"price_scope": {"enum": ["gateway_base", "group_customer"]}},
+            "required": ["price_scope"]
+          },
+          "then": {
+            "properties": {"group_id": {"type": "string", "minLength": 1}},
+            "required": ["group_id"]
+          }
+        }
+      ],
+      "required": [
+        "model_id",
+        "price_book_id",
+        "tier_id",
+        "price_scope",
+        "currency",
+        "unit_tokens",
+        "input_price",
+        "cached_input_price",
+        "cache_write_price",
+        "output_price",
+        "long_context",
+        "component_status",
+        "status",
+        "effective_from",
+        "observed_at",
+        "evidence_ids"
+      ],
+      "properties": {
+        "model_id": {"$ref": "#/$defs/nonEmptyString"},
+        "price_book_id": {"$ref": "#/$defs/nonEmptyString"},
+        "tier_id": {"$ref": "#/$defs/nonEmptyString"},
+        "price_scope": {"enum": ["provider_public", "gateway_base", "group_customer"]},
+        "group_id": {"type": ["string", "null"]},
+        "currency": {"enum": ["USD", "CNY"]},
+        "unit_tokens": {"const": 1000000},
+        "input_price": {"$ref": "#/$defs/priceComponent"},
+        "cached_input_price": {"$ref": "#/$defs/priceComponent"},
+        "cache_write_price": {"$ref": "#/$defs/priceComponent"},
+        "output_price": {"$ref": "#/$defs/priceComponent"},
+        "long_context": {"$ref": "#/$defs/longContextPrice"},
+        "component_status": {"$ref": "#/$defs/priceComponentStatusMap"},
+        "status": {"$ref": "#/$defs/cellStatus"},
+        "effective_from": {"$ref": "#/$defs/date"},
+        "effective_until": {"$ref": "#/$defs/date"},
+        "observed_at": {"$ref": "#/$defs/date"},
+        "evidence_ids": {"$ref": "#/$defs/evidenceIds"}
+      }
+    }
+  }
+}

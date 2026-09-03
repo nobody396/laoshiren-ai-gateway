@@ -1,0 +1,1065 @@
+{
+  "schema_version": 2,
+  "matrix_id": "laoshirenai-client-capabilities",
+  "dimensions": [
+    "client_protocol",
+    "client_reasoning",
+    "client_config_os"
+  ],
+  "protocol_ids": [
+    "responses",
+    "chat_completions",
+    "messages",
+    "generate_content"
+  ],
+  "client_transport_feature_ids": [
+    "minimal_text",
+    "streaming_terminal",
+    "tool_call",
+    "tool_result_continuation",
+    "usage",
+    "invalid_request"
+  ],
+  "evidence_contract": {
+    "statuses": [
+      "verified",
+      "unsupported",
+      "blocked",
+      "unverified",
+      "carried_forward"
+    ],
+    "verified_required_fields": [
+      "status",
+      "observed_at",
+      "source_ref",
+      "artifact_sha256"
+    ],
+    "terminal_statuses": [
+      "verified",
+      "unsupported"
+    ],
+    "notes": "carried_forward preserves a prior claim but is not reusable proof. blocked and unverified are non-terminal gaps."
+  },
+  "gap_expansion_contract": {
+    "public_model_source": "Read the public_model matrix and its model contracts; this client matrix never copies model, group, or price rows.",
+    "candidate_rule": "For every public model, intersect its verified model_protocol cells with client_protocol.support=supported, then expand every exact client release version_key and documented OS.",
+    "cell_key": [
+      "model_id",
+      "model_contract_fingerprint",
+      "protocol",
+      "client_id",
+      "client_version_key",
+      "os"
+    ],
+    "evidence_reuse_match": [
+      "model_id",
+      "model_contract_fingerprint",
+      "protocol",
+      "client_id",
+      "client_version_key",
+      "os",
+      "client_protocol_fingerprint",
+      "client_reasoning_fingerprint",
+      "client_config_os_fingerprint"
+    ],
+    "reuse_rule": "Reuse only a terminal evidence record whose match fields are byte-for-byte equal and whose artifact digest still resolves. A version range or same client on another OS is not a match.",
+    "invalidation": [
+      "client release version_key changed",
+      "OS changed",
+      "native protocol or client transport feature changed",
+      "reasoning control, persistence, or fallback changed",
+      "owned fields, merge, backup, idempotency, or verification command changed",
+      "model contract fingerprint changed"
+    ],
+    "new_client_completion": "Every expanded cell is terminal verified or unsupported; blocked and unverified remain release gaps."
+  },
+  "clients": [
+    {
+      "id": "grok-build",
+      "name": "Grok Build",
+      "slug": "integration-grok-build",
+      "icon": "/tool-icons/grok.png",
+      "one_click_status": "ready",
+      "client_protocol": {
+        "protocols": [
+          {
+            "protocol": "responses",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "chat_completions",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/grok-build-tool-loop-20260831.json#evidence-2ab5414525856cf640a4c7a0",
+              "artifact_sha256": "55c790d11776833d04f61b04c7ba797936adf0aed63025cb1b704feaa5673071"
+            }
+          },
+          {
+            "protocol": "messages",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "generate_content",
+            "support": "unsupported",
+            "client_transport_features": {
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
+            },
+            "evidence": {
+              "status": "unsupported",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          }
+        ],
+        "evidence_policy": "A supported protocol is a candidate only. Each client transport feature and the real Agent loop need exact version/OS evidence before public one-click use."
+      },
+      "client_reasoning": {
+        "control_kind": "model_defined",
+        "level_control": {
+          "source": "model_intersection",
+          "values": [],
+          "values_rule": "Intersect the client control with the selected model reasoning matrix.",
+          "default": "model_default"
+        },
+        "modes": [],
+        "persistence": {
+          "status": "unknown",
+          "scope": "unknown",
+          "fields": [],
+          "session_override": "unknown"
+        },
+        "fallback": {
+          "strategy": "unknown",
+          "requires_mapping_evidence": true
+        },
+        "notes": "Uses model-defined reasoning controls; record the observed list per model.",
+        "evidence": {
+          "status": "verified",
+          "observed_at": "2026-08-31",
+          "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+          "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+        }
+      },
+      "client_config_os": {
+        "release": {
+          "version_key": "cli:1.0.13",
+          "display": "1.0.13",
+          "components": [
+            {
+              "component": "cli",
+              "version": "1.0.13"
+            }
+          ],
+          "channel": "stable",
+          "evidence": {
+            "status": "verified",
+            "observed_at": "2026-08-31",
+            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+          }
+        },
+        "os_support": [
+          {
+            "os": "macos",
+            "support": "verified",
+            "config_files": [
+              {
+                "path": "~/.grok/config.toml",
+                "format": "toml",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "linux",
+            "support": "verified",
+            "config_files": [
+              {
+                "path": "~/.grok/config.toml",
+                "format": "toml",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "windows",
+            "support": "verified",
+            "config_files": [
+              {
+                "path": "%USERPROFILE%\\.grok\\config.toml",
+                "format": "toml",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          }
+        ],
+        "endpoint": {
+          "base_url_rule": "按协议使用根地址或 /v1；api_backend 明确协议",
+          "credential_location": "model.<id>.api_key 或 env_key"
+        },
+        "model_discovery": "所选模型必须来自当前 Key 的 /v1/models",
+        "model_slots": [
+          "models.default",
+          "model.<provider-id>"
+        ],
+        "owned_fields": [
+          "models.default",
+          "model.<provider-id>"
+        ],
+        "mutation": {
+          "merge_strategy": "协议独立模型 Provider；只替换同 ID managed block。",
+          "strict_parse": true,
+          "malformed_existing": "refuse",
+          "preserve_unowned": true,
+          "atomic_write": true,
+          "backup": {
+            "required": true,
+            "before_mutation": true,
+            "recoverable": true
+          },
+          "idempotency": {
+            "required": true,
+            "assertion": "A second run with the same ticket input produces no semantic configuration change."
+          }
+        },
+        "verification_commands": [
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "grok --version"
+            ]
+          },
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "grok --always-approve --permission-mode bypassPermissions --single \"$AGENT_CONTRACT_PROMPT\""
+            ],
+            "status": "full_access_noninteractive_contract"
+          }
+        ],
+        "verification_contract": "grok --version + 文件读取工具续轮 + 固定完成标记"
+      },
+      "verification_os": [
+        "macos"
+      ]
+    },
+    {
+      "id": "kimi-code",
+      "name": "Kimi Code",
+      "slug": "integration-kimi-code",
+      "icon": "/tool-icons/kimi.png",
+      "one_click_status": "prototype",
+      "client_protocol": {
+        "protocols": [
+          {
+            "protocol": "responses",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "chat_completions",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "messages",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "generate_content",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          }
+        ],
+        "evidence_policy": "A supported protocol is a candidate only. Each client transport feature and the real Agent loop need exact version/OS evidence before public one-click use."
+      },
+      "client_reasoning": {
+        "control_kind": "fixed",
+        "level_control": {
+          "source": "client_fixed",
+          "values": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "values_rule": "Use the exact client list.",
+          "default": "model_default"
+        },
+        "modes": [],
+        "persistence": {
+          "status": "documented",
+          "scope": "global",
+          "fields": [
+            "thinking"
+          ],
+          "session_override": true
+        },
+        "fallback": {
+          "strategy": "explicit_mapping",
+          "requires_mapping_evidence": true,
+          "notes": "Intersect fixed client levels with the model matrix and record every lossy mapping."
+        },
+        "notes": "Fixed client selector: low, medium, high, xhigh, max.",
+        "evidence": {
+          "status": "verified",
+          "observed_at": "2026-08-31",
+          "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+          "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+        }
+      },
+      "client_config_os": {
+        "release": {
+          "version_key": "cli:0.38.0",
+          "display": "0.38.0+",
+          "components": [
+            {
+              "component": "cli",
+              "version": "0.38.0",
+              "supported_range": ">=0.38.0"
+            }
+          ],
+          "channel": "stable",
+          "evidence": {
+            "status": "verified",
+            "observed_at": "2026-08-31",
+            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+          }
+        },
+        "os_support": [
+          {
+            "os": "macos",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "~/.kimi-code/config.toml",
+                "format": "toml",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "linux",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "~/.kimi-code/config.toml",
+                "format": "toml",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "windows",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "%USERPROFILE%\\.kimi-code\\config.toml",
+                "format": "toml",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          }
+        ],
+        "endpoint": {
+          "base_url_rule": "按 Provider 类型使用根地址或 /v1",
+          "credential_location": "providers.<id>.api_key"
+        },
+        "model_discovery": "所选模型必须来自当前 Key 的 /v1/models",
+        "model_slots": [
+          "default_model",
+          "providers.<protocol-id>",
+          "models.<provider/model>"
+        ],
+        "owned_fields": [
+          "default_model",
+          "providers.<protocol-id>",
+          "models.<provider/model>"
+        ],
+        "mutation": {
+          "merge_strategy": "TOML managed block upsert；保留其他 providers、models、services 与 thinking。",
+          "strict_parse": true,
+          "malformed_existing": "refuse",
+          "preserve_unowned": true,
+          "atomic_write": true,
+          "backup": {
+            "required": true,
+            "before_mutation": true,
+            "recoverable": true
+          },
+          "idempotency": {
+            "required": true,
+            "assertion": "A second run with the same ticket input produces no semantic configuration change."
+          }
+        },
+        "verification_commands": [
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "kimi --version"
+            ]
+          },
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "kimi -p \"$AGENT_CONTRACT_PROMPT\" --output-format stream-json"
+            ],
+            "status": "full_access_noninteractive_contract"
+          }
+        ],
+        "verification_contract": "kimi --version + 文件读取工具续轮 + 推理映射验证"
+      },
+      "verification_os": [
+        "macos"
+      ]
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "slug": "integration-opencode",
+      "icon": "/tool-icons/opencode.png",
+      "one_click_status": "prototype",
+      "client_protocol": {
+        "protocols": [
+          {
+            "protocol": "responses",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-responses-gpt-5.4-group6-20260901-loop.json#evidence-93c53fa4a263a0500c300794",
+              "artifact_sha256": "6a6aea3d0972636f1bbdcdcb80a789b550482cdf3469478ffba82cf9d909bed2"
+            }
+          },
+          {
+            "protocol": "chat_completions",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-chat_completions-grok-4.5-group34-20260901-loop.json#evidence-62edd5d70b4d534a6c159cd6",
+              "artifact_sha256": "b8888c1687da2c862c870d7723a101ff69c8b3637063c62ab38cc9b1676fc0f6"
+            }
+          },
+          {
+            "protocol": "messages",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-messages-claude-opus-4-7-group15-20260901-loop.json#evidence-b46729b4e5e8348baaebdc91",
+              "artifact_sha256": "62ac6bbc693ca1904d4375d8aa8fa2d4638f99e128ad54787fc39a9660d70112"
+            }
+          },
+          {
+            "protocol": "generate_content",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-generate_content-gemini-3.1-pro-group57-20260901-loop.json#evidence-a689d6cb306ab1398ed99749",
+              "artifact_sha256": "fbfcd2ff4556add77815309a41da4b4547f44f2cb797c9176b30be7e4e3afe77"
+            }
+          }
+        ],
+        "evidence_policy": "A supported protocol is a candidate only. Each client transport feature and the real Agent loop need exact version/OS evidence before public one-click use."
+      },
+      "client_reasoning": {
+        "control_kind": "model_defined",
+        "level_control": {
+          "source": "model_intersection",
+          "values": [],
+          "values_rule": "Intersect the client control with the selected model reasoning matrix.",
+          "default": "model_default"
+        },
+        "modes": [],
+        "persistence": {
+          "status": "unknown",
+          "scope": "provider_model_defined",
+          "fields": [],
+          "session_override": "unknown"
+        },
+        "fallback": {
+          "strategy": "unknown",
+          "requires_mapping_evidence": true
+        },
+        "notes": "Provider/model package defines reasoning controls; record the observed list per model.",
+        "evidence": {
+          "status": "verified",
+          "observed_at": "2026-08-31",
+          "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+          "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+        }
+      },
+      "client_config_os": {
+        "release": {
+          "version_key": "cli:1.18.15",
+          "display": "1.18.15",
+          "components": [
+            {
+              "component": "cli",
+              "version": "1.18.15"
+            }
+          ],
+          "channel": "stable",
+          "evidence": {
+            "status": "verified",
+            "observed_at": "2026-08-31",
+            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+          }
+        },
+        "os_support": [
+          {
+            "os": "macos",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "~/.config/opencode/opencode.json",
+                "format": "json",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "linux",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "~/.config/opencode/opencode.json",
+                "format": "json",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "windows",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "%USERPROFILE%\\.config\\opencode\\opencode.json",
+                "format": "json",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          }
+        ],
+        "endpoint": {
+          "base_url_rule": "Provider Package 决定协议与 Base URL",
+          "credential_location": "provider.<id>.options.apiKey"
+        },
+        "model_discovery": "所选模型必须来自当前 Key 的 /v1/models",
+        "model_slots": [
+          "provider.<protocol-id>.models.<model>"
+        ],
+        "owned_fields": [
+          "provider.<protocol-id>"
+        ],
+        "mutation": {
+          "merge_strategy": "JSON 增量 upsert 协议独立 Provider；保留其他 Provider 与配置。",
+          "strict_parse": true,
+          "malformed_existing": "refuse",
+          "preserve_unowned": true,
+          "atomic_write": true,
+          "backup": {
+            "required": true,
+            "before_mutation": true,
+            "recoverable": true
+          },
+          "idempotency": {
+            "required": true,
+            "assertion": "A second run with the same ticket input produces no semantic configuration change."
+          }
+        },
+        "verification_commands": [
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "opencode --version"
+            ]
+          },
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "opencode run --auto --pure --format json \"$AGENT_CONTRACT_PROMPT\""
+            ],
+            "status": "full_access_noninteractive_contract"
+          }
+        ],
+        "verification_contract": "opencode --version + Read/Shell 工具续轮 + 固定完成标记"
+      },
+      "verification_os": [
+        "macos"
+      ]
+    },
+    {
+      "id": "zcode",
+      "name": "ZCode",
+      "slug": "integration-zcode",
+      "icon": "/tool-icons/zcode.png",
+      "one_click_status": "prototype",
+      "client_protocol": {
+        "protocols": [
+          {
+            "protocol": "responses",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "chat_completions",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "messages",
+            "support": "supported",
+            "client_transport_features": {
+              "minimal_text": "verified",
+              "streaming_terminal": "verified",
+              "tool_call": "verified",
+              "tool_result_continuation": "verified",
+              "usage": "verified",
+              "invalid_request": "verified"
+            },
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "protocol": "generate_content",
+            "support": "unsupported",
+            "client_transport_features": {
+              "minimal_text": "not_applicable",
+              "streaming_terminal": "not_applicable",
+              "tool_call": "not_applicable",
+              "tool_result_continuation": "not_applicable",
+              "usage": "not_applicable",
+              "invalid_request": "not_applicable"
+            },
+            "evidence": {
+              "status": "unsupported",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          }
+        ],
+        "evidence_policy": "A supported protocol is a candidate only. Each client transport feature and the real Agent loop need exact version/OS evidence before public one-click use."
+      },
+      "client_reasoning": {
+        "control_kind": "model_defined",
+        "level_control": {
+          "source": "model_intersection",
+          "values": [],
+          "values_rule": "Intersect the client control with the selected model reasoning matrix.",
+          "default": "model_default"
+        },
+        "modes": [],
+        "persistence": {
+          "status": "unknown",
+          "scope": "provider_model_defined",
+          "fields": [],
+          "session_override": "unknown"
+        },
+        "fallback": {
+          "strategy": "unknown",
+          "requires_mapping_evidence": true
+        },
+        "notes": "No universal three-level list. ZCode reads model/provider reasoning options; record the exact exposed levels per model.",
+        "evidence": {
+          "status": "verified",
+          "observed_at": "2026-08-31",
+          "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+          "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+        }
+      },
+      "client_config_os": {
+        "release": {
+          "version_key": "app:3.10.1+cli:0.16.5",
+          "display": "3.10.1 / CLI 0.16.5",
+          "components": [
+            {
+              "component": "app",
+              "version": "3.10.1"
+            },
+            {
+              "component": "cli",
+              "version": "0.16.5"
+            }
+          ],
+          "channel": "stable",
+          "evidence": {
+            "status": "verified",
+            "observed_at": "2026-08-31",
+            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+          }
+        },
+        "os_support": [
+          {
+            "os": "macos",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "~/.zcode/v2/config.json",
+                "format": "json",
+                "scope": "user"
+              },
+              {
+                "path": "~/.zcode/cli/config.json",
+                "format": "json",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "linux",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "~/.zcode/v2/config.json",
+                "format": "json",
+                "scope": "user"
+              },
+              {
+                "path": "~/.zcode/cli/config.json",
+                "format": "json",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          },
+          {
+            "os": "windows",
+            "support": "documented",
+            "config_files": [
+              {
+                "path": "%USERPROFILE%\\.zcode\\v2\\config.json",
+                "format": "json",
+                "scope": "user"
+              },
+              {
+                "path": "%USERPROFILE%\\.zcode\\cli\\config.json",
+                "format": "json",
+                "scope": "user"
+              }
+            ],
+            "evidence": {
+              "status": "verified",
+              "observed_at": "2026-08-31",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            }
+          }
+        ],
+        "endpoint": {
+          "base_url_rule": "API Format 决定 Responses、Chat 或 Messages Base URL",
+          "credential_location": "Provider credential / API Key"
+        },
+        "model_discovery": "所选模型必须来自当前 Key 的 /v1/models",
+        "model_slots": [
+          "App Provider model",
+          "CLI provider.<id>.models",
+          "model.main"
+        ],
+        "owned_fields": [
+          "指定老实人AI Provider",
+          "所选模型",
+          "model.main（明确选择时）"
+        ],
+        "mutation": {
+          "merge_strategy": "App 与 CLI 配置分别增量合并；保留 MCP、Skill、Hook、权限和其他 Provider。",
+          "strict_parse": true,
+          "malformed_existing": "refuse",
+          "preserve_unowned": true,
+          "atomic_write": true,
+          "backup": {
+            "required": true,
+            "before_mutation": true,
+            "recoverable": true
+          },
+          "idempotency": {
+            "required": true,
+            "assertion": "A second run with the same ticket input produces no semantic configuration change."
+          }
+        },
+        "verification_commands": [
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "zcode --version"
+            ]
+          },
+          {
+            "operating_systems": [
+              "macos",
+              "linux",
+              "windows"
+            ],
+            "commands": [
+              "node \"/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs\" --prompt \"$AGENT_CONTRACT_PROMPT\" --mode yolo --json"
+            ],
+            "status": "full_access_noninteractive_contract"
+          }
+        ],
+        "verification_contract": "ZCode App/CLI 版本 + 文件读取/修改/复读工具续轮"
+      },
+      "verification_os": [
+        "macos"
+      ]
+    }
+  ]
+}

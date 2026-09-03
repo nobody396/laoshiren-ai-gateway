@@ -39,6 +39,10 @@ jobs:
         run: |
           python3 scripts/model_catalog.py check
           python3 scripts/test_model_catalog.py
+          # Offline fixtures only: these tests must never resolve an owned key.
+          python3 -m unittest discover -s tests -p 'test_provider_contract*.py'
+          python3 -m unittest discover -s tests -p 'test_model*.py'
+          python3 -m unittest discover -s tests -p 'test_matrix_schema.py'
 
       - name: Resolve changed paths
         shell: bash

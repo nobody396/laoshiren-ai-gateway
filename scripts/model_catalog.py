@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -75,6 +76,8 @@ def number(value: Any, path: str, *, allow_zero: bool = False) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         fail(f"{path} must be numeric")
     out = float(value)
+    if not math.isfinite(out):
+        fail(f"{path} must be finite")
     if out < 0 or (out == 0 and not allow_zero):
         fail(f"{path} must be positive")
     return out
@@ -670,6 +673,28 @@ def main() -> int:
         if args.manifest:
             if args.command != "apply":
                 fail("--manifest is only valid with apply")
+            # The normal apply path cannot publish a draft/v1 declaration or
+            # a fixture masquerading as production evidence.
+            import model_release
+            from model_evidence_integrity import artifact_gaps
+            from datetime import datetime
+            from zoneinfo import ZoneInfo
+            manifest = json.loads(args.manifest.read_text())
+            model_release.validate(manifest)
+            gaps = model_release.contract_gaps(manifest)
+            if gaps:
+                fail("release manifest is not ready: " + "; ".join(gaps))
+            for evidence in manifest.get("evidence", []):
+                if evidence.get("kind") not in {"live_probe", "billing_reconciliation"}:
+                    continue
+                cell = {"status":"verified", "source_ref":evidence.get("artifact_path"),
+                        "artifact_sha256":evidence.get("artifact_sha256"),
+                        "observed_at":evidence.get("observed_at"),
+                        "model_id":manifest["model"]["id"]}
+                errors = artifact_gaps(cell, args.manifest.resolve().parent,
+                                      as_of=datetime.now(ZoneInfo("Asia/Shanghai")).date())
+                if errors:
+                    fail("unresolved live release evidence: " + "; ".join(errors))
             catalog = merge_manifest(catalog, args.manifest.resolve())
             catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         apply(catalog, catalog_path) if args.command == "apply" else check(catalog)

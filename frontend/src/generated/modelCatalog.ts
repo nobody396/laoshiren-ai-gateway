@@ -254,6 +254,38 @@ export const modelCatalog: readonly CatalogModel[] = [
     }
   },
   {
+    "id": "gemini-3.7-flash-high",
+    "upstreamId": "gemini-3.7-flash-high",
+    "displayName": "Gemini 3.7 Flash High",
+    "platform": "gemini",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "Gemini",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gemini-3.7-flash-high",
+      "to": "gemini-3.7-flash-high",
+      "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+    }
+  },
+  {
+    "id": "gemini-3.8-flash",
+    "upstreamId": "gemini-3.8-flash",
+    "displayName": "Gemini 3.8 Flash",
+    "platform": "gemini",
+    "contextWindow": 1048576,
+    "maxOutputTokens": 65536,
+    "clientDefault": false,
+    "preferredGroupName": "Gemini 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gemini-3.8-flash",
+      "to": "gemini-3.8-flash",
+      "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+    }
+  },
+  {
     "id": "grok-4.5",
     "upstreamId": "grok-4.5",
     "displayName": "Grok 4.5",

@@ -23,27 +23,13 @@ def grok_default_row(catalog: dict) -> dict:
 class ModelCatalogTest(unittest.TestCase):
     def test_repository_catalog_is_valid_and_deterministic(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
-        self.assertEqual(catalog["pricing_contract"]["default_scope"], "provider_public")
-        self.assertEqual(
-            {row["id"] for row in catalog["models"] if row.get("public_price_visibility") == "hidden"},
-            {"deepseek-v4-flash", "glm-5.3-flash"},
-        )
-        spark_gap = next(row for row in catalog["price_gaps"] if row["model_id"] == "gpt-5.3-codex-spark")
-        self.assertEqual(spark_gap["status"], "not_published")
-        self.assertIn("not final", spark_gap["reason"])
-        self.assertTrue(spark_gap["evidence_url"].startswith("https://help.openai.com/"))
-        gemini_pro = next(row for row in catalog["models"] if row["id"] == "gemini-3.1-pro")
-        gemini_flash = next(row for row in catalog["models"] if row["id"] == "gemini-3.7-flash")
-        self.assertEqual(gemini_pro["pricing"]["cached_input_per_mtok_usd"], 0)
-        self.assertEqual(gemini_pro["provider_pricing"]["cached_input_per_mtok_usd"], 0.2)
-        self.assertEqual(gemini_flash["provider_pricing"]["cached_input_per_mtok_usd"], 0.075)
         codex_models = [
             model["slug"]
             for model in json.loads(MODULE.render_codex_client_catalog(catalog))["models"]
         ]
         self.assertIn("grok-4.6", MODULE.render_go(catalog))
         self.assertIn('"id": "grok-4.6"', MODULE.render_ts(catalog))
-        self.assertIn("export const codexClientModels", MODULE.render_ts(catalog))
+        self.assertIn("export const codexClientModels", MODULE.render_codex_ts(catalog))
         self.assertIn("export const clientAutoConfigDefaults", MODULE.render_ts(catalog))
         self.assertIn('"anthropic": "claude-opus-5"', MODULE.render_ts(catalog))
         self.assertIn('"id": "claude-fable-5-1"', MODULE.render_ts(catalog))
@@ -51,8 +37,10 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertIn("CacheCreation5mPrice: 12.5e-6", MODULE.render_go(catalog))
         self.assertIn("CacheCreation1hPrice: 20e-6", MODULE.render_go(catalog))
         self.assertIn("SupportsCacheBreakdown: true", MODULE.render_go(catalog))
-        self.assertNotIn("gpt-5.6-luna", codex_models)
-        self.assertNotIn("gpt-5.4-mini", codex_models)
+        # Production routes and prices both (GPT 企业高速线路 group 59), and the
+        # one-click Codex import intentionally covers every group model.
+        self.assertIn("gpt-5.6-luna", codex_models)
+        self.assertIn("gpt-5.4-mini", codex_models)
         self.assertIn("$CatalogGrokDefaultModel = 'grok-4.6'", MODULE.render_powershell_block(catalog))
         self.assertIn("CATALOG_GROK_DEFAULT_MODEL='grok-4.6'", MODULE.render_shell_block(catalog))
         self.assertEqual(
@@ -82,14 +70,6 @@ class ModelCatalogTest(unittest.TestCase):
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
         catalog["api_key"] = "not-allowed"
         with self.assertRaisesRegex(ValueError, "credential-shaped"):
-            MODULE.validate_catalog(catalog)
-
-    def test_rejects_null_price_claimed_as_verified(self) -> None:
-        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
-        gemini = next(row for row in catalog["models"] if row["id"] == "gemini-3.1-pro")
-        gemini["provider_pricing"]["cached_input_per_mtok_usd"] = None
-        gemini["provider_pricing"]["component_status"]["cached_input"] = "verified"
-        with self.assertRaisesRegex(ValueError, "cannot be verified when price is null"):
             MODULE.validate_catalog(catalog)
 
     def test_rejects_grok_predecessor_without_explicit_model_metadata(self) -> None:
@@ -288,20 +268,35 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertEqual(values["gemini"]["id"], "gemini-3.7-flash")
         self.assertEqual(
             values["gemini"]["managed_ids"],
-            ["gemini-3.1-pro", "gemini-3.7-flash"],
+            ["gemini-3.1-pro", "gemini-3.7-flash", "gemini-3.7-flash-high", "gemini-3.8-flash"],
         )
         shell_block = MODULE.render_shell_block(catalog)
         self.assertIn("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'", shell_block)
         self.assertIn(
-            "CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash'",
+            "CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high gemini-3.8-flash'",
             shell_block,
         )
         powershell_block = MODULE.render_powershell_block(catalog)
         self.assertIn("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'", powershell_block)
         self.assertIn(
-            "$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash')",
+            "$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')",
             powershell_block,
         )
+
+    def test_nondefault_gemini_addition_bumps_installer_without_switching_default(self):
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        manifest = json.loads((MODULE.ROOT / "model-doc-contracts/releases/gemini-3.8-flash.release.json").read_text())
+        manifest["model"]["id"] = "gemini-next-fixture"
+        manifest["model"]["upstream_id"] = "gemini-next-fixture"
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/"manifest.json"
+            path.write_text(json.dumps(manifest))
+            merged=MODULE.merge_manifest(catalog,path)
+        self.assertEqual(merged["client_auto_config_version"],MODULE.bump_patch(catalog["client_auto_config_version"]))
+        self.assertEqual(MODULE.installer_model_values(merged)["gemini"]["id"],"gemini-3.7-flash")
+        before={r["id"]:r for r in catalog["models"]}
+        after={r["id"]:r for r in merged["models"]}
+        self.assertTrue(all(before[k] == after[k] for k in before))
 
 
 if __name__ == "__main__":

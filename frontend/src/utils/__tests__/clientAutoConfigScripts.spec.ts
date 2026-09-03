@@ -668,7 +668,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('config.model.name = model')
     expect(script).toContain('thinkingConfig: { thinkingLevel }')
     expect(script).toContain("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'")
-    expect(script).toContain("CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash'")
+    expect(script).toContain("CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high gemini-3.8-flash'")
     expect(script).toContain('npm_install_with_fallback "@google/gemini-cli@latest"')
     expect(script).toContain('LAOSHIRENAI_GEMINI_API_KEY')
   })
@@ -687,7 +687,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("-NotePropertyName selectedType -NotePropertyValue 'gemini-api-key' -Force")
     expect(script).toContain('thinkingConfig = [pscustomobject]@{ thinkingLevel = $ThinkingLevel }')
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
-    expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash')")
+    expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')")
     expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
     expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
@@ -752,6 +752,8 @@ describe('client auto-config scripts', () => {
         'user-model',
         'gemini-3.1-pro',
         'gemini-3.7-flash',
+        'gemini-3.7-flash-high',
+        'gemini-3.8-flash',
       ])
       for (const entry of firstSettings.modelConfigs.overrides.slice(1)) {
         expect(entry.generateContentConfig).toEqual({ thinkingConfig: { thinkingLevel: 'LOW' } })

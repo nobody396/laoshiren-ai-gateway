@@ -1,0 +1,59 @@
+{
+  "artifact_sha256": "a7447f157ab6acb192d815af14a1e03ae813b475354053f932c560cd187ef003",
+  "billing_attribution": {
+    "status": "not_reconciled"
+  },
+  "case": {
+    "base_url": "https://jp.pomoai.xyz",
+    "case_key": "upstream:gemini-3.8-flash:generate_content:P-06:high",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_FB140DDD6A35",
+    "max_output_tokens": 65536,
+    "model_id": "gemini-3.8-flash",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "generate_content",
+    "reasoning_level": "high",
+    "source_case_keys": []
+  },
+  "case_fingerprint": "d1e2a003eb93d56bf2528bb6c5d7bd8a9832305224c1d1c0aa400ddc6f560934",
+  "classification": "contract_failed",
+  "direct_runner_sha256": "5971f41fb383b0cbdc0205d6fe91c6da430706ea58fba3c884249b6bdd1299d6",
+  "finished_at": "2026-09-03T12:58:12.190+00:00",
+  "harness_sha256": "be0e50a708bcd768bb0f19013561aa4291a0daa36abf5e1ebc82da4c15316273",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-03T12:58:08.640+00:00",
+  "offline_verifier": {
+    "reason": "forbidden credential-shaped field: fixture.observations.upstream:gemini-3.8-flash:generate_content:P-06:high.reasoning.thoughts_token_count",
+    "status": "failed"
+  },
+  "response": {
+    "body_bytes": 441,
+    "body_sha256": "de7ba4cf5b9416ce2db5f5a605281e040adf396ce5506654467120a45ef09309",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "202609031258101284345908268d9d6WvB37StV",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 269,
+    "output_tokens": 98,
+    "total_tokens": 367
+  }
+}

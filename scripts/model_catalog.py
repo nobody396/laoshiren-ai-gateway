@@ -206,13 +206,9 @@ def merge_manifest(catalog: dict[str, Any], manifest_path: Path) -> dict[str, An
         for candidate in merged["models"]:
             if candidate.get("platform") == row["platform"]:
                 candidate["client_default"] = False
-    prior_default = next(
-        (candidate for candidate in catalog["models"] if candidate.get("platform") == row["platform"] and candidate.get("client_default")),
-        None,
-    )
     merged["models"].append(row)
     merged["models"].sort(key=lambda candidate: (candidate["platform"], candidate["id"]))
-    if row["client_default"] and installer_contract(prior_default) != installer_contract(row):
+    if installer_model_values(catalog) != installer_model_values(merged):
         merged["client_auto_config_version"] = bump_patch(catalog["client_auto_config_version"])
     validate_catalog(merged)
     return merged
@@ -883,7 +879,7 @@ def main() -> int:
             for evidence in manifest.get("evidence", []):
                 if evidence.get("kind") not in {"live_probe", "billing_reconciliation"}:
                     continue
-                cell = {"status":"verified", "source_ref":evidence.get("artifact_path"),
+                cell = {"status":"verified" if evidence.get("result") == "pass" else "unsupported", "source_ref":evidence.get("artifact_path"),
                         "artifact_sha256":evidence.get("artifact_sha256"),
                         "observed_at":evidence.get("observed_at"),
                         "model_id":manifest["model"]["id"]}

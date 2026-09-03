@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -18,6 +19,52 @@ FEATURE_CASES = {"minimal_text":"P-01", "basic_request":"P-01", "streaming_sse":
 
 def fingerprint(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+
+
+def linked_artifact(root: Path, ref: Any, digest: Any) -> dict[str, Any] | None:
+    if not isinstance(ref,str) or not ref or urlsplit(ref).scheme or urlsplit(ref).netloc:
+        return None
+    candidate=Path(ref)
+    target=(root/candidate).resolve()
+    if candidate.is_absolute() or not target.is_relative_to(root.resolve()) or not target.is_file():
+        return None
+    raw=target.read_bytes()
+    if len(raw)>16*1024*1024 or hashlib.sha256(raw).hexdigest()!=digest:
+        return None
+    try: value=json.loads(raw)
+    except (ValueError,UnicodeError): return None
+    return value if isinstance(value,dict) else None
+
+
+def provider_invoice_link_matches(receipt: dict[str, Any], row: Any, root: Path) -> bool:
+    if not isinstance(row,dict): return False
+    invoice=linked_artifact(root,receipt.get("invoice_ref"),receipt.get("invoice_sha256"))
+    probe=linked_artifact(root,row.get("probe_ref"),row.get("probe_artifact_sha256"))
+    if not invoice or not probe: return False
+    model=receipt.get("subject",{}).get("model_id")
+    if (invoice.get("kind")!="provider_invoice_snapshot" or invoice.get("model_id")!=model
+            or invoice.get("token_id")!=receipt.get("source_token_id")
+            or probe.get("kind")!="provider_contract_live_case" or probe.get("network_execution")!="explicit_live"
+            or probe.get("scope")!="direct_upstream_only" or probe.get("case",{}).get("model_id")!=model
+            or probe.get("response",{}).get("http_status")!=200): return False
+    usage=probe.get("usage") or {}
+    if any(usage.get(k)!=row.get(k) for k in ("input_tokens","output_tokens","cached_input_tokens")): return False
+    try:
+        start=datetime.fromisoformat(probe["observed_at"].replace("Z","+00:00"))
+        end=datetime.fromisoformat(probe["finished_at"].replace("Z","+00:00"))
+        if start.tzinfo is None or end.tzinfo is None or not 0 <= (end-start).total_seconds() <= 600: return False
+        matches=[r for r in invoice.get("rows",[]) if isinstance(r,dict)
+                 and r.get("model_name")==model and r.get("token_id")==receipt.get("source_token_id")
+                 and r.get("prompt_tokens")==row.get("input_tokens") and r.get("completion_tokens")==row.get("output_tokens")
+                 and start.timestamp()-5 <= r.get("created_at",0) <= end.timestamp()+5]
+        if len(matches)!=1: return False
+        matched=matches[0];metadata=matched.get("billing_metadata",{})
+        return (matched.get("request_id")==row.get("provider_request_id") and matched.get("quota")==row.get("quota")
+                and row.get("probe_response_request_id")==probe["response"].get("request_id")
+                and metadata.get("model_ratio")==receipt.get("input_per_mtok")/2
+                and metadata.get("completion_ratio")==receipt.get("output_per_mtok")/receipt.get("input_per_mtok")
+                and metadata.get("group_ratio")==receipt.get("group_multiplier"))
+    except (KeyError,TypeError,ValueError,ZeroDivisionError): return False
 
 
 def artifact_gaps(value: Any, root: Path, *, as_of: date, max_age_days: int = 180, path: str = "evidence", subject: dict[str, Any] | None = None) -> list[str]:
@@ -93,13 +140,43 @@ def artifact_gaps(value: Any, root: Path, *, as_of: date, max_age_days: int = 18
                                 if url.scheme != "https" or not url.netloc or url.username or url.password:
                                     failures.append(f"{path}: official receipt requires public HTTPS source")
                             elif kind == "provider_contract_live_case":
+                                negative = value.get("status") == "unsupported"
+                                result_ok = (
+                                    receipt.get("result") in {"fail","blocked"}
+                                    and receipt.get("offline_verifier",{}).get("status") == "failed"
+                                    if negative else
+                                    receipt.get("result") == "pass" and receipt.get("classification") == "verified"
+                                    and receipt.get("offline_verifier",{}).get("status") == "passed"
+                                )
                                 if (receipt.get("schema_version") != 2
                                         or receipt.get("network_execution") != "explicit_live"
-                                        or receipt.get("offline_verifier", {}).get("status") != "passed"
-                                        or receipt.get("result") != "pass" or receipt.get("classification") != "verified"
+                                        or not result_ok
                                         or receipt.get("response", {}).get("http_status") not in range(200,600)
                                         or not target_subject.get("model_id")):
                                     failures.append(f"{path}: incomplete live provider receipt")
+                            elif kind == "provider_billing_reconciliation":
+                                rows = receipt.get("rows")
+                                numeric = lambda x: isinstance(x,(int,float)) and not isinstance(x,bool) and math.isfinite(x) and x >= 0
+                                tariff = [receipt.get(k) for k in ("input_per_mtok","output_per_mtok","cache_read_per_mtok","group_multiplier","quota_per_charge_unit","rounding_tolerance")]
+                                if (not isinstance(rows,list) or len(rows)<3 or not all(numeric(x) for x in tariff)
+                                        or tariff[4] <= 0 or tariff[5] > 1 / tariff[4]):
+                                    failures.append(f"{path}: incomplete provider billing reconciliation")
+                                else:
+                                    seen = set()
+                                    for row in rows:
+                                        if not isinstance(row,dict) or not provider_invoice_link_matches(receipt,row,root):
+                                            failures.append(f"{path}: provider invoice/probe linkage missing or ambiguous")
+                                            continue
+                                        rid = row.get("provider_request_id")
+                                        values = [row.get(k) for k in ("input_tokens","output_tokens","cached_input_tokens","quota","actual_charge")]
+                                        if not rid or rid in seen or not all(numeric(x) for x in values) or values[2]>values[0] or row.get("match_count") != 1:
+                                            failures.append(f"{path}: invalid or ambiguous provider invoice row")
+                                            continue
+                                        seen.add(rid)
+                                        inp,out,cached,quota,actual=values
+                                        expected=((inp-cached)*tariff[0]+out*tariff[1]+cached*tariff[2])/1000000*tariff[3]
+                                        if abs(actual-quota/tariff[4])>1e-12 or abs(actual-expected)>tariff[5]+1e-12:
+                                            failures.append(f"{path}: provider invoice cost mismatch")
                             elif kind == "owned_client_loop":
                                 required = ("local_tool_executed", "tool_result_submitted", "final_answer_received")
                                 if (receipt.get("network_execution") != "explicit_live"

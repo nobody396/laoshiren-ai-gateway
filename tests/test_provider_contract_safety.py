@@ -73,7 +73,6 @@ class SafetyTest(unittest.TestCase):
         ev=R._receipt_evidence({'evidence':{'source':'live_probe','id':'test'},'observed_at':H.utc_now()},'test-model')
         self.assertEqual(ev['kind'],'offline_fixture')
 
-if __name__=='__main__': unittest.main()
 
 class ProtocolProofTest(SafetyTest):
     def test_native_gemini_sse_joins_deltas_and_nested_terminal(self):
@@ -112,3 +111,12 @@ class ProtocolProofTest(SafetyTest):
         shape,details,usage=H.run_http_case(case,'synthetic-noncredential',Transport(),1,'fixture')
         self.assertIsNone(details['reasoning'])
         self.assertEqual(H.verifier_observation(case,shape,usage,details)[0],'failed')
+
+class SearchProofTest(unittest.TestCase):
+    def test_citation_text_without_native_search_is_not_search_proof(self):
+        case=SafetyTest().case('P-11')
+        status,reason=H.verifier_observation(case,{'http_status':200,'complete':True,'text_present':True},None,{'observed_at':H.utc_now(),'citations':['https://example.test']})
+        self.assertEqual(status,'failed')
+        self.assertIn('not observed',reason)
+
+if __name__=='__main__': unittest.main()

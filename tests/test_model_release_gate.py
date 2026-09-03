@@ -47,7 +47,6 @@ class GateTest(unittest.TestCase):
         schema=json.loads((ROOT/'model-doc-contracts/matrix-schema.json').read_text())
         self.assertEqual(len(schema['properties']['matrices']['required']),9)
 
-if __name__=='__main__': unittest.main()
 
 class CatalogMutationGateTest(unittest.TestCase):
     def test_draft_apply_refused_before_catalog_or_generated_files_change(self):
@@ -82,3 +81,5 @@ class DirectHarnessGatesTest(unittest.TestCase):
         lock=json.loads((ROOT/'model-doc-contracts/import-provenance.json').read_text())
         expected=next(x['source_sha256'] for x in lock['files'] if x['path']=='model-doc-contracts/client-matrix.json')
         self.assertEqual(hashlib.sha256((ROOT/'model-doc-contracts/client-matrix.json').read_bytes()).hexdigest(),expected)
+
+if __name__=='__main__': unittest.main()

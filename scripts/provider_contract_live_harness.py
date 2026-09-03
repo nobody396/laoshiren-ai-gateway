@@ -1035,6 +1035,8 @@ def verifier_observation(case: LiveCase, shape: dict[str, Any], usage: dict[str,
     elif case.p_id == "P-10":
         observation.update(schema_valid=details.get("schema_valid") is True, output=details.get("structured_output"))
     elif case.p_id == "P-11":
+        if details.get("server_tool_observed") is not True:
+            return "failed", "native server-side search/grounding was not observed"
         observation.update(citations=details.get("citations", []), final_text=case.marker if shape.get("text_present") else "")
     elif case.p_id == "P-12":
         observation["usage"] = usage

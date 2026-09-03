@@ -1,0 +1,71 @@
+{
+  "artifact_sha256": "720898a2467fe5de38e18dc8a0d4227d6fda8e31e1c91ce801d3ead930ea379a",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "64:qwen3.7-flash:chat_completions:P-05:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 64,
+    "group_name": "Qwen 企业高速线路",
+    "marker": "LSR_CONTRACT_2F037CDF0CDEC0EE",
+    "max_output_tokens": 131072,
+    "model_id": "qwen3.7-flash",
+    "name": "tool_result_continuation",
+    "p_id": "P-05",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:qwen3.7-flash/chat_completions/tool_result_continuation"
+    ]
+  },
+  "case_fingerprint": "6a730aadc53ef9155974f60352d2b7a5d57663827cb672fd05a2035edfdb9933",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T19:14:24.907+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:14:08.690+00:00",
+  "offline_verifier": {
+    "reason": "tool result must be correlated and continue to final text",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 64,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "tool result must be correlated and continue to final text",
+  "request": {
+    "payload_sha256": "11a97622730602589e91e9ea06aca7fafd8bab661ff9bc67d6f74c17ba10109d",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "682da9fb80b338d0fddc9ac509d9dc2ebc3047fa194d5781419c31dd6c58d608"
+  },
+  "response": {
+    "body_bytes": 200,
+    "body_sha256": "aac04e0ffa2b11dd8d108dcdf0b1a7868b5db4e4237c123221b84a2b1e121fb9",
+    "complete": true,
+    "content_type": "text/event-stream; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": false,
+    "request_id": "251d0839-b71a-9cba-9cdc-fe5d70bec4ea",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

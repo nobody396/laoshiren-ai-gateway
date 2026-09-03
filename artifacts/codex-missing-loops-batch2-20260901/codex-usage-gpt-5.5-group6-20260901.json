@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "codex",
+  "client_version": "cli:0.151.0",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 6,
+  "observed_at": "2026-08-31T22:26:28+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T06:26:11.622653+08:00",
+      "model": "gpt-5.5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "Codex Desktop/0.151.0 (Mac OS 26.5.2; arm64) dumb (codex_exec; 0.151.0)",
+      "stream": true,
+      "input_tokens": 12568,
+      "output_tokens": 301,
+      "reasoning_effort": "medium",
+      "account_id": 80
+    },
+    {
+      "created_at": "2026-09-01T06:26:17.924302+08:00",
+      "model": "gpt-5.5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "Codex Desktop/0.151.0 (Mac OS 26.5.2; arm64) dumb (codex_exec; 0.151.0)",
+      "stream": true,
+      "input_tokens": 627,
+      "output_tokens": 109,
+      "reasoning_effort": "medium",
+      "account_id": 80
+    },
+    {
+      "created_at": "2026-09-01T06:26:23.568735+08:00",
+      "model": "gpt-5.5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "Codex Desktop/0.151.0 (Mac OS 26.5.2; arm64) dumb (codex_exec; 0.151.0)",
+      "stream": true,
+      "input_tokens": 283,
+      "output_tokens": 9,
+      "reasoning_effort": "medium",
+      "account_id": 80
+    }
+  ],
+  "secret_free": true,
+  "artifact_sha256": "6498c4f15721259d537fefc1bc4e4e6850388955d583ec01e0d81b0cab56a1ca"
+}

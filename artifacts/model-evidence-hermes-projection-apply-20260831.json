@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 9,
+  "events": 0,
+  "changes": [
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": []
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": []
+    }
+  ]
+}

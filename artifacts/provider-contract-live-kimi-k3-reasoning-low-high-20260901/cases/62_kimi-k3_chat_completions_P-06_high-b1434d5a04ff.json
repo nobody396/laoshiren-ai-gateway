@@ -1,0 +1,106 @@
+{
+  "artifact_sha256": "9c5aaf425c9e5ea57ceb718ce4a95754d1c6abe87583702c19c4f8e2f668b4e4",
+  "billing_attribution": {
+    "actual_cost": 0.008417,
+    "status": "verified",
+    "total_cost": 0.00886,
+    "usage_row_ids": [
+      "242593"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "62:kimi-k3:chat_completions:P-06:high",
+    "context_window": 1048576,
+    "declared_status": "verified",
+    "group_id": 62,
+    "group_name": "Kimi 企业高速线路",
+    "marker": "LSR_CONTRACT_B1434D5A04FFC64E",
+    "max_output_tokens": 1048576,
+    "model_id": "kimi-k3",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "chat_completions",
+    "reasoning_level": "high",
+    "source_case_keys": []
+  },
+  "case_fingerprint": "f6c146e48ed623f9d70e6bacd0489a2dc59479f6ddb19876e85ae5b785876c7d",
+  "classification": "verified",
+  "finished_at": "2026-08-31T20:56:16.071+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:56:09.798+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 62,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "ef50be821617fd71a17e1a115200347f22803216e28aef2094ff29746d508405",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "e1cfd3cb367123ae0908c04eea0608caa54da2657557e05016809755d40661aa"
+  },
+  "response": {
+    "body_bytes": 637,
+    "body_sha256": "aaf5526d85e3e8638718df7fd365c14342f9900ad736537fac17a61c3f42d54b",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "427ff658-8f11-953b-a556-73c0478678e2",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 103,
+    "output_tokens": 68,
+    "total_tokens": 171
+  },
+  "usage_attribution": {
+    "row_count": 1,
+    "rows": [
+      {
+        "account_id": 75,
+        "account_rate_multiplier": 1,
+        "actual_cost": 0.008417,
+        "api_key_id": 205,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 0,
+        "cache_read_tokens": 0,
+        "created_at": "2026-09-01T04:56:14.399804+08:00",
+        "duration_ms": 3136,
+        "first_token_ms": null,
+        "group_id": 62,
+        "id": 242593,
+        "inbound_endpoint": "/v1/chat/completions",
+        "input_cost": 0.00206,
+        "input_tokens": 103,
+        "model": "kimi-k3",
+        "output_cost": 0.0068,
+        "output_tokens": 68,
+        "rate_multiplier": 0.95,
+        "reasoning_effort": "high",
+        "request_id": "client:8ccde8f3-24c3-4f35-aeff-fdbbe285a349",
+        "request_type": "sync",
+        "stream": false,
+        "total_cost": 0.00886,
+        "upstream_endpoint": "/v1/chat/completions",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/5b92e31c8d00e313 case/b1434d5a04ff"
+      }
+    ],
+    "status": "verified"
+  }
+}

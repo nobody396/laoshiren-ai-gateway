@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "3bec45bebe0100dc87f0e1c61722b630ae05794167b25cea136679b1c8929ca8",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "60:glm-5.2:messages:P-06:medium",
+    "context_window": 1048576,
+    "declared_status": "blocked",
+    "group_id": 60,
+    "group_name": "GLM 企业高速线路",
+    "marker": "LSR_CONTRACT_E7AB151E91B75098",
+    "max_output_tokens": 131072,
+    "model_id": "glm-5.2",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "messages",
+    "reasoning_level": "medium",
+    "source_case_keys": []
+  },
+  "case_fingerprint": "064f7ceef0ae2dc35aced901f1089487a18c07264db35164586cf5e7a42afa5c",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:08:23.386+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:08:21.357+00:00",
+  "offline_verifier": {
+    "reason": "provider request did not return a complete HTTP 200 terminal result",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 60,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "provider request did not return a complete HTTP 200 terminal result",
+  "request": {
+    "payload_sha256": "f40b1e9e55e34239b67ee2d81c98fbf1494c67e013b7c7a41000b4dad8e666e8",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "731d7e157bd8fbe0139a4019f191769dbe35cec214afaf289f9ca6c1b8d72be4"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "a1091865532944e905b3452e3b44a9f55648442f9a9b8b9aa269d34c561bc741",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "d1bb6c48-ce9a-43b3-9cca-16f9e9d285fb",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

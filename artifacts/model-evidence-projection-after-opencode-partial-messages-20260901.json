@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 7,
+  "events": 13,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "84dc195c84e6ab5986695318da6a3a136d7e717e180117ac7478547b630afcf3",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-56f28f1bf254c3620372ed88"
+          ]
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-56f28f1bf254c3620372ed88",
+            "evidence-c7946b1bf5bb7f0e113d8229"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80c7c50a68d0442e53db5349"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80c7c50a68d0442e53db5349",
+            "evidence-b1d82ff30c9f3d41daa40826"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5107305c42510acaad010587"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5107305c42510acaad010587",
+            "evidence-b09396db07956812d94e2d35"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d05282736fca24c2ccc9e060"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4ee15c69e75e8bfae8a35e18",
+            "evidence-d05282736fca24c2ccc9e060"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-710e5440269caba6475b7fec"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3978508d650ea8daf5130afa",
+            "evidence-710e5440269caba6475b7fec"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a2674c98d5b580b328f6d7c3"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-55b272acc1b25c2da633a706",
+            "evidence-a2674c98d5b580b328f6d7c3"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-0ec7dbc8c1a2f668b917525a"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "claude-code",
+  "client_version": "2.1.251",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-opus-4-5",
+  "protocol": "messages",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 65,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T22:08:50+00:00",
+  "finished_at": "2026-08-31T22:09:13+00:00",
+  "duration_ms": 2534,
+  "exit_code": 1,
+  "timed_out": false,
+  "event_types": {},
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_verified": false,
+  "final_marker_verified": false,
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha256": "feb1740346a5db353a734dd0eed0a277c2e772aa11b7bad480afe3a0256c0d25",
+  "stdout_bytes": 0,
+  "stderr_bytes": 74,
+  "restored_group_id": 6,
+  "passed": false,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/claude-code-missing-loops-retry2-20260901/claude-code-usage-claude-opus-4-5-group65-20260901.json",
+    "artifact_sha256": "7f76a23c8c47020d7a5094ff359da240bf6979d07c9275af7363687838f39a15",
+    "usage_rows": 0,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoint": "/v1/messages",
+    "verified": false
+  },
+  "artifact_sha256": "0be3b3b2156d0ef36394e176954216c1bea6838f3e55c21de32d831afec7598d"
+}

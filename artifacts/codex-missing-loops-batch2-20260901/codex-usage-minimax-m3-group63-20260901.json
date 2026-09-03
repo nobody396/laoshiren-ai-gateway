@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "codex",
+  "client_version": "cli:0.151.0",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 63,
+  "observed_at": "2026-08-31T22:28:01+00:00",
+  "rows": [],
+  "secret_free": true,
+  "artifact_sha256": "d88b9cf322d0eeb354a89ce5abba48a6bf9d62565ceee880691598e62a1d7c05"
+}

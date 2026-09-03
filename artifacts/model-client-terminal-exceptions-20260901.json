@@ -1,0 +1,483 @@
+{
+  "schema_version": 1,
+  "kind": "model_client_terminal_exceptions",
+  "as_of": "2026-09-01",
+  "rows": [
+    {
+      "model_id": "claude-sonnet-4-6",
+      "client_name": "OpenCode",
+      "client_id": "opencode",
+      "client_version": "cli:1.18.15",
+      "protocol": "messages",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-0ec7dbc8c1a2f668b917525a",
+        "evidence-df63fbec02d0f102247a8674"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "claude-sonnet-5",
+      "client_name": "Kimi Code",
+      "client_id": "kimi-code",
+      "client_version": "legacy:0.38.0+",
+      "protocol": "messages",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-044571833c2e6da533b68604",
+        "evidence-1a57ad4c6f31dca98068303e",
+        "evidence-1e44ba523ab3e2e90ae77fad",
+        "evidence-204e0040ebb0bb96007efcb7",
+        "evidence-22a1530eb84478b0cd28af71",
+        "evidence-3175ac437f13621e5f73ab02",
+        "evidence-3a6f11268d15421999a4bb34",
+        "evidence-3ff394af63569fadc55e520b",
+        "evidence-53f094c394b5aacf7f320d5a",
+        "evidence-5710e7245f10b0c5bd460bba",
+        "evidence-5d638012ad91caaeaa365f9e",
+        "evidence-630745928d7b95cf42abef8e",
+        "evidence-69b7f30d13ac5fb2869a4d6b",
+        "evidence-7457f28e347a649bf2ae04b6",
+        "evidence-77fb431715353ae126aa4820",
+        "evidence-8515a16ef3b6a3f45cbac8a1",
+        "evidence-89831ab670637d3fdceeab75",
+        "evidence-97c7d70e0fab448f5c8775e2",
+        "evidence-a2a3ebe48f89a0df64324121",
+        "evidence-a9ba152416d72a0b3f4a16c7",
+        "evidence-aa41560bbce637fe9a254de5",
+        "evidence-b6a2990307b97e081c04a534",
+        "evidence-cbd521a50d1a5e68295001e8",
+        "evidence-cefdbf268fc628ba49992ce7",
+        "evidence-da1f7f64f135bc3ad9c01583",
+        "evidence-df9e0ee3b5a27f88cb8f27fc",
+        "evidence-e836dce3595a5dd7c9a4f3bb",
+        "evidence-e8b1c77ae30a1a56c06b62f4",
+        "evidence-ec26d722b1a57d681bda1c51",
+        "evidence-f244906ca071b563e2c66210"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "claude-sonnet-5",
+      "client_name": "ZCode",
+      "client_id": "zcode",
+      "client_version": "legacy:3.10.1",
+      "protocol": "messages",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-044571833c2e6da533b68604",
+        "evidence-1a57ad4c6f31dca98068303e",
+        "evidence-1e44ba523ab3e2e90ae77fad",
+        "evidence-204e0040ebb0bb96007efcb7",
+        "evidence-22a1530eb84478b0cd28af71",
+        "evidence-3175ac437f13621e5f73ab02",
+        "evidence-3a6f11268d15421999a4bb34",
+        "evidence-3ff394af63569fadc55e520b",
+        "evidence-53f094c394b5aacf7f320d5a",
+        "evidence-5710e7245f10b0c5bd460bba",
+        "evidence-5d638012ad91caaeaa365f9e",
+        "evidence-630745928d7b95cf42abef8e",
+        "evidence-69b7f30d13ac5fb2869a4d6b",
+        "evidence-7457f28e347a649bf2ae04b6",
+        "evidence-77fb431715353ae126aa4820",
+        "evidence-8515a16ef3b6a3f45cbac8a1",
+        "evidence-89831ab670637d3fdceeab75",
+        "evidence-97c7d70e0fab448f5c8775e2",
+        "evidence-a2a3ebe48f89a0df64324121",
+        "evidence-a9ba152416d72a0b3f4a16c7",
+        "evidence-aa41560bbce637fe9a254de5",
+        "evidence-b6a2990307b97e081c04a534",
+        "evidence-cbd521a50d1a5e68295001e8",
+        "evidence-cefdbf268fc628ba49992ce7",
+        "evidence-cf75f0455ef7b780d5b27521",
+        "evidence-da1f7f64f135bc3ad9c01583",
+        "evidence-df9e0ee3b5a27f88cb8f27fc",
+        "evidence-e836dce3595a5dd7c9a4f3bb",
+        "evidence-ec26d722b1a57d681bda1c51",
+        "evidence-f244906ca071b563e2c66210"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "deepseek-v4-flash-0731",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "deepseek-v4-flash-0731",
+      "client_name": "OpenCode",
+      "client_id": "opencode",
+      "client_version": "cli:1.18.15",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-36434078fa58703befb3323a",
+        "evidence-57f86421284151a4046afb01"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "deepseek-v4-pro-0813",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gemini-3.7-flash",
+      "client_name": "Kimi Code",
+      "client_id": "kimi-code",
+      "client_version": "legacy:0.39.1",
+      "protocol": "generate_content",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-099a0653e86736c211f9ae56",
+        "evidence-32c811dda802d8899e52428f",
+        "evidence-5098b73205879eea6974ffa3",
+        "evidence-56b1882cca00a8c083976b25",
+        "evidence-7af97bd7180d8d3c704f9109",
+        "evidence-8e4cc53c63cadb3d82bd6f50",
+        "evidence-a3915581c1b8c130a265b4f2",
+        "evidence-aee49a5341c5873fd3a0b829",
+        "evidence-c5589cc85942e6768c0a1fe5",
+        "evidence-cac36c8b5a879cd398f0bfa7",
+        "evidence-dde6a778d5169efe804655c7",
+        "evidence-f8951264b3c38460620ff44a"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gemini-3.7-flash",
+      "client_name": "Gemini CLI",
+      "client_id": "gemini-cli",
+      "client_version": "cli:0.57.0",
+      "protocol": "generate_content",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-bdc3461ae23fc279a5c96822"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "glm-5.2",
+      "client_name": "Codex",
+      "client_id": "codex",
+      "client_version": "cli:0.151.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-136fae47ae1e58f071b0db00",
+        "evidence-c0933f40c08c4027bbadd1e3"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "glm-5.2",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "glm-5.2",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "glm-5.2",
+      "client_name": "Kimi Code",
+      "client_id": "kimi-code",
+      "client_version": "cli:0.38.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "glm-5.2",
+      "client_name": "OpenCode",
+      "client_id": "opencode",
+      "client_version": "cli:1.18.15",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-1b49eef27dec1b8548b3bb2e",
+        "evidence-3a13f4394e264f8137a9a652"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "glm-5.2",
+      "client_name": "ZCode",
+      "client_id": "zcode",
+      "client_version": "app:3.10.1+cli:0.16.5",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "glm-5.2",
+      "client_name": "Hermes Agent",
+      "client_id": "hermes-agent",
+      "client_version": "cli:0.20.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-5.4",
+      "client_name": "Kimi Code",
+      "client_id": "kimi-code",
+      "client_version": "cli:0.38.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-2904f03d831c688d7817ded1"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-5.4",
+      "client_name": "Hermes Agent",
+      "client_id": "hermes-agent",
+      "client_version": "cli:0.20.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-1fac590bfd73e11e9b4c26ec",
+        "evidence-f31eda51318c234ebe202804"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "client_name": "Codex",
+      "client_id": "codex",
+      "client_version": "cli:0.151.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "client_name": "Kimi Code",
+      "client_id": "kimi-code",
+      "client_version": "cli:0.38.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "client_name": "OpenCode",
+      "client_id": "opencode",
+      "client_version": "cli:1.18.15",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "client_name": "ZCode",
+      "client_id": "zcode",
+      "client_version": "app:3.10.1+cli:0.16.5",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "client_name": "Hermes Agent",
+      "client_id": "hermes-agent",
+      "client_version": "cli:0.20.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "grok-4.5",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-5ac438e5e538f0120c148a91",
+        "evidence-946e94cef1d68113ab3c1cba"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "grok-4.6",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-2ab5414525856cf640a4c7a0"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "grok-4.6",
+      "client_name": "ZCode",
+      "client_id": "zcode",
+      "client_version": "legacy:3.10.1",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-106518e25acd40635e45b7e3",
+        "evidence-239b20de5a56abf98f702f6f",
+        "evidence-24b1cb8440febca04377e367",
+        "evidence-3f236cfdabf37ae5bfda2f25",
+        "evidence-4014f1c17991b95150dc20f2",
+        "evidence-6e3b452ac0f709c78b0f68df",
+        "evidence-722bd843c66a6316a931d27e",
+        "evidence-729fcfe6b3c41c737aedcfa7",
+        "evidence-7b9bf683cd895a108ccb4019",
+        "evidence-b0a704dda3a12273c82058b1",
+        "evidence-b7532c23ff3cbbbd544b8c20",
+        "evidence-be1221d0dba5e8c387f6467d",
+        "evidence-bf11d0e06064c4544e6da851",
+        "evidence-ea3db596a642fa8a093830f6",
+        "evidence-eae6934ea67c9e1a877b1ef1",
+        "evidence-f8d89451b5351b962a93ddca"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "kimi-k3",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "kimi-k3",
+      "client_name": "Kimi Code",
+      "client_id": "kimi-code",
+      "client_version": "legacy:0.39.1",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-23e7b0a307000ced0b77df06",
+        "evidence-3b775a5ad44150fa6ca207e3",
+        "evidence-3ffe2a3c905b130a6a77ec45",
+        "evidence-41731a43bf7a7c698c53aa00",
+        "evidence-50e8f3c8b123829a9bcd7002",
+        "evidence-57f5cb34a062f64b366e513e",
+        "evidence-88f553cd8e27db149359e508",
+        "evidence-94fe07714ff5dd32168e749b",
+        "evidence-a9113b3981e5bdeffb8e2acd",
+        "evidence-b68064ee57c6c59c8ec532ac",
+        "evidence-c4dea2605699de4bb6acef5e",
+        "evidence-c8f723b2d7638fc347825b47"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "kimi-k3",
+      "client_name": "ZCode",
+      "client_id": "zcode",
+      "client_version": "legacy:3.10.1",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-23e7b0a307000ced0b77df06",
+        "evidence-3b775a5ad44150fa6ca207e3",
+        "evidence-3ffe2a3c905b130a6a77ec45",
+        "evidence-41731a43bf7a7c698c53aa00",
+        "evidence-50e8f3c8b123829a9bcd7002",
+        "evidence-57f5cb34a062f64b366e513e",
+        "evidence-88ed9082d0f2a76a20dbf562",
+        "evidence-88f553cd8e27db149359e508",
+        "evidence-94fe07714ff5dd32168e749b",
+        "evidence-a9113b3981e5bdeffb8e2acd",
+        "evidence-c4dea2605699de4bb6acef5e",
+        "evidence-c8f723b2d7638fc347825b47"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "minimax-m3",
+      "client_name": "Codex",
+      "client_id": "codex",
+      "client_version": "cli:0.151.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [
+        "evidence-43fa529dfd434cca3dde46da",
+        "evidence-e5540c0a3b49d6674fd48cdd"
+      ],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "minimax-m3",
+      "client_name": "Grok Build",
+      "client_id": "grok-build",
+      "client_version": "cli:1.0.13",
+      "protocol": "chat_completions",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    },
+    {
+      "model_id": "minimax-m3",
+      "client_name": "Hermes Agent",
+      "client_id": "hermes-agent",
+      "client_version": "cli:0.20.0",
+      "protocol": "responses",
+      "os": "macos",
+      "source_evidence_ids": [],
+      "reason": "Exact current combination is terminally unavailable or failed its representative client loop."
+    }
+  ],
+  "secret_free": true
+}

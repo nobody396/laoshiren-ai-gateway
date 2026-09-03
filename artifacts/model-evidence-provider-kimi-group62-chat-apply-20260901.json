@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 12,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "6d5faec4e62089c50f38f4055ef7f8b9533996abb60556edd4029aae6a34d220",
+  "changes": [
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e478bc34b9c4f547b74e010c"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3cee0d5bd04ed326b6095416"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6efbae0399c36c46be7a81e8"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3815546b0be8af91900aa326"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4e118651491095c3c4fcd517"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9a0b2bf8c2903b9a0614f11c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a9113b3981e5bdeffb8e2acd"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3ffe2a3c905b130a6a77ec45"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-94fe07714ff5dd32168e749b"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e5deb4feb9f09c18e03c747f"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8756b29b45af7e15ec523000"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f910c584052271695477d5c1"
+          ]
+        }
+      ]
+    }
+  ]
+}

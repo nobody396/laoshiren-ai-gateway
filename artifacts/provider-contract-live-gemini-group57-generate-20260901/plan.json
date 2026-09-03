@@ -1,0 +1,316 @@
+{
+  "case_count": 14,
+  "cases": [
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "56e76c8b1b4ab2061f34161cb79c07e31e977d226ecbf874a38718b9c310d255",
+      "case_key": "57:gemini-3.1-pro:generate_content:P-02:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_8932594426EA8B38",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.1-pro",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-02_default-f56343824cbc.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.1-pro/generate_content/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "e064f10f7f53d017e7a06de613f5107301ed271bcbf75cbab4d7a44173bf4b1f",
+      "case_key": "57:gemini-3.1-pro:generate_content:P-03:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_64ACE4027215C506",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.1-pro",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-03_default-f03134eb682d.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.1-pro/generate_content/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "7a512efe815d6e66f37bab37c741b76974938340fa5b933a5505af11b6aa41fc",
+      "case_key": "57:gemini-3.1-pro:generate_content:P-04:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_11CB871B64C9B905",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.1-pro",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-04_default-00cac3aeeda3.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.1-pro/generate_content/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "681654061b8f70dcaf1e76e5fc7a5d6a87c35bcd003d592966c11ef4ec42da17",
+      "case_key": "57:gemini-3.1-pro:generate_content:P-05:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_EC996969F8D25E04",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.1-pro",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-05_default-ed59e004a717.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.1-pro/generate_content/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "69a9bfd074fc653b558de06b792127e32cb3dfc50d02331ad799cc21cf15dc4f",
+      "case_key": "57:gemini-3.1-pro:generate_content:P-06:medium",
+      "context_window": 1048576,
+      "declared_status": "blocked",
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_2DE631E5AAB5704D",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.1-pro",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "generate_content",
+      "reasoning_level": "medium",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-06_medium-2de631e5aab5.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.1-pro/generate_content/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "c0bd8d808c82a55aaa58a5f1bef1bcd5e0ce1788b2ef1f6983c42093fac502fb",
+      "case_key": "57:gemini-3.1-pro:generate_content:P-12:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_AD83CC99AE72D2D1",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.1-pro",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-12_default-1f12833d4f51.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.1-pro/generate_content/features/billing",
+        "model_protocol:gemini-3.1-pro/generate_content/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "088bbc2571f70425de87bf7b317244bda69ef416d121873ffb741577d9cfcb79",
+      "case_key": "57:gemini-3.1-pro:generate_content:P-15:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_FBBA860F92ACF851",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.1-pro",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.1-pro_generate_content_P-15_default-35632d87173e.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.1-pro/generate_content/invalid_request"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "c3f7b2b373752e2d0eca767896cf84873455311163a342cb27a0915621b6cd58",
+      "case_key": "57:gemini-3.7-flash:generate_content:P-02:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_B3D554BB7550B34B",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.7-flash",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-02_default-0a667c2afc80.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.7-flash/generate_content/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "b946631e7eec9fb37890ce039ae351f7c571349eb892feb100ee6ad6d50a56d1",
+      "case_key": "57:gemini-3.7-flash:generate_content:P-03:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_30FD3602D9A0F6D1",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.7-flash",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-03_default-ac4fb9366f79.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.7-flash/generate_content/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "12dd4a9a7b21e7e421a16abdc535a77314de9d10dc8bddb9ec25a8b3b4c89df1",
+      "case_key": "57:gemini-3.7-flash:generate_content:P-04:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_2FA310D27E732023",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.7-flash",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-04_default-fc86c4d7b577.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.7-flash/generate_content/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "9a325a019c9e62a03abaa953e85d11082ff3eb6810413b3ea2743f267208c5af",
+      "case_key": "57:gemini-3.7-flash:generate_content:P-05:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_E542378608F5E3AF",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.7-flash",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-05_default-ef564f1bcd22.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.7-flash/generate_content/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "2e5516016496782bf1cd0e207ea9254d786724af63cf1eda9d77c758aa83aca9",
+      "case_key": "57:gemini-3.7-flash:generate_content:P-06:medium",
+      "context_window": 1048576,
+      "declared_status": "blocked",
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_E1C8523E54AACC9B",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.7-flash",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "generate_content",
+      "reasoning_level": "medium",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-06_medium-e1c8523e54aa.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.7-flash/generate_content/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "f432bfd7582853f7886e70c4dba208549ad906870bb35bca7189a0cfb6e861a7",
+      "case_key": "57:gemini-3.7-flash:generate_content:P-12:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_7ACB61AF425298A9",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.7-flash",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-12_default-4f6900e80f4c.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.7-flash/generate_content/features/billing",
+        "model_protocol:gemini-3.7-flash/generate_content/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com",
+      "case_fingerprint": "184988afc7acde13d07a2b0fdc4f1c0c44d1c8fbe9e51879cd3a9261b349af91",
+      "case_key": "57:gemini-3.7-flash:generate_content:P-15:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 57,
+      "group_name": "Gemini 标准线路",
+      "marker": "LSR_CONTRACT_8997306298023572",
+      "max_output_tokens": 65536,
+      "model_id": "gemini-3.7-flash",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "generate_content",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-gemini-group57-generate-20260901/cases/57_gemini-3.7-flash_generate_content_P-15_default-d8584720a584.json",
+      "source_case_keys": [
+        "model_protocol:gemini-3.7-flash/generate_content/invalid_request"
+      ],
+      "state": "planned"
+    }
+  ],
+  "kind": "provider_contract_live_plan",
+  "network_execution": "disabled",
+  "owned_identity": {
+    "key_id": 205,
+    "restore_group_id": 6,
+    "user_id": 1
+  },
+  "paid_request_upper_bound": 16,
+  "plan_sha256": "6ffcb606c5440c12c4476db6069279eabe73f7478ac8423cf35c4c3087838ffb",
+  "schema_version": 1,
+  "secret_source": "Agent Switch name only: LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+  "status_counts": {
+    "planned": 14,
+    "resumable": 0
+  }
+}

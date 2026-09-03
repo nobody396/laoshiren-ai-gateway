@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "codex",
+  "client_version": "cli:0.151.0",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 59,
+  "observed_at": "2026-08-31T22:26:59+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T06:26:38.689369+08:00",
+      "model": "gpt-5.6-luna",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "Codex Desktop/0.151.0 (Mac OS 26.5.2; arm64) dumb (codex_exec; 0.151.0)",
+      "stream": true,
+      "input_tokens": 12172,
+      "output_tokens": 164,
+      "reasoning_effort": "medium",
+      "account_id": 78
+    },
+    {
+      "created_at": "2026-09-01T06:26:46.322505+08:00",
+      "model": "gpt-5.6-luna",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "Codex Desktop/0.151.0 (Mac OS 26.5.2; arm64) dumb (codex_exec; 0.151.0)",
+      "stream": true,
+      "input_tokens": 335,
+      "output_tokens": 171,
+      "reasoning_effort": "medium",
+      "account_id": 78
+    },
+    {
+      "created_at": "2026-09-01T06:26:51.510178+08:00",
+      "model": "gpt-5.6-luna",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "Codex Desktop/0.151.0 (Mac OS 26.5.2; arm64) dumb (codex_exec; 0.151.0)",
+      "stream": true,
+      "input_tokens": 529,
+      "output_tokens": 81,
+      "reasoning_effort": "medium",
+      "account_id": 78
+    },
+    {
+      "created_at": "2026-09-01T06:26:55.645483+08:00",
+      "model": "gpt-5.6-luna",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "Codex Desktop/0.151.0 (Mac OS 26.5.2; arm64) dumb (codex_exec; 0.151.0)",
+      "stream": true,
+      "input_tokens": 645,
+      "output_tokens": 9,
+      "reasoning_effort": "medium",
+      "account_id": 78
+    }
+  ],
+  "secret_free": true,
+  "artifact_sha256": "f34cd8f53820a641100c084c8492e85dccb0f0b8ced01c2b0cbd3783d794ff23"
+}

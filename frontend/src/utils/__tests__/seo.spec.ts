@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { updateRouteSeo } from '../seo'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 
 function route(overrides: Partial<RouteLocationNormalizedLoaded>): RouteLocationNormalizedLoaded {
   return {
@@ -43,7 +44,7 @@ describe('updateRouteSeo', () => {
     expect(document.head.querySelectorAll('script[type="application/ld+json"]').length).toBe(1)
   })
 
-  it('marks temporarily hidden docs pages as non-indexable', () => {
+  it('follows the public Docs feature flag for article metadata', () => {
     updateRouteSeo(route({
       name: 'DocsPage',
       path: '/docs/claude-code-quickstart',
@@ -51,16 +52,16 @@ describe('updateRouteSeo', () => {
       meta: { title: '文档' },
     }))
 
-    expect(document.title).toBe('Claude Code 快速开始指南 - 文档 - 老实人AI')
-    expect(content('meta[name="robots"]')).toBe('noindex,nofollow')
+    expect(document.title).toBe('Claude Code - 文档 - 老实人AI')
+    expect(content('meta[name="robots"]')).toBe(PUBLIC_DOCS_ENABLED ? 'index,follow' : 'noindex,nofollow')
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
-      'https://laoshirenai.com/docs/claude-code-quickstart'
+      'https://laoshirenai.com/docs/integration-claude-code'
     )
     expect(content('meta[property="og:type"]')).toBe('article')
-    expect(document.head.querySelector('script[type="application/ld+json"]')).toBeNull()
+    expect(Boolean(document.head.querySelector('script[type="application/ld+json"]'))).toBe(PUBLIC_DOCS_ENABLED)
   })
 
-  it('keeps the hidden Codex docs title but emits no public structured data', () => {
+  it('maps a legacy Codex URL to the concise docs page', () => {
     updateRouteSeo(route({
       name: 'DocsPage',
       path: '/docs/codex-custom-api-guide',
@@ -68,9 +69,9 @@ describe('updateRouteSeo', () => {
       meta: { title: '文档' },
     }))
 
-    expect(document.title).toBe('Codex 自定义 API 配置：Base URL 与 config.toml - 文档 - 老实人AI')
-    expect(content('meta[name="robots"]')).toBe('noindex,nofollow')
-    expect(document.head.querySelector('script[type="application/ld+json"]')).toBeNull()
+    expect(document.title).toBe('Codex - 文档 - 老实人AI')
+    expect(content('meta[name="robots"]')).toBe(PUBLIC_DOCS_ENABLED ? 'index,follow' : 'noindex,nofollow')
+    expect(Boolean(document.head.querySelector('script[type="application/ld+json"]'))).toBe(PUBLIC_DOCS_ENABLED)
   })
 
   it('sets indexable article metadata for a public changelog entry', () => {
@@ -142,6 +143,6 @@ describe('updateRouteSeo', () => {
     expect(document.head.querySelectorAll('meta[name="robots"]').length).toBe(1)
     expect(document.head.querySelectorAll('meta[property="og:title"]').length).toBe(1)
     expect(document.head.querySelectorAll('link[rel="canonical"]').length).toBe(1)
-    expect(document.title).toBe('Codex 快速开始指南 - 文档 - 老实人AI')
+    expect(document.title).toBe('Codex - 文档 - 老实人AI')
   })
 })

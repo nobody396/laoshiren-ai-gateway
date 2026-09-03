@@ -1,0 +1,37 @@
+{
+  "cases": {
+    "6:gpt-5.3-codex-spark:responses:P-11:default": {
+      "artifact_sha256": "60d8b51f12f0751e850d86195a8db495b6ee19eb42477a9ae9e836cf192a31c6",
+      "receipt": "artifacts/provider-contract-live-gpt-group6-websearch-strict-20260901/cases/6_gpt-5.3-codex-spark_responses_P-11_default-6ff02b5429da.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-11:default": {
+      "artifact_sha256": "0181b2259cc04d2b64c6cf50e51e30c5f1f2481a77baadfbc253ed35c0b4a084",
+      "receipt": "artifacts/provider-contract-live-gpt-group6-websearch-strict-20260901/cases/6_gpt-5.4_responses_P-11_default-e29c85d9af7e.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-11:default": {
+      "artifact_sha256": "99cee27ec1c75e93c30ac0fdfdf54653a4b41b312c6223500ea6bf5958e8900d",
+      "receipt": "artifacts/provider-contract-live-gpt-group6-websearch-strict-20260901/cases/6_gpt-5.5_responses_P-11_default-3c6bd4996fce.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-sol:responses:P-11:default": {
+      "artifact_sha256": "32e942214469846a6f96d3dfcc13b16bffdd7bd8d2d1c94a6b26b0e1d280641a",
+      "receipt": "artifacts/provider-contract-live-gpt-group6-websearch-strict-20260901/cases/6_gpt-5.6-sol_responses_P-11_default-b9ab283a3d96.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-11:default": {
+      "artifact_sha256": "b55ab90150c85a1892140d077bc78403d34ee4ecb8d064a3eb2421b30d39064b",
+      "receipt": "artifacts/provider-contract-live-gpt-group6-websearch-strict-20260901/cases/6_gpt-5.6-terra_responses_P-11_default-556b4058b2a0.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:32:10.593+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "2e8b55785241f926",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:31:14.084+00:00"
+}

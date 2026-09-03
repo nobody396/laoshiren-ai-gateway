@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 34,
+  "protocol": "chat_completions",
+  "observed_at": "2026-08-31T23:11:06+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T07:10:41.177271+08:00",
+      "model": "grok-4.5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/chat/completions",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 10588,
+      "output_tokens": 637,
+      "account_id": 61,
+      "request_id": "client:333084a4-2b3c-4a44-bfe6-f7804e1c3e99"
+    },
+    {
+      "created_at": "2026-09-01T07:10:44.894149+08:00",
+      "model": "grok-4.5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/chat/completions",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 57,
+      "output_tokens": 81,
+      "account_id": 61,
+      "request_id": "client:2c3775a4-c02c-4c6a-a40a-4fe62db6ccf6"
+    },
+    {
+      "created_at": "2026-09-01T07:11:03.905331+08:00",
+      "model": "grok-4.5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/chat/completions",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 11702,
+      "output_tokens": 5,
+      "account_id": 61,
+      "request_id": "client:3724d53b-ec30-4c9a-a28e-612df4966af3"
+    }
+  ],
+  "artifact_sha256": "f8ea01025800023350b79b1be8714c8873fcec9d59be332a7012f185403edb4e"
+}

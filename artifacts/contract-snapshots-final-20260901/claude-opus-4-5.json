@@ -1,0 +1,959 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com",
+    "groups": [
+      {
+        "multiplier": 2.4,
+        "name": "Claude Plus 月卡组"
+      },
+      {
+        "multiplier": 2.4,
+        "name": "Claude Pro 月卡组"
+      },
+      {
+        "multiplier": 2.4,
+        "name": "Claude Max 月卡组"
+      },
+      {
+        "multiplier": 1,
+        "name": "Claude 经济线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "M8 receipts: evidence-bca8ee8b0fe0f2bbfc4f4576, evidence-fc1f5ef35f087a54da4ae287",
+      "evidence_ids": [
+        "evidence-bca8ee8b0fe0f2bbfc4f4576",
+        "evidence-fc1f5ef35f087a54da4ae287"
+      ],
+      "name": "Claude Code",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "Grok Build",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "Kimi Code",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "M8 receipts: evidence-5107305c42510acaad010587, evidence-b09396db07956812d94e2d35",
+      "evidence_ids": [
+        "evidence-5107305c42510acaad010587",
+        "evidence-b09396db07956812d94e2d35"
+      ],
+      "name": "OpenCode",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified"
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "ZCode",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Visual Studio Code Local Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "name": "Claude Code",
+      "recommended": false,
+      "version": "2.1.251",
+      "protocol": "messages",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-bca8ee8b0fe0f2bbfc4f4576",
+        "evidence-fc1f5ef35f087a54da4ae287"
+      ],
+      "evidence": "M8 receipts: evidence-bca8ee8b0fe0f2bbfc4f4576, evidence-fc1f5ef35f087a54da4ae287"
+    },
+    {
+      "name": "OpenCode",
+      "recommended": false,
+      "version": "1.18.15",
+      "protocol": "messages",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-5107305c42510acaad010587",
+        "evidence-b09396db07956812d94e2d35"
+      ],
+      "evidence": "M8 receipts: evidence-5107305c42510acaad010587, evidence-b09396db07956812d94e2d35"
+    }
+  ],
+  "model": {
+    "context_window": 200000,
+    "display_name": "Claude Opus 4.5",
+    "family": "claude",
+    "id": "claude-opus-4-5",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "max_output_tokens": 64000,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "Historical production account-level evidence records one real Hostinger streamed Messages request with exact terminal OK for claude-opus-4-5 on monthly account 14; the full public-Key protocol matrix remains incomplete.",
+      "name": "messages",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [],
+    "client_mappings": [],
+    "model_levels": [
+      "low",
+      "medium",
+      "high",
+      "max"
+    ]
+  },
+  "recommended_protocol": "messages",
+  "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Claude Code": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:2.1.251",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-bca8ee8b0fe0f2bbfc4f4576, evidence-fc1f5ef35f087a54da4ae287",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-bca8ee8b0fe0f2bbfc4f4576",
+              "evidence-fc1f5ef35f087a54da4ae287"
+            ],
+            "pass_evidence_ids": [
+              "evidence-fc1f5ef35f087a54da4ae287"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "Grok Build": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-1568f88c817132a6f2c06c24, evidence-2a910d948eae2a66dc3be549, evidence-45d6e94b65d57971154a3dcb, evidence-57c45be437320f49dd37f571, evidence-6ad5d928f355b44361e1816e, evidence-6f4271af558a517293b71baf, evidence-7cca991177454073504c4864, evidence-895ed03d21f4860ab9ae6bf7, evidence-9a08c57dc4d56dea327ea755, evidence-c5755eff1043517a79bbdd50, evidence-c5a05deda8e9e7223d86435f, evidence-ee06c8c6c5bf5ebbf1b70a5f, evidence-f9c2c1d1934d84659f984f6d",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-1568f88c817132a6f2c06c24",
+              "evidence-2a910d948eae2a66dc3be549",
+              "evidence-45d6e94b65d57971154a3dcb",
+              "evidence-57c45be437320f49dd37f571",
+              "evidence-6ad5d928f355b44361e1816e",
+              "evidence-6f4271af558a517293b71baf",
+              "evidence-7cca991177454073504c4864",
+              "evidence-895ed03d21f4860ab9ae6bf7",
+              "evidence-9a08c57dc4d56dea327ea755",
+              "evidence-c5755eff1043517a79bbdd50",
+              "evidence-c5a05deda8e9e7223d86435f",
+              "evidence-ee06c8c6c5bf5ebbf1b70a5f",
+              "evidence-f9c2c1d1934d84659f984f6d"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-895ed03d21f4860ab9ae6bf7"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "Kimi Code": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-1568f88c817132a6f2c06c24, evidence-2a910d948eae2a66dc3be549, evidence-45d6e94b65d57971154a3dcb, evidence-57c45be437320f49dd37f571, evidence-6ad5d928f355b44361e1816e, evidence-6f4271af558a517293b71baf, evidence-7cca991177454073504c4864, evidence-9a08c57dc4d56dea327ea755, evidence-ba86a17c5fe874e22745fa46, evidence-c5755eff1043517a79bbdd50, evidence-c5a05deda8e9e7223d86435f, evidence-ee06c8c6c5bf5ebbf1b70a5f, evidence-f9c2c1d1934d84659f984f6d",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-1568f88c817132a6f2c06c24",
+              "evidence-2a910d948eae2a66dc3be549",
+              "evidence-45d6e94b65d57971154a3dcb",
+              "evidence-57c45be437320f49dd37f571",
+              "evidence-6ad5d928f355b44361e1816e",
+              "evidence-6f4271af558a517293b71baf",
+              "evidence-7cca991177454073504c4864",
+              "evidence-9a08c57dc4d56dea327ea755",
+              "evidence-ba86a17c5fe874e22745fa46",
+              "evidence-c5755eff1043517a79bbdd50",
+              "evidence-c5a05deda8e9e7223d86435f",
+              "evidence-ee06c8c6c5bf5ebbf1b70a5f",
+              "evidence-f9c2c1d1934d84659f984f6d"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-ba86a17c5fe874e22745fa46"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "MiniMax Code": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:0.2.7",
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "blocked"
+          }
+        }
+      },
+      "OpenCode": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-5107305c42510acaad010587, evidence-b09396db07956812d94e2d35",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-5107305c42510acaad010587",
+              "evidence-b09396db07956812d94e2d35"
+            ],
+            "pass_evidence_ids": [
+              "evidence-5107305c42510acaad010587"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "ZCode": {
+        "messages": {
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-1568f88c817132a6f2c06c24, evidence-2a910d948eae2a66dc3be549, evidence-45d6e94b65d57971154a3dcb, evidence-57c45be437320f49dd37f571, evidence-6ad5d928f355b44361e1816e, evidence-6f4271af558a517293b71baf, evidence-7cca991177454073504c4864, evidence-9a08c57dc4d56dea327ea755, evidence-c5755eff1043517a79bbdd50, evidence-c5a05deda8e9e7223d86435f, evidence-e6b5f283ef3d9aee70e30533, evidence-ee06c8c6c5bf5ebbf1b70a5f, evidence-f9c2c1d1934d84659f984f6d",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-1568f88c817132a6f2c06c24",
+              "evidence-2a910d948eae2a66dc3be549",
+              "evidence-45d6e94b65d57971154a3dcb",
+              "evidence-57c45be437320f49dd37f571",
+              "evidence-6ad5d928f355b44361e1816e",
+              "evidence-6f4271af558a517293b71baf",
+              "evidence-7cca991177454073504c4864",
+              "evidence-9a08c57dc4d56dea327ea755",
+              "evidence-c5755eff1043517a79bbdd50",
+              "evidence-c5a05deda8e9e7223d86435f",
+              "evidence-e6b5f283ef3d9aee70e30533",
+              "evidence-ee06c8c6c5bf5ebbf1b70a5f",
+              "evidence-f9c2c1d1934d84659f984f6d"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-e6b5f283ef3d9aee70e30533"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "claude-opus-4-5",
+            "os": "linux",
+            "protocol": "messages",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "claude-opus-4-5",
+            "os": "windows",
+            "protocol": "messages",
+            "status": "blocked"
+          }
+        }
+      },
+      "Visual Studio Code Local Agent": {
+        "messages": {
+          "macos": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "claude-opus-4-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "claude-opus-4-5",
+            "os": "linux",
+            "protocol": "messages",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "claude-opus-4-5",
+            "os": "windows",
+            "protocol": "messages",
+            "status": "blocked"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "Claude Max 月卡组": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-opus-4-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-09-01",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-72c11a05043fbe3e8c5794c4",
+              "evidence-90b8c87c4e04212381d5f235",
+              "evidence-960561efd7f03b01cf530dcd"
+            ],
+            "pass_evidence_ids": [
+              "evidence-72c11a05043fbe3e8c5794c4",
+              "evidence-90b8c87c4e04212381d5f235",
+              "evidence-960561efd7f03b01cf530dcd"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-09-01T00:00:03+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-72c11a05043fbe3e8c5794c4",
+          "evidence-90b8c87c4e04212381d5f235",
+          "evidence-960561efd7f03b01cf530dcd"
+        ]
+      },
+      "Claude Plus 月卡组": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-opus-4-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-052c849f978185c307a27148",
+              "evidence-6c885ff915f533829f6f9750",
+              "evidence-8b1c692f473dac066748b8f5"
+            ],
+            "pass_evidence_ids": [
+              "evidence-052c849f978185c307a27148",
+              "evidence-6c885ff915f533829f6f9750",
+              "evidence-8b1c692f473dac066748b8f5"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:13+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-052c849f978185c307a27148",
+          "evidence-6c885ff915f533829f6f9750",
+          "evidence-8b1c692f473dac066748b8f5"
+        ]
+      },
+      "Claude Pro 月卡组": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-opus-4-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-9b73220f9ec2f61c4849c896",
+              "evidence-bd7c2b24a6250d77cece047e",
+              "evidence-d898723846132bbe7684c5ed"
+            ],
+            "pass_evidence_ids": [
+              "evidence-9b73220f9ec2f61c4849c896",
+              "evidence-bd7c2b24a6250d77cece047e",
+              "evidence-d898723846132bbe7684c5ed"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:38+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-9b73220f9ec2f61c4849c896",
+          "evidence-bd7c2b24a6250d77cece047e",
+          "evidence-d898723846132bbe7684c5ed"
+        ]
+      },
+      "Claude 经济线路": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "evidence_ids": [
+          "evidence-45d6e94b65d57971154a3dcb",
+          "evidence-57c45be437320f49dd37f571",
+          "evidence-6ad5d928f355b44361e1816e",
+          "evidence-6f4271af558a517293b71baf",
+          "evidence-7cca991177454073504c4864",
+          "evidence-c5755eff1043517a79bbdd50",
+          "evidence-ee06c8c6c5bf5ebbf1b70a5f"
+        ],
+        "model_id": "claude-opus-4-5",
+        "multiplier": 1,
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-45d6e94b65d57971154a3dcb",
+              "evidence-57c45be437320f49dd37f571",
+              "evidence-6ad5d928f355b44361e1816e",
+              "evidence-6f4271af558a517293b71baf",
+              "evidence-7cca991177454073504c4864",
+              "evidence-c5755eff1043517a79bbdd50",
+              "evidence-ee06c8c6c5bf5ebbf1b70a5f"
+            ],
+            "pass_evidence_ids": [
+              "evidence-45d6e94b65d57971154a3dcb",
+              "evidence-57c45be437320f49dd37f571",
+              "evidence-6ad5d928f355b44361e1816e",
+              "evidence-6f4271af558a517293b71baf",
+              "evidence-7cca991177454073504c4864",
+              "evidence-c5755eff1043517a79bbdd50",
+              "evidence-ee06c8c6c5bf5ebbf1b70a5f"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T21:56:47+00:00"
+          }
+        },
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "Anthropic official Opus 4.5 overview records 200K: https://platform.claude.com/docs/en/models/opus-4-5/overview",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "Anthropic official Opus 4.5 overview records 64K: https://platform.claude.com/docs/en/models/opus-4-5/overview",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "Anthropic official capability: text and images to text; https://platform.claude.com/docs/en/models/opus-4-5/overview",
+        "status": "verified"
+      },
+      "text": {
+        "evidence": "Anthropic official capability: text and images to text; https://platform.claude.com/docs/en/models/opus-4-5/overview",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "Anthropic official input-to-output capability lists text and images to text, not native video; https://platform.claude.com/docs/en/models/opus-4-5/overview",
+        "status": "unsupported"
+      }
+    },
+    "pricing": {
+      "Claude Max 月卡组": {
+        "cache_read_price": 1.2,
+        "cache_write_price": 15.0,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 12.0,
+        "output_price": 60.0,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude Plus 月卡组": {
+        "cache_read_price": 1.2,
+        "cache_write_price": 15.0,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 12.0,
+        "output_price": 60.0,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude Pro 月卡组": {
+        "cache_read_price": 1.2,
+        "cache_write_price": 15.0,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 12.0,
+        "output_price": 60.0,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude 经济线路": {
+        "cache_read_price": 0.5,
+        "cache_write_price": 6.25,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 5,
+        "output_price": 25,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "messages": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-34f9c6e45af2a107a457a426, evidence-97e12e1dcfd8dd6a7216fd1d, evidence-ac85bd05bb47721dc9b7ecc6",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-34f9c6e45af2a107a457a426",
+            "evidence-97e12e1dcfd8dd6a7216fd1d",
+            "evidence-ac85bd05bb47721dc9b7ecc6"
+          ],
+          "pass_evidence_ids": [
+            "evidence-34f9c6e45af2a107a457a426",
+            "evidence-97e12e1dcfd8dd6a7216fd1d",
+            "evidence-ac85bd05bb47721dc9b7ecc6"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-0c7f5752069d13ebd0b816bd, evidence-14e76b8b646162a082cd40d3",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0c7f5752069d13ebd0b816bd",
+            "evidence-14e76b8b646162a082cd40d3"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0c7f5752069d13ebd0b816bd",
+            "evidence-14e76b8b646162a082cd40d3"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-1b7e94322257f361f5628885, evidence-2b0055b02878c4c1e4ec8a21",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1b7e94322257f361f5628885",
+            "evidence-2b0055b02878c4c1e4ec8a21"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1b7e94322257f361f5628885",
+            "evidence-2b0055b02878c4c1e4ec8a21"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-2f9053c09fd9d72874eb5cc8",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2f9053c09fd9d72874eb5cc8"
+          ],
+          "pass_evidence_ids": [
+            "evidence-2f9053c09fd9d72874eb5cc8"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-40bd2990c8d3bdb99230133f, evidence-9b272fd2325692182518b1cf",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-40bd2990c8d3bdb99230133f",
+            "evidence-9b272fd2325692182518b1cf"
+          ],
+          "pass_evidence_ids": [
+            "evidence-40bd2990c8d3bdb99230133f",
+            "evidence-9b272fd2325692182518b1cf"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-425dd43dfe7a8340cd80af5c",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-425dd43dfe7a8340cd80af5c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-425dd43dfe7a8340cd80af5c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-9ded53f1a2f9fcfa9bae00ec",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9ded53f1a2f9fcfa9bae00ec"
+          ],
+          "pass_evidence_ids": [
+            "evidence-9ded53f1a2f9fcfa9bae00ec"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-a8230baf9e614947f87cfb80",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a8230baf9e614947f87cfb80"
+          ],
+          "pass_evidence_ids": [
+            "evidence-a8230baf9e614947f87cfb80"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-0f747e9df5bb16f14953d7bf, evidence-72c2a040c00c06eb2f39b6d5, evidence-ba03d348a7e820d63299a2bd, evidence-e61bfc10e784f1e503908168",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0f747e9df5bb16f14953d7bf",
+            "evidence-72c2a040c00c06eb2f39b6d5",
+            "evidence-ba03d348a7e820d63299a2bd",
+            "evidence-e61bfc10e784f1e503908168"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0f747e9df5bb16f14953d7bf",
+            "evidence-72c2a040c00c06eb2f39b6d5",
+            "evidence-e61bfc10e784f1e503908168"
+          ],
+          "failure_evidence_ids": [
+            "evidence-ba03d348a7e820d63299a2bd"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "messages": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-79b6255c7f1dfbbd11e33f19, evidence-a3b146a57123c7a6618ab5e4",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-79b6255c7f1dfbbd11e33f19",
+            "evidence-a3b146a57123c7a6618ab5e4"
+          ],
+          "pass_evidence_ids": [
+            "evidence-79b6255c7f1dfbbd11e33f19",
+            "evidence-a3b146a57123c7a6618ab5e4"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-43d2d6c6b3f98680e857c4ec, evidence-6c885ff915f533829f6f9750, evidence-72c11a05043fbe3e8c5794c4, evidence-7cca991177454073504c4864, evidence-9b73220f9ec2f61c4849c896",
+          "evidence_ids": [
+            "evidence-43d2d6c6b3f98680e857c4ec",
+            "evidence-6c885ff915f533829f6f9750",
+            "evidence-72c11a05043fbe3e8c5794c4",
+            "evidence-7cca991177454073504c4864",
+            "evidence-9b73220f9ec2f61c4849c896"
+          ],
+          "status": "verified",
+          "pass_evidence_ids": [
+            "evidence-43d2d6c6b3f98680e857c4ec",
+            "evidence-6c885ff915f533829f6f9750",
+            "evidence-72c11a05043fbe3e8c5794c4",
+            "evidence-7cca991177454073504c4864",
+            "evidence-9b73220f9ec2f61c4849c896"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-57227905eaee5673764c1a0d, evidence-9a08c57dc4d56dea327ea755, evidence-c5a05deda8e9e7223d86435f",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-57227905eaee5673764c1a0d",
+            "evidence-9a08c57dc4d56dea327ea755",
+            "evidence-c5a05deda8e9e7223d86435f"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-57227905eaee5673764c1a0d",
+            "evidence-9a08c57dc4d56dea327ea755",
+            "evidence-c5a05deda8e9e7223d86435f"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-2a910d948eae2a66dc3be549, evidence-cb0b4d0ffb8cc3b9555992c9, evidence-f9c2c1d1934d84659f984f6d",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2a910d948eae2a66dc3be549",
+            "evidence-cb0b4d0ffb8cc3b9555992c9",
+            "evidence-f9c2c1d1934d84659f984f6d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-2a910d948eae2a66dc3be549",
+            "evidence-cb0b4d0ffb8cc3b9555992c9",
+            "evidence-f9c2c1d1934d84659f984f6d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-1568f88c817132a6f2c06c24, evidence-c70cc116d463255e629aaf94",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1568f88c817132a6f2c06c24",
+            "evidence-c70cc116d463255e629aaf94"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1568f88c817132a6f2c06c24",
+            "evidence-c70cc116d463255e629aaf94"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-9c3f485e533b45dd2c2754a4, evidence-a59b8ab55baddc9aad022bb9",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9c3f485e533b45dd2c2754a4",
+            "evidence-a59b8ab55baddc9aad022bb9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-9c3f485e533b45dd2c2754a4",
+            "evidence-a59b8ab55baddc9aad022bb9"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Claude Code": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "messages": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "Derived from verified model levels and documented explicit client mapping policy.",
+            "mappings": [
+              {
+                "client": "Kimi Code",
+                "protocol": "messages",
+                "from": "xhigh",
+                "to": "high"
+              }
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "MiniMax Code": {
+          "messages": {
+            "client_levels": [
+              "off",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "OpenCode": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "DeepSeek Harness": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "Visual Studio Code Local Agent": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact claude-opus-4-5 public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        }
+      },
+      "model_levels": {
+        "high": {
+          "evidence": "Anthropic official effort compatibility table: https://platform.claude.com/docs/en/build-with-claude/effort",
+          "status": "verified"
+        },
+        "low": {
+          "evidence": "Anthropic official effort compatibility table: https://platform.claude.com/docs/en/build-with-claude/effort",
+          "status": "verified"
+        },
+        "max": {
+          "evidence": "Anthropic official effort compatibility table: https://platform.claude.com/docs/en/build-with-claude/effort",
+          "status": "verified"
+        },
+        "medium": {
+          "evidence": "M8 receipts: evidence-4d8de47b90ea7471cc183889",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4d8de47b90ea7471cc183889"
+          ],
+          "pass_evidence_ids": [
+            "evidence-4d8de47b90ea7471cc183889"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        }
+      }
+    }
+  },
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://platform.claude.com/docs/en/models/opus-4-5/overview",
+    "verified_at": "2026-08-31"
+  }
+}

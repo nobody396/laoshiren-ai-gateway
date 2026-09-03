@@ -1,0 +1,47 @@
+{
+  "cases": {
+    "6:gpt-5.3-codex-spark:responses:P-11:default": {
+      "artifact_sha256": "2e88b8eb7a2b82dfda5a0951b1d56ebdbfc3d3450b9903ab35ba21386a1a0e86",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-optional-20260901/cases/6_gpt-5.3-codex-spark_responses_P-11_default-6ff02b5429da.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-08:default": {
+      "artifact_sha256": "62e45263dcab92c379f8204f31c8c842644012d2fdcb8b92ca8f6c4d8742f123",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-optional-20260901/cases/6_gpt-5.4_responses_P-08_default-959afee8ec92.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-11:default": {
+      "artifact_sha256": "3903711f307ae78c897a90e89215b541d9583db47c48162571d2eecfcabe72bb",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-optional-20260901/cases/6_gpt-5.4_responses_P-11_default-e29c85d9af7e.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-08:default": {
+      "artifact_sha256": "573ddb48350838655f25047930703088cc028fabbccdbe0c750f99d8151eabc6",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-optional-20260901/cases/6_gpt-5.5_responses_P-08_default-647178acb9d0.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-11:default": {
+      "artifact_sha256": "4c93b1a6f531e487ea949f564f077f7da96f385844178733bedb18b88271491b",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-optional-20260901/cases/6_gpt-5.5_responses_P-11_default-3c6bd4996fce.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-08:default": {
+      "artifact_sha256": "f5ba44584568d9616f5adb936e4a4151379cc1ef65d189626d4e2273c4fecbfd",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-optional-20260901/cases/6_gpt-5.6-terra_responses_P-08_default-706f25662deb.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-11:default": {
+      "artifact_sha256": "099429b9bf6836fc59fc6a94a257a2d912a455f8b8f172b16019d236849325ba",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-optional-20260901/cases/6_gpt-5.6-terra_responses_P-11_default-556b4058b2a0.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T19:56:10.316+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "193340ebd1995fd0",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T19:55:05.701+00:00"
+}

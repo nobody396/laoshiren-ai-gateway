@@ -20,14 +20,9 @@
 
     <!-- Rendered markdown -->
     <div v-else class="docs-content-main">
-      <button v-if="canCopyWholeDoc" type="button" class="docs-doc-copy-btn" @click="handleCopyWholeDoc">
-        {{ copied ? '已复制' : '一键复制' }}
-      </button>
-
       <div
         ref="markdownRef"
         class="docs-markdown"
-        :class="{ 'docs-markdown--with-copy': canCopyWholeDoc }"
         v-html="html"
       ></div>
     </div>
@@ -35,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useClipboard } from '@/composables/useClipboard'
 
 const props = defineProps<{
@@ -47,20 +42,7 @@ const props = defineProps<{
 
 const markdownRef = ref<HTMLElement | null>(null)
 const cleanups: (() => void)[] = []
-const { copied, copyToClipboard } = useClipboard()
-
-/**
- * 只有当前文档正文存在时，才展示整篇复制入口。
- */
-const canCopyWholeDoc = computed(() => !props.loading && !props.notFound && !!props.markdown.trim())
-
-/**
- * 复制当前文档的 Markdown 原文，便于直接交给 AI 使用。
- */
-async function handleCopyWholeDoc() {
-  if (!canCopyWholeDoc.value) return
-  await copyToClipboard(props.markdown, '整篇文档已复制')
-}
+const { copyToClipboard } = useClipboard()
 
 /**
  * 为 Markdown 中的代码块动态注入复制按钮，保持现有代码复制体验。
@@ -127,38 +109,6 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.docs-doc-copy-btn {
-  position: absolute;
-  top: 0.125rem;
-  right: 0;
-  z-index: 1;
-  border: 1px solid rgb(var(--color-gray-200));
-  border-radius: 0.75rem;
-  background: rgb(var(--color-vellum) / 0.92);
-  color: rgb(var(--color-ink));
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1;
-  padding: 0.8rem 1rem;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-  backdrop-filter: blur(8px);
-}
-
-.docs-doc-copy-btn:hover {
-  border-color: rgb(var(--color-terracotta));
-  color: rgb(var(--color-terracotta));
-  background: rgb(var(--color-primary-50));
-}
-
-.docs-doc-copy-btn:active {
-  background: rgb(var(--color-primary-50));
-}
-
-.docs-markdown--with-copy h1:first-child {
-  max-width: calc(100% - 8rem);
-}
-
 /* Markdown rendering styles for docs */
 .docs-markdown {
   color: rgb(var(--color-ink));
@@ -168,12 +118,6 @@ onBeforeUnmount(() => {
 
 .dark .docs-markdown {
   color: rgb(var(--color-gray-300));
-}
-
-.dark .docs-doc-copy-btn {
-  border-color: rgb(var(--color-slate-700));
-  background: rgb(var(--color-indigo-900) / 0.9);
-  color: rgb(var(--color-gray-200));
 }
 
 .docs-markdown h1 {
@@ -411,14 +355,4 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-@media (max-width: 640px) {
-  .docs-doc-copy-btn {
-    position: static;
-    margin-bottom: 1rem;
-  }
-
-  .docs-markdown--with-copy h1:first-child {
-    max-width: 100%;
-  }
-}
 </style>

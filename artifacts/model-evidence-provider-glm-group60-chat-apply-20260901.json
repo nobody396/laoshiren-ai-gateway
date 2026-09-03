@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 12,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "85298a69bdeef62fe39e9d405863fbd42848896e725777603ddd6a03fb7049ec",
+  "changes": [
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-25d13eff28134f6a725b147a"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80e22ff750e7fa725f05b6f3"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-267272cf58a3ff60705fdcad"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b84185fa7df8b19a7fba82fe"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6799062d7b684475e52cb829"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-bb5184e879334ad448ead8a9"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.3.json",
+      "events": [
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c44e70b8d43f914810832b03"
+          ]
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9676df3fba4ac9c4137a0683"
+          ]
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-00516d7280c64073b97607ae"
+          ]
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4c9164e4a0b3e8960e620b5c"
+          ]
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a456896f37b65a7c79d4f1da"
+          ]
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4bc64b5bb5770b087a8dc311"
+          ]
+        }
+      ]
+    }
+  ]
+}

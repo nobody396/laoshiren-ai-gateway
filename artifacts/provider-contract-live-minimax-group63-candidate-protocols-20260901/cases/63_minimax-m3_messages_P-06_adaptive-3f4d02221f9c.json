@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "056918c4fbb8f31ff7c8ef346997a3904da66102c6e776a08fadb82476abc2af",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "63:minimax-m3:messages:P-06:adaptive",
+    "context_window": 1048576,
+    "declared_status": "blocked",
+    "group_id": 63,
+    "group_name": "MiniMax 企业高速线路",
+    "marker": "LSR_CONTRACT_3F4D02221F9CAA20",
+    "max_output_tokens": 524288,
+    "model_id": "minimax-m3",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "messages",
+    "reasoning_level": "adaptive",
+    "source_case_keys": []
+  },
+  "case_fingerprint": "a11f9c11234f82872aaef63596c7130ec039a967f4e454feeb9ec4d1695d19dd",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:13:45.326+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:13:43.766+00:00",
+  "offline_verifier": {
+    "reason": "provider request did not return a complete HTTP 200 terminal result",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 63,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "provider request did not return a complete HTTP 200 terminal result",
+  "request": {
+    "payload_sha256": "f45ee1b956052cd68ab1caaa514c3bb333e82fc9ccb21feb3c6d7c2dabddee7f",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "b2730cf927eb37d16f5cdd60ea76438abdc4fa69316872aebf672050f24a151a"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "b11ae5596fb8fd0f771dc4ca831373ac1742358af01d055bdf18da24d3689b0a",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "12826faf-6c80-49b1-ae73-b4dbcaa5c77c",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

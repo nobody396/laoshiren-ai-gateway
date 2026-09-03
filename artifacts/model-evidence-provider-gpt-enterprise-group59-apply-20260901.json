@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 12,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "b6b293418dd72052fac6cf24289691485d548deed32c3d69224d1e1d4fb73381",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5c4f80eb1d598519335350c6"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f9e8ae5a5e99cc4003c9e54f"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4ce23db5006b9d4ea7e704bd"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-bc7553f99ad474e3297b65aa"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c15b2f6134b75a2f76562b32"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cc944dca8ef33e4188d35664"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5ed2d7af07658cdd126bcdb3"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e68e5cc9d2637ce32fc9776b"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ad4740e3fbedc22c2ce5102c"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-73bcfa8491e722c0b2e17e2e"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9cea43951ea7a771209a8150"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d8a078f5dff326408889d6f8"
+          ]
+        }
+      ]
+    }
+  ]
+}

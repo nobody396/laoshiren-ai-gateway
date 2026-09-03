@@ -79,8 +79,8 @@ describe('PublicModelPricingView', () => {
       'modelPricing.block.claude',
       'modelPricing.block.builderPass',
     ])
-    // 默认「全部」：按量组和月卡组全部展示；月卡组同时出现在厂商分块和 Builder Pass 分块
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组', 'Claude 按量组', 'GPT Lite 月卡组'])
+    // 默认「全部」：按量组归厂商，月卡只在 Builder Pass 展示一次。
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'Claude 按量组', 'GPT Lite 月卡组'])
     expect(wrapper.find('.model-pricing-tabs__item--active')?.text()).toBe('modelPricing.block.all')
     // tab 栏末尾展示模型总数
     expect(wrapper.find('.model-pricing-tabs__count').exists()).toBe(true)
@@ -104,9 +104,9 @@ describe('PublicModelPricingView', () => {
     await clickTab(wrapper, 'modelPricing.block.claude')
     expect(visibleGroupNames(wrapper)).toEqual(['Claude 按量组'])
 
-    // 厂商 tab 同时包含该厂商的月卡组
+    // 月卡统一收口到 Builder Pass，不在厂商 tab 重复展示。
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组'])
   })
 
   it('Builder Pass tab shows only monthly-card (credit) groups', async () => {
@@ -122,10 +122,10 @@ describe('PublicModelPricingView', () => {
     await flushPromises()
 
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组'])
 
     await clickTab(wrapper, 'modelPricing.block.all')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组', 'Claude 按量组', 'GPT Lite 月卡组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'Claude 按量组', 'GPT Lite 月卡组'])
   })
 
   it('orders public groups before exclusive ones and text groups before image-only ones', async () => {
@@ -143,7 +143,7 @@ describe('PublicModelPricingView', () => {
     await flushPromises()
 
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Pro 月卡组', 'GPT Image 2 生图分组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Image 2 生图分组'])
   })
 
   it('sorts OpenAI text groups by ascending multiplier within public/monthly tiers and keeps image last', async () => {
@@ -165,31 +165,68 @@ describe('PublicModelPricingView', () => {
     expect(visibleGroupNames(wrapper)).toEqual([
       'GPT 混池分组',
       'CodeX 企业级分组',
-      'GPT Plus 月卡组',
       'GPT Image 2 生图分组',
     ])
   })
 
-  it('sorts monthly-card groups as Plus, Pro, then Max', async () => {
+  it('merges monthly-card Plus, Pro and Max groups with identical models', async () => {
     getPublicModelPricingMock.mockResolvedValue({
       updated_at: '2026-08-28T00:00:00Z',
       currency: 'CNY',
       unit: 'per_1m_tokens',
       groups: [
-        { group_id: 42, name: 'GPT Max 月卡组', platform: 'openai', rate_multiplier: 0.4, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
-        { group_id: 41, name: 'GPT Pro 月卡组', platform: 'openai', rate_multiplier: 0.3, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+        { group_id: 42, name: 'GPT Max 月卡组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+        { group_id: 41, name: 'GPT Pro 月卡组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
         { group_id: 40, name: 'GPT Plus 月卡组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
       ],
     })
     const wrapper = mountView()
     await flushPromises()
 
-    await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual([
-      'GPT Plus 月卡组',
-      'GPT Pro 月卡组',
-      'GPT Max 月卡组',
-    ])
+    await clickTab(wrapper, 'modelPricing.block.builderPass')
+    expect(visibleGroupNames(wrapper)).toEqual(['Codex 月卡'])
+  })
+
+  it('shows Builder Pass as one Codex, Claude and Grok monthly group each', async () => {
+    const monthlyGroup = (
+      group_id: number,
+      name: string,
+      platform: string,
+      rate_multiplier: number,
+      models: string[],
+    ) => ({
+      group_id,
+      name,
+      platform,
+      rate_multiplier,
+      is_exclusive: true,
+      subscription_type: 'credit',
+      models: models.map(price),
+    })
+
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-29T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        monthlyGroup(40, 'GPT Plus 月卡组', 'openai', 0.5, ['gpt-5.6-sol']),
+        monthlyGroup(42, 'GPT Pro 月卡组', 'openai', 0.5, ['gpt-5.6-sol']),
+        monthlyGroup(44, 'GPT Max 月卡组', 'openai', 0.5, ['gpt-5.6-sol']),
+        monthlyGroup(41, 'Claude Plus 月卡组', 'anthropic', 2.4, ['claude-sonnet-5']),
+        monthlyGroup(43, 'Claude Pro 月卡组', 'anthropic', 2.4, ['claude-sonnet-5']),
+        monthlyGroup(45, 'Claude Max 月卡组', 'anthropic', 2.4, ['claude-sonnet-5']),
+        monthlyGroup(48, 'Grok Plus 月卡组', 'grok', 0.4, ['grok-4.6']),
+        monthlyGroup(49, 'Grok Pro 月卡组', 'grok', 0.4, ['grok-4.6']),
+        monthlyGroup(50, 'Grok Max 月卡组', 'grok', 0.4, ['grok-4.6']),
+      ],
+    })
+
+    const wrapper = mountView()
+    await flushPromises()
+    await clickTab(wrapper, 'modelPricing.block.builderPass')
+
+    expect(visibleGroupNames(wrapper)).toEqual(['Codex 月卡', 'Claude 月卡', 'Grok 月卡'])
+    expect(wrapper.find('.model-pricing-block__note--monthly').exists()).toBe(false)
   })
 
   it('classifies kimi, qwen3.x and gemini groups into their own blocks', async () => {

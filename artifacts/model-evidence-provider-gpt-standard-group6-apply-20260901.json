@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 4,
+  "events": 29,
+  "group_access": {
+    "changed": 3,
+    "verified": 3,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "f97a0768b79e54282ce7d94ae88bbbbfc823bac19a999ee839c20b555341b9c0",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5658123441ab722ab0264e98"
+          ]
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8bae2056fd509d6b9972c8b6"
+          ]
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2a3de3b29df136432021d4d5"
+          ]
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-713851f8a73431b5a46964db"
+          ]
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-159714414375a0c08ce04335"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "group_access",
+          "path": "GPT 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3a1cf28636ffdb698c0b6a17",
+            "evidence-4f6f2e72f0cfdb81ea0057ff",
+            "evidence-601d7767dd18fe07605196f3",
+            "evidence-6524386cbd2def85073cc202",
+            "evidence-788ce817421d5364efc9e119",
+            "evidence-85298ee57bda902b3395cd92",
+            "evidence-a49aabb391b10755f8c5fc26",
+            "evidence-be480035aafe6a28c6b69806",
+            "evidence-dc9737bdea7c019574284c70"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-457a512a48b4fb7ca203d067",
+            "evidence-5b36dfabbba716541d2fdcb3",
+            "evidence-85298ee57bda902b3395cd92",
+            "evidence-9cbfdae2378a38e278ebe7fc",
+            "evidence-a49aabb391b10755f8c5fc26",
+            "evidence-d0147fe424a40923b11b5683",
+            "evidence-dc9737bdea7c019574284c70"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5f3115529b05c2969b2cbd10"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9e2d1ef3d7bdb809abcdf3bd"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1081098451373f8fc837ccfe"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-78e90c54b4831afaf6584282"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cb9ee3139648b8e083c2ffd9"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-35c293789b7f681e5fcde226"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "group_access",
+          "path": "GPT 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-55c18c22f9d9ec6682890115",
+            "evidence-7dad008a15248a4a0e36f25a",
+            "evidence-8a6911ba45dbec809b72b220",
+            "evidence-8d8e7ef7135cf1ba7b071e4d",
+            "evidence-9ef0e0586b6f7ec2f3cb6eb1",
+            "evidence-b845e1b4f705fd99a4641911",
+            "evidence-be42e063b9ad83fdc3c99c0d",
+            "evidence-c3502f6e5964970642f99ba8",
+            "evidence-cb104f97d4a543e245c36ddc"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4150925bed4d7254e7f97f44",
+            "evidence-47a28e1c4d0653892dba5191",
+            "evidence-55c18c22f9d9ec6682890115",
+            "evidence-617906d5fbb9b1e69706bf95",
+            "evidence-6becdd582b44ba46ea9ce762",
+            "evidence-9ef0e0586b6f7ec2f3cb6eb1",
+            "evidence-be42e063b9ad83fdc3c99c0d",
+            "evidence-f7617d7442bedd0ca40fd955"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3da5e53fa68820666ed49324"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-98982bc7a0ba79c4999e963f"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-338126de21c0fce1c46dbb94"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ff0d4caa8b910367b732da76"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-66efa8d13700d382cebad0d3"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e533777cdf7881bda355de61"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "group_access",
+          "path": "GPT 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-08aa0c4a2977aa66fdaa2b66",
+            "evidence-573a5baee5ff4dce79490ed9",
+            "evidence-6d1b1afbab2471c0b279a6de",
+            "evidence-7e212353f51d5fafefa0556b",
+            "evidence-860be616218ddc52ab40441f",
+            "evidence-ba45722c5a3b3c2a217fd032",
+            "evidence-e1e0ad02765bfe9b0711845c",
+            "evidence-edf099138b93a2d55074bc94",
+            "evidence-f20cd3ac583040fd1ce06a31"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-05713b097a5331c5290a97ee",
+            "evidence-8c5df25c11436f88c8841f7b",
+            "evidence-ba45722c5a3b3c2a217fd032",
+            "evidence-e1e0ad02765bfe9b0711845c",
+            "evidence-e98e581658efc58daa1cdb40",
+            "evidence-edf099138b93a2d55074bc94"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-aaa3a9f03e771e9a40b6070a"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d54b9e19828c2d35a0790c26"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b336ec5f825b2266f6d4287f"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-42aef9a63a226a161fa810ae"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d3eb8a20950460780eb24ce2"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-67989944482b47fabf016bae"
+          ]
+        }
+      ]
+    }
+  ]
+}

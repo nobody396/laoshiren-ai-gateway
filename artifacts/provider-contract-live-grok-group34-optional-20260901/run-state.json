@@ -1,0 +1,22 @@
+{
+  "cases": {
+    "34:grok-4.5:chat_completions:P-08:default": {
+      "artifact_sha256": "f5f2ba2751bcd50755386d98ec9199216cdbd29f8f561339b2a225949eeae419",
+      "receipt": "artifacts/provider-contract-live-grok-group34-optional-20260901/cases/34_grok-4.5_chat_completions_P-08_default-6eeddff99d1f.json",
+      "status": "pass"
+    },
+    "34:grok-4.6:chat_completions:P-08:default": {
+      "artifact_sha256": "9bb94181594312a2a5da92884f3e405ef7d7c9e4bf797ceb594b7a12a5c03535",
+      "receipt": "artifacts/provider-contract-live-grok-group34-optional-20260901/cases/34_grok-4.6_chat_completions_P-08_default-7533c407abfc.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:03:22.135+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "d8c9d32b6f9b50a2",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:02:47.256+00:00"
+}

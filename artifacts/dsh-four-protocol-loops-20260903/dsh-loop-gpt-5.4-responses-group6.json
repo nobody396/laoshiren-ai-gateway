@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "deepseek-harness",
+  "client_version": "cli:0.1.1-rc.2",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.4",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 6,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T04:25:35+00:00",
+  "finished_at": "2026-09-03T04:26:14+00:00",
+  "duration_ms": 26577,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-responses",
+    "api": "openai-responses",
+    "provider_base_url": "https://api.laoshirenai.com/v1",
+    "profile": "headless",
+    "isolated_dsh_home": true,
+    "credential": "apiKeyEnv reference, key only in child env"
+  },
+  "target_group_readback": {
+    "group_id": 6
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": false,
+  "final_marker_verified": true,
+  "final_text_present": false,
+  "final_marker_note": "final exact-marker is the strict oracle; claude-sonnet-5 over the messages route drifts to an identity reply, so pass/fail keys on final_text_present",
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "tool_result_continuation_verified": false,
+  "usage_stream_flags": [
+    "True"
+  ],
+  "streaming_observed": true,
+  "stdout_bytes": 14,
+  "stdout_sha256": "34774871e00c55525fd5921f577874f56e37432b9d1f2055f5db6e09ddc78293",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/dsh-four-protocol-loops-20260903/dsh-loop-gpt-5.4-responses-group6-usage.json",
+    "artifact_sha256": "44c974f42a18f5648129a765d1571240cdc211dcc42ce34c61a30e82a941dec9",
+    "usage_rows": 5,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoints": [
+      "/v1/responses"
+    ],
+    "verified": true
+  },
+  "passed": false,
+  "artifact_sha256": "1bde28565e4e7fd3d2edd85f9fbc3ecde79fdbf8088c86c1c88728a03d23bf03"
+}

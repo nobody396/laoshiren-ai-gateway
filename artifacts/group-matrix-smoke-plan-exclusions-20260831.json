@@ -1,0 +1,12 @@
+[
+  {
+    "group_id": 6,
+    "model_id": "gpt-5.6",
+    "reason": "hidden_alias_without_separate_public_contract"
+  },
+  {
+    "group_id": 58,
+    "model_id": "gpt-5.6",
+    "reason": "hidden_alias_without_separate_public_contract"
+  }
+]

@@ -1,0 +1,603 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "claude-fable-5-1",
+    "display_name": "Claude Fable 5.1",
+    "family": "claude",
+    "context_window": 1000000,
+    "max_output_tokens": 128000,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "access": {
+    "base_url": "https://api.laoshirenai.com",
+    "groups": [
+      {
+        "name": "Claude 标准线路",
+        "multiplier": 2.4
+      },
+      {
+        "name": "Claude 兼容线路",
+        "multiplier": 2.4
+      }
+    ]
+  },
+  "protocols": [
+    {
+      "name": "messages",
+      "status": "verified",
+      "evidence": "2026-09-03 Claude 标准线路 P-01~P-15 全套实测通过（minimal/stream/tool/continuation/usage/error），Claude Code 2.1.258 真实闭环通过；结构化输出实测未过。"
+    }
+  ],
+  "recommended_protocol": "messages",
+  "recommended_protocol_reason": "Anthropic Messages 是该模型的唯一原生公开协议。",
+  "clients": [
+    {
+      "name": "Claude Code",
+      "recommended": false,
+      "version": "2.1.258",
+      "protocol": "messages",
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-650442013b65e8e840f8225e",
+      "evidence_ids": [
+        "evidence-650442013b65e8e840f8225e"
+      ]
+    }
+  ],
+  "client_coverage": [
+    {
+      "name": "Claude Code",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified",
+      "evidence": "Verified protocols evidenced by M8 exact or matrix-intersection receipts.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Grok Build",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Kimi Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "OpenCode",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Hermes Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    }
+  ],
+  "reasoning": {
+    "model_levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client_levels": [],
+    "client_mappings": []
+  },
+  "test_matrix": {
+    "limits": {
+      "context_window": {
+        "status": "verified",
+        "evidence": "Anthropic official Fable 5.1 overview: https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1"
+      },
+      "max_output_tokens": {
+        "status": "verified",
+        "evidence": "Anthropic official Fable 5.1 overview: https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1"
+      }
+    },
+    "modalities": {
+      "text": {
+        "status": "verified",
+        "evidence": "Anthropic official Fable 5.1 overview: https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1；2026-09-03 P-01 实测通过 evidence-e8ba7e58401fc0c7d2985edb"
+      },
+      "image": {
+        "status": "verified",
+        "evidence": "Anthropic official Fable 5.1 overview: https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1；2026-09-03 P-08 图片输入实测通过 evidence-84fd3f14d1475a8123b9227c"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": "Anthropic official Fable 5.1 overview: https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1：官方仅声明 text/image 输入，无原生视频"
+      }
+    },
+    "protocols": {
+      "messages": {
+        "minimal_text": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-29af3f1068dabd2bcf13dbfc, evidence-55dbf3184db17cd8a2166724, evidence-685565c1118ae176667bb17d, evidence-e8ba7e58401fc0c7d2985edb",
+          "evidence_ids": [
+            "evidence-29af3f1068dabd2bcf13dbfc",
+            "evidence-55dbf3184db17cd8a2166724",
+            "evidence-685565c1118ae176667bb17d",
+            "evidence-e8ba7e58401fc0c7d2985edb"
+          ],
+          "pass_evidence_ids": [
+            "evidence-29af3f1068dabd2bcf13dbfc",
+            "evidence-55dbf3184db17cd8a2166724",
+            "evidence-685565c1118ae176667bb17d",
+            "evidence-e8ba7e58401fc0c7d2985edb"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "streaming_terminal": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-26b9d3896d32ab061aab894c",
+          "evidence_ids": [
+            "evidence-26b9d3896d32ab061aab894c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-26b9d3896d32ab061aab894c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "tool_call": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-1e7192ebf78e93549f49c466, evidence-55f9f555c4c5e0cb84725eac",
+          "evidence_ids": [
+            "evidence-1e7192ebf78e93549f49c466",
+            "evidence-55f9f555c4c5e0cb84725eac"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1e7192ebf78e93549f49c466",
+            "evidence-55f9f555c4c5e0cb84725eac"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "tool_result_continuation": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-f039d476c949681d269b071e",
+          "evidence_ids": [
+            "evidence-f039d476c949681d269b071e"
+          ],
+          "pass_evidence_ids": [
+            "evidence-f039d476c949681d269b071e"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "usage": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-54a630cb606a98d404f60ba3, evidence-f49c6aa437440a6ff7200e40",
+          "evidence_ids": [
+            "evidence-54a630cb606a98d404f60ba3",
+            "evidence-f49c6aa437440a6ff7200e40"
+          ],
+          "pass_evidence_ids": [
+            "evidence-54a630cb606a98d404f60ba3",
+            "evidence-f49c6aa437440a6ff7200e40"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "invalid_request": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-270465635d6e35bad7c5696b",
+          "evidence_ids": [
+            "evidence-270465635d6e35bad7c5696b"
+          ],
+          "pass_evidence_ids": [
+            "evidence-270465635d6e35bad7c5696b"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        }
+      }
+    },
+    "protocol_features": {
+      "messages": {
+        "reasoning": {
+          "status": "verified",
+          "evidence": "2026-09-03 live probe 实测通过",
+          "evidence_ids": [
+            "evidence-1449642a6c1f73053db67886",
+            "evidence-486d9fc5bc9000b348852c6f",
+            "evidence-4c8ba893b3f1618d7aa04928",
+            "evidence-95c6fdb7e43b8466988701c1",
+            "evidence-eef5e7a79b8c9412e126c411"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1449642a6c1f73053db67886",
+            "evidence-486d9fc5bc9000b348852c6f",
+            "evidence-4c8ba893b3f1618d7aa04928",
+            "evidence-95c6fdb7e43b8466988701c1",
+            "evidence-eef5e7a79b8c9412e126c411"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "prompt_cache": {
+          "status": "verified",
+          "evidence": "2026-09-03 live probe 实测通过",
+          "evidence_ids": [
+            "evidence-62a1c5ae44c850d9bba4eb13"
+          ],
+          "pass_evidence_ids": [
+            "evidence-62a1c5ae44c850d9bba4eb13"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "image_input": {
+          "status": "verified",
+          "evidence": "2026-09-03 live probe 实测通过",
+          "evidence_ids": [
+            "evidence-84fd3f14d1475a8123b9227c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-84fd3f14d1475a8123b9227c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "structured_output": {
+          "status": "unsupported",
+          "evidence": "2026-09-03 P-10 实测负向：structured output must contain schema-valid object output",
+          "evidence_ids": [
+            "evidence-7cc4822ccf9e7673a0b3f879"
+          ]
+        },
+        "web_search": {
+          "status": "verified",
+          "evidence": "2026-09-03 live probe 实测通过",
+          "evidence_ids": [
+            "evidence-e72710bed1449903d2939983"
+          ],
+          "pass_evidence_ids": [
+            "evidence-e72710bed1449903d2939983"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "billing": {
+          "status": "verified",
+          "evidence": "2026-09-03 用量/计费归属实测通过（标准+兼容线路）",
+          "evidence_ids": [
+            "evidence-f787e8b5ec7890115e85440e",
+            "evidence-65c862145f3aa653c079112e"
+          ]
+        }
+      }
+    },
+    "clients": {
+      "Claude Code": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:2.1.258",
+            "model_id": "claude-fable-5-1",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-650442013b65e8e840f8225e",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-650442013b65e8e840f8225e"
+            ],
+            "pass_evidence_ids": [
+              "evidence-650442013b65e8e840f8225e"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Grok Build": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "model_id": "claude-fable-5-1",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "No exact terminal receipt yet.",
+            "status": "unsupported",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Kimi Code": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:0.39.1",
+            "model_id": "claude-fable-5-1",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "No exact terminal receipt yet.",
+            "status": "unsupported",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "OpenCode": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "model_id": "claude-fable-5-1",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "No exact terminal receipt yet.",
+            "status": "unsupported",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Hermes Agent": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "model_id": "claude-fable-5-1",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "No exact terminal receipt yet.",
+            "status": "unsupported",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": []
+          }
+        }
+      }
+    },
+    "reasoning": {
+      "model_levels": {
+        "low": {
+          "status": "verified",
+          "evidence": "2026-09-03 P-06 low 档位实测通过 evidence-e637dab1cd9be2439ca82d68",
+          "verified_at": "2026-09-03",
+          "evidence_ids": [
+            "evidence-e637dab1cd9be2439ca82d68"
+          ]
+        },
+        "medium": {
+          "status": "verified",
+          "evidence": "2026-09-03 P-06 medium 档位实测通过 evidence-6c2a251dbc898aba529ef644",
+          "verified_at": "2026-09-03",
+          "evidence_ids": [
+            "evidence-6c2a251dbc898aba529ef644"
+          ]
+        },
+        "high": {
+          "status": "verified",
+          "evidence": "2026-09-03 P-06 high 档位实测通过 evidence-e2743c1c10f777a8158750ca",
+          "verified_at": "2026-09-03",
+          "evidence_ids": [
+            "evidence-e2743c1c10f777a8158750ca"
+          ]
+        },
+        "xhigh": {
+          "status": "verified",
+          "evidence": "2026-09-03 P-06 xhigh 档位实测通过 evidence-9b22a609c46ec19a2e40f944",
+          "verified_at": "2026-09-03",
+          "evidence_ids": [
+            "evidence-9b22a609c46ec19a2e40f944"
+          ]
+        },
+        "max": {
+          "status": "verified",
+          "evidence": "2026-09-03 P-06 max 档位实测通过 evidence-f850fd9ed9c24db76b182719",
+          "verified_at": "2026-09-03",
+          "evidence_ids": [
+            "evidence-f850fd9ed9c24db76b182719"
+          ]
+        }
+      },
+      "clients": {
+        "Claude Code": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "messages": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        },
+        "OpenCode": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "messages": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "Claude 标准线路": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-fable-5-1",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-09-03",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-edf6180a0f67ce6d8db1c14f",
+              "evidence-78304ddf17a9f222ed7b3e29",
+              "evidence-e8ba7e58401fc0c7d2985edb",
+              "evidence-f49c6aa437440a6ff7200e40",
+              "evidence-f787e8b5ec7890115e85440e"
+            ]
+          }
+        },
+        "evidence_ids": [
+          "evidence-edf6180a0f67ce6d8db1c14f",
+          "evidence-78304ddf17a9f222ed7b3e29",
+          "evidence-e8ba7e58401fc0c7d2985edb",
+          "evidence-f49c6aa437440a6ff7200e40",
+          "evidence-f787e8b5ec7890115e85440e"
+        ]
+      },
+      "Claude 兼容线路": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-fable-5-1",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-09-03",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-822a2c316fa23526c6dc5e85",
+              "evidence-e097aeab0bb7067967e53f23",
+              "evidence-55dbf3184db17cd8a2166724",
+              "evidence-685565c1118ae176667bb17d",
+              "evidence-54a630cb606a98d404f60ba3",
+              "evidence-65c862145f3aa653c079112e"
+            ]
+          }
+        },
+        "evidence_ids": [
+          "evidence-822a2c316fa23526c6dc5e85",
+          "evidence-e097aeab0bb7067967e53f23",
+          "evidence-55dbf3184db17cd8a2166724",
+          "evidence-685565c1118ae176667bb17d",
+          "evidence-54a630cb606a98d404f60ba3",
+          "evidence-65c862145f3aa653c079112e"
+        ]
+      }
+    },
+    "pricing": {
+      "Claude 标准线路": {
+        "cache_read_price": 0.6,
+        "cache_write_price": 30,
+        "currency": "CNY",
+        "evidence": "2026-09-03 exported public pricing inventory readback",
+        "input_price": 24,
+        "output_price": 120,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-09-03"
+      },
+      "Claude 兼容线路": {
+        "cache_read_price": 0.6,
+        "cache_write_price": 30,
+        "currency": "CNY",
+        "evidence": "2026-09-03 exported public pricing inventory readback",
+        "input_price": 24,
+        "output_price": 120,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-09-03"
+      }
+    }
+  },
+  "verification": {
+    "official_spec_url": "https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1",
+    "verified_at": "2026-09-03",
+    "limits_source": "official",
+    "gateway_e2e": true,
+    "modalities": {
+      "text": "verified",
+      "image": "verified",
+      "video": "unsupported"
+    }
+  }
+}

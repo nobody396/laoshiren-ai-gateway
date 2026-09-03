@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "prototype_client_config_terminal_boundary",
+  "observed_at": "2026-09-01T03:37:00+00:00",
+  "clients": [
+    {
+      "id": "kimi-code",
+      "version": "cli:0.38.0",
+      "one_click_status": "prototype",
+      "merge_strategy": "TOML managed block upsert；保留其他 providers、models、services 与 thinking。"
+    },
+    {
+      "id": "opencode",
+      "version": "cli:1.18.15",
+      "one_click_status": "prototype",
+      "merge_strategy": "JSON 增量 upsert 协议独立 Provider；保留其他 Provider 与配置。"
+    },
+    {
+      "id": "zcode",
+      "version": "app:3.10.1+cli:0.16.5",
+      "one_click_status": "prototype",
+      "merge_strategy": "App 与 CLI 配置分别增量合并；保留 MCP、Skill、Hook、权限和其他 Provider。"
+    },
+    {
+      "id": "antigravity",
+      "version": "cli:1.1.22",
+      "one_click_status": "prototype",
+      "merge_strategy": "只 upsert Antigravity owned settings；保留其他 Gemini 配置。"
+    },
+    {
+      "id": "hermes-agent",
+      "version": "cli:0.20.0",
+      "one_click_status": "prototype",
+      "merge_strategy": "增量 upsert 独立 laoshirenai Provider 与 model；保留其他 Provider、Skills、MCP、Hooks 和 Gateway 配置。"
+    },
+    {
+      "id": "qoder",
+      "version": "cli:1.1.38",
+      "one_click_status": "prototype",
+      "merge_strategy": "Strictly deep-merge only documented non-secret Qoder fields. BYOK provider, Base URL, Key, and credential-store writes are blocked until Qoder documents a safe arbitrary-provider API; preserve all Skills, Plugins, MCP, Hooks, permissions, and unowned settings."
+    },
+    {
+      "id": "minimax-code",
+      "version": "cli:0.2.7",
+      "one_click_status": "prototype",
+      "merge_strategy": "Strictly parse YAML and upsert only one dedicated custom_provider entry plus explicitly selected defaultModel/defaultModelVariant. Never touch runtime SQLite/auth files or managed provider.minimax; preserve Agents, memory, Skills, MCP, Plugins, TUI, permissions, and unowned fields. Automatic Key write is disabled while 0.2.7 persists raw credentials outside Agent Switch."
+    },
+    {
+      "id": "deepseek-harness",
+      "version": "cli:0.1.1-rc.2",
+      "one_click_status": "prototype",
+      "merge_strategy": "Strictly parse YAML, back up the managed documents, upsert protocol-specific laoshirenai Provider rows and credential references only, preserve other providers/profiles/plugins, and atomically replace."
+    }
+  ],
+  "decision": "No automatic write command is published until safe write, backup, and idempotency are verified. Manual documentation remains available.",
+  "secret_free": true
+}

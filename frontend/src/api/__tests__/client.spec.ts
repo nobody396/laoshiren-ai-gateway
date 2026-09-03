@@ -12,6 +12,7 @@ vi.mock('@/i18n', () => ({
 describe('API Client', () => {
   let apiClient: AxiosInstance
   let authSession: AuthSession
+  let anonymousRequestHeader: string
 
   const ensureStorage = () => {
     const g = globalThis as typeof globalThis & { localStorage?: Storage }
@@ -65,6 +66,7 @@ describe('API Client', () => {
     vi.resetModules()
     const mod = await import('@/api/client')
     apiClient = mod.apiClient
+    anonymousRequestHeader = mod.ANONYMOUS_REQUEST_HEADER
     authSession = (await import('@/auth')).authSession
   })
 
@@ -130,6 +132,26 @@ describe('API Client', () => {
       const config = adapter.mock.calls[0][0]
       expect(config.headers.get('Authorization')).toBeFalsy()
       expect(config.params?._nc).toBeUndefined()
+    })
+
+    it('显式匿名公共请求不携带登录态且不把内部标记发给服务端', async () => {
+      localStorage.setItem('auth_token', 'my-jwt-token')
+      const adapter = vi.fn().mockResolvedValue({
+        status: 200,
+        data: { code: 0, data: {} },
+        headers: {},
+        config: {},
+        statusText: 'OK',
+      })
+      apiClient.defaults.adapter = adapter
+
+      await apiClient.get('/public/model-pricing', {
+        headers: { [anonymousRequestHeader]: '1' },
+      })
+
+      const config = adapter.mock.calls[0][0]
+      expect(config.headers.get('Authorization')).toBeFalsy()
+      expect(config.headers.get(anonymousRequestHeader)).toBeFalsy()
     })
 
     it('GET 请求自动附加 timezone 参数', async () => {

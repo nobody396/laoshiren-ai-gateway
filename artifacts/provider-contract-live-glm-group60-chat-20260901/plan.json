@@ -1,0 +1,317 @@
+{
+  "case_count": 14,
+  "cases": [
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "778ab3302f6261c9e18d09dfcc34a78c2481aaa90941b419875a2b9463fe8bf1",
+      "case_key": "60:glm-5.2:chat_completions:P-02:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_DE1858246AA66309",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.2",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-02_default-329f05696651.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.2/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "c2d43cf52a947a142df926e565ab61e2dfd16fddfec92318715fcfb91e030706",
+      "case_key": "60:glm-5.2:chat_completions:P-03:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_CFBE4798CBCE8B6A",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.2",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-03_default-1f87513538fe.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.2/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "7daa5fdce3c6d6912a14d50925795faf38d6ad2f89e948d8bc874c3c2b19db20",
+      "case_key": "60:glm-5.2:chat_completions:P-04:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_B8F9DFF08930CD70",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.2",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-04_default-0cfb36460f18.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.2/chat_completions/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "24cc1023085309d7bfc7bd15f309838317ec6d10e66d1418b14c4f23eca011ea",
+      "case_key": "60:glm-5.2:chat_completions:P-05:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_D03C126DE576D33B",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.2",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-05_default-f0bdf0d560ea.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.2/chat_completions/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "41763df35da73341b930f44c812c3e29c1ce9252d0ba20a08c6b5c5a957e889b",
+      "case_key": "60:glm-5.2:chat_completions:P-06:medium",
+      "context_window": 1048576,
+      "declared_status": "blocked",
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_784ABAAAF6B551C1",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.2",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "chat_completions",
+      "reasoning_level": "medium",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-06_medium-784abaaaf6b5.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.2/chat_completions/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "0d0b18cc3d06bbbd20578e7bae9d382b1f771bece76c70bb1fd6cf357ebc4766",
+      "case_key": "60:glm-5.2:chat_completions:P-12:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_25E58A66316A96E7",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.2",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-12_default-c2f0668a1c95.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.2/chat_completions/features/billing",
+        "model_protocol:glm-5.2/chat_completions/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "b8ec05653c75bdaf3ad24ea55ce57efa38e8c958c46f1216da4e46c9483f389b",
+      "case_key": "60:glm-5.2:chat_completions:P-15:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_518F6A4AB37D4A38",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.2",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.2_chat_completions_P-15_default-ae503a32b1da.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.2/chat_completions/features/error_passthrough",
+        "model_protocol:glm-5.2/chat_completions/invalid_request"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "c90337ebb4450c33ad9a93da7ed1e68fe82d694e05b639b53835317fffde9dfa",
+      "case_key": "60:glm-5.3:chat_completions:P-02:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_9FC3EF1C4F24F74A",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.3",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-02_default-aed6748a6454.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.3/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "82cdf9664153d38238ec09e814acd27f4b85c936e92d6ccf194542b109e49c65",
+      "case_key": "60:glm-5.3:chat_completions:P-03:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_E296DDDE25B17FA1",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.3",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-03_default-634294154ac1.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.3/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "95b82d30bac52157087f38159dfe401b1adc68d59b4a90ccbd31bd62e4d94506",
+      "case_key": "60:glm-5.3:chat_completions:P-04:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_DA70897485D9DA93",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.3",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-04_default-4f51dd6f5563.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.3/chat_completions/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "5026b8d3f2185d0d6e068139d28f881152d981ad9b9e18ccd13bd67d3624893b",
+      "case_key": "60:glm-5.3:chat_completions:P-05:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_1ADE445D492CDB6D",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.3",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-05_default-c8c932fd0e68.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.3/chat_completions/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "1068dadec8db9012ed5ba211d06fcbb4fe8cb41f2aa82c58a7a7991e00474302",
+      "case_key": "60:glm-5.3:chat_completions:P-06:high",
+      "context_window": 1048576,
+      "declared_status": "blocked",
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_F7CC521F95287ADF",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.3",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "chat_completions",
+      "reasoning_level": "high",
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-06_high-f7cc521f9528.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.3/chat_completions/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "f6913b169c0e996b4b525d04a01b1788b5e7b9abfcfadc7331c37c73e73479c9",
+      "case_key": "60:glm-5.3:chat_completions:P-12:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_5515ECD1B53FC12A",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.3",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-12_default-9436ad11ce39.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.3/chat_completions/features/billing",
+        "model_protocol:glm-5.3/chat_completions/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "b8972bc088e5bc07dc9b78e6ee403fe9e5ec4dc32f7bc10de7dd449634f916ce",
+      "case_key": "60:glm-5.3:chat_completions:P-15:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 60,
+      "group_name": "GLM 企业高速线路",
+      "marker": "LSR_CONTRACT_B65B47163575EEBE",
+      "max_output_tokens": 131072,
+      "model_id": "glm-5.3",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-glm-group60-chat-20260901/cases/60_glm-5.3_chat_completions_P-15_default-ef986a7841f2.json",
+      "source_case_keys": [
+        "model_protocol:glm-5.3/chat_completions/invalid_request"
+      ],
+      "state": "planned"
+    }
+  ],
+  "kind": "provider_contract_live_plan",
+  "network_execution": "disabled",
+  "owned_identity": {
+    "key_id": 205,
+    "restore_group_id": 6,
+    "user_id": 1
+  },
+  "paid_request_upper_bound": 16,
+  "plan_sha256": "d6b3aa27334c29a4317c16fa899669c6b71872a4f8e1894a0ce56da0dab6893d",
+  "schema_version": 1,
+  "secret_source": "Agent Switch name only: LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+  "status_counts": {
+    "planned": 14,
+    "resumable": 0
+  }
+}

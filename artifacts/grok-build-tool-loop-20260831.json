@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "grok-4.6",
+  "protocol": "chat_completions",
+  "group_id": "34",
+  "observed_at": "2026-08-31T16:48:23+00:00",
+  "command_shape": [
+    "grok",
+    "--always-approve",
+    "--permission-mode",
+    "bypassPermissions",
+    "--single",
+    "<prompt>",
+    "--output-format",
+    "json",
+    "--model",
+    "laoshirenai-grok",
+    "--cwd",
+    "<temp>",
+    "--max-turns",
+    "10"
+  ],
+  "exit_code": 0,
+  "stdout": "{ \"text\": \"**\", \"stopReason\": \"end_turn\", \"sessionId\": \"01a058b8-dd9b-7af3-8e20-ddba90c1acd4\", \"requestId\": \"0972975f-8984-4aa2-8c4c-1cd424359ba9\", \"usage\": { \"input_tokens\": 21909, \"cache_read_input_tokens\": 192, \"cache_creation_input_tokens\": 0, \"output_tokens\": 678, \"reasoning_tokens\": 664, \"total_tokens\": 22779 }, \"num_turns\": 2, \"cost_is_partial\": true, \"modelUsage\": { \"grok-4.6\": { \"inputTokens\": 21909, \"outputTokens\": 678, \"cacheReadInputTokens\": 192, \"cacheCreationInputTokens\": 0, \"modelCalls\": 2 } } }",
+  "stderr": "\u001b[2m2026-08-31T16:48:24.155356Z\u001b[0m \u001b[33m WARN\u001b[0m Failed to fetch models: Auth(\"No auth credentials for cli-chat-proxy\") \u001b[2m2026-08-31T16:48:24.156747Z\u001b[0m \u001b[33m WARN\u001b[0m model refresh failed, leaving existing models unchanged \u001b[2m2026-08-31T16:48:25.500096Z\u001b[0m \u001b[33m WARN\u001b[0m no credentials for auxiliary model; falling back to active model \u001b[3maux_model\u001b[0m\u001b[2m=\u001b[0mgrok-4.6 \u001b[2m2026-08-31T16:48:25.569812Z\u001b[0m \u001b[33m WARN\u001b[0m web_search disabled: resolved config has no API key \u001b[2m2026-08-31T16:48:29.158131Z\u001b[0m \u001b[33m WARN\u001b[0m Failed to fetch models: Auth(\"No auth credentials for cli-chat-proxy\") \u001b[2m2026-08-31T16:48:29.158275Z\u001b[0m \u001b[33m WARN\u001b[0m model refresh failed, leaving existing models unchanged \u001b[2m2026-08-31T16:48:39.158261Z\u001b[0m \u001b[33m WARN\u001b[0m Failed to fetch models: Auth(\"No auth credentials for cli-chat-proxy\") \u001b[2m2026-08-31T16:48:39.158292Z\u001b[0m \u001b[33m WARN\u001b[0m model refresh failed, leaving existing models unchanged",
+  "file_result": "GROK_INPUT\n",
+  "expected_markers": [
+    "GROK_TOOL_DONE",
+    "GROK_AGENT_DONE"
+  ],
+  "passed": false,
+  "secret_free": true,
+  "artifact_sha256": "ca3a3cbe11161f7ef3f9092a64abfd8ca934673290cbb8e2b567a4312b392dbb"
+}

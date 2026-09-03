@@ -104,7 +104,7 @@ try {
   Assert-True ($DaybreakModel.display_name -eq 'GPT Daybreak Blue Latest') 'Daybreak display name was not synthesized'
   Assert-True (-not [string]::IsNullOrWhiteSpace([string]$DaybreakModel.base_instructions)) 'Daybreak is missing base instructions'
   Assert-True ($DaybreakModel.visibility -eq 'list') 'Daybreak is not visible in the Codex model selector'
-  Assert-True ([int]$DaybreakModel.context_window -eq 272000) 'Daybreak context window is incorrect'
+  Assert-True ([int]$DaybreakModel.context_window -eq 1050000) 'Daybreak context window is incorrect'
 
   foreach ($Client in @('claude', 'codex')) {
     $CmdPath = Join-Path $FixtureDir "$Client.cmd"
@@ -220,7 +220,7 @@ name = "stale"
 '@
   [IO.File]::WriteAllText($GeminiSettingsPath, $OriginalGeminiSettings, [Text.UTF8Encoding]::new($false))
   $CatalogGeminiDefaultModel = 'gemini-3.7-flash'
-  $CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')
+  $CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash')
   $script:BaseUrl = 'https://api.example.com'
   $script:GeminiApiKey = 'test-owned-key'
 
@@ -243,7 +243,7 @@ name = "stale"
   Assert-True ($ParsedGeminiSettings.model.extra -eq $true) 'Unrelated Gemini model field was overwritten'
   Assert-True ($ParsedGeminiSettings.theme -eq 'dark') 'Unrelated Gemini setting was overwritten'
   $GeminiOverrideModels = @($ParsedGeminiSettings.modelConfigs.overrides | ForEach-Object { [string]$_.match.model })
-  Assert-True (($GeminiOverrideModels -join ',') -eq 'user-model,gemini-3.1-pro,gemini-3.7-flash,gemini-3.7-flash-high') "Gemini overrides mismatch: $($GeminiOverrideModels -join ',')"
+  Assert-True (($GeminiOverrideModels -join ',') -eq 'user-model,gemini-3.1-pro,gemini-3.7-flash') "Gemini overrides mismatch: $($GeminiOverrideModels -join ',')"
   $UserGeminiOverride = @($ParsedGeminiSettings.modelConfigs.overrides | Where-Object { $_.match.model -eq 'user-model' })[0]
   Assert-True ($UserGeminiOverride.generateContentConfig.temperature -eq 0.1) 'User-owned Gemini override was overwritten'
   foreach ($ManagedGeminiOverride in @($ParsedGeminiSettings.modelConfigs.overrides | Where-Object { $_.match.model -ne 'user-model' })) {

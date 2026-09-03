@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "425357ec74418c506148179c335326d66aa2c0b49d813c23407eac02e13c78ce",
+  "case_count": 30,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "0a5f4b4a2b0dd017",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/run-state.json",
+  "status_counts": {
+    "pass": 30
+  }
+}

@@ -1,0 +1,1352 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 0.95,
+        "name": "Kimi 企业高速线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "Grok Build",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "Kimi Code",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "OpenCode",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": [],
+      "name": "ZCode",
+      "protocols": [],
+      "status": "unsupported"
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "Qoder",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "No compatible verified protocol intersection.",
+      "name": "WorkBuddy",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Visual Studio Code Local Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [],
+  "model": {
+    "context_window": 262144,
+    "display_name": "Kimi K2.7 Code",
+    "family": "kimi",
+    "id": "kimi-k2.7-code",
+    "input_modalities": [
+      "text",
+      "image",
+      "video"
+    ],
+    "max_output_tokens": 16384,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "2026-08-31 owner-owned direct Alibaba probes passed minimal text, terminal streaming and Usage, tool call, tool-result continuation, final response, and invalid-request shape; public-group Agent proof remains separate and blocked.",
+      "name": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "evidence": "The current Alibaba kimi-k2.7-code upstream returned HTTP 400 Unsupported model on native /v1/responses; any gateway bridge is not native Responses (log.md:10062).",
+      "name": "responses",
+      "status": "unsupported"
+    },
+    {
+      "evidence": "Current public group 62 returned 403 permission_error for every ordinary Messages capability probe; only deliberate invalid-request passthrough accepted the same 403. Moonshot direct-provider Messages support is not exposed by this public group.",
+      "name": "messages",
+      "status": "unsupported",
+      "evidence_ids": [
+        "evidence-1e82492cfe6b9c3a8176b6e4",
+        "evidence-21de3757b9e4d8c83f6f0cca",
+        "evidence-25515b2208979af80ff09523",
+        "evidence-3b0bce30325914edd15761d3",
+        "evidence-72a2f59470a635698d71f7b9",
+        "evidence-93bdf9bdc3a3664e3868f6a0",
+        "evidence-cf49c4f758b31e58728192dc",
+        "evidence-d07104242c9fd2293d4b5655",
+        "evidence-dd05e08c68a6734a2fafdd33",
+        "evidence-f329182b1d831d23866b9f28"
+      ]
+    },
+    {
+      "evidence": "Kimi K2.7 Code has no native Gemini GenerateContent endpoint on the current public route.",
+      "name": "generate_content",
+      "status": "unsupported"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [
+      {
+        "client": "Kimi Code",
+        "levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      }
+    ],
+    "client_mappings": [],
+    "model_levels": [
+      "always_on"
+    ]
+  },
+  "recommended_protocol": "chat_completions",
+  "recommended_protocol_reason": "Chat Completions is the only protocol with a complete exact-model base matrix on the deployed Alibaba path; Messages needs public-group proof, and native Responses/GenerateContent are unavailable.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Grok Build": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-31548a9d01d015bfd9be6bbf",
+            "legacy_status": "blocked",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-31548a9d01d015bfd9be6bbf"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-31548a9d01d015bfd9be6bbf"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "Kimi Code": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-0191a970b43adbd9490b7645, evidence-23978744e4e9f1b9ed3a371f, evidence-3cee0d5bd04ed326b6095416, evidence-40826cd03ad447fb1881a7cf, evidence-6c514040cf66c8a9f9baa9c7, evidence-6efbae0399c36c46be7a81e8, evidence-8592d7948e0698718ad7a976, evidence-870cfc4a1d5d443cef3a417b, evidence-a3c7d70860ed4eecdc88ebfa, evidence-a936326a7b45dee64248cebd, evidence-c2645ec41106da4afa0f0b93, evidence-e478bc34b9c4f547b74e010c, evidence-e7f9f1e1802c3fec67a608b3, evidence-ef810e78feec87f7f7a0125b, evidence-f1bf7358a01b9f4b7adbf76b, evidence-ff0a0f4a7d4ab1bee7279abf",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-0191a970b43adbd9490b7645",
+              "evidence-23978744e4e9f1b9ed3a371f",
+              "evidence-3cee0d5bd04ed326b6095416",
+              "evidence-40826cd03ad447fb1881a7cf",
+              "evidence-6c514040cf66c8a9f9baa9c7",
+              "evidence-6efbae0399c36c46be7a81e8",
+              "evidence-8592d7948e0698718ad7a976",
+              "evidence-870cfc4a1d5d443cef3a417b",
+              "evidence-a3c7d70860ed4eecdc88ebfa",
+              "evidence-a936326a7b45dee64248cebd",
+              "evidence-c2645ec41106da4afa0f0b93",
+              "evidence-e478bc34b9c4f547b74e010c",
+              "evidence-e7f9f1e1802c3fec67a608b3",
+              "evidence-ef810e78feec87f7f7a0125b",
+              "evidence-f1bf7358a01b9f4b7adbf76b",
+              "evidence-ff0a0f4a7d4ab1bee7279abf"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-e7f9f1e1802c3fec67a608b3"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "MiniMax Code": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.2.7",
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        }
+      },
+      "OpenCode": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-0191a970b43adbd9490b7645, evidence-23978744e4e9f1b9ed3a371f, evidence-3cee0d5bd04ed326b6095416, evidence-40826cd03ad447fb1881a7cf, evidence-62edd5d70b4d534a6c159cd6, evidence-6c514040cf66c8a9f9baa9c7, evidence-6efbae0399c36c46be7a81e8, evidence-8592d7948e0698718ad7a976, evidence-870cfc4a1d5d443cef3a417b, evidence-8b5f559ab545f8242bae663a, evidence-a3c7d70860ed4eecdc88ebfa, evidence-a936326a7b45dee64248cebd, evidence-c2645ec41106da4afa0f0b93, evidence-e478bc34b9c4f547b74e010c, evidence-ef810e78feec87f7f7a0125b, evidence-f1bf7358a01b9f4b7adbf76b, evidence-ff0a0f4a7d4ab1bee7279abf",
+            "legacy_status": "blocked",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-0191a970b43adbd9490b7645",
+              "evidence-23978744e4e9f1b9ed3a371f",
+              "evidence-3cee0d5bd04ed326b6095416",
+              "evidence-40826cd03ad447fb1881a7cf",
+              "evidence-62edd5d70b4d534a6c159cd6",
+              "evidence-6c514040cf66c8a9f9baa9c7",
+              "evidence-6efbae0399c36c46be7a81e8",
+              "evidence-8592d7948e0698718ad7a976",
+              "evidence-870cfc4a1d5d443cef3a417b",
+              "evidence-8b5f559ab545f8242bae663a",
+              "evidence-a3c7d70860ed4eecdc88ebfa",
+              "evidence-a936326a7b45dee64248cebd",
+              "evidence-c2645ec41106da4afa0f0b93",
+              "evidence-e478bc34b9c4f547b74e010c",
+              "evidence-ef810e78feec87f7f7a0125b",
+              "evidence-f1bf7358a01b9f4b7adbf76b",
+              "evidence-ff0a0f4a7d4ab1bee7279abf"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-8b5f559ab545f8242bae663a"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "Qoder": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:1.1.38",
+            "evidence": "blocked: Qoder cli:1.1.38 has an official protocol adapter, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        }
+      },
+      "WorkBuddy": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "app:5.3.14+cli:2.115.0",
+            "evidence": "2026-09-01 blocked admission gap: WorkBuddy documents chat_completions, but no exact kimi-k2.7-code × chat_completions × app:5.3.14+cli:2.115.0 × macos 老实人AI Agent loop with local tool call, tool-result continuation, final marker, and clean completion has been preserved.",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked",
+            "verified_at": "2026-09-01"
+          },
+          "windows": {
+            "client_version": "app:5.3.14+cli:2.115.0",
+            "evidence": "2026-09-01 blocked admission gap: WorkBuddy documents chat_completions, but no exact kimi-k2.7-code × chat_completions × app:5.3.14+cli:2.115.0 × windows 老实人AI Agent loop with local tool call, tool-result continuation, final marker, and clean completion has been preserved.",
+            "model_id": "kimi-k2.7-code",
+            "os": "windows",
+            "protocol": "chat_completions",
+            "status": "blocked",
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "ZCode": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-0191a970b43adbd9490b7645, evidence-23978744e4e9f1b9ed3a371f, evidence-3cee0d5bd04ed326b6095416, evidence-40826cd03ad447fb1881a7cf, evidence-6c514040cf66c8a9f9baa9c7, evidence-6efbae0399c36c46be7a81e8, evidence-84fb420a9bc448e8cef6e96a, evidence-8592d7948e0698718ad7a976, evidence-870cfc4a1d5d443cef3a417b, evidence-a3c7d70860ed4eecdc88ebfa, evidence-a936326a7b45dee64248cebd, evidence-c2645ec41106da4afa0f0b93, evidence-e478bc34b9c4f547b74e010c, evidence-ef810e78feec87f7f7a0125b, evidence-f1bf7358a01b9f4b7adbf76b, evidence-ff0a0f4a7d4ab1bee7279abf",
+            "legacy_status": "blocked",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "unsupported",
+            "evidence_ids": [
+              "evidence-0191a970b43adbd9490b7645",
+              "evidence-23978744e4e9f1b9ed3a371f",
+              "evidence-3cee0d5bd04ed326b6095416",
+              "evidence-40826cd03ad447fb1881a7cf",
+              "evidence-6c514040cf66c8a9f9baa9c7",
+              "evidence-6efbae0399c36c46be7a81e8",
+              "evidence-84fb420a9bc448e8cef6e96a",
+              "evidence-8592d7948e0698718ad7a976",
+              "evidence-870cfc4a1d5d443cef3a417b",
+              "evidence-a3c7d70860ed4eecdc88ebfa",
+              "evidence-a936326a7b45dee64248cebd",
+              "evidence-c2645ec41106da4afa0f0b93",
+              "evidence-e478bc34b9c4f547b74e010c",
+              "evidence-ef810e78feec87f7f7a0125b",
+              "evidence-f1bf7358a01b9f4b7adbf76b",
+              "evidence-ff0a0f4a7d4ab1bee7279abf"
+            ],
+            "pass_evidence_ids": [],
+            "failure_evidence_ids": [
+              "evidence-84fb420a9bc448e8cef6e96a"
+            ],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "kimi-k2.7-code",
+            "os": "linux",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "kimi-k2.7-code",
+            "os": "windows",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        }
+      },
+      "Visual Studio Code Local Agent": {
+        "chat_completions": {
+          "macos": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "kimi-k2.7-code",
+            "os": "macos",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "kimi-k2.7-code",
+            "os": "linux",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "kimi-k2.7-code",
+            "os": "windows",
+            "protocol": "chat_completions",
+            "status": "blocked"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "Kimi 企业高速线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: chat_completions=verified",
+        "evidence_ids": [
+          "evidence-0191a970b43adbd9490b7645",
+          "evidence-23978744e4e9f1b9ed3a371f",
+          "evidence-8592d7948e0698718ad7a976",
+          "evidence-870cfc4a1d5d443cef3a417b",
+          "evidence-a3c7d70860ed4eecdc88ebfa",
+          "evidence-a936326a7b45dee64248cebd",
+          "evidence-c2645ec41106da4afa0f0b93",
+          "evidence-f1bf7358a01b9f4b7adbf76b"
+        ],
+        "model_id": "kimi-k2.7-code",
+        "multiplier": 0.95,
+        "protocol_evidence": {
+          "chat_completions": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-0191a970b43adbd9490b7645",
+              "evidence-23978744e4e9f1b9ed3a371f",
+              "evidence-8592d7948e0698718ad7a976",
+              "evidence-870cfc4a1d5d443cef3a417b",
+              "evidence-a3c7d70860ed4eecdc88ebfa",
+              "evidence-a936326a7b45dee64248cebd",
+              "evidence-c2645ec41106da4afa0f0b93",
+              "evidence-f1bf7358a01b9f4b7adbf76b"
+            ],
+            "pass_evidence_ids": [
+              "evidence-0191a970b43adbd9490b7645",
+              "evidence-23978744e4e9f1b9ed3a371f",
+              "evidence-8592d7948e0698718ad7a976",
+              "evidence-870cfc4a1d5d443cef3a417b",
+              "evidence-a3c7d70860ed4eecdc88ebfa",
+              "evidence-a936326a7b45dee64248cebd",
+              "evidence-c2645ec41106da4afa0f0b93",
+              "evidence-f1bf7358a01b9f4b7adbf76b"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:22:27+00:00"
+          }
+        },
+        "protocols": [
+          "chat_completions"
+        ],
+        "recommended_protocol": "chat_completions",
+        "recommended_protocol_reason": "Chat Completions is the only protocol with a complete exact-model base matrix on the deployed Alibaba path; Messages needs public-group proof, and native Responses/GenerateContent are unavailable.",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "Alibaba official kimi-k2.7-code deployment page: context window 262144 and max input 229376.",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "Alibaba official kimi-k2.7-code deployment page: current deployed maximum output 16384; this is the 老实人AI upstream deployment limit, not Moonshot API default 32768.",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "Alibaba official kimi-k2.7-code model page declares Text, Image, Video input and Text output.",
+        "status": "verified"
+      },
+      "text": {
+        "evidence": "Alibaba official kimi-k2.7-code model page declares Text, Image, Video input and Text output.",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "Alibaba official kimi-k2.7-code model page declares Text, Image, Video input and Text output.",
+        "status": "verified"
+      }
+    },
+    "pricing": {
+      "Kimi 企业高速线路": {
+        "cache_read_price": 1.235,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 live GET https://api.laoshirenai.com/api/v1/public/model-pricing (inventory updated_at 2026-08-31T11:36:37.816099323Z)",
+        "input_price": 6.175,
+        "output_price": 25.65,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "chat_completions": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-156177f74fd124b57ffe4a78, evidence-9c77360e80276286c25f283a, evidence-b591ac733b1f2921120de98b",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-156177f74fd124b57ffe4a78",
+            "evidence-9c77360e80276286c25f283a",
+            "evidence-b591ac733b1f2921120de98b"
+          ],
+          "pass_evidence_ids": [
+            "evidence-156177f74fd124b57ffe4a78",
+            "evidence-9c77360e80276286c25f283a",
+            "evidence-b591ac733b1f2921120de98b"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-4e118651491095c3c4fcd517, evidence-8d8207ed209af47db5c8d00c",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4e118651491095c3c4fcd517",
+            "evidence-8d8207ed209af47db5c8d00c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-4e118651491095c3c4fcd517",
+            "evidence-8d8207ed209af47db5c8d00c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-6edc1de9643ea39bd6a1eb9d, evidence-afa7133eff5881e819fb40da",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6edc1de9643ea39bd6a1eb9d",
+            "evidence-afa7133eff5881e819fb40da"
+          ],
+          "pass_evidence_ids": [
+            "evidence-6edc1de9643ea39bd6a1eb9d",
+            "evidence-afa7133eff5881e819fb40da"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-1f470aa2b39d7a039dc734f4, evidence-9eb1737e414ca7f977df0c72, evidence-a0f6a439b4d3fb5188bd7e3f",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-1f470aa2b39d7a039dc734f4",
+            "evidence-9eb1737e414ca7f977df0c72",
+            "evidence-a0f6a439b4d3fb5188bd7e3f"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-1f470aa2b39d7a039dc734f4",
+            "evidence-9eb1737e414ca7f977df0c72",
+            "evidence-a0f6a439b4d3fb5188bd7e3f"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-9a0b2bf8c2903b9a0614f11c",
+          "status": "not_applicable",
+          "evidence_ids": [
+            "evidence-9a0b2bf8c2903b9a0614f11c"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-9a0b2bf8c2903b9a0614f11c"
+          ],
+          "verified_at": "2026-08-31"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-78be7da4c1c673a8e83cb2c7",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-78be7da4c1c673a8e83cb2c7"
+          ],
+          "pass_evidence_ids": [
+            "evidence-78be7da4c1c673a8e83cb2c7"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-25ce3aaf474029ae2826dc05",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-25ce3aaf474029ae2826dc05"
+          ],
+          "pass_evidence_ids": [
+            "evidence-25ce3aaf474029ae2826dc05"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-d126f9348fe14cccf01b7fc1",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d126f9348fe14cccf01b7fc1"
+          ],
+          "pass_evidence_ids": [
+            "evidence-d126f9348fe14cccf01b7fc1"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "The current public Chat Completions contract exposes client function tools only and no protocol-native server Web Search extension. Coding clients may browse locally, which is not model-native Web Search.",
+          "status": "not_exposed"
+        }
+      },
+      "generate_content": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-3ae41b72dd345f726a184c3f",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-3ae41b72dd345f726a184c3f"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-3ae41b72dd345f726a184c3f"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-407e865df16dafc9de402a84",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-407e865df16dafc9de402a84"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-407e865df16dafc9de402a84"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-08c420ed6e6fe9c3a091f3b7",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-08c420ed6e6fe9c3a091f3b7"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-08c420ed6e6fe9c3a091f3b7"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-7323dc5c159d0a39fe3a03d6",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-7323dc5c159d0a39fe3a03d6"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-7323dc5c159d0a39fe3a03d6"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-ee37f7072dcff49199865001",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-ee37f7072dcff49199865001"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-ee37f7072dcff49199865001"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-2a5f3161452005ea981e4307, evidence-ea3e0dc9f4041fed84319cdb",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2a5f3161452005ea981e4307",
+            "evidence-ea3e0dc9f4041fed84319cdb"
+          ],
+          "pass_evidence_ids": [
+            "evidence-ea3e0dc9f4041fed84319cdb"
+          ],
+          "failure_evidence_ids": [
+            "evidence-2a5f3161452005ea981e4307"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-7952f1a86daa02a9c928233d, evidence-f31272e00070d228241677e9",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-7952f1a86daa02a9c928233d",
+            "evidence-f31272e00070d228241677e9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-f31272e00070d228241677e9"
+          ],
+          "failure_evidence_ids": [
+            "evidence-7952f1a86daa02a9c928233d"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-485aea36416bd890fe031b8f, evidence-9860b38bf7ccf37f3f51a177",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-485aea36416bd890fe031b8f",
+            "evidence-9860b38bf7ccf37f3f51a177"
+          ],
+          "pass_evidence_ids": [
+            "evidence-9860b38bf7ccf37f3f51a177"
+          ],
+          "failure_evidence_ids": [
+            "evidence-485aea36416bd890fe031b8f"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-d70af00ee8d313fc07606bb0",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-d70af00ee8d313fc07606bb0"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-d70af00ee8d313fc07606bb0"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      },
+      "messages": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-6e9ef9b92046a503fae03a07, evidence-d07104242c9fd2293d4b5655, evidence-f0a1183b2e2ead92e6c87395",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-6e9ef9b92046a503fae03a07",
+            "evidence-d07104242c9fd2293d4b5655",
+            "evidence-f0a1183b2e2ead92e6c87395"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-6e9ef9b92046a503fae03a07",
+            "evidence-d07104242c9fd2293d4b5655",
+            "evidence-f0a1183b2e2ead92e6c87395"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-1cc840fe7d3832b255e302d2, evidence-3b0bce30325914edd15761d3",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1cc840fe7d3832b255e302d2",
+            "evidence-3b0bce30325914edd15761d3"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1cc840fe7d3832b255e302d2",
+            "evidence-3b0bce30325914edd15761d3"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-8436bc1d2eadf37661fe5c80",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-8436bc1d2eadf37661fe5c80"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-8436bc1d2eadf37661fe5c80"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-2fc09d7981592b71b59f0a14",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2fc09d7981592b71b59f0a14"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-2fc09d7981592b71b59f0a14"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-445a31cb366b5ed2fc4f6388, evidence-dd05e08c68a6734a2fafdd33",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-445a31cb366b5ed2fc4f6388",
+            "evidence-dd05e08c68a6734a2fafdd33"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-445a31cb366b5ed2fc4f6388",
+            "evidence-dd05e08c68a6734a2fafdd33"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-b66b46b7243b1bf072275c82, evidence-d0a15b2286a7f7a324eb5bbb",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-b66b46b7243b1bf072275c82",
+            "evidence-d0a15b2286a7f7a324eb5bbb"
+          ],
+          "pass_evidence_ids": [
+            "evidence-b66b46b7243b1bf072275c82"
+          ],
+          "failure_evidence_ids": [
+            "evidence-d0a15b2286a7f7a324eb5bbb"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-a5db514d60706d1ea48fcfd0, evidence-bc934d81510a523ffd3ac4f1",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-a5db514d60706d1ea48fcfd0",
+            "evidence-bc934d81510a523ffd3ac4f1"
+          ],
+          "pass_evidence_ids": [
+            "evidence-bc934d81510a523ffd3ac4f1"
+          ],
+          "failure_evidence_ids": [
+            "evidence-a5db514d60706d1ea48fcfd0"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-e2abb8b850cc993c0305cf5d, evidence-e3875d638a4df40bab153490",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-e2abb8b850cc993c0305cf5d",
+            "evidence-e3875d638a4df40bab153490"
+          ],
+          "pass_evidence_ids": [
+            "evidence-e2abb8b850cc993c0305cf5d"
+          ],
+          "failure_evidence_ids": [
+            "evidence-e3875d638a4df40bab153490"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-7f30db43e28244131d779716",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-7f30db43e28244131d779716"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-7f30db43e28244131d779716"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      },
+      "responses": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-b1742f45a11bba50f795cc3c",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-b1742f45a11bba50f795cc3c"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-b1742f45a11bba50f795cc3c"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-f9325cd91ec3939829241292",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-f9325cd91ec3939829241292"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-f9325cd91ec3939829241292"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-39e0d029988941b9d4f76d16",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-39e0d029988941b9d4f76d16"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-39e0d029988941b9d4f76d16"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-2eeec29c04b8897f660fc8d0",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2eeec29c04b8897f660fc8d0"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-2eeec29c04b8897f660fc8d0"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-4843cc04c0a650fada0de684",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-4843cc04c0a650fada0de684"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-4843cc04c0a650fada0de684"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-b7ceb90adad17d47ab30089a, evidence-eb9a0b1ee36cf049a4e993da",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-b7ceb90adad17d47ab30089a",
+            "evidence-eb9a0b1ee36cf049a4e993da"
+          ],
+          "pass_evidence_ids": [
+            "evidence-eb9a0b1ee36cf049a4e993da"
+          ],
+          "failure_evidence_ids": [
+            "evidence-b7ceb90adad17d47ab30089a"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-739c356b4060723d36d4704b, evidence-e827b24c0bd8f0ae61714ce7",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-739c356b4060723d36d4704b",
+            "evidence-e827b24c0bd8f0ae61714ce7"
+          ],
+          "pass_evidence_ids": [
+            "evidence-e827b24c0bd8f0ae61714ce7"
+          ],
+          "failure_evidence_ids": [
+            "evidence-739c356b4060723d36d4704b"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-10a0524c4c70ef053fc056ed, evidence-2d72a29318d4a179cd50d5db",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-10a0524c4c70ef053fc056ed",
+            "evidence-2d72a29318d4a179cd50d5db"
+          ],
+          "pass_evidence_ids": [
+            "evidence-10a0524c4c70ef053fc056ed"
+          ],
+          "failure_evidence_ids": [
+            "evidence-2d72a29318d4a179cd50d5db"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-b1b67d94555913eeeea25138",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-b1b67d94555913eeeea25138"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-b1b67d94555913eeeea25138"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "chat_completions": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-1a7168645ffbce8e9a9c58db, evidence-c5f22bec078b6ed6aa67b840",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1a7168645ffbce8e9a9c58db",
+            "evidence-c5f22bec078b6ed6aa67b840"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1a7168645ffbce8e9a9c58db",
+            "evidence-c5f22bec078b6ed6aa67b840"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-a2aa73c18e75315fc4267c7b, evidence-a3c7d70860ed4eecdc88ebfa, evidence-c2645ec41106da4afa0f0b93",
+          "evidence_ids": [
+            "evidence-a2aa73c18e75315fc4267c7b",
+            "evidence-a3c7d70860ed4eecdc88ebfa",
+            "evidence-c2645ec41106da4afa0f0b93"
+          ],
+          "status": "verified",
+          "pass_evidence_ids": [
+            "evidence-a2aa73c18e75315fc4267c7b",
+            "evidence-a3c7d70860ed4eecdc88ebfa",
+            "evidence-c2645ec41106da4afa0f0b93"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-dada486c97ffbd907e0933ea, evidence-e478bc34b9c4f547b74e010c",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-dada486c97ffbd907e0933ea",
+            "evidence-e478bc34b9c4f547b74e010c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-dada486c97ffbd907e0933ea",
+            "evidence-e478bc34b9c4f547b74e010c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-3cee0d5bd04ed326b6095416, evidence-6c514040cf66c8a9f9baa9c7, evidence-778eee3915808e9d28ea2c9a, evidence-ef810e78feec87f7f7a0125b, evidence-ff0a0f4a7d4ab1bee7279abf",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-3cee0d5bd04ed326b6095416",
+            "evidence-6c514040cf66c8a9f9baa9c7",
+            "evidence-778eee3915808e9d28ea2c9a",
+            "evidence-ef810e78feec87f7f7a0125b",
+            "evidence-ff0a0f4a7d4ab1bee7279abf"
+          ],
+          "pass_evidence_ids": [
+            "evidence-3cee0d5bd04ed326b6095416"
+          ],
+          "failure_evidence_ids": [
+            "evidence-6c514040cf66c8a9f9baa9c7",
+            "evidence-778eee3915808e9d28ea2c9a",
+            "evidence-ef810e78feec87f7f7a0125b",
+            "evidence-ff0a0f4a7d4ab1bee7279abf"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-366e1314e7d10483b0ab3643, evidence-40826cd03ad447fb1881a7cf, evidence-6efbae0399c36c46be7a81e8",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-366e1314e7d10483b0ab3643",
+            "evidence-40826cd03ad447fb1881a7cf",
+            "evidence-6efbae0399c36c46be7a81e8"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-366e1314e7d10483b0ab3643",
+            "evidence-40826cd03ad447fb1881a7cf",
+            "evidence-6efbae0399c36c46be7a81e8"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-3815546b0be8af91900aa326, evidence-a8487f829d47a96a57e057e2",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3815546b0be8af91900aa326",
+            "evidence-a8487f829d47a96a57e057e2"
+          ],
+          "pass_evidence_ids": [
+            "evidence-3815546b0be8af91900aa326",
+            "evidence-a8487f829d47a96a57e057e2"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      },
+      "messages": {
+        "minimal_text": {
+          "status": "unsupported",
+          "evidence": "M8 receipts: evidence-1e82492cfe6b9c3a8176b6e4, evidence-92f6009963f5901f4fe83e4a",
+          "evidence_ids": [
+            "evidence-1e82492cfe6b9c3a8176b6e4",
+            "evidence-92f6009963f5901f4fe83e4a"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-1e82492cfe6b9c3a8176b6e4",
+            "evidence-92f6009963f5901f4fe83e4a"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "status": "unsupported",
+          "evidence": "M8 receipts: evidence-72a2f59470a635698d71f7b9, evidence-a5914ba5ccb7aa28486401b4",
+          "evidence_ids": [
+            "evidence-72a2f59470a635698d71f7b9",
+            "evidence-a5914ba5ccb7aa28486401b4"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-72a2f59470a635698d71f7b9",
+            "evidence-a5914ba5ccb7aa28486401b4"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "status": "unsupported",
+          "evidence": "M8 receipts: evidence-1ca103fa2c29ecab586e7512, evidence-1dd48af0fcfc293652878566, evidence-93bdf9bdc3a3664e3868f6a0",
+          "evidence_ids": [
+            "evidence-1ca103fa2c29ecab586e7512",
+            "evidence-1dd48af0fcfc293652878566",
+            "evidence-93bdf9bdc3a3664e3868f6a0"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-1ca103fa2c29ecab586e7512",
+            "evidence-1dd48af0fcfc293652878566",
+            "evidence-93bdf9bdc3a3664e3868f6a0"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "status": "unsupported",
+          "evidence": "M8 receipts: evidence-f329182b1d831d23866b9f28, evidence-ff0dfc13fbdddd6a074258ee",
+          "evidence_ids": [
+            "evidence-f329182b1d831d23866b9f28",
+            "evidence-ff0dfc13fbdddd6a074258ee"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-f329182b1d831d23866b9f28",
+            "evidence-ff0dfc13fbdddd6a074258ee"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "status": "unsupported",
+          "evidence": "M8 receipts: evidence-21de3757b9e4d8c83f6f0cca, evidence-d4d15e7c41f540eb7b9c4cf3",
+          "evidence_ids": [
+            "evidence-21de3757b9e4d8c83f6f0cca",
+            "evidence-d4d15e7c41f540eb7b9c4cf3"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-21de3757b9e4d8c83f6f0cca",
+            "evidence-d4d15e7c41f540eb7b9c4cf3"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "invalid_request": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-25515b2208979af80ff09523, evidence-883249d06c4e3c513ffbd36a",
+          "evidence_ids": [
+            "evidence-25515b2208979af80ff09523",
+            "evidence-883249d06c4e3c513ffbd36a"
+          ],
+          "pass_evidence_ids": [
+            "evidence-25515b2208979af80ff09523",
+            "evidence-883249d06c4e3c513ffbd36a"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      },
+      "generate_content": {
+        "minimal_text": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "streaming_terminal": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "tool_call": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "tool_result_continuation": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "usage": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "invalid_request": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        }
+      },
+      "responses": {
+        "minimal_text": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "streaming_terminal": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "tool_call": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "tool_result_continuation": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "usage": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        },
+        "invalid_request": {
+          "status": "blocked",
+          "evidence": "No exact terminal M8 receipt has been projected for this protocol check."
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Grok Build": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "Grok Build has no separately verified K2.7 effort selector; the model remains always-thinking.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "chat_completions": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "Derived from verified model levels and documented explicit client mapping policy.",
+            "mappings": [
+              {
+                "client": "Kimi Code",
+                "protocol": "chat_completions",
+                "from": "low",
+                "to": "always_on"
+              },
+              {
+                "client": "Kimi Code",
+                "protocol": "chat_completions",
+                "from": "medium",
+                "to": "always_on"
+              },
+              {
+                "client": "Kimi Code",
+                "protocol": "chat_completions",
+                "from": "high",
+                "to": "always_on"
+              },
+              {
+                "client": "Kimi Code",
+                "protocol": "chat_completions",
+                "from": "xhigh",
+                "to": "always_on"
+              },
+              {
+                "client": "Kimi Code",
+                "protocol": "chat_completions",
+                "from": "max",
+                "to": "always_on"
+              }
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "MiniMax Code": {
+          "chat_completions": {
+            "client_levels": [
+              "off",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "OpenCode": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "OpenCode has no separately verified K2.7 effort selector; the model remains always-thinking.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Qoder": {
+          "chat_completions": {
+            "client_levels": [
+              "disabled",
+              "off",
+              "none",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: Qoder cli:1.1.38 has an official protocol adapter, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "WorkBuddy": {
+          "chat_completions": {
+            "client_levels": [
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "ZCode": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "ZCode has no separately verified K2.7 effort selector; the model remains always-thinking.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "DeepSeek Harness": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "Visual Studio Code Local Agent": {
+          "chat_completions": {
+            "client_levels": [],
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact kimi-k2.7-code public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        }
+      },
+      "model_levels": {
+        "always_on": {
+          "evidence": "Moonshot K2.7 Code and the current Alibaba deployment document reasoning as always on with no selectable effort wire value; protocol transport controls are not the model-level capability.",
+          "status": "verified"
+        }
+      }
+    }
+  },
+  "verification": {
+    "gateway_e2e": false,
+    "limits_source": "official",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "verified"
+    },
+    "official_spec_url": "https://help.aliyun.com/zh/model-studio/kimi-k2-7-code",
+    "verified_at": "2026-08-31"
+  }
+}

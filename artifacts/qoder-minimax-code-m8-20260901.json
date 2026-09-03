@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "client_matrix_m8_local_probe",
+  "observed_at": "2026-09-01",
+  "observed_at_beijing": "2026-09-01 01:27 CST",
+  "host": {
+    "os": "macos",
+    "arch": "arm64",
+    "node": "22.22.3",
+    "free_disk_before": "18 GiB"
+  },
+  "security": {
+    "secret_source": "Agent Switch",
+    "secret_names_only": [
+      "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY"
+    ],
+    "secret_values_retained": false,
+    "request_bodies_retained": false,
+    "provider_config_cleanup_completed": true,
+    "notes": "The MiniMax Code provider-add diagnostic demonstrated that --api-key-env resolves and persists the raw value into config.yaml instead of storing an environment reference. The isolated data directory was destroyed immediately. This behavior blocks an Agent Switch-compliant one-click Key import."
+  },
+  "qoder": {
+    "package": "@qoder-ai/qodercli",
+    "version": "1.1.38",
+    "version_key": "cli:1.1.38",
+    "npm_integrity": "sha512-k3Pq0g5vc+tXFCssQ2ct204x1oPg4FCkYOvxUgU+3jpJ4r8Ro24VQtCjwTXH9bfzN3/zMH8nYeJp5Vj9IfKF4A==",
+    "npm_shasum": "02f7cedc54ae8b5b3f04d3f3ef41ba978f276c66",
+    "installed_unpacked_size": "87 MiB including dependencies",
+    "official_sources": [
+      "https://docs.qoder.com/cli/installation",
+      "https://docs.qoder.com/cli/custom-models",
+      "https://docs.qoder.com/cli/model",
+      "https://docs.qoder.com/cli/settings",
+      "https://docs.qoder.com/cli/settings-reference",
+      "https://docs.qoder.com/cli/cli-reference",
+      "https://docs.qoder.com/cli/sdk/references-python",
+      "https://registry.npmjs.org/@qoder-ai/qodercli"
+    ],
+    "local_observations": [
+      {
+        "command": "qoder --version",
+        "exit_code": 0,
+        "result": "1.1.38"
+      },
+      {
+        "command": "qoder --help",
+        "exit_code": 0,
+        "result": "Non-interactive --print, model, reasoning-effort, config-dir, tools, allowed-tools, output-format, and permission flags are present."
+      },
+      {
+        "command": "qoder --config-dir ISOLATED --list-models",
+        "exit_code": 1,
+        "result": "Blocked before model discovery because the isolated profile was not signed in."
+      },
+      {
+        "command": "qoder --config-dir ISOLATED --print --output-format json --no-session-persistence PROMPT",
+        "exit_code": 1,
+        "result": "Returned a structured result with is_error=true and no model usage because the isolated profile was not signed in."
+      }
+    ],
+    "contract_conclusion": "Release/version and macOS config-root behavior are verified. Official BYOK documentation requires the live Custom wizard and forbids manual BYOK settings. No arbitrary 老实人AI Base URL/Key tool loop was executed, so transport cells remain unverified or unknown and one-click stays prototype."
+  },
+  "minimax_code": {
+    "package": "@minimax-ai/code",
+    "version": "0.2.7",
+    "version_key": "cli:0.2.7",
+    "npm_integrity": "sha512-hj7Zju+k/k0HjypaAsycdhB53py6Y0fxC+vh8qRJ3Rg+eoeYGwAK2pLdBPDm57//QJWoKtN67ffQFGkbLPO0xw==",
+    "npm_shasum": "5044a927f526d76263a64447584a14a4a24eb3b0",
+    "installed_unpacked_size": "61 MiB including dependencies",
+    "official_sources": [
+      "https://agent.minimax.io/docs/cli/quick-start",
+      "https://agent.minimax.io/docs/cli/features",
+      "https://agent.minimax.io/docs/cli/faq",
+      "https://agent.minimax.io/docs/code/account/byok",
+      "https://agent.minimax.io/docs/changelog",
+      "https://registry.npmjs.org/@minimax-ai/code"
+    ],
+    "local_observations": [
+      {
+        "command": "mcode --version",
+        "exit_code": 0,
+        "result": "0.2.7"
+      },
+      {
+        "command": "mcode exec --help",
+        "exit_code": 0,
+        "result": "Headless cwd/model/config/permission/timeout/max-steps/json/stream-json flags are present. Installed help accepts permission smart, full, or off; ask requires TUI or ACP."
+      },
+      {
+        "command": "mcode provider add --help",
+        "exit_code": 0,
+        "result": "Exact public api-format values: anthropic-messages, openai-completions, openai-responses."
+      },
+      {
+        "command": "mcode provider add with an isolated data directory and an Agent Switch secret-name environment variable",
+        "exit_code": 0,
+        "result": "Custom provider shape was created, but the resolved raw credential was persisted to config.yaml with observed mode 0644. The isolated directory was destroyed immediately; this is a policy blocker, not an approved installer pattern."
+      },
+      {
+        "command": "mcode provider test against the currently available owned model-matrix Key",
+        "exit_code": 0,
+        "result": "Client-reported provider test failure because the model request returned model_not_supported. The same Key's /v1/models returned model IDs, but bounded direct Chat calls for those IDs also returned model_not_supported; no client transport success is claimed."
+      },
+      {
+        "command": "mcode exec isolated tool-loop attempt",
+        "exit_code": 3,
+        "result": "Blocked before the model request because MiniMax Code required MiniMax account sign-in for Agent features. No tool call or model usage occurred."
+      }
+    ],
+    "contract_conclusion": "The exact version, public protocol adapters, macOS data/config path, and headless command surface are verified. All transport features remain unverified because the owned route did not complete and Agent sign-in was absent. Agent Switch-compliant one-click Key import is blocked until MiniMax Code supports an environment reference or a secure non-persisting credential mechanism."
+  }
+}

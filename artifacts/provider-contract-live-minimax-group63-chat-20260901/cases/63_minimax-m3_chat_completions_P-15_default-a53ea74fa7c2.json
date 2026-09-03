@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "0ee600c1bd36cee3584a68b79bb2fd1d9b058fa244b7e8dadf7735fc8d6b6698",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "63:minimax-m3:chat_completions:P-15:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 63,
+    "group_name": "MiniMax 企业高速线路",
+    "marker": "LSR_CONTRACT_74B194515B9CB4B9",
+    "max_output_tokens": 524288,
+    "model_id": "minimax-m3",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:minimax-m3/chat_completions/features/error_passthrough",
+      "model_protocol:minimax-m3/chat_completions/invalid_request"
+    ]
+  },
+  "case_fingerprint": "2783778c6b19781c78f257da2abcb7ed452a78a7a8fd3fcdcaee75dce2d0b620",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:30:07.398+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:30:04.708+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 63,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "be6b7bf8ce3159fa5a93ba887fb824efef8195547ac2979ec07d2420d4e565ab",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "2974bc701622c30d5e81a91e177a8503d4616eb8cc4917007aa2cc01fc0a7ccb"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "bde7e51791e3ba833079192c03a2409c6fe9fe434886172e41df34f8df05405d",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "80a24d74-230f-4a6f-8f70-082956a80e6b",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

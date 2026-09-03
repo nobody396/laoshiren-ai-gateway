@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -14,8 +15,11 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "model-catalog" / "catalog.json"
+MODEL_CONTRACT_DIR = ROOT / "model-doc-contracts"
 GO_OUTPUT = ROOT / "backend" / "internal" / "service" / "model_catalog_generated.go"
 TS_OUTPUT = ROOT / "frontend" / "src" / "generated" / "modelCatalog.ts"
+CODEX_TS_OUTPUT = ROOT / "frontend" / "src" / "generated" / "codexClientCatalog.ts"
+INSTALLER_INTEGRITY_OUTPUT = ROOT / "frontend" / "src" / "generated" / "installerIntegrity.ts"
 CODEX_CLIENT_BASE = ROOT / "model-catalog" / "codex-client-base.json"
 CODEX_CLIENT_OUTPUT = ROOT / "frontend" / "public" / "auto-config" / "codex-model-catalog.json"
 POWERSHELL_INSTALLER = ROOT / "frontend" / "public" / "auto-config" / "install.ps1"
@@ -31,6 +35,9 @@ VERSION_REFERENCE_PATHS = (
     ROOT / "frontend" / "src" / "views" / "user" / "ResourcesView.vue",
 )
 PLATFORMS = {"openai", "anthropic", "grok", "gemini"}
+PRICE_COMPONENT_STATUSES = {
+    "verified", "unknown", "blocked", "not_applicable", "not_published", "not_exposed",
+}
 PRESET_COLORS = {
     "openai": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400",
     "anthropic": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400",
@@ -133,6 +140,9 @@ def catalog_row_from_manifest(manifest: dict[str, Any], previous: dict[str, Any]
         "context_window": model.get("context_window"),
         "max_output_tokens": model.get("max_output_tokens"),
         "client_default": bool(production.get("client_default")),
+        "public_price_visibility": production.get(
+            "public_price_visibility", previous.get("public_price_visibility", "public")
+        ),
         "public_group": {
             "preferred_name": preferred_group.removesuffix(" 分组"),
             "legacy_names": legacy_names,
@@ -146,11 +156,23 @@ def catalog_row_from_manifest(manifest: dict[str, Any], previous: dict[str, Any]
             "input_per_mtok_usd": pricing.get("input_per_mtok_usd"),
             "cached_input_per_mtok_usd": pricing.get("cached_input_per_mtok_usd", 0),
             "output_per_mtok_usd": pricing.get("output_per_mtok_usd"),
+            "component_status": {
+                "input": "verified",
+                "output": "verified",
+                "cached_input": (
+                    "verified" if pricing.get("cached_input_per_mtok_usd", 0) is not None else "unknown"
+                ),
+                "cache_write": "not_applicable",
+                "long_context": "verified" if long_context else "not_applicable",
+            },
             "long_context_input_threshold": long_context.get("input_threshold") if long_context else None,
             "long_context_input_multiplier": long_context.get("input_multiplier") if long_context else None,
             "long_context_output_multiplier": long_context.get("output_multiplier") if long_context else None,
             "evidence_url": pricing.get("evidence_url"),
         },
+        "provider_pricing": pricing.get(
+            "provider_pricing", previous.get("provider_pricing")
+        ),
         "preset": {
             "from": model.get("id"),
             "to": model.get("id"),
@@ -192,6 +214,36 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
     version = catalog.get("client_auto_config_version")
     if not isinstance(version, str) or not SEMVER.fullmatch(version):
         fail("client_auto_config_version must be a semantic version")
+    pricing_contract = catalog.get("pricing_contract")
+    if pricing_contract is not None:
+        if not isinstance(pricing_contract, dict):
+            fail("pricing_contract must be an object")
+        if pricing_contract.get("default_scope") != "provider_public":
+            fail("pricing_contract.default_scope must be provider_public")
+        if pricing_contract.get("null_semantics") != "unknown_unless_component_status_is_not_applicable":
+            fail("pricing_contract.null_semantics is invalid")
+        if set(pricing_contract.get("component_statuses", [])) != PRICE_COMPONENT_STATUSES:
+            fail("pricing_contract.component_statuses drifted")
+    price_gaps = catalog.get("price_gaps", [])
+    if not isinstance(price_gaps, list):
+        fail("price_gaps must be an array")
+    for index, gap in enumerate(price_gaps):
+        path = f"price_gaps[{index}]"
+        if not isinstance(gap, dict):
+            fail(f"{path} must be an object")
+        if not isinstance(gap.get("model_id"), str) or not MODEL_ID.fullmatch(gap["model_id"]):
+            fail(f"{path}.model_id must be a model identifier")
+        if gap.get("price_scope") != "provider_public":
+            fail(f"{path}.price_scope must be provider_public")
+        if gap.get("status") not in {"unknown", "blocked", "not_published"}:
+            fail(f"{path}.status must be unknown, blocked, or not_published")
+        if not isinstance(gap.get("reason"), str) or not gap["reason"].strip():
+            fail(f"{path}.reason is required")
+        evidence_url = gap.get("evidence_url")
+        if evidence_url is not None:
+            parsed = urlparse(evidence_url if isinstance(evidence_url, str) else "")
+            if parsed.scheme != "https" or not parsed.netloc:
+                fail(f"{path}.evidence_url must be an https URL")
     models = catalog.get("models")
     if not isinstance(models, list) or not models:
         fail("models must be a non-empty array")
@@ -219,6 +271,8 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
             if platform in default_platforms:
                 fail(f"multiple client defaults for platform {platform}")
             default_platforms.add(platform)
+        if model.get("public_price_visibility", "public") not in {"public", "hidden"}:
+            fail(f"{path}.public_price_visibility must be public or hidden")
         group = model.get("public_group")
         if not isinstance(group, dict) or not isinstance(group.get("preferred_name"), str) or not group["preferred_name"].strip():
             fail(f"{path}.public_group.preferred_name is required")
@@ -270,6 +324,13 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         cached_input = pricing.get("cached_input_per_mtok_usd")
         if cached_input is not None:
             number(cached_input, f"{path}.pricing.cached_input_per_mtok_usd", allow_zero=True)
+        component_status = pricing.get("component_status", {})
+        if not isinstance(component_status, dict):
+            fail(f"{path}.pricing.component_status must be an object")
+        if set(component_status.values()) - PRICE_COMPONENT_STATUSES:
+            fail(f"{path}.pricing.component_status contains invalid states")
+        if cached_input is None and component_status.get("cached_input", "unknown") not in {"unknown", "not_applicable"}:
+            fail(f"{path}.pricing.component_status.cached_input cannot be verified when price is null")
         threshold = pricing.get("long_context_input_threshold")
         if threshold is not None:
             number(threshold, f"{path}.pricing.long_context_input_threshold")
@@ -279,6 +340,34 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         parsed = urlparse(evidence if isinstance(evidence, str) else "")
         if parsed.scheme != "https" or not parsed.netloc:
             fail(f"{path}.pricing.evidence_url must be an https URL")
+        provider_pricing = model.get("provider_pricing")
+        if provider_pricing is not None:
+            if not isinstance(provider_pricing, dict):
+                fail(f"{path}.provider_pricing must be an object")
+            if provider_pricing.get("price_scope") != "provider_public":
+                fail(f"{path}.provider_pricing.price_scope must be provider_public")
+            for field in ("input_per_mtok_usd", "output_per_mtok_usd"):
+                number(provider_pricing.get(field), f"{path}.provider_pricing.{field}")
+            provider_cache = provider_pricing.get("cached_input_per_mtok_usd")
+            if provider_cache is not None:
+                number(provider_cache, f"{path}.provider_pricing.cached_input_per_mtok_usd", allow_zero=True)
+            provider_states = provider_pricing.get("component_status", {})
+            if not isinstance(provider_states, dict) or set(provider_states.values()) - PRICE_COMPONENT_STATUSES:
+                fail(f"{path}.provider_pricing.component_status is invalid")
+            if provider_cache is None and provider_states.get("cached_input", "unknown") not in {"unknown", "not_applicable", "not_published"}:
+                fail(f"{path}.provider_pricing.component_status.cached_input cannot be verified when price is null")
+            provider_threshold = provider_pricing.get("long_context_input_threshold")
+            if provider_threshold is not None:
+                number(provider_threshold, f"{path}.provider_pricing.long_context_input_threshold")
+                number(provider_pricing.get("long_context_input_multiplier"), f"{path}.provider_pricing.long_context_input_multiplier")
+                number(provider_pricing.get("long_context_output_multiplier"), f"{path}.provider_pricing.long_context_output_multiplier")
+                cached_multiplier = provider_pricing.get("long_context_cached_input_multiplier")
+                if cached_multiplier is not None:
+                    number(cached_multiplier, f"{path}.provider_pricing.long_context_cached_input_multiplier")
+            provider_evidence = provider_pricing.get("evidence_url")
+            parsed = urlparse(provider_evidence if isinstance(provider_evidence, str) else "")
+            if parsed.scheme != "https" or not parsed.netloc:
+                fail(f"{path}.provider_pricing.evidence_url must be an https URL")
         preset = model.get("preset")
         if not isinstance(preset, dict) or not all(isinstance(preset.get(field), str) and preset[field].strip() for field in ("from", "to", "color")):
             fail(f"{path}.preset is incomplete")
@@ -382,6 +471,7 @@ def shell_quote(value: str) -> str:
 
 def render_powershell_block(catalog: dict[str, Any]) -> str:
     values = installer_model_values(catalog)
+    reasoning_json = json.dumps(model_reasoning_levels(), ensure_ascii=False, separators=(",", ":"))
     grok_sections = []
     for model_id in values["grok"]["managed_ids"]:
         grok_sections.extend((f"model.{model_id}", f'model."{model_id}"'))
@@ -410,6 +500,7 @@ def render_powershell_block(catalog: dict[str, Any]) -> str:
         "$CatalogGeminiManagedModels = @(%s)" % ", ".join(
             powershell_quote(model_id) for model_id in values["gemini"]["managed_ids"]
         ),
+        f"$CatalogModelReasoningJson = {powershell_quote(reasoning_json)}",
         POWERSHELL_BLOCK_END,
     ))
 
@@ -417,6 +508,7 @@ def render_powershell_block(catalog: dict[str, Any]) -> str:
 def render_shell_block(catalog: dict[str, Any]) -> str:
     values = installer_model_values(catalog)
     managed_json = json.dumps(values["grok"]["managed_models"], ensure_ascii=False, separators=(",", ":"))
+    reasoning_json = json.dumps(model_reasoning_levels(), ensure_ascii=False, separators=(",", ":"))
     return "\n".join((
         SHELL_BLOCK_BEGIN,
         f"SCRIPT_VERSION={shell_quote(catalog['client_auto_config_version'])}",
@@ -430,8 +522,24 @@ def render_shell_block(catalog: dict[str, Any]) -> str:
         f"CATALOG_GROK_MANAGED_MODELS_JSON={shell_quote(managed_json)}",
         f"CATALOG_GEMINI_DEFAULT_MODEL={shell_quote(values['gemini']['id'])}",
         "CATALOG_GEMINI_MANAGED_MODELS=%s" % shell_quote(" ".join(values["gemini"]["managed_ids"])),
+        f"CATALOG_MODEL_REASONING_JSON={shell_quote(reasoning_json)}",
         SHELL_BLOCK_END,
     ))
+
+
+def model_reasoning_levels() -> dict[str, list[str]]:
+    result: dict[str, list[str]] = {}
+    for path in sorted(MODEL_CONTRACT_DIR.glob("*.json")):
+        if path.name in {"client-matrix.json", "matrix-schema.json"}:
+            continue
+        contract = json.loads(path.read_text(encoding="utf-8"))
+        model_id = str(contract.get("model", {}).get("id", "")).strip()
+        if model_id:
+            result[model_id] = [
+                str(level) for level in contract.get("reasoning", {}).get("model_levels", [])
+                if isinstance(level, str)
+            ]
+    return result
 
 
 def go_float(value: Any) -> str:
@@ -479,6 +587,54 @@ def codex_client_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
         for model in catalog["models"]
         if model["platform"] == "openai" and model.get("client_config", {}).get("codex_catalog_entry")
     }
+    contract_by_model: dict[str, dict[str, Any]] = {}
+    for path in sorted(MODEL_CONTRACT_DIR.glob("*.json")):
+        if path.name in {"client-matrix.json", "matrix-schema.json"}:
+            continue
+        contract = json.loads(path.read_text(encoding="utf-8"))
+        model_id = str(contract.get("model", {}).get("id", "")).strip()
+        if model_id:
+            contract_by_model[model_id] = contract
+
+    template = replacements.get("gpt-5.6-sol") or next(
+        (entry for entry in base["models"] if entry.get("slug") == "gpt-5.6-sol"),
+        base["models"][0],
+    )
+    codex_efforts = {"none", "minimal", "low", "medium", "high", "xhigh", "max"}
+    catalog_by_model = {model["id"]: model for model in catalog["models"]}
+    for model_id, contract in contract_by_model.items():
+        if model_id in replacements or not any(
+            row.get("name") == "responses" and row.get("status") == "verified"
+            for row in contract.get("protocols", [])
+        ):
+            continue
+        catalog_model = catalog_by_model.get(model_id)
+        contract_model = contract.get("model", {})
+        context_window = (catalog_model or {}).get("context_window") or contract_model.get("context_window")
+        if not isinstance(context_window, int) or context_window <= 0:
+            continue
+        display_name = (catalog_model or {}).get("display_name") or contract_model.get("display_name") or model_id
+        entry = json.loads(json.dumps(template))
+        entry["slug"] = model_id
+        entry["display_name"] = display_name
+        entry["description"] = f"{display_name} via the 老实人AI Responses gateway."
+        entry["context_window"] = context_window
+        entry["max_context_window"] = context_window
+        entry["auto_compact_token_limit"] = int(context_window * 0.95)
+        entry["input_modalities"] = contract.get("model", {}).get("input_modalities") or ["text"]
+        levels = [
+            level for level in contract.get("reasoning", {}).get("model_levels", [])
+            if level in codex_efforts
+        ]
+        entry["supported_reasoning_levels"] = [
+            {"effort": level, "description": f"{level} reasoning"}
+            for level in levels
+        ]
+        entry["default_reasoning_level"] = "high" if "high" in levels else (levels[0] if levels else None)
+        entry["additional_speed_tiers"] = []
+        entry["service_tiers"] = []
+        entry["priority"] = 999
+        replacements[model_id] = entry
     merged_models: list[dict[str, Any]] = []
     seen: set[str] = set()
     default = default_model(catalog, "openai")
@@ -520,33 +676,67 @@ def render_ts(catalog: dict[str, Any]) -> str:
             "preset": model["preset"],
         })
     encoded = json.dumps(models, ensure_ascii=False, indent=2)
-    codex_models = []
+    client_defaults = {
+        platform: values["id"]
+        for platform, values in installer_model_values(catalog).items()
+    }
+    client_defaults_encoded = json.dumps(client_defaults, ensure_ascii=False, indent=2)
+    return f"""// Code generated by scripts/model_catalog.py; DO NOT EDIT.\n\nexport interface CatalogModel {{\n  id: string\n  upstreamId: string\n  displayName: string\n  platform: 'openai' | 'anthropic' | 'grok' | 'gemini'\n  contextWindow: number\n  maxOutputTokens: number\n  clientDefault: boolean\n  preferredGroupName: string\n  legacyGroupNames: readonly string[]\n  preset: {{ from: string; to: string; color: string }}\n}}\n\nexport const clientAutoConfigVersion = {json.dumps(catalog['client_auto_config_version'])}\n\nexport const clientAutoConfigDefaults = {client_defaults_encoded} as const\n\nexport const modelCatalog: readonly CatalogModel[] = {encoded}\n\nexport type CatalogPlatform = CatalogModel['platform']\n\nexport const catalogModelsForPlatform = (platform: string): string[] =>\n  modelCatalog.filter((model) => model.platform === platform).map((model) => model.id)\n\nexport const catalogPresetMappingsForPlatform = (platform: string) =>\n  modelCatalog\n    .filter((model) => model.platform === platform)\n    .map((model) => ({{\n      label: model.displayName,\n      from: model.preset.from,\n      to: model.preset.to,\n      color: model.preset.color\n    }}))\n\nexport const optionalCatalogClientDefaultForPlatform = (platform: string) =>\n  modelCatalog.find((candidate) => candidate.platform === platform && candidate.clientDefault)\n\nexport const catalogClientDefaultForPlatform = (platform: string) => {{\n  const model = optionalCatalogClientDefaultForPlatform(platform)\n  if (!model) throw new Error(`missing catalog client default for ${{platform}}`)\n  return model\n}}\n"""
+
+
+def render_codex_ts(catalog: dict[str, Any]) -> str:
+    models = []
     for entry in codex_client_catalog(catalog)["models"]:
         slug = entry.get("slug")
         display_name = entry.get("display_name")
         context_window = entry.get("context_window")
         if not isinstance(slug, str) or not isinstance(display_name, str) or not isinstance(context_window, int):
             fail("Codex client catalog entries require slug, display_name, and integer context_window")
-        codex_models.append({
+        reasoning_levels = [
+            row["effort"]
+            for row in entry.get("supported_reasoning_levels", [])
+            if isinstance(row, dict) and isinstance(row.get("effort"), str)
+        ]
+        default_reasoning_level = entry.get("default_reasoning_level")
+        models.append({
             "model": slug,
             "displayName": display_name,
             "contextWindow": context_window,
+            "reasoningLevels": reasoning_levels,
+            "defaultReasoningLevel": default_reasoning_level if isinstance(default_reasoning_level, str) else None,
         })
-    codex_encoded = json.dumps(codex_models, ensure_ascii=False, indent=2)
-    client_defaults = {
-        platform: values["id"]
-        for platform, values in installer_model_values(catalog).items()
-    }
-    client_defaults_encoded = json.dumps(client_defaults, ensure_ascii=False, indent=2)
-    return f"""// Code generated by scripts/model_catalog.py; DO NOT EDIT.\n\nexport interface CatalogModel {{\n  id: string\n  upstreamId: string\n  displayName: string\n  platform: 'openai' | 'anthropic' | 'grok' | 'gemini'\n  contextWindow: number\n  maxOutputTokens: number\n  clientDefault: boolean\n  preferredGroupName: string\n  legacyGroupNames: readonly string[]\n  preset: {{ from: string; to: string; color: string }}\n}}\n\nexport interface CodexClientModel {{\n  model: string\n  displayName: string\n  contextWindow: number\n}}\n\nexport const clientAutoConfigVersion = {json.dumps(catalog['client_auto_config_version'])}\n\nexport const clientAutoConfigDefaults = {client_defaults_encoded} as const\n\nexport const modelCatalog: readonly CatalogModel[] = {encoded}\n\nexport const codexClientModels: readonly CodexClientModel[] = {codex_encoded}\n\nexport type CatalogPlatform = CatalogModel['platform']\n\nexport const catalogModelsForPlatform = (platform: string): string[] =>\n  modelCatalog.filter((model) => model.platform === platform).map((model) => model.id)\n\nexport const catalogPresetMappingsForPlatform = (platform: string) =>\n  modelCatalog\n    .filter((model) => model.platform === platform)\n    .map((model) => ({{\n      label: model.displayName,\n      from: model.preset.from,\n      to: model.preset.to,\n      color: model.preset.color\n    }}))\n\nexport const optionalCatalogClientDefaultForPlatform = (platform: string) =>\n  modelCatalog.find((candidate) => candidate.platform === platform && candidate.clientDefault)\n\nexport const catalogClientDefaultForPlatform = (platform: string) => {{\n  const model = optionalCatalogClientDefaultForPlatform(platform)\n  if (!model) throw new Error(`missing catalog client default for ${{platform}}`)\n  return model\n}}\n"""
+    encoded = json.dumps(models, ensure_ascii=False, indent=2)
+    return f'''// Code generated by scripts/model_catalog.py; DO NOT EDIT.
+
+export interface CodexClientModel {{
+  model: string
+  displayName: string
+  contextWindow: number
+  reasoningLevels: readonly string[]
+  defaultReasoningLevel: string | null
+}}
+
+export const codexClientModels: readonly CodexClientModel[] = {encoded}
+'''
 
 
 def outputs(catalog: dict[str, Any]) -> dict[Path, str]:
     return {
         GO_OUTPUT: render_go(catalog),
         TS_OUTPUT: render_ts(catalog),
+        CODEX_TS_OUTPUT: render_codex_ts(catalog),
         CODEX_CLIENT_OUTPUT: render_codex_client_catalog(catalog),
     }
+
+
+def render_installer_integrity() -> str:
+    shell_sha = hashlib.sha256(SHELL_INSTALLER.read_bytes()).hexdigest()
+    powershell_sha = hashlib.sha256(POWERSHELL_INSTALLER.read_bytes()).hexdigest()
+    return (
+        "// Code generated by scripts/model_catalog.py; DO NOT EDIT.\n\n"
+        f"export const shellInstallerSha256 = {json.dumps(shell_sha)}\n"
+        f"export const powershellInstallerSha256 = {json.dumps(powershell_sha)}\n"
+    )
 
 
 def replace_generated_block(text: str, begin: str, end: str, replacement: str) -> str:
@@ -601,6 +791,10 @@ def apply(catalog: dict[str, Any], catalog_path: Path) -> None:
         if content != current:
             path.write_text(content, encoding="utf-8")
             changed.append(str(path.relative_to(ROOT)))
+    integrity = render_installer_integrity()
+    if not INSTALLER_INTEGRITY_OUTPUT.exists() or INSTALLER_INTEGRITY_OUTPUT.read_text(encoding="utf-8") != integrity:
+        INSTALLER_INTEGRITY_OUTPUT.write_text(integrity, encoding="utf-8")
+        changed.append(str(INSTALLER_INTEGRITY_OUTPUT.relative_to(ROOT)))
     print(json.dumps({"changed": changed, "catalog": str(catalog_path)}, ensure_ascii=False))
 
 
@@ -616,6 +810,8 @@ def check(catalog: dict[str, Any]) -> None:
         versions = {match.group(2) for match in INSTALLER_VERSION_REFERENCE.finditer(current)}
         if versions and versions != {expected_version}:
             stale.append(str(path.relative_to(ROOT)))
+    if not INSTALLER_INTEGRITY_OUTPUT.exists() or INSTALLER_INTEGRITY_OUTPUT.read_text(encoding="utf-8") != render_installer_integrity():
+        stale.append(str(INSTALLER_INTEGRITY_OUTPUT.relative_to(ROOT)))
     if stale:
         fail("generated model catalog is stale: " + ", ".join(dict.fromkeys(stale)))
     print(json.dumps({"valid": True, "generated_files": len(outputs(catalog)) + len(installer_blocks(catalog)), "models": len(catalog["models"])}, ensure_ascii=False))

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "gpt-5.3-codex-spark",
+    "upstream_id": "gpt-5.3-codex-spark",
+    "display_name": "GPT-5.3 Codex Spark",
+    "platform": "openai",
+    "context_window": 128000,
+    "max_output_tokens": null,
+    "codex_catalog_entry": null
+  },
+  "pricing": {
+    "input_per_mtok_usd": 1.25,
+    "cached_input_per_mtok_usd": 0.125,
+    "output_per_mtok_usd": 10.0,
+    "long_context": null,
+    "evidence_url": "https://openai.com/index/introducing-gpt-5-3-codex-spark/"
+  },
+  "production": {
+    "group_name": "GPT 标准线路",
+    "legacy_group_names": [],
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "managed_predecessor_models": []
+  },
+  "evidence": {
+    "public_pricing_snapshot": "artifacts/public-model-pricing-20260831.json",
+    "contract": "model-doc-contracts/gpt-5.3-codex-spark.json"
+  }
+}

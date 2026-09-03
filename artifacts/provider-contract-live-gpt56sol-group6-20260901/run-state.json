@@ -1,0 +1,52 @@
+{
+  "cases": {
+    "6:gpt-5.6-sol:responses:P-01:default": {
+      "artifact_sha256": "1c306e157b48d58ae3bcf5a174e8f03020abeb393b125738fd330fcdcd3f691e",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-01_default-d2e496c3ce93.json",
+      "status": "resumed"
+    },
+    "6:gpt-5.6-sol:responses:P-02:default": {
+      "artifact_sha256": "526b21100b8109438923916f74a2db60c76dc70955edd398e4941338370046e4",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-02_default-cf1480c932f6.json",
+      "status": "resumed"
+    },
+    "6:gpt-5.6-sol:responses:P-03:default": {
+      "artifact_sha256": "8ef1658f915c73f72122b3f2b9815979a2b55fa2c1a2c0c020a5a5c9a7cb3842",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-03_default-ef91fda134c0.json",
+      "status": "resumed"
+    },
+    "6:gpt-5.6-sol:responses:P-04:default": {
+      "artifact_sha256": "ec66195d04fe3a5ca69f04d6ff20435add4dd601720dda663bab56c22c034150",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-04_default-6f9dfc09e0ac.json",
+      "status": "resumed"
+    },
+    "6:gpt-5.6-sol:responses:P-05:default": {
+      "artifact_sha256": "5f842521522c617ae25f9cdbee0b3bcc2fcb87a3ecf11a6bc80a5f4cf5727cc9",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-05_default-e2f96b4032e8.json",
+      "status": "resumed"
+    },
+    "6:gpt-5.6-sol:responses:P-06:medium": {
+      "artifact_sha256": "ad141349e7caa36b28b210d08a37204eecb20e83b167371be4e66bc9de6893e5",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-06_medium-743f54951447.json",
+      "status": "resumed"
+    },
+    "6:gpt-5.6-sol:responses:P-12:default": {
+      "artifact_sha256": "daa19cd9aadbfb2092dcb505aaea6170369a3f52bf43b35470c76ae618b28349",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-12_default-dca5a05a3c26.json",
+      "status": "resumed"
+    },
+    "6:gpt-5.6-sol:responses:P-15:default": {
+      "artifact_sha256": "bd35ecc700880e26b2433e2fdd0641b4c5afdf7fa8e8a6e5de27aae1293d3d3f",
+      "receipt": "artifacts/provider-contract-live-gpt56sol-group6-20260901/cases/6_gpt-5.6-sol_responses_P-15_default-8c4a7b756e80.json",
+      "status": "resumed"
+    }
+  },
+  "finished_at": "2026-08-31T18:30:14.120+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "686c4269436674f5",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T18:30:08.856+00:00"
+}

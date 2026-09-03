@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 34,
+  "protocol": "chat_completions",
+  "observed_at": "2026-08-31T23:05:57+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T07:05:55.857162+08:00",
+      "model": "grok-4.5",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/chat/completions",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 11449,
+      "output_tokens": 5,
+      "account_id": 61,
+      "request_id": "client:230a500d-21fd-4a8f-8739-8870df909c46"
+    }
+  ],
+  "artifact_sha256": "4e2cefc7bf2dffccc9de6233a9ba1f2ea9e42f36b6c0d02b58fbf0a80bc7fc74"
+}

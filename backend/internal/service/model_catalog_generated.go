@@ -10,15 +10,32 @@ type generatedCatalogGroupPolicy struct {
 }
 
 var generatedCatalogBillingPrices = map[string]*ModelPricing{
+	"claude-fable-5": {InputPricePerToken: 10e-6, OutputPricePerToken: 50e-6, CacheReadPricePerToken: 1e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-fable-5-1": {InputPricePerToken: 10e-6, OutputPricePerToken: 50e-6, CacheReadPricePerToken: 0.25e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-haiku-4-5": {InputPricePerToken: 1e-6, OutputPricePerToken: 5e-6, CacheReadPricePerToken: 0.1e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-opus-4-5": {InputPricePerToken: 5e-6, OutputPricePerToken: 25e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-opus-4-6": {InputPricePerToken: 5e-6, OutputPricePerToken: 25e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-opus-4-7": {InputPricePerToken: 5e-6, OutputPricePerToken: 25e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-opus-4-8": {InputPricePerToken: 5e-6, OutputPricePerToken: 25e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-opus-5": {InputPricePerToken: 5e-6, OutputPricePerToken: 25e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-sonnet-4-6": {InputPricePerToken: 3e-6, OutputPricePerToken: 15e-6, CacheReadPricePerToken: 0.3e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-sonnet-5": {InputPricePerToken: 3e-6, OutputPricePerToken: 15e-6, CacheReadPricePerToken: 0.3e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"deepseek-v4-flash": {InputPricePerToken: 0.44e-6, OutputPricePerToken: 1.32e-6, CacheReadPricePerToken: 0.044e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"deepseek-v4-flash-0731": {InputPricePerToken: 3e-6, OutputPricePerToken: 9e-6, CacheReadPricePerToken: 0.3e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"deepseek-v4-pro-0813": {InputPricePerToken: 9e-6, OutputPricePerToken: 27e-6, CacheReadPricePerToken: 0.9e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"gemini-3.1-pro": {InputPricePerToken: 2e-6, OutputPricePerToken: 12e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 200000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
 	"gemini-3.7-flash": {InputPricePerToken: 0.75e-6, OutputPricePerToken: 3.75e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
-	"gemini-3.7-flash-high": {InputPricePerToken: 0.75e-6, OutputPricePerToken: 3.75e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"glm-5.2": {InputPricePerToken: 8e-6, OutputPricePerToken: 28e-6, CacheReadPricePerToken: 2e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"glm-5.3": {InputPricePerToken: 8e-6, OutputPricePerToken: 28e-6, CacheReadPricePerToken: 2e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"glm-5.3-flash": {InputPricePerToken: 0.4e-6, OutputPricePerToken: 1.4e-6, CacheReadPricePerToken: 0.115e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"gpt-5.4": {InputPricePerToken: 2.5e-6, OutputPricePerToken: 15e-6, CacheReadPricePerToken: 0.25e-6, LongContextInputThreshold: 272000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
+	"gpt-5.4-mini": {InputPricePerToken: 0.75e-6, OutputPricePerToken: 4.5e-6, CacheReadPricePerToken: 0.075e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"gpt-5.5": {InputPricePerToken: 5e-6, OutputPricePerToken: 30e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 272000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
+	"gpt-5.6-luna": {InputPricePerToken: 0.2e-6, OutputPricePerToken: 1.2e-6, CacheReadPricePerToken: 0.02e-6, LongContextInputThreshold: 272000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
+	"gpt-5.6-sol": {InputPricePerToken: 5e-6, OutputPricePerToken: 30e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 272000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
+	"gpt-5.6-terra": {InputPricePerToken: 2e-6, OutputPricePerToken: 12e-6, CacheReadPricePerToken: 0.2e-6, LongContextInputThreshold: 272000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
+	"gpt-daybreak-blue-latest": {InputPricePerToken: 5e-6, OutputPricePerToken: 30e-6, CacheReadPricePerToken: 0.25e-6, LongContextInputThreshold: 272000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
+	"grok-4.5": {InputPricePerToken: 2e-6, OutputPricePerToken: 6e-6, CacheReadPricePerToken: 0.3e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"grok-4.6": {InputPricePerToken: 2e-6, OutputPricePerToken: 6e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 200000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 2},
 	"kimi-k2.7-code": {InputPricePerToken: 6.5e-6, OutputPricePerToken: 27e-6, CacheReadPricePerToken: 1.3e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"kimi-k3": {InputPricePerToken: 20e-6, OutputPricePerToken: 100e-6, CacheReadPricePerToken: 2e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
@@ -32,15 +49,32 @@ var generatedCatalogBillingPrices = map[string]*ModelPricing{
 }
 
 var generatedCatalogDisplayPrices = map[string]manualOfficialPrice{
+	"claude-fable-5": {input: 10, output: 50, cacheRead: 1},
+	"claude-fable-5-1": {input: 10, output: 50, cacheRead: 0.25},
+	"claude-haiku-4-5": {input: 1, output: 5, cacheRead: 0.1},
+	"claude-opus-4-5": {input: 5, output: 25, cacheRead: 0.5},
+	"claude-opus-4-6": {input: 5, output: 25, cacheRead: 0.5},
+	"claude-opus-4-7": {input: 5, output: 25, cacheRead: 0.5},
+	"claude-opus-4-8": {input: 5, output: 25, cacheRead: 0.5},
+	"claude-opus-5": {input: 5, output: 25, cacheRead: 0.5},
+	"claude-sonnet-4-6": {input: 3, output: 15, cacheRead: 0.3},
+	"claude-sonnet-5": {input: 3, output: 15, cacheRead: 0.3},
 	"deepseek-v4-flash": {input: 0.44, output: 1.32, cacheRead: 0.044},
 	"deepseek-v4-flash-0731": {input: 3, output: 9, cacheRead: 0.3},
 	"deepseek-v4-pro-0813": {input: 9, output: 27, cacheRead: 0.9},
 	"gemini-3.1-pro": {input: 2, output: 12, cacheRead: 0},
 	"gemini-3.7-flash": {input: 0.75, output: 3.75, cacheRead: 0},
-	"gemini-3.7-flash-high": {input: 0.75, output: 3.75, cacheRead: 0},
 	"glm-5.2": {input: 8, output: 28, cacheRead: 2},
 	"glm-5.3": {input: 8, output: 28, cacheRead: 2},
 	"glm-5.3-flash": {input: 0.4, output: 1.4, cacheRead: 0.115},
+	"gpt-5.4": {input: 2.5, output: 15, cacheRead: 0.25},
+	"gpt-5.4-mini": {input: 0.75, output: 4.5, cacheRead: 0.075},
+	"gpt-5.5": {input: 5, output: 30, cacheRead: 0.5},
+	"gpt-5.6-luna": {input: 0.2, output: 1.2, cacheRead: 0.02},
+	"gpt-5.6-sol": {input: 5, output: 30, cacheRead: 0.5},
+	"gpt-5.6-terra": {input: 2, output: 12, cacheRead: 0.2},
+	"gpt-daybreak-blue-latest": {input: 5, output: 30, cacheRead: 0.25},
+	"grok-4.5": {input: 2, output: 6, cacheRead: 0.3},
 	"grok-4.6": {input: 2, output: 6, cacheRead: 0.5},
 	"kimi-k2.7-code": {input: 6.5, output: 27, cacheRead: 1.3},
 	"kimi-k3": {input: 20, output: 100, cacheRead: 2},
@@ -59,8 +93,8 @@ var generatedCatalogClientDefaults = map[string]string{
 }
 
 var generatedCatalogGroupPolicies = map[string]generatedCatalogGroupPolicy{
-	"gemini": {Preferred: "Gemini", Legacy: []string{}},
-	"grok": {Preferred: "Grok", Legacy: []string{"Grok 4.6", "Grok 4.5"}},
+	"gemini": {Preferred: "Gemini 标准线路", Legacy: []string{"Gemini"}},
+	"grok": {Preferred: "Grok 标准线路", Legacy: []string{"Grok 4.6", "Grok 4.5", "Grok"}},
 }
 
 func generatedCatalogBillingPrice(model string) *ModelPricing {

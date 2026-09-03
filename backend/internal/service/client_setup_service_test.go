@@ -69,6 +69,19 @@ type clientSetupTicketCacheStub struct {
 	ttl  map[string]time.Duration
 }
 
+type clientSetupModelsStub struct {
+	models     []string
+	restricted bool
+}
+
+func (s *clientSetupModelsStub) GetAvailableModels(context.Context, *int64, string) []string {
+	return append([]string(nil), s.models...)
+}
+
+func (s *clientSetupModelsStub) IsModelRestricted(context.Context, int64, string) bool {
+	return s.restricted
+}
+
 func newClientSetupTicketCacheStub() *clientSetupTicketCacheStub {
 	return &clientSetupTicketCacheStub{
 		data: make(map[string]SSOTicketData),
@@ -410,5 +423,132 @@ func TestExchangeTicketRejectsExpiredTicketBeforeReturningKey(t *testing.T) {
 	}
 
 	_, err := svc.ExchangeTicket(context.Background(), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	require.ErrorIs(t, err, ErrInvalidClientSetupTicket)
+}
+
+func TestExplicitSetupSelectionBindsAndReturnsEveryExactField(t *testing.T) {
+	// Platform deliberately differs from the selected protocol/model family:
+	// explicit selection is governed by key model discovery, not platform guesses.
+	group := &Group{ID: 7, Name: "Mixed model group", Platform: PlatformAnthropic, Status: StatusActive}
+	key := &APIKey{ID: 41, UserID: 9, Key: "sk-existing-key", Name: "selected", Status: StatusActive, Group: group}
+	cache := newClientSetupTicketCacheStub()
+	selection := ClientSetupSelection{
+		ClientID: "codex", ClientVersionKey: "cli:0.151.0",
+		Protocol: "responses", ModelID: "gpt-5.6-sol", OS: "macos",
+	}
+	svc := &ClientSetupService{
+		apiKeys: &clientSetupAPIKeysStub{keys: map[int64]*APIKey{key.ID: key}},
+		tickets: cache,
+		models:  &clientSetupModelsStub{models: []string{"gpt-5.6-sol", "claude-opus-5"}},
+		selectionReady: func(candidate ClientSetupSelection) bool {
+			return candidate == selection
+		},
+	}
+
+	ticket, err := svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, selection)
+	require.NoError(t, err)
+	require.Equal(t, selection.ClientID, ticket.Target)
+	require.Equal(t, selection.ClientID, ticket.ClientID)
+	require.Equal(t, selection.ClientVersionKey, ticket.ClientVersionKey)
+	require.Equal(t, selection.Protocol, ticket.Protocol)
+	require.Equal(t, selection.ModelID, ticket.ModelID)
+	require.Equal(t, selection.OS, ticket.OS)
+	stored := cache.data[ticket.Ticket]
+	require.Equal(t, clientSetupSelectionTicketPurpose, stored.Purpose)
+	require.Equal(t, selection.ClientID, stored.ClientID)
+	require.Equal(t, selection.ClientVersionKey, stored.ClientVersionKey)
+	require.Equal(t, selection.Protocol, stored.Protocol)
+	require.Equal(t, selection.ModelID, stored.ModelID)
+	require.Equal(t, selection.OS, stored.OS)
+
+	credential, err := svc.ExchangeTicket(context.Background(), ticket.Ticket)
+	require.NoError(t, err)
+	require.Equal(t, key.Key, credential.APIKey)
+	require.Equal(t, selection.ClientID, credential.ClientID)
+	require.Equal(t, selection.ClientVersionKey, credential.ClientVersionKey)
+	require.Equal(t, selection.Protocol, credential.Protocol)
+	require.Equal(t, selection.ModelID, credential.ModelID)
+	require.Equal(t, selection.OS, credential.OS)
+}
+
+func TestExplicitSetupSelectionFailsClosedForPartialPrototypeAndMissingModel(t *testing.T) {
+	group := &Group{ID: 7, Name: "Mixed model group", Platform: PlatformOpenAI, Status: StatusActive}
+	key := &APIKey{ID: 41, UserID: 9, Status: StatusActive, Group: group}
+	base := ClientSetupSelection{
+		ClientID: "opencode", ClientVersionKey: "cli:1.18.15",
+		Protocol: "responses", ModelID: "gpt-5.6-sol", OS: "macos",
+	}
+
+	svc := &ClientSetupService{
+		apiKeys: &clientSetupAPIKeysStub{keys: map[int64]*APIKey{key.ID: key}},
+		tickets: newClientSetupTicketCacheStub(),
+		models:  &clientSetupModelsStub{models: []string{"gpt-5.6-sol"}},
+	}
+	partial := base
+	partial.OS = ""
+	_, err := svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, partial)
+	require.ErrorIs(t, err, ErrInvalidClientSetupSelection)
+
+	// The canonical client contract is still prototype, so an exact-looking
+	// selection must remain unavailable until the generated matrix says ready.
+	_, err = svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, base)
+	require.ErrorIs(t, err, ErrClientSetupSelectionUnavailable)
+
+	svc.selectionReady = func(ClientSetupSelection) bool { return true }
+	wrongProtocol := base
+	wrongProtocol.Protocol = "chat_completions"
+	_, err = svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, wrongProtocol)
+	require.ErrorIs(t, err, ErrClientSetupSelectionUnavailable)
+
+	svc.models = &clientSetupModelsStub{models: []string{"another-model"}}
+	_, err = svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, base)
+	require.ErrorIs(t, err, ErrClientSetupSelectionUnavailable)
+}
+
+func TestGeneratedExplicitSetupSelectionsAllowReadyAndRejectDisabledClients(t *testing.T) {
+	svc := &ClientSetupService{}
+	require.True(t, svc.isSelectionReady(ClientSetupSelection{
+		ClientID: "codex", ClientVersionKey: "cli:0.151.0",
+		Protocol: "responses", ModelID: "gpt-5.6-sol", OS: "macos",
+	}))
+	require.False(t, svc.isSelectionReady(ClientSetupSelection{
+		ClientID: "cursor-desktop", ClientVersionKey: "app:3.18.9",
+		Protocol: "chat_completions", ModelID: "glm-5.3", OS: "macos",
+	}))
+}
+
+func TestExplicitSetupSelectionConsumeRejectsVersionOSAndDiscoveryDrift(t *testing.T) {
+	group := &Group{ID: 7, Name: "Mixed model group", Platform: PlatformOpenAI, Status: StatusActive}
+	key := &APIKey{ID: 41, UserID: 9, Key: "secret", Status: StatusActive, Group: group}
+	models := &clientSetupModelsStub{models: []string{"gpt-5.6-sol"}}
+	selection := ClientSetupSelection{
+		ClientID: "fixture-client", ClientVersionKey: "cli:1.2.3",
+		Protocol: "responses", ModelID: "gpt-5.6-sol", OS: "macos",
+	}
+	newService := func(cache *clientSetupTicketCacheStub) *ClientSetupService {
+		return &ClientSetupService{
+			apiKeys:        &clientSetupAPIKeysStub{keys: map[int64]*APIKey{key.ID: key}},
+			tickets:        cache,
+			models:         models,
+			selectionReady: func(candidate ClientSetupSelection) bool { return candidate == selection },
+		}
+	}
+
+	cache := newClientSetupTicketCacheStub()
+	svc := newService(cache)
+	ticket, err := svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, selection)
+	require.NoError(t, err)
+	tampered := cache.data[ticket.Ticket]
+	tampered.OS = "windows"
+	cache.data[ticket.Ticket] = tampered
+	_, err = svc.ExchangeTicket(context.Background(), ticket.Ticket)
+	require.ErrorIs(t, err, ErrInvalidClientSetupTicket)
+
+	cache = newClientSetupTicketCacheStub()
+	svc = newService(cache)
+	ticket, err = svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, selection)
+	require.NoError(t, err)
+	models.models = nil
+	_, err = svc.ExchangeTicket(context.Background(), ticket.Ticket)
 	require.ErrorIs(t, err, ErrInvalidClientSetupTicket)
 }

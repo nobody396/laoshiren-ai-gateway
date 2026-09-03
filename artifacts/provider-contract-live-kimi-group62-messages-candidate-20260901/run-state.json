@@ -1,0 +1,92 @@
+{
+  "cases": {
+    "62:kimi-k2.7-code:messages:P-01:default": {
+      "artifact_sha256": "1ec185e8d176d8355349bdbf1e88ff8d8ffb1c223a504fe1fe16856b18ae2497",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-01_default-9fa4feda8ae0.json",
+      "status": "blocked"
+    },
+    "62:kimi-k2.7-code:messages:P-02:default": {
+      "artifact_sha256": "2c62b2604e7132f165e81f6242bb349ecfdd77635ea43d9e69f72636cbc2087b",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-02_default-d54f18370838.json",
+      "status": "blocked"
+    },
+    "62:kimi-k2.7-code:messages:P-03:default": {
+      "artifact_sha256": "3a5fa2705d8c5c9209517f9b5741194b0f34c1b734494af9f19714ebf49eabd4",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-03_default-1c75284d2818.json",
+      "status": "blocked"
+    },
+    "62:kimi-k2.7-code:messages:P-04:default": {
+      "artifact_sha256": "cd0f748c7b475f780402bcf800ce9ed942ae274d99a26d739ae60d09dd5ebd38",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-04_default-d33457b341df.json",
+      "status": "blocked"
+    },
+    "62:kimi-k2.7-code:messages:P-05:default": {
+      "artifact_sha256": "b0f2e923b57e00e570823f0da42e791d74b9dc833b65666ee9da75b09e1d7bcf",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-05_default-516e45aedd5b.json",
+      "status": "blocked"
+    },
+    "62:kimi-k2.7-code:messages:P-06:always_on": {
+      "artifact_sha256": "e0581e290ab1d64a2f7fa4568ea46e0af696745d642c312a1b1cdce270f39552",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-06_always_on-06c97f766376.json",
+      "status": "blocked"
+    },
+    "62:kimi-k2.7-code:messages:P-12:default": {
+      "artifact_sha256": "dc3ad7b21beebd2d4126159beb19f8b495c8c199d5f47ba0584b507690299811",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-12_default-2d5d21a86091.json",
+      "status": "blocked"
+    },
+    "62:kimi-k2.7-code:messages:P-15:default": {
+      "artifact_sha256": "341e2384f87ef8d9388f999cd04dea7d1da37e69bc7d3d3adfbd79a429fdc73f",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k2.7-code_messages_P-15_default-4be517bce2d7.json",
+      "status": "pass"
+    },
+    "62:kimi-k3:messages:P-01:default": {
+      "artifact_sha256": "24f2084fc3b2ebeec4cb35a41d9ea35fe49aa4f62f92dbbdc588946d0a0a651b",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-01_default-b8fc2511638b.json",
+      "status": "blocked"
+    },
+    "62:kimi-k3:messages:P-02:default": {
+      "artifact_sha256": "7fb46d3a2c2dbeadfe3b0e82387979195b1e1fdee14e9c2c5efaa5192fae2b33",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-02_default-a2791948959a.json",
+      "status": "blocked"
+    },
+    "62:kimi-k3:messages:P-03:default": {
+      "artifact_sha256": "e4948df7bd475b5491a8b900c6d8294024c97dfaa1e0dd3ed36443ebd115a677",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-03_default-81ae65709d08.json",
+      "status": "blocked"
+    },
+    "62:kimi-k3:messages:P-04:default": {
+      "artifact_sha256": "6a33eb4452aecb19854d13515219f7650a80ccf929375f407d251372b92d00d7",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-04_default-a09d94782551.json",
+      "status": "blocked"
+    },
+    "62:kimi-k3:messages:P-05:default": {
+      "artifact_sha256": "561552978cfa085928e8b0fc149ea7c05dc8a660c5638b7a53fe56ca7aa8d896",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-05_default-d9f60fc3c68b.json",
+      "status": "blocked"
+    },
+    "62:kimi-k3:messages:P-06:high": {
+      "artifact_sha256": "d31283e58de8e26089655f1f0f1a1469101a7613174578bbf85af150f2983886",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-06_high-d00b9e5f8269.json",
+      "status": "blocked"
+    },
+    "62:kimi-k3:messages:P-12:default": {
+      "artifact_sha256": "365f99958fc5e14abe82903ee40a8ff438296433963758ce382318cd5d18efad",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-12_default-f1d721b8a370.json",
+      "status": "blocked"
+    },
+    "62:kimi-k3:messages:P-15:default": {
+      "artifact_sha256": "053a3ae107aa295e3681a7d38e37a33d117540825cf78af985b9724298a0aaab",
+      "receipt": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/cases/62_kimi-k3_messages_P-15_default-7e1d5b3e66b7.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:12:34.325+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "26066f0ffed2467f",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:12:01.930+00:00"
+}

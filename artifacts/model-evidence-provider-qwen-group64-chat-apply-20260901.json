@@ -1,0 +1,495 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 6,
+  "events": 42,
+  "group_access": {
+    "changed": 6,
+    "verified": 0,
+    "blocked": 6
+  },
+  "evidence_index_sha256": "cb230d9bb1001efbe225b02113d45fc4a56e20a8f32c06dceb3c4fb04df394a7",
+  "changes": [
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-204d900bbafa2116db3a4713",
+            "evidence-341639e489ce8e6d9fbb0383",
+            "evidence-61634f5226e7e9367a8df89f",
+            "evidence-6f9a05344bccb558b5cb4643",
+            "evidence-91b27c91d67a45a4ea7152a4",
+            "evidence-a5a3016d221ea013164b1144",
+            "evidence-b445795e655f711aa5ba64a0",
+            "evidence-c48249af23f894b850c9fc94",
+            "evidence-d03b711b2fa23ee24ba1e6dc"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6f9a05344bccb558b5cb4643"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-543d2be7a19881a8a7d7d1ec"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cf96e7674c827d3b5dc17d13"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5c795b7ef4cae6d35019bd0b"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-22fa1ce0db74ce26f1cb4606"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-731623a04e3daaaf2371f663"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-0542b81dcdff90e59da3241d",
+            "evidence-21c12ec2c3efcfd4f9624a60",
+            "evidence-50990a50357706023ca0d9e8",
+            "evidence-78e9cdbc96569ebcadf7aacc",
+            "evidence-79f1acc5b928a3637a734dba",
+            "evidence-ac972b4ee459739d0d12e906",
+            "evidence-b2850ae121a05bc61d257b04",
+            "evidence-d362d04922d1f76c34aeb9dc",
+            "evidence-d54c63bfb03d358ecad2046f"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-79f1acc5b928a3637a734dba"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-49e352a078caf5e7a59abe11"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-170c51132ab55a3562e19dab"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5e9687bfc1f2b0f9cc3833c4"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3cdace6d18d6d9f909834a00"
+          ]
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-aff135360a6e69c77fd50453"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-05c6b9eb625d2534c540adfc",
+            "evidence-292bf3e06997860c981e306e",
+            "evidence-3c466dffbe0aa145051158c4",
+            "evidence-498575b6e35a7d48608199a9",
+            "evidence-5e0a15715b406b9e8882b9f6",
+            "evidence-8a1fcef377ebd8f924d29bb1",
+            "evidence-8b82868f9dd476786e2c239d",
+            "evidence-9d25df19b3ce0ece69fa20ae",
+            "evidence-aee0ef4996a45d23a40ff118"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8a1fcef377ebd8f924d29bb1"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-dd0772ba024892d98c9a60a8"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-438383dda49ca2250de86dfd"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7a936d17697d85f503b44fc1"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e6a02812c383d50488da2c27"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01e941679e70c9622fb998e0"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-4adf1b2b98b48c40a46588fa",
+            "evidence-601b299fc63a211ce19e0467",
+            "evidence-82041fb38041c0c5bfca496f",
+            "evidence-89bd10b5fc9433b613f6161b",
+            "evidence-9ba06cd001f89fa893a562be",
+            "evidence-9bf9a9cdabc562dc35b4f840",
+            "evidence-c5adc69a7dd8b409d596bafe",
+            "evidence-cd24bf412ec17af46b2ba5af",
+            "evidence-ef24ba978dfdfe8c746df2ec"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-601b299fc63a211ce19e0467"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e6ecb1e4cfa5846baccd5e19"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2cf57ea13db84d1b99918d04"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-330061ae3b108ea28e927a32"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-302a3be4bfde29c179cd5753"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b6e0e3a1bf7fcd0f83241b2e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-177380acae21a6d4a05d7644",
+            "evidence-1ce681c4de1936dcf69037bc",
+            "evidence-317bd5b8fb19357f88a84af6",
+            "evidence-39be210f86d71528975fc45f",
+            "evidence-3c984bb08dddba25f0b533ce",
+            "evidence-4073881f5c05486b3a320e35",
+            "evidence-47e5c8c42e0eb070295ecf9e",
+            "evidence-a63ad629ed1cc93ff85b2f9f",
+            "evidence-ceba3cdce2e1c4c8bae67e6a"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a63ad629ed1cc93ff85b2f9f"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8ccc465b73e2407503f3cdd1"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2f74af94b2f8c6e9bc4e2e30"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ad957e2d71da91ab81ee29d5"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2c86a9adf1c84591e27ed4d5"
+          ]
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7538a3f896f27d73fc484db4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.8-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-1c166cbdaf0af0926ff5f625",
+            "evidence-592182a7779c8cdb0f3014af",
+            "evidence-8020a587404c8c5dadd20668",
+            "evidence-8c1ab61477ee369e6614d6e2",
+            "evidence-92bc6ee0db3f319bc4767976",
+            "evidence-cc2657942872d51310bb9861",
+            "evidence-d33ea0a7e49e8e658fee3661"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1c166cbdaf0af0926ff5f625"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-57d8bf1b8023ceff9f56d648"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c40ebe212888fa4b27a47822"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ce663438ce1dbdd44a8fbdf1"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3bde36ad48857378e31c4310"
+          ]
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a5ac6b184813712b3da91eb1"
+          ]
+        }
+      ]
+    }
+  ]
+}

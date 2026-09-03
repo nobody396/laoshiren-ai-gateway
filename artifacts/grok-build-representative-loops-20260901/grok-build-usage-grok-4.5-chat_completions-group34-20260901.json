@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 34,
+  "protocol": "chat_completions",
+  "observed_at": "2026-08-31T23:02:41+00:00",
+  "rows": [],
+  "artifact_sha256": "3d1106597c76927d5e88571ad72fbf978ede69b05704a04e04d9220afa1979af"
+}

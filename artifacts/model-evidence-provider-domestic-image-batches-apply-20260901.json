@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 5,
+  "events": 5,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "d6b7ca0425255e56fe19b1c8226dbfc169c5375b721763cf1f9dd03cd5b33e24",
+  "changes": [
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fadf1cd8ae723b5de9060ca2"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ab62a9cfc2aaf487a51fdd59"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-afa7133eff5881e819fb40da"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a941d72aa854d2ae355cb90f"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-15c29396126fbcd701f3e053"
+          ]
+        }
+      ]
+    }
+  ]
+}

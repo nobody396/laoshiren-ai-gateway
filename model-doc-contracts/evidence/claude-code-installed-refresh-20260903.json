@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "kind": "client_installed_refresh",
+  "artifact_id": "claude-code-installed-refresh-20260903",
+  "observed_at": "2026-09-03",
+  "timezone": "Asia/Shanghai",
+  "secret_free": true,
+  "network_execution": "local_installed_metadata_only",
+  "client": {
+    "id": "claude-code",
+    "exact_name": "Claude Code",
+    "installed_cli_version": "2.1.258",
+    "refresh_reason": "The installed CLI auto-updated from 2.1.251 to 2.1.258; the release pin is refreshed before new loop receipts are projected. Live usage rows for 2026-09-03 carry user_agent claude-cli/2.1.258.",
+    "version_observation": {
+      "command": "claude --version",
+      "stdout": "2.1.258 (Claude Code)"
+    }
+  }
+}

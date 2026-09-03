@@ -1,0 +1,513 @@
+{
+  "schema_version": 1,
+  "kind": "provider_tool_terminal_boundary",
+  "observed_at": "2026-09-01T03:27:00+00:00",
+  "rows": [
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.apply_patch"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.code_interpreter"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.computer_use"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.file_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.hosted_shell"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.image_generation"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.mcp"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.skills"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4-mini",
+        "protocol": "responses",
+        "test_case_id": "tool.tool_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.apply_patch"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.code_interpreter"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.computer_use"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.file_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.hosted_shell"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.image_generation"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.mcp"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.skills"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.4",
+        "protocol": "responses",
+        "test_case_id": "tool.tool_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.apply_patch"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.code_interpreter"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.computer_use"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.file_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.hosted_shell"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.image_generation"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.mcp"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.skills"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.5",
+        "protocol": "responses",
+        "test_case_id": "tool.tool_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.apply_patch"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.code_interpreter"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.computer_use"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.file_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.hosted_shell"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.image_generation"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.mcp"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.skills"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-luna",
+        "protocol": "responses",
+        "test_case_id": "tool.tool_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.apply_patch"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.code_interpreter"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.computer_use"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.file_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.hosted_shell"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.mcp"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.skills"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-sol",
+        "protocol": "responses",
+        "test_case_id": "tool.tool_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.apply_patch"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.code_interpreter"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.computer_use"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.file_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.hosted_shell"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.image_generation"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.mcp"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.skills"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-5.6-terra",
+        "protocol": "responses",
+        "test_case_id": "tool.tool_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.apply_patch"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.code_interpreter"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.computer_use"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.file_search"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.function_calling"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.hosted_shell"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.image_generation"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.mcp"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.skills"
+      },
+      "evidence_ids": []
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "responses",
+        "test_case_id": "tool.tool_search"
+      },
+      "evidence_ids": []
+    }
+  ],
+  "decision": "Only tools with a verified native provider receipt are published. Client-side tools and unexposed server tools are unsupported at the provider boundary.",
+  "secret_free": true
+}

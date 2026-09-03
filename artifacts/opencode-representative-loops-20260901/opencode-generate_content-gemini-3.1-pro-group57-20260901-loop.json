@@ -1,0 +1,78 @@
+{
+  "architecture": "arm64",
+  "artifact_sha256": "011b95cb78d6b9db6e6356a7059db8269fdaf58e0e721a0be9ee38c026bf3e91",
+  "assistant_text_bytes": 32,
+  "assistant_text_sha256": "2648dd676fee54f3042e2376a5897cad20bec3917da3aad95bc2619580cc58cf",
+  "base_url": "https://api.laoshirenai.com/v1beta",
+  "client_id": "opencode",
+  "client_version": "cli:1.18.15",
+  "command_contract": {
+    "auto": true,
+    "client_version": "1.18.15",
+    "model": "gemini-3.1-pro",
+    "output_format": "json",
+    "provider_id": "laoshirenai-generate-content",
+    "provider_package": "@ai-sdk/google",
+    "pure": true
+  },
+  "duration_ms": 29551,
+  "event_count": 12,
+  "event_types": {
+    "step_finish": 4,
+    "step_start": 4,
+    "text": 1,
+    "tool_use": 3
+  },
+  "exit_code": 0,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "finished_at": "2026-08-31T22:54:23+00:00",
+  "group_id": 57,
+  "kind": "real_client_loop",
+  "model_id": "gemini-3.1-pro",
+  "observed_at": "2026-08-31T22:53:50+00:00",
+  "os": "macos",
+  "owned_key": {
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901",
+    "user_id": 1
+  },
+  "passed": true,
+  "protocol": "generate_content",
+  "protocol_attribution": {
+    "artifact_sha256": "9edaf65c354b70165b19b9e7bbc1b7c351db68897733b57d136ae8878f05ebe8",
+    "artifact_uri": "artifacts/opencode-representative-loops-20260901/opencode-generate_content-gemini-3.1-pro-group57-20260901-usage.json",
+    "inbound_endpoint": "/v1beta/models",
+    "upstream_endpoint": "/v1beta/models",
+    "usage_rows": 5,
+    "verified": true
+  },
+  "read_tool_verified": true,
+  "restored_group_id": 6,
+  "schema_version": 1,
+  "secret_free": true,
+  "shell_file_verified": true,
+  "shell_tool_verified": true,
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 11852,
+  "stdout_sha256": "4814dc9e4fdd0f2ae1e0fe56992416d986f6c3b83e6c187f53457f376b5d7cbb",
+  "successful_tools": [
+    "bash",
+    "read"
+  ],
+  "temporary_config": {
+    "api_key_source": "child env LAOSHIRENAI_OPENCODE_KEY",
+    "literal_key_written": false,
+    "path": "~/.config/opencode/opencode.json",
+    "removed_with_temporary_home": true,
+    "sha256": "5823e6e1586c0060751a5ec4baaedd34a55e9d82491152de7fb05d605f4561f7"
+  },
+  "timed_out": false,
+  "tool_names": [
+    "bash",
+    "read"
+  ],
+  "tool_result_observed": true,
+  "tool_use_observed": true
+}

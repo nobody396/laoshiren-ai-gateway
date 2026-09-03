@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "9533c64733a9075f41cc032f4eb5266b0bee2b7c0e58e04055ee2d89e9f5fcc8",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "6:gpt-5.6-terra:responses:P-15:default",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 6,
+    "group_name": "GPT 标准线路",
+    "marker": "LSR_CONTRACT_9E8DE2EA246FF373",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-5.6-terra",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:gpt-5.6-terra/responses/invalid_request"
+    ]
+  },
+  "case_fingerprint": "be615d2494de9a32bb7c6d8a8168c95aa95f98dc3b9e51fa69c421e05ff7e74e",
+  "classification": "verified",
+  "finished_at": "2026-08-31T18:48:34.878+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T18:48:32.460+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 6,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "f0a6726feb83fe6002af7d0251e75b4fa937f527a4e866f170dc27f280c3d3f9",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "2683f796ade7efd82b279dd784fe9fb7a724555d4a167db9b5a5f37ef600dd56"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "fd285ae4c81c21744d9bcea811a6c30cfd5b1810242bd15c6e6db791e184286f",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "e6ac8a38-25d1-473e-8443-ee0ee331b8a3",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

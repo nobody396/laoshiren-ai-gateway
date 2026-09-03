@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "18666859c0c1edb814a27b8fc048417e738284c1f850ebdc5d7e5f519a98e018",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "be7ebc86919e9282",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-daybreak-group52-retry-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1
+  }
+}

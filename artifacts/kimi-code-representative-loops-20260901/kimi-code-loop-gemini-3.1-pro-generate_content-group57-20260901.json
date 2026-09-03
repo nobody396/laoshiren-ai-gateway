@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "network_execution": "explicit_live",
+  "client_id": "kimi-code",
+  "client_version": "cli:0.38.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gemini-3.1-pro",
+  "protocol": "generate_content",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 57,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T23:14:37+00:00",
+  "finished_at": "2026-08-31T23:15:11+00:00",
+  "duration_ms": 34122,
+  "command_contract": {
+    "executable": "kimi",
+    "version": "0.38.0",
+    "provider_type": "google-genai",
+    "credential": "KIMI_MODEL_API_KEY environment only",
+    "temporary_home": true,
+    "automatic_permissions": true,
+    "output_format": "stream-json"
+  },
+  "group_readback": {
+    "id": 205,
+    "user_id": 1,
+    "status": "active",
+    "group_id": 57
+  },
+  "model_discovery": {
+    "http_status": 200,
+    "model_count": 2,
+    "model_ids": [
+      "gemini-3.1-pro",
+      "gemini-3.7-flash"
+    ]
+  },
+  "exit_code": 1,
+  "timed_out": false,
+  "event_count": 0,
+  "event_types": {},
+  "tool_names": [],
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_observed_after_tool": false,
+  "final_marker_verified": false,
+  "assistant_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assistant_text_bytes": 0,
+  "shell_file_verified": false,
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 0,
+  "stderr_sha256": "253797722f7f920066c60574f92b96c3b7cc3ca293c2aad801fd04bcc8a8f8c1",
+  "stderr_bytes": 44,
+  "credential_policy": {
+    "key_transport": "environment_only",
+    "config_path": "home/.kimi-code/config.toml",
+    "plaintext_persistence_detected": false,
+    "plaintext_stream_echo_detected": false,
+    "detected_files": [],
+    "blocker": null
+  },
+  "usage_attribution": {
+    "path": "/admin/usage?page=1&page_size=200&api_key_id=205&group_id=57&model=gemini-3.1-pro&sort_by=id&sort_order=desc&exact_total=true",
+    "expected_endpoint": "/v1beta/models",
+    "rows": [],
+    "row_count": 0,
+    "verified": false
+  },
+  "restored_group_id": 6,
+  "passed": false,
+  "restoration_error": null,
+  "artifact_sha256": "c00470835e25825d208cac638b74204310fa4238939c43e67d53e44bd6dfe381"
+}

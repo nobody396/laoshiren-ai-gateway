@@ -1,0 +1,452 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 13,
+  "events": 39,
+  "group_access": {
+    "changed": 1,
+    "verified": 0,
+    "blocked": 1
+  },
+  "evidence_index_sha256": "9887b6a3c86035d558948a9da6c3e1d14f3cc4719f918f23447525bd978d0a8b",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "OpenCode/messages/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-0ec7dbc8c1a2f668b917525a",
+            "evidence-4e4259fb76d85967e89b64ec"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/messages/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-d3f6681bd505f74cc7d0b86b",
+            "evidence-e8b1c77ae30a1a56c06b62f4"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/messages/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-4dbdd61f69ff49cfd51083f7",
+            "evidence-cf75f0455ef7b780d5b27521"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-6e7eb1801e36566d50c857cf"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "OpenCode/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-16b272fdb226be490f671fcf",
+            "evidence-36434078fa58703befb3323a"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-044ec2f0fbf2a30c6e900375"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Gemini CLI/generate_content/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-bdc3461ae23fc279a5c96822",
+            "evidence-f9aff77de5ef2450dac74e12"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/generate_content/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2ef6e13038a95ca359b6bb5f",
+            "evidence-dde6a778d5169efe804655c7"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Codex/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-6442b1ad7908a4ac195d5a99",
+            "evidence-c0933f40c08c4027bbadd1e3"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-74b6085153b0e8ffa088b1c7"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Grok Build/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-a22df6006ecf7e7fc3388ad5"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-0eb1912555e83c0096cf37c0"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-9bfde5bbd81e1586c2896d7c"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-1b49eef27dec1b8548b3bb2e",
+            "evidence-4ad8afa39d86605daf264c65"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "ZCode/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-77b98fc983c15f5fff15eb93"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-e22cecc983d7f4ff485d4fb3",
+            "evidence-f31eda51318c234ebe202804"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2904f03d831c688d7817ded1",
+            "evidence-e28e54ee1b48c7d50f19012f"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-daybreak-blue-latest.json",
+      "events": [
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "group_access",
+          "path": "GPT Daybreak Blue 安全研究线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-184f1f4e11dc450ac362c21b",
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-4e8fa49e9c4b3ec3c51ad6a3",
+            "evidence-67705d306c4fd03b9a5c933c",
+            "evidence-bf3a1e7c285a0069c70a5b4a",
+            "evidence-dd55d344cb00b3e6d1842ff8",
+            "evidence-f1003fa2ead6134822adbbdb",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ],
+          "protocol_status": {
+            "responses": "blocked"
+          }
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ]
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Codex/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-f8fa556a3b7b52909ec5c698"
+          ]
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Grok Build/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-3e42bcb39d169648d3ab0f57"
+          ]
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-b60413f0cd438208ae6c96c4"
+          ]
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-a3e87c6b3be28e77a85d56ae"
+          ]
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-e188d9c5c383b631b306b76b"
+          ]
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "ZCode/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-afe15c63b9772e462ae19ec7"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-946e94cef1d68113ab3c1cba",
+            "evidence-f7d9cf2da7ffb24fa9ad56ce"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2ab5414525856cf640a4c7a0",
+            "evidence-934df674777d152bd69c6db8"
+          ]
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "ZCode/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-106518e25acd40635e45b7e3",
+            "evidence-46ce009c1cd169ed37171aee"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-31548a9d01d015bfd9be6bbf"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-43d3ec194b06573613285205"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-ae3c6fa7d9b3736ba89c3f7e",
+            "evidence-b68064ee57c6c59c8ec532ac"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "test_evidence",
+          "path": "ZCode/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-88ed9082d0f2a76a20dbf562",
+            "evidence-f308fcad4f2108c221dc352b"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "Codex/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-43fa529dfd434cca3dde46da",
+            "evidence-ade1d4a75f46a175bdf79a9f"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-1e221af7bdecc8016124e54e"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-1b91d4441ea03a45981f19d5"
+          ]
+        }
+      ]
+    }
+  ]
+}

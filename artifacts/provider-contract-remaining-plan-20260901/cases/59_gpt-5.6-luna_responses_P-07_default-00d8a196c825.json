@@ -1,0 +1,136 @@
+{
+  "artifact_sha256": "2e2cc660470dde18a74c2ae0151b0e3a14190c70183953300a29a99d98a11319",
+  "billing_attribution": {
+    "actual_cost": 0.00136128,
+    "status": "verified",
+    "total_cost": 0.00136128,
+    "usage_row_ids": [
+      "243468",
+      "243467"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "59:gpt-5.6-luna:responses:P-07:default",
+    "context_window": 1050000,
+    "declared_status": "blocked",
+    "group_id": 59,
+    "group_name": "GPT 企业高速线路",
+    "marker": "LSR_CONTRACT_BFB40B42FEB76DEB",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-5.6-luna",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:gpt-5.6-luna/responses/features/prompt_cache"
+    ]
+  },
+  "case_fingerprint": "062b8eedccf9d4853c35988ecb1ec1d3a46553b2a8ae38399cce07be6f1033d8",
+  "classification": "contract_failed",
+  "finished_at": "2026-09-01T03:01:06.604+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T03:00:54.500+00:00",
+  "offline_verifier": {
+    "reason": "prompt cache claim requires cached_input_tokens > 0",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 59,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": "prompt cache claim requires cached_input_tokens > 0",
+  "request": {
+    "payload_sha256": "27b293b7f60d085749043d6b204f08991221176cf627212f091fafa9e5cdebb4",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "0768281fb5e19778c84aec20ac7c9bb712c2c23b5fc5f347129586f476dc8686"
+  },
+  "response": {
+    "body_bytes": 1758,
+    "body_sha256": "b715410ce1ee3c5a2c6c7c2fd291c5e7bd63800547d965c359d2f3f1ffa0bffe",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "c3d383b1-06b4-4e5f-8c59-89ccb3fb17bf",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 5454,
+    "output_tokens": 17,
+    "total_tokens": 5471
+  },
+  "usage_attribution": {
+    "row_count": 2,
+    "rows": [
+      {
+        "account_id": 78,
+        "account_rate_multiplier": 0.3308,
+        "actual_cost": 0.00023568,
+        "api_key_id": 128,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 9.728e-05,
+        "cache_read_tokens": 4864,
+        "created_at": "2026-09-01T11:01:04.645532+08:00",
+        "duration_ms": 1582,
+        "first_token_ms": null,
+        "group_id": 59,
+        "id": 243468,
+        "inbound_endpoint": "/v1/responses",
+        "input_cost": 0.000118,
+        "input_tokens": 590,
+        "model": "gpt-5.6-luna",
+        "output_cost": 2.04e-05,
+        "output_tokens": 17,
+        "rate_multiplier": 1,
+        "request_id": "client:170c1b00-7b8e-4fab-ad4b-733ae730cb4f",
+        "request_type": "sync",
+        "stream": false,
+        "total_cost": 0.00023568,
+        "upstream_endpoint": "/v1/responses",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/84a65a48cb8f8375 case/00d8a196c825"
+      },
+      {
+        "account_id": 78,
+        "account_rate_multiplier": 0.3308,
+        "actual_cost": 0.0011256,
+        "api_key_id": 128,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 0,
+        "cache_read_tokens": 0,
+        "created_at": "2026-09-01T11:00:58.184868+08:00",
+        "duration_ms": 1864,
+        "first_token_ms": null,
+        "group_id": 59,
+        "id": 243467,
+        "inbound_endpoint": "/v1/responses",
+        "input_cost": 0.0010908,
+        "input_tokens": 5454,
+        "model": "gpt-5.6-luna",
+        "output_cost": 3.48e-05,
+        "output_tokens": 29,
+        "rate_multiplier": 1,
+        "request_id": "client:d365ee33-4581-49bf-a540-4d6e87d2d143",
+        "request_type": "sync",
+        "stream": false,
+        "total_cost": 0.0011256,
+        "upstream_endpoint": "/v1/responses",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/84a65a48cb8f8375 case/00d8a196c825"
+      }
+    ],
+    "status": "verified"
+  }
+}

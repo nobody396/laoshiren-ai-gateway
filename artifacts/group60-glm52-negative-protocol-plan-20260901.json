@@ -1,0 +1,4 @@
+[
+  {"group_id":60,"model_id":"glm-5.2","protocol":"responses","max_output_tokens":64},
+  {"group_id":60,"model_id":"glm-5.2","protocol":"messages","max_output_tokens":1024}
+]

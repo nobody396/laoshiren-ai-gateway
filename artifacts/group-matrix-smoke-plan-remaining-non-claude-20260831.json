@@ -1,0 +1,122 @@
+[
+  {
+    "group_id": 6,
+    "model_id": "gpt-5.3-codex-spark",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 6,
+    "model_id": "gpt-5.4",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 6,
+    "model_id": "gpt-5.5",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 6,
+    "model_id": "gpt-5.6-terra",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 34,
+    "model_id": "grok-4.5",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 52,
+    "model_id": "gpt-5.6-sol",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 57,
+    "model_id": "gemini-3.1-pro",
+    "protocol": "generate_content"
+  },
+  {
+    "group_id": 58,
+    "model_id": "gpt-5.4",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 58,
+    "model_id": "gpt-5.5",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 58,
+    "model_id": "gpt-5.6-terra",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 59,
+    "model_id": "gpt-5.3-codex-spark",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 59,
+    "model_id": "gpt-5.4",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 59,
+    "model_id": "gpt-5.4-mini",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 59,
+    "model_id": "gpt-5.5",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 59,
+    "model_id": "gpt-5.6-luna",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 59,
+    "model_id": "gpt-5.6-sol",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 60,
+    "model_id": "glm-5.2",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 61,
+    "model_id": "deepseek-v4-flash-0731",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 62,
+    "model_id": "kimi-k2.7-code",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.6-flash",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.6-plus",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.7-flash",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.7-max",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 64,
+    "model_id": "qwen3.7-plus",
+    "protocol": "responses"
+  }
+]

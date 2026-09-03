@@ -23,6 +23,20 @@ def grok_default_row(catalog: dict) -> dict:
 class ModelCatalogTest(unittest.TestCase):
     def test_repository_catalog_is_valid_and_deterministic(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        self.assertEqual(catalog["pricing_contract"]["default_scope"], "provider_public")
+        self.assertEqual(
+            {row["id"] for row in catalog["models"] if row.get("public_price_visibility") == "hidden"},
+            {"deepseek-v4-flash", "glm-5.3-flash"},
+        )
+        spark_gap = next(row for row in catalog["price_gaps"] if row["model_id"] == "gpt-5.3-codex-spark")
+        self.assertEqual(spark_gap["status"], "not_published")
+        self.assertIn("not final", spark_gap["reason"])
+        self.assertTrue(spark_gap["evidence_url"].startswith("https://help.openai.com/"))
+        gemini_pro = next(row for row in catalog["models"] if row["id"] == "gemini-3.1-pro")
+        gemini_flash = next(row for row in catalog["models"] if row["id"] == "gemini-3.7-flash")
+        self.assertEqual(gemini_pro["pricing"]["cached_input_per_mtok_usd"], 0)
+        self.assertEqual(gemini_pro["provider_pricing"]["cached_input_per_mtok_usd"], 0.2)
+        self.assertEqual(gemini_flash["provider_pricing"]["cached_input_per_mtok_usd"], 0.075)
         codex_models = [
             model["slug"]
             for model in json.loads(MODULE.render_codex_client_catalog(catalog))["models"]
@@ -65,6 +79,14 @@ class ModelCatalogTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "credential-shaped"):
             MODULE.validate_catalog(catalog)
 
+    def test_rejects_null_price_claimed_as_verified(self) -> None:
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        gemini = next(row for row in catalog["models"] if row["id"] == "gemini-3.1-pro")
+        gemini["provider_pricing"]["cached_input_per_mtok_usd"] = None
+        gemini["provider_pricing"]["component_status"]["cached_input"] = "verified"
+        with self.assertRaisesRegex(ValueError, "cannot be verified when price is null"):
+            MODULE.validate_catalog(catalog)
+
     def test_rejects_grok_predecessor_without_explicit_model_metadata(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
         grok_default_row(catalog)["client_config"]["managed_predecessor_models"] = []
@@ -104,7 +126,7 @@ class ModelCatalogTest(unittest.TestCase):
             merged = MODULE.merge_manifest(catalog, path)
         row = grok_default_row(merged)
         self.assertEqual(row["public_group"]["preferred_name"], "Grok")
-        self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.6", "Grok 4.5"])
+        self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.6", "Grok 4.5", "Grok"])
 
     def test_new_default_replaces_prior_platform_default(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
@@ -261,18 +283,18 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertEqual(values["gemini"]["id"], "gemini-3.7-flash")
         self.assertEqual(
             values["gemini"]["managed_ids"],
-            ["gemini-3.1-pro", "gemini-3.7-flash", "gemini-3.7-flash-high"],
+            ["gemini-3.1-pro", "gemini-3.7-flash"],
         )
         shell_block = MODULE.render_shell_block(catalog)
         self.assertIn("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'", shell_block)
         self.assertIn(
-            "CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high'",
+            "CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash'",
             shell_block,
         )
         powershell_block = MODULE.render_powershell_block(catalog)
         self.assertIn("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'", powershell_block)
         self.assertIn(
-            "$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')",
+            "$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash')",
             powershell_block,
         )
 

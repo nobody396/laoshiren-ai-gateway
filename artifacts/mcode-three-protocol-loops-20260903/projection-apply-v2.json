@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "client_matrix_write": true,
+  "changed": true,
+  "events": 3,
+  "matrix_event_counts": {
+    "client_protocol": 3,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "6a6e7ead976e5b3b0c82974425231fd3b67a13e196f0adf31c69d9a475f128fa",
+  "client_matrix_before_sha256": "3499e922af3899261cd60b49f877a23117215bf6f9de3d02e598f6e6897db758",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "responses",
+      "status": "verified"
+    }
+  ],
+  "client_matrix_after_sha256": "1b082eceda4e71c52f24c6b2a65f3c2fa1cb78756e7dcd7a62377df1198abb5c"
+}

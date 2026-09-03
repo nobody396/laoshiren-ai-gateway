@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "4a5fb4fd99a24dfa448b436725cfed2338682cc3fe9b08c7f4a50e4ad5870881",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "62:kimi-k3:chat_completions:P-15:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 62,
+    "group_name": "Kimi 企业高速线路",
+    "marker": "LSR_CONTRACT_B40D7C96D36FC692",
+    "max_output_tokens": 1048576,
+    "model_id": "kimi-k3",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:kimi-k3/chat_completions/features/error_passthrough",
+      "model_protocol:kimi-k3/chat_completions/invalid_request"
+    ]
+  },
+  "case_fingerprint": "790c673634ff9cb8aeb41b9171bdb566a24c107506acc568c489c9db569d23c5",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:27:00.965+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:26:59.971+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 62,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "d23d1b5690ca80e104680dce39c58634c7c45ec52c1a60afc7b7db2a19f98977",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "1fe7bda71ebcedfb2ad1171e1ffa37a9c9c938e16d13b81f1bd2dd24d237aa64"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "ad99126650eba623bf9b14bff54de523bf24258f19b2d063fb2d2f1a5f82fcb9",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "e1cc3891-baa1-4321-a750-bebd8648d5bb",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "0e11e9472dad3852ada17f1f233519024a226413ca1eca426fda63c3d516d082",
+  "case_count": 16,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "49b9e15d2d326f6a",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-minimax-group63-candidate-protocols-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 9,
+    "pass": 7
+  }
+}

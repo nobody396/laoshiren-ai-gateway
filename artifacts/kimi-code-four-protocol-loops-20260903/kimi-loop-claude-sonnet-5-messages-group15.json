@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "kimi-code",
+  "client_version": "cli:0.39.1",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-sonnet-5",
+  "protocol": "messages",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 15,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T03:43:57+00:00",
+  "finished_at": "2026-09-03T03:44:35+00:00",
+  "duration_ms": 27702,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-messages",
+    "provider_type": "anthropic",
+    "provider_base_url": "https://api.laoshirenai.com",
+    "output_format": "stream-json",
+    "isolated_home": true,
+    "credential": "ephemeral config.toml api_key, mode 0600, destroyed after run"
+  },
+  "target_group_readback": {
+    "group_id": 15
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": false,
+  "final_text_present": true,
+  "final_marker_note": "final exact-marker is the strict oracle; claude-sonnet-5 over the messages route drifts to an identity reply, so pass/fail keys on final_text_present",
+  "tool_use_observed": true,
+  "tool_result_observed": false,
+  "tool_result_continuation_verified": false,
+  "stream_event_counts": {
+    "system.version": 1,
+    "unknown": 7,
+    "session.resume_hint": 1
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 1271,
+  "stdout_sha256": "15b45015dd182b82c2811fd868ece18055c2b0c43a895e4a40a0c821a7131118",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-loop-claude-sonnet-5-messages-group15-usage.json",
+    "artifact_sha256": "316898c6a6293430a3a25fa801b32e49d11a689cbfc97f6c09b5c32c1b1a7c6d",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoints": [
+      "/v1/messages"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "9c4de920490fa75789aa921885c0111d8c588760e416d2ad0d853baf1f26620c"
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 2,
+  "group_access": {
+    "changed": 1,
+    "verified": 1,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "b48ec0258bb735a5f68f75a8fed8411bbb9e1cff1ac4972861656a2309b30dfd",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "group_access",
+          "path": "Claude 兼容线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-21d1822a765ae2c6a4a68a91",
+            "evidence-45bfd0d09aabb211639b3f3a",
+            "evidence-5ccde039d539c302351c3be2",
+            "evidence-601048974020e6db866ad45b",
+            "evidence-737c5bc4971dfd63bc421b86",
+            "evidence-78df291116d7bd27bdf28e0c",
+            "evidence-8548d814355714c72acf2b80",
+            "evidence-8e99ec5f68d6442e00a003cb",
+            "evidence-e7f3295f06b56d6c5ef4f699",
+            "evidence-f5efca9336c9ee4dc27d12bf"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-21d1822a765ae2c6a4a68a91",
+            "evidence-3acc5a1ec6779a12c9236cae",
+            "evidence-4a0e0eade14a49a9ec296254",
+            "evidence-5ccde039d539c302351c3be2",
+            "evidence-601048974020e6db866ad45b",
+            "evidence-80632aa21484f68fbdb44ac8",
+            "evidence-9a68a0ac4a9eb4a006f3115d",
+            "evidence-b420ec86f9fdffa6261840ff"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 6,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "e52796cfe329f5f7eb1bec76890734bea86ab3881f075a27a6103f1ca8d13b86",
+  "changes": [
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-109e9f615f08f375c3dcdc17"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-213b8d61e84055b4ec43ca6d"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-dc703ab27d4e5169d50a5655"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-670fcb5e72f98c63f6af7803"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7e5dca2a3dc57654c11b5733"
+          ]
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-702ebe012e3793cf65eef9ce"
+          ]
+        }
+      ]
+    }
+  ]
+}

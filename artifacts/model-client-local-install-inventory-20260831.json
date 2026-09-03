@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "model_client_local_install_inventory",
+  "observed_at_beijing": "2026-08-31T22:47:35+08:00",
+  "secret_free": true,
+  "rows": [
+    {
+      "kind": "cli",
+      "id": "claude",
+      "path": "/Users/fujunhao/.npm-global/bin/claude",
+      "resolved_path": "/Users/fujunhao/.npm-global/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+      "exit_code": 0,
+      "version_output": "2.1.251 (Claude Code)",
+      "artifact_sha256": "625869b01e0050f260b2980fac248fd9cef9e462612bded4ec9d3d49ff8969a5"
+    },
+    {
+      "kind": "cli",
+      "id": "codex",
+      "path": "/Users/fujunhao/.npm-global/bin/codex",
+      "resolved_path": "/Users/fujunhao/.npm-global/lib/node_modules/@openai/codex/bin/codex.js",
+      "exit_code": 0,
+      "version_output": "codex-cli 0.151.0",
+      "artifact_sha256": "134063e133f0b4244fa3b251acf973d4fe4b4aeeacbdc135211bf480f59f1477"
+    },
+    {
+      "kind": "cli",
+      "id": "grok",
+      "path": "/Users/fujunhao/.local/bin/grok",
+      "resolved_path": "/Users/fujunhao/.grok/downloads/grok-macos-aarch64",
+      "exit_code": 0,
+      "version_output": "grok 1.0.13 (5e9a58528b76)",
+      "artifact_sha256": "8669e0fdadceec25b8c159c355f427ffbd82583525d774b6ab1522197ea83b80"
+    },
+    {
+      "kind": "cli",
+      "id": "kimi",
+      "path": "/Users/fujunhao/.kimi-code/bin/kimi",
+      "resolved_path": "/Users/fujunhao/.kimi-code/bin/kimi",
+      "exit_code": 0,
+      "version_output": "0.38.0",
+      "artifact_sha256": "92bf3b4b6643e7c4cc12c82e5680cc5b54a5a6768a301de815e5e9a02d2184bb"
+    },
+    {
+      "kind": "cli",
+      "id": "opencode",
+      "path": "/Users/fujunhao/.opencode/bin/opencode",
+      "resolved_path": "/Users/fujunhao/.opencode/bin/opencode",
+      "exit_code": 0,
+      "version_output": "1.18.15",
+      "artifact_sha256": "195d811a91508d856a4d67b77d04d410193b194cf509e0ee85d45cb0fa572a11"
+    },
+    {
+      "kind": "cli",
+      "id": "hermes",
+      "path": "/Users/fujunhao/.local/bin/hermes",
+      "resolved_path": "/Users/fujunhao/.local/bin/hermes",
+      "exit_code": 0,
+      "version_output": "Hermes Agent v0.20.0 (2026.8.3) | Install directory: /Users/fujunhao/.hermes/hermes-agent | Install method: git",
+      "artifact_sha256": "946dfe418626366ac0e553d951de1b79ea8b643613499346effd4088ac981060"
+    },
+    {
+      "kind": "cli",
+      "id": "trae",
+      "path": "/usr/local/bin/trae",
+      "resolved_path": "/Applications/Trae.app/Contents/Resources/app/bin/trae",
+      "exit_code": 0,
+      "version_output": "1.107.1 | d2e2138fe4eecab29cb2cd7e02ddae37bed2d5fb | arm64",
+      "artifact_sha256": "c9564e469576b00ad33ec19ad53ffa4b9cc9b04ec203a0cb86a0f68b41d1c935"
+    },
+    {
+      "kind": "app",
+      "id": "trae",
+      "path": "/Applications/Trae.app",
+      "bundle_id": "com.trae.app",
+      "version": "3.5.66",
+      "build": "3.5.66",
+      "info_plist_sha256": "9a19a62d24725fc40a22548271c2625b73a68087f04a99da8f8d0cec96d73427"
+    },
+    {
+      "kind": "app",
+      "id": "workbuddy",
+      "path": "/Applications/WorkBuddy.app",
+      "bundle_id": "com.workbuddy.workbuddy",
+      "version": "5.3.14",
+      "build": "5.3.14",
+      "info_plist_sha256": "ef244259099465f704a8b7b60bf0e913fb62cc1e641109f1afe926419d655595"
+    },
+    {
+      "kind": "app",
+      "id": "zcode",
+      "path": "/Applications/ZCode.app",
+      "bundle_id": "dev.zcode.app",
+      "version": "3.10.1",
+      "build": "3.10.1.6272",
+      "info_plist_sha256": "88e2efc4cc1740c82a8e81c279fd2507683bb6cd08944592295c348c83b3cabe"
+    },
+    {
+      "kind": "app",
+      "id": "opencode",
+      "path": "/Applications/OpenCode.app",
+      "bundle_id": "ai.opencode.desktop",
+      "version": "1.18.5",
+      "build": "1.18.5",
+      "info_plist_sha256": "f6ad3199940cd7f3330b36354b8edae322529159d473409c372f9694458a7de5"
+    }
+  ]
+}

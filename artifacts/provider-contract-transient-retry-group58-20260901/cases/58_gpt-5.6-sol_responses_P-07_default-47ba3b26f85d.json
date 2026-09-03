@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "c586fe8e6081f4419fc98e5e9f6a3b2c64dc6b6f248c6fd3a0168cfbf6bfeb67",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "58:gpt-5.6-sol:responses:P-07:default",
+    "context_window": 1050000,
+    "declared_status": "blocked",
+    "group_id": 58,
+    "group_name": "GPT 经济线路",
+    "marker": "LSR_CONTRACT_B8416377B06F5377",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-5.6-sol",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "f6e04f0da76c10e229907dba6f849e2bc6b3fc8aa73d875bc571a65bf59c942d",
+  "classification": "timeout",
+  "finished_at": "2026-09-01T03:10:10.506+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T03:09:34.791+00:00",
+  "offline_verifier": {
+    "reason": "usage object is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 58,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": "usage object is required",
+  "request": {
+    "payload_sha256": "d67439649fa525be30fac216ef8677190c5b7f66cabe2363a23fdf48bb79d9ff",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "ac594dc702c20726955bd9595b38991ff5a524c1ba0b28ed5b4aeb0c1958da7b"
+  },
+  "response": {
+    "body_bytes": 0,
+    "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "complete": false,
+    "content_type": null,
+    "error": {
+      "message": "The read operation timed out",
+      "type": "TimeoutError"
+    },
+    "event_count": 0,
+    "http_status": 0,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": true
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

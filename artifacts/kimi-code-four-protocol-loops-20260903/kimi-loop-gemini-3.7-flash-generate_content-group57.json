@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "kimi-code",
+  "client_version": "cli:0.39.1",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gemini-3.7-flash",
+  "protocol": "generate_content",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 57,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T03:27:39+00:00",
+  "finished_at": "2026-09-03T03:28:10+00:00",
+  "duration_ms": 19100,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-generate-content",
+    "provider_type": "google-genai",
+    "provider_base_url": "https://api.laoshirenai.com",
+    "output_format": "stream-json",
+    "isolated_home": true,
+    "credential": "ephemeral config.toml api_key, mode 0600, destroyed after run"
+  },
+  "target_group_readback": {
+    "group_id": 57
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stream_event_counts": {
+    "system.version": 1,
+    "unknown": 7,
+    "session.resume_hint": 1
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 1359,
+  "stdout_sha256": "47b93410fff10786e85edf6b032345e1a897227c69b64c9e779d9598f075c59e",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-loop-gemini-3.7-flash-generate_content-group57-usage.json",
+    "artifact_sha256": "5e5f21b3c8b907f90dc01e56b73998b1f4cdb0c3f1f538cb96bcd11f8b05a576",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1beta/models",
+    "upstream_endpoints": [
+      "/v1beta/models"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "9a8373c6e93db071605a55e0c1c7466d6f7e0ea8313dff7dc31c4007cb4fe3a7"
+}

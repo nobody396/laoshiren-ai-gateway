@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "9c6295b13cbb5c5334a989817da9fc8c154e13e7c8bdc6415b6c6a0cadf522f2",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "65:claude-sonnet-4-6:messages:P-11:default",
+    "context_window": 1000000,
+    "declared_status": "blocked",
+    "group_id": 65,
+    "group_name": "Claude 经济线路",
+    "marker": "LSR_CONTRACT_760039191C7BD2EC",
+    "max_output_tokens": 128000,
+    "model_id": "claude-sonnet-4-6",
+    "name": "web_search",
+    "p_id": "P-11",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "89f59f8615e3dd08b1143fc5d7880baa40699f7b6b7eb6380f631f731e381489",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:00:23.607+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:00:20.747+00:00",
+  "offline_verifier": {
+    "reason": "web search requires at least one citation",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 65,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "web search requires at least one citation",
+  "request": {
+    "payload_sha256": "047cc5ee6c198e53df85483a4466c8ed174f52ce988b31f19a9efa6da3530961",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "3203152c1d10603989b866898f5fff8951ff307c75fac04b257cd3df0f899266"
+  },
+  "response": {
+    "body_bytes": 173,
+    "body_sha256": "2ac5bcc0e1a729d30e227c68c752fd72acf23d872c1b2616f63fbab5088fdcd9",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The service is temporarily unavailable. Please try again later.",
+      "type": "api_error"
+    },
+    "event_count": 0,
+    "http_status": 502,
+    "marker_present": false,
+    "request_id": "da39ae58-bd12-4e50-848c-ccffed44fc90",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

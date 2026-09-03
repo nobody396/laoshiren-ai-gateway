@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "final_local_release_gate",
+  "status": "passed",
+  "scope": {
+    "model_cards": 35,
+    "llm_contracts": 34,
+    "image_contracts": 1,
+    "clients": 14,
+    "one_click_ready": 4,
+    "manual_or_prototype": 10
+  },
+  "queue": {
+    "cases": 1400,
+    "satisfied": 1400,
+    "remaining_batches": 0
+  },
+  "evidence_integrity": {
+    "references": 3180,
+    "unique_artifacts": 649,
+    "verified": 3180,
+    "failures": []
+  },
+  "execution_plan": {
+    "checked": 368,
+    "unchecked": 0
+  },
+  "remaining_release_gates": [],
+  "checks": {
+    "python_unittest": {
+      "status": "passed",
+      "tests": 187,
+      "log": "artifacts/final-gate-python-20260901.log",
+      "sha256": "3211b444e07ce4add3f3a92a357f6e328f72624a853ffc2f249c6387ab34875b"
+    },
+    "frontend_vitest": {
+      "status": "passed",
+      "files": 178,
+      "tests": 906,
+      "log": "artifacts/final-gate-frontend-tests-20260901.log",
+      "sha256": "24fad45c3becec0eef6aa7643b47951fb3d7449b68d0012b541f2ba10af0a113"
+    },
+    "frontend_targeted_after_lazy_split": {
+      "status": "passed",
+      "tests": 2,
+      "log": "artifacts/final-gate-frontend-announcement-targeted-20260901.log",
+      "sha256": "81155708aa6b63006b9bee270e8d70b66a4281403921ef62d91e6d0a04e204e0"
+    },
+    "frontend_typecheck": {
+      "status": "passed",
+      "log": "artifacts/final-gate-frontend-typecheck-retry-20260901.log",
+      "sha256": "c85ebd1498bd673fb40eb62b2782502b20fe9fae1cf4d8532a76f28d2907ee5b"
+    },
+    "frontend_build": {
+      "status": "passed",
+      "log": "artifacts/final-gate-frontend-build-retry2-20260901.log",
+      "sha256": "138b536c1496c8015fb4d90a8c7930e9521515490d29d5e858b9227c36d70891"
+    },
+    "frontend_bundle": {
+      "status": "passed",
+      "initial_gzip": 165600,
+      "budget": 190000,
+      "log": "artifacts/final-gate-frontend-bundle-20260901.log",
+      "sha256": "287a1ea8b78a4cb5a10842fc263b7e4d39427ec053bebdf5bcdcaeda89544219"
+    },
+    "frontend_docs": {
+      "status": "passed",
+      "generated_integration_pages": 14,
+      "log": "artifacts/final-gate-docs-check-20260901.log",
+      "sha256": "622eab1233d5289c9764e83544ed65416ca49f8b0dcd3f30c95f47fbca7d3527"
+    },
+    "backend_unit": {
+      "status": "passed",
+      "log": "artifacts/final-gate-backend-unit-20260901.log",
+      "sha256": "01b06f70ef0f74fe73017b2d5209e60b39f695759f77c1b86bf38d2ba916ac5d"
+    }
+  },
+  "release_state": {
+    "local_preview": true,
+    "merged": false,
+    "deployed": false,
+    "production_verified": false
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "8dced97fada470b171515b473cdd9dd286f6e1ffdeb9129bc8ef929b9a858785",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "58:gpt-5.6-sol:responses:P-07:default",
+    "context_window": 1050000,
+    "declared_status": "blocked",
+    "group_id": 58,
+    "group_name": "GPT 经济线路",
+    "marker": "LSR_CONTRACT_B8416377B06F5377",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-5.6-sol",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:gpt-5.6-sol/responses/features/prompt_cache"
+    ]
+  },
+  "case_fingerprint": "7c407ecec81cd95f078eba8ae6eca3a6e0b086aa78bc59e90922e2b2dee7ce98",
+  "classification": "timeout",
+  "finished_at": "2026-09-01T02:59:07.843+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T02:58:10.281+00:00",
+  "offline_verifier": {
+    "reason": "usage object is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 58,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": "usage object is required",
+  "request": {
+    "payload_sha256": "d67439649fa525be30fac216ef8677190c5b7f66cabe2363a23fdf48bb79d9ff",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "a3f22f57f3abbc74a000a302f877789985f3570387d6f760e0423043bb5e80dd"
+  },
+  "response": {
+    "body_bytes": 0,
+    "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "complete": false,
+    "content_type": null,
+    "error": {
+      "message": "The read operation timed out",
+      "type": "TimeoutError"
+    },
+    "event_count": 0,
+    "http_status": 0,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": true
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

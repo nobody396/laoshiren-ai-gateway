@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "3c5cc3ed24705f05862b2ea345d014e7f8573296a65413d1a6a17a4329bc4ac4",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "52:gpt-daybreak-blue-latest:responses:P-01:default",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 52,
+    "group_name": "GPT Daybreak Blue 安全研究线路",
+    "marker": "LSR_CONTRACT_BB59A2963BF5377F",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-daybreak-blue-latest",
+    "name": "minimal_text",
+    "p_id": "P-01",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "95ba38b5d2c128f895c7b3c084423dc1f214016db6c6e65e4b6bd6e84e4768eb",
+  "classification": "upstream_overloaded",
+  "finished_at": "2026-08-31T21:01:23.408+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T21:01:21.172+00:00",
+  "offline_verifier": {
+    "reason": "request must return HTTP 200 and the expected text",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 52,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "request must return HTTP 200 and the expected text",
+  "request": {
+    "payload_sha256": "75bb9e7e7657975e64f5849e9887c38273a3f415134e2fe4510556087cfbfa8a",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "35954a1caec76f1b1ad567e3a4942645b90b0d5a28ab12e4805be4f4a39faa3d"
+  },
+  "response": {
+    "body_bytes": 156,
+    "body_sha256": "877825a51c4b3d9c66e6bbdbf0aecee06a8cb3a6a3570b6a468a703522c9a276",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The service is currently busy. Please try again later.",
+      "type": "overloaded_error"
+    },
+    "event_count": 0,
+    "http_status": 503,
+    "marker_present": false,
+    "request_id": "874ecde5-a19c-4e59-8331-9711a58bb2a5",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

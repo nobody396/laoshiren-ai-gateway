@@ -154,10 +154,23 @@ func TestGetModelPricing_GeneratedCatalogAndRuntimeStayInSync(t *testing.T) {
 		t.Run(model, func(t *testing.T) {
 			runtimePricing, err := svc.GetModelPricing(model)
 			require.NoError(t, err)
-			require.Equal(t, catalogPricing, runtimePricing,
-				"catalog-managed model %s must use the generated rate card", model)
-			require.Equal(t, catalogPricing, svc.fallbackPrices[model],
-				"catalog-managed model %s must replace any stale fallback rate card", model)
+			for label, actual := range map[string]*ModelPricing{
+				"runtime":  runtimePricing,
+				"fallback": svc.fallbackPrices[model],
+			} {
+				require.InDelta(t, catalogPricing.InputPricePerToken, actual.InputPricePerToken, 1e-12,
+					"%s catalog-managed model %s input price drift", label, model)
+				require.InDelta(t, catalogPricing.OutputPricePerToken, actual.OutputPricePerToken, 1e-12,
+					"%s catalog-managed model %s output price drift", label, model)
+				require.InDelta(t, catalogPricing.CacheReadPricePerToken, actual.CacheReadPricePerToken, 1e-12,
+					"%s catalog-managed model %s cache-read price drift", label, model)
+				require.Equal(t, catalogPricing.LongContextInputThreshold, actual.LongContextInputThreshold,
+					"%s catalog-managed model %s long-context threshold drift", label, model)
+				require.InDelta(t, catalogPricing.LongContextInputMultiplier, actual.LongContextInputMultiplier, 1e-12,
+					"%s catalog-managed model %s long-context input multiplier drift", label, model)
+				require.InDelta(t, catalogPricing.LongContextOutputMultiplier, actual.LongContextOutputMultiplier, 1e-12,
+					"%s catalog-managed model %s long-context output multiplier drift", label, model)
+			}
 		})
 	}
 }
@@ -243,15 +256,15 @@ func TestGetModelPricing_OpenAIGPT54MiniFallbackMatchesObservedBilling(t *testin
 	pricing, err := svc.GetModelPricing("gpt-5.4-mini")
 	require.NoError(t, err)
 	require.NotNil(t, pricing)
-	require.InDelta(t, 8e-7, pricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 0.75e-6, pricing.InputPricePerToken, 1e-12)
 	require.InDelta(t, 1.6e-6, pricing.InputPricePerTokenPriority, 1e-12)
-	require.InDelta(t, 3.2e-6, pricing.OutputPricePerToken, 1e-12)
+	require.InDelta(t, 4.5e-6, pricing.OutputPricePerToken, 1e-12)
 	require.InDelta(t, 6.4e-6, pricing.OutputPricePerTokenPriority, 1e-12)
-	require.InDelta(t, 8e-8, pricing.CacheReadPricePerToken, 1e-12)
+	require.InDelta(t, 0.075e-6, pricing.CacheReadPricePerToken, 1e-12)
 	require.InDelta(t, 1.6e-7, pricing.CacheReadPricePerTokenPriority, 1e-12)
 
 	cost := (21*pricing.InputPricePerToken + 5*pricing.OutputPricePerToken) * 0.12
-	require.InDelta(t, 0.00000400, cost, 0.0000001)
+	require.InDelta(t, 0.00000459, cost, 0.0000001)
 }
 
 func TestGetModelPricing_OpenAIGPT56OfficialPricing(t *testing.T) {

@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "5ae504a258831a58ba710f054c81ff8106f55fe0e87446c7d879815719f74b2a",
+  "case_count": 2,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "6abbe962d3093ef6",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-minimax-group63-responses-large-output-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1,
+    "pass": 1
+  }
+}

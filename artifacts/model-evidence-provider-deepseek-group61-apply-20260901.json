@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 28,
+  "group_access": {
+    "changed": 2,
+    "verified": 0,
+    "blocked": 2
+  },
+  "evidence_index_sha256": "66788544fb7b6d06d03f0726ee4c2b47cc2d199d5a91a90dec1971a26d27b95e",
+  "changes": [
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "group_access",
+          "path": "DeepSeek 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-5ae2c01ae7ee78f4dd2f7da3",
+            "evidence-6c4758d4964ef64c45956a78",
+            "evidence-72663f428dccdb1d91220f19",
+            "evidence-762d8fcc5f49e68fddfffa8a",
+            "evidence-9297d182374591b7663376c8",
+            "evidence-9db6d772c4cfd2ffa05b035c",
+            "evidence-a45643120f87f8151f149ea6",
+            "evidence-ae9c737335a4b925afdd8549",
+            "evidence-feb37c9ec6f7f129bd9a3f7c"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5ae2c01ae7ee78f4dd2f7da3"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-341464c6b729be6138a41e8a"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-59d176b2f28d80d34a60ef8f"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fe8ce1a28c0e5c36b80a577d"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b0814574a3e09ac4c8605eea"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-87aabcd0490d4832f9bee50e"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-82616bc33e0716c6e33a31c2"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6e39aad5f98b79d88158ec35"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-15a19ec0d741ffdd79a33bfc"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-c07f7fc72e5b4a0b0416dcac"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b194d0a8c091f66ebb1c3d2e"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-713d086a7e69419c1670f56d"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ff8649b00cd99402045ab53f"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "group_access",
+          "path": "DeepSeek 企业高速线路",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-24d272b7def4a8e66e78e8f0",
+            "evidence-3173ecfc7e04681e69c28d24",
+            "evidence-5705c47b67afe79a134cc462",
+            "evidence-8cf647a28da8ae7787e26232",
+            "evidence-9be83b303988b25f324de8ad",
+            "evidence-d607bc26b81a46ac4f3975df",
+            "evidence-e36b1ae7621280b608ad6f2c"
+          ],
+          "protocol_status": {
+            "chat_completions": "blocked",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-24d272b7def4a8e66e78e8f0"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6055e286ae694e78512bbc2b"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-61533b6d71cbb8263dbb369f"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f209cd6006252b3f6718ed34"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cccb7ab6dfe7c64d9ed80086"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-82755c0f3601fb09fca34403"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-38272bf038e9315fa5caa769"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-262ffe3be556765bcb3165fa"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-b861799f228e689e26a70317"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5051269491c6608a3af54f0a"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-352e92c7dba27e7c0490f55d"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3aca5f91da836cf7478d424a"
+          ]
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0c2d62ab48e8839ef79b03e6"
+          ]
+        }
+      ]
+    }
+  ]
+}

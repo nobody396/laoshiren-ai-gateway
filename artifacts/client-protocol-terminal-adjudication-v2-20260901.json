@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "client_protocol_terminal_adjudication",
+  "observed_at": "2026-09-01T02:45:00+00:00",
+  "sources": {
+    "kimi-code": {
+      "responses": [
+        "evidence-2904f03d831c688d7817ded1"
+      ],
+      "chat_completions": [
+        "evidence-67a0290a0b6fb8822f66681d"
+      ],
+      "messages": [
+        "evidence-ba3be2496dcb0895c204aea0"
+      ],
+      "generate_content": [
+        "evidence-4abd2ca6a7eaedf46bdef9d6"
+      ]
+    },
+    "zcode": {
+      "chat_completions": [
+        "evidence-0b3918ff6d1e52de154525b7"
+      ],
+      "messages": [
+        "evidence-87808ebf8da2f61dcef04991"
+      ]
+    }
+  },
+  "secret_free": true
+}

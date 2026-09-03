@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 1,
+  "events": 1,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "1d4bcaf187d859d399b9fd767f7c543191667fc696f7eeb7b6039ec3ecd96e6e",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/responses/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-2904f03d831c688d7817ded1"
+          ]
+        }
+      ]
+    }
+  ]
+}

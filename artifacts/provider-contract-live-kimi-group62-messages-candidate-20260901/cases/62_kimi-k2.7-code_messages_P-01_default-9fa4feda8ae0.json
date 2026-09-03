@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "1ec185e8d176d8355349bdbf1e88ff8d8ffb1c223a504fe1fe16856b18ae2497",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "62:kimi-k2.7-code:messages:P-01:default",
+    "context_window": 262144,
+    "declared_status": null,
+    "group_id": 62,
+    "group_name": "Kimi 企业高速线路",
+    "marker": "LSR_CONTRACT_BD9D22DA4BFB134F",
+    "max_output_tokens": 16384,
+    "model_id": "kimi-k2.7-code",
+    "name": "minimal_text",
+    "p_id": "P-01",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "a9937cf418ac3c6781688eb33f233c0ad0a1c8f1f3645894e2c49d2f47ffe3f2",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:12:08.126+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:12:06.319+00:00",
+  "offline_verifier": {
+    "reason": "request must return HTTP 200 and the expected text",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 62,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "request must return HTTP 200 and the expected text",
+  "request": {
+    "payload_sha256": "b56930ab8be70dffc35833b27e09b6cfaeaedbca38644bf5f7c1b99657972663",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "1db5b9a70424e57464aa434d1ef66abf855a65d76a7659774f10d0c634cfae0f"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "d8338ff8d6e3235277c598c4f48af0c77e8a496a800025288c82bd9f2f4fc632",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "7490191b-6464-4c5e-a655-09804eff2511",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

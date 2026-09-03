@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "grok-4.5",
+  "protocol": "chat_completions",
+  "api_backend": "chat_completions",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 34,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "group": {
+    "id": 34,
+    "name": "Grok 标准线路",
+    "platform": "grok",
+    "subscription_type": "standard",
+    "rate_multiplier": 0.4
+  },
+  "group_readback": {
+    "id": 205,
+    "user_id": 1,
+    "status": "active",
+    "group_id": 34
+  },
+  "model_discovery": {
+    "url": "https://api.laoshirenai.com/v1/models",
+    "http_status": 200,
+    "request_id": null,
+    "body_sha256": "db410410439cb32ba1c41acce55551efe33d1989f4dbe427bf104e3b1b89c3f3",
+    "model_ids": [
+      "grok-4.5",
+      "grok-4.6"
+    ],
+    "model_count": 2,
+    "error": null
+  },
+  "observed_at": "2026-08-31T23:10:29+00:00",
+  "finished_at": "2026-08-31T23:11:06+00:00",
+  "duration_ms": 34360,
+  "command_shape": [
+    "grok",
+    "--always-approve",
+    "--permission-mode",
+    "bypassPermissions",
+    "--disable-web-search",
+    "--single",
+    "[prompt]",
+    "--output-format",
+    "streaming-json",
+    "--model",
+    "laoshirenai-chat-completions",
+    "--cwd",
+    "[temporary-workspace]",
+    "--max-turns",
+    "10"
+  ],
+  "config_contract": {
+    "path": "[temporary-home]/.grok/config.toml",
+    "env_key": "LAOSHIRENAI_GROK_API_KEY",
+    "api_backend": "chat_completions",
+    "base_url": "https://api.laoshirenai.com/v1",
+    "key_in_config": false,
+    "key_in_argv": false
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "available_commands": 5,
+    "usage": 3,
+    "tool_call": 2,
+    "tool_call_update": 6,
+    "text": 1,
+    "end": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": false,
+  "stdout_sha256": "51e164e3cc85a69197b8d797405f2487e84ab7e580850526ee356ed62fb1888a",
+  "stderr_sha256": "386ccb1f71b6ecb9516b70a29eb95c634f1cf437a098c75bc2a633fabf1d9361",
+  "stdout_bytes": 9425,
+  "stderr_bytes": 1019,
+  "restored_group_id": 6,
+  "passed": false,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/grok-build-chat-messages-retry4-20260901/grok-build-usage-grok-4.5-chat_completions-group34-20260901.json",
+    "artifact_sha256": "a583a3b73c83b578cfd7fa17ce66672e52b9d9ccfe37ad1ba1e32a3c30f9dcc2",
+    "usage_rows": 3,
+    "inbound_endpoint": "/v1/chat/completions",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "artifact_sha256": "8d6e69b4a65fa92f2a12ab90b49171d107a4a4a1dab24a6676ae9cd9c5ed31fa"
+}

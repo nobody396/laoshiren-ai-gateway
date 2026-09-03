@@ -1,0 +1,162 @@
+{
+  "cases": {
+    "6:gpt-5.3-codex-spark:responses:P-02:default": {
+      "artifact_sha256": "617f287bceb383fa844d2bbb0a8b0277e6a2931fa82906dff60ad38c8abe3e0c",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.3-codex-spark_responses_P-02_default-b8dd69c20c4e.json",
+      "status": "pass"
+    },
+    "6:gpt-5.3-codex-spark:responses:P-03:default": {
+      "artifact_sha256": "dc0fbd23cd68d64b0c782ff02e3113b175b94411b709320e0a3c11a65a3c1e2f",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.3-codex-spark_responses_P-03_default-30ee7a74ca58.json",
+      "status": "pass"
+    },
+    "6:gpt-5.3-codex-spark:responses:P-04:default": {
+      "artifact_sha256": "46a2dab91451298c36f2626bcca0d2838b5ff3ce02a19fd301ce4f3e39306d47",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.3-codex-spark_responses_P-04_default-924c3e224216.json",
+      "status": "pass"
+    },
+    "6:gpt-5.3-codex-spark:responses:P-05:default": {
+      "artifact_sha256": "030201a3cfec317ecac8b3baf43c74a450dad7d5ac3ba4445f66df72a147dc70",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.3-codex-spark_responses_P-05_default-81edec5e728d.json",
+      "status": "pass"
+    },
+    "6:gpt-5.3-codex-spark:responses:P-12:default": {
+      "artifact_sha256": "b26ceb605376af066f66a005f3f0b15d66724ce28d573b824403f991bf45013d",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.3-codex-spark_responses_P-12_default-88bc38d68791.json",
+      "status": "pass"
+    },
+    "6:gpt-5.3-codex-spark:responses:P-15:default": {
+      "artifact_sha256": "ba39abd70836330676a7ff1a30753f7313e1e1b5344541e94546f94804cbc191",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.3-codex-spark_responses_P-15_default-0fda07b0c7a1.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-01:default": {
+      "artifact_sha256": "d638cd2f6db94c6494db72897a9b991e3738ee366e7a84c94791910e86509f6f",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-01_default-c99fd3e40e87.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-02:default": {
+      "artifact_sha256": "516f470d5d0dacee13a5b306e660271066cda19f6a5ec4401e905b9375d4f031",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-02_default-9da94ef669ba.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-03:default": {
+      "artifact_sha256": "16f654e3faa295e77d10aaee0bd081cdfd94cdfc636d0e00e81de03d2f08742f",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-03_default-4c6f925861d3.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-04:default": {
+      "artifact_sha256": "1dc32bf345ab042eba03bdd175cb6435f35d804c83db6efbd180d65b66563946",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-04_default-766a0d8acc22.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-05:default": {
+      "artifact_sha256": "21fcdaf5505bc86e1ef2182a0e6962256dcc27ea6455b1b29f028d3fa261a74c",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-05_default-c04a7bbce8e2.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-06:none": {
+      "artifact_sha256": "f28539e1d6d5106a68a38dcc8134d46c76f5b633c9bf5e2e1ad523b025284d1a",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-06_none-f53bc5a15f4a.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-12:default": {
+      "artifact_sha256": "e29603961cdf9a7b0f0009cab70266317be15a03243de89a1e98c4b3c7b988a3",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-12_default-b00708e616bd.json",
+      "status": "pass"
+    },
+    "6:gpt-5.4:responses:P-15:default": {
+      "artifact_sha256": "e4e55fde80bf94988a8acb559be1ad6a532fd736c77781a609aa351141fd5bd7",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.4_responses_P-15_default-41d649b07eba.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-01:default": {
+      "artifact_sha256": "2ec8ebc0175e63b07ac74c10dcaacd8b64d9ee4bdc9b5e7901539fb5e4c61f68",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-01_default-a73061a8a8ec.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-02:default": {
+      "artifact_sha256": "2850768f4fe10ecdf8bb42668d1d67e35540db9ac9a0afb8b44ffc0773b124ac",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-02_default-cd0907ca1948.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-03:default": {
+      "artifact_sha256": "aceb141518e163c7f912527e909db0c9923833611dd161eba45afa39ec00ca7b",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-03_default-8ac1f3f478c9.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-04:default": {
+      "artifact_sha256": "fd543355d5d8fae56dd850e9a509e1d145999f00439d40e610b4f25a3684b204",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-04_default-605a3d042306.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-05:default": {
+      "artifact_sha256": "f07481fae106b5ad2d1fd7d9cfd25873358711c4ed2b7eeb49c53a185ffa6ed4",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-05_default-b14560630b18.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-06:medium": {
+      "artifact_sha256": "35e03118c2c002ec8b8861c3f8c3cfe268605643e65f43c3b48230ac63531df3",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-06_medium-213c3afef6cc.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-12:default": {
+      "artifact_sha256": "7cd3049dcfa11e383a480e04fd3fede5b9a5298481b1f28c79688d27305bae95",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-12_default-f8456cfe3aa3.json",
+      "status": "pass"
+    },
+    "6:gpt-5.5:responses:P-15:default": {
+      "artifact_sha256": "506e1fd8d7e0208b020fc09e8432bb02e4b44a653ace4c1f5b52f7b7b1ab8b7b",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.5_responses_P-15_default-48a8ee7087c4.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-01:default": {
+      "artifact_sha256": "19a9e54eac813b6d4636219f43507dd8f11d3492dee9146730b43bca3320a7e5",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-01_default-9900224b8f51.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-02:default": {
+      "artifact_sha256": "5dab00eeabce07d35a43a3281574f0064be1f09266da2bcc9ec8c8bac6ff2654",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-02_default-125633892d0b.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-03:default": {
+      "artifact_sha256": "d3674bad22cfd581b2c43241833d4a061c90f96cb48fee0b16c0f062be798837",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-03_default-53e3d129a255.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-04:default": {
+      "artifact_sha256": "092050b2cf1f8e050ccc8d30b89264e4dfea66023de9bf8028016191b107783e",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-04_default-4edd807a8696.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-05:default": {
+      "artifact_sha256": "9fa677718a69333d46149b93fd27b284a7630c9b615bc0805b8edf964361d283",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-05_default-6e5bb6520653.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-06:medium": {
+      "artifact_sha256": "0b7c3edab0c0812dce25e9375de245ed1d0c016eb4b4de963f7c278a1a5e79c4",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-06_medium-fdc420143156.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-12:default": {
+      "artifact_sha256": "87e84260a5c30d19414fff0820ca6647dcbca71ae15275b7b108141ac9089f6f",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-12_default-23782dccd38b.json",
+      "status": "pass"
+    },
+    "6:gpt-5.6-terra:responses:P-15:default": {
+      "artifact_sha256": "9533c64733a9075f41cc032f4eb5266b0bee2b7c0e58e04055ee2d89e9f5fcc8",
+      "receipt": "artifacts/provider-contract-live-gpt-standard-group6-batch-20260901/cases/6_gpt-5.6-terra_responses_P-15_default-2741ccd5e292.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T18:48:38.457+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "0a5f4b4a2b0dd017",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T18:45:56.395+00:00"
+}

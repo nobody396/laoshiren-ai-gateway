@@ -1,0 +1,147 @@
+{
+  "inventory_models": 34,
+  "contracts": 34,
+  "complete": false,
+  "matrices": {
+    "public_model": {
+      "complete": true,
+      "failures": []
+    },
+    "model_protocol": {
+      "complete": true,
+      "failures": []
+    },
+    "model_reasoning": {
+      "complete": true,
+      "failures": []
+    },
+    "client_protocol": {
+      "complete": false,
+      "failures": [
+        "client-matrix/Grok Build/chat_completions: evidence is non-terminal (blocked)",
+        "client-matrix/Kimi Code: protocols must contain a supported row or be explicitly all unsupported",
+        "client-matrix/Kimi Code/responses: evidence is non-terminal (blocked)",
+        "client-matrix/Kimi Code/chat_completions: evidence is non-terminal (blocked)",
+        "client-matrix/Kimi Code/messages: evidence is non-terminal (blocked)",
+        "client-matrix/Kimi Code/generate_content: evidence is non-terminal (blocked)",
+        "client-matrix/ZCode/chat_completions: evidence is non-terminal (blocked)",
+        "client-matrix/ZCode/messages: evidence is non-terminal (blocked)",
+        "client-matrix/Qoder: protocols must contain a supported row or be explicitly all unsupported",
+        "client-matrix/Qoder/chat_completions: evidence is non-terminal (blocked)",
+        "client-matrix/MiniMax Code: protocols must contain a supported row or be explicitly all unsupported",
+        "client-matrix/MiniMax Code/responses: evidence is non-terminal (blocked)",
+        "client-matrix/MiniMax Code/chat_completions: evidence is non-terminal (blocked)",
+        "client-matrix/MiniMax Code/messages: evidence is non-terminal (blocked)",
+        "client-matrix/DeepSeek Harness: protocols must contain a supported row or be explicitly all unsupported",
+        "client-matrix/DeepSeek Harness/responses: evidence is non-terminal (blocked)",
+        "client-matrix/DeepSeek Harness/chat_completions: evidence is non-terminal (blocked)",
+        "client-matrix/DeepSeek Harness/messages: evidence is non-terminal (blocked)",
+        "client-matrix/DeepSeek Harness/generate_content: evidence is non-terminal (blocked)"
+      ]
+    },
+    "client_reasoning": {
+      "complete": true,
+      "failures": []
+    },
+    "group_access": {
+      "complete": false,
+      "failures": [
+        "gpt-5.6-sol/group_access/GPT Daybreak Blue 安全研究线路: status must be one of unsupported, verified",
+        "gpt-5.6-sol/group_access/GPT Daybreak Blue 安全研究线路: public access must be terminal",
+        "gpt-daybreak-blue-latest/group_access/GPT Daybreak Blue 安全研究线路: status must be one of unsupported, verified",
+        "gpt-daybreak-blue-latest/group_access/GPT Daybreak Blue 安全研究线路: public access must be terminal"
+      ]
+    },
+    "client_config_os": {
+      "complete": true,
+      "failures": []
+    },
+    "test_evidence": {
+      "complete": false,
+      "failures": [
+        "claude-fable-5/Kimi Code: public client protocol must reference fully verified OS cells",
+        "claude-fable-5/ZCode: public client protocol must reference fully verified OS cells",
+        "claude-opus-4-7/Kimi Code: public client protocol must reference fully verified OS cells",
+        "claude-opus-4-7/ZCode: public client protocol must reference fully verified OS cells",
+        "claude-opus-4-8/Kimi Code: public client protocol must reference fully verified OS cells",
+        "claude-opus-4-8/ZCode: public client protocol must reference fully verified OS cells",
+        "claude-sonnet-4-6/Kimi Code: public client protocol must reference fully verified OS cells",
+        "claude-sonnet-4-6/ZCode: public client protocol must reference fully verified OS cells",
+        "deepseek-v4-flash-0731/Kimi Code: public client protocol must reference fully verified OS cells",
+        "deepseek-v4-pro-0813/Kimi Code: public client protocol must reference fully verified OS cells",
+        "glm-5.3/Grok Build: public client protocol must reference fully verified OS cells",
+        "gpt-5.3-codex-spark/Kimi Code: public client protocol must reference fully verified OS cells",
+        "gpt-5.4-mini/Kimi Code: public client protocol must reference fully verified OS cells",
+        "gpt-5.5/Kimi Code: public client protocol must reference fully verified OS cells",
+        "gpt-5.6-luna/Kimi Code: public client protocol must reference fully verified OS cells",
+        "gpt-5.6-sol/Kimi Code: public client protocol must reference fully verified OS cells",
+        "gpt-5.6-terra/Kimi Code: public client protocol must reference fully verified OS cells",
+        "minimax-m3/ZCode: client_coverage protocols must equal fully verified OS cells",
+        "minimax-m3/ZCode: client_coverage status conflicts with exact evidence cells",
+        "minimax-m3/Kimi Code: public client protocol must reference fully verified OS cells",
+        "qwen3.6-flash/Kimi Code: public client protocol must reference fully verified OS cells",
+        "qwen3.6-plus/Kimi Code: public client protocol must reference fully verified OS cells",
+        "qwen3.7-flash/Kimi Code: public client protocol must reference fully verified OS cells",
+        "qwen3.7-max/Kimi Code: public client protocol must reference fully verified OS cells",
+        "qwen3.7-plus/Kimi Code: public client protocol must reference fully verified OS cells",
+        "qwen3.8-max/Kimi Code: public client protocol must reference fully verified OS cells"
+      ]
+    },
+    "model_price": {
+      "complete": true,
+      "failures": []
+    }
+  },
+  "stale_evidence": [],
+  "failures": [
+    "client-matrix/Grok Build/chat_completions: evidence is non-terminal (blocked)",
+    "client-matrix/Kimi Code: protocols must contain a supported row or be explicitly all unsupported",
+    "client-matrix/Kimi Code/responses: evidence is non-terminal (blocked)",
+    "client-matrix/Kimi Code/chat_completions: evidence is non-terminal (blocked)",
+    "client-matrix/Kimi Code/messages: evidence is non-terminal (blocked)",
+    "client-matrix/Kimi Code/generate_content: evidence is non-terminal (blocked)",
+    "client-matrix/ZCode/chat_completions: evidence is non-terminal (blocked)",
+    "client-matrix/ZCode/messages: evidence is non-terminal (blocked)",
+    "client-matrix/Qoder: protocols must contain a supported row or be explicitly all unsupported",
+    "client-matrix/Qoder/chat_completions: evidence is non-terminal (blocked)",
+    "client-matrix/MiniMax Code: protocols must contain a supported row or be explicitly all unsupported",
+    "client-matrix/MiniMax Code/responses: evidence is non-terminal (blocked)",
+    "client-matrix/MiniMax Code/chat_completions: evidence is non-terminal (blocked)",
+    "client-matrix/MiniMax Code/messages: evidence is non-terminal (blocked)",
+    "client-matrix/DeepSeek Harness: protocols must contain a supported row or be explicitly all unsupported",
+    "client-matrix/DeepSeek Harness/responses: evidence is non-terminal (blocked)",
+    "client-matrix/DeepSeek Harness/chat_completions: evidence is non-terminal (blocked)",
+    "client-matrix/DeepSeek Harness/messages: evidence is non-terminal (blocked)",
+    "client-matrix/DeepSeek Harness/generate_content: evidence is non-terminal (blocked)",
+    "gpt-5.6-sol/group_access/GPT Daybreak Blue 安全研究线路: status must be one of unsupported, verified",
+    "gpt-5.6-sol/group_access/GPT Daybreak Blue 安全研究线路: public access must be terminal",
+    "gpt-daybreak-blue-latest/group_access/GPT Daybreak Blue 安全研究线路: status must be one of unsupported, verified",
+    "gpt-daybreak-blue-latest/group_access/GPT Daybreak Blue 安全研究线路: public access must be terminal",
+    "claude-fable-5/Kimi Code: public client protocol must reference fully verified OS cells",
+    "claude-fable-5/ZCode: public client protocol must reference fully verified OS cells",
+    "claude-opus-4-7/Kimi Code: public client protocol must reference fully verified OS cells",
+    "claude-opus-4-7/ZCode: public client protocol must reference fully verified OS cells",
+    "claude-opus-4-8/Kimi Code: public client protocol must reference fully verified OS cells",
+    "claude-opus-4-8/ZCode: public client protocol must reference fully verified OS cells",
+    "claude-sonnet-4-6/Kimi Code: public client protocol must reference fully verified OS cells",
+    "claude-sonnet-4-6/ZCode: public client protocol must reference fully verified OS cells",
+    "deepseek-v4-flash-0731/Kimi Code: public client protocol must reference fully verified OS cells",
+    "deepseek-v4-pro-0813/Kimi Code: public client protocol must reference fully verified OS cells",
+    "glm-5.3/Grok Build: public client protocol must reference fully verified OS cells",
+    "gpt-5.3-codex-spark/Kimi Code: public client protocol must reference fully verified OS cells",
+    "gpt-5.4-mini/Kimi Code: public client protocol must reference fully verified OS cells",
+    "gpt-5.5/Kimi Code: public client protocol must reference fully verified OS cells",
+    "gpt-5.6-luna/Kimi Code: public client protocol must reference fully verified OS cells",
+    "gpt-5.6-sol/Kimi Code: public client protocol must reference fully verified OS cells",
+    "gpt-5.6-terra/Kimi Code: public client protocol must reference fully verified OS cells",
+    "minimax-m3/ZCode: client_coverage protocols must equal fully verified OS cells",
+    "minimax-m3/ZCode: client_coverage status conflicts with exact evidence cells",
+    "minimax-m3/Kimi Code: public client protocol must reference fully verified OS cells",
+    "qwen3.6-flash/Kimi Code: public client protocol must reference fully verified OS cells",
+    "qwen3.6-plus/Kimi Code: public client protocol must reference fully verified OS cells",
+    "qwen3.7-flash/Kimi Code: public client protocol must reference fully verified OS cells",
+    "qwen3.7-max/Kimi Code: public client protocol must reference fully verified OS cells",
+    "qwen3.7-plus/Kimi Code: public client protocol must reference fully verified OS cells",
+    "qwen3.8-max/Kimi Code: public client protocol must reference fully verified OS cells"
+  ]
+}

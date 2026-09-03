@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "codex",
+  "client_version": "cli:0.151.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "minimax-m3",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 63,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T22:27:36+00:00",
+  "finished_at": "2026-08-31T22:28:01+00:00",
+  "duration_ms": 2267,
+  "exit_code": 1,
+  "timed_out": false,
+  "event_types": {
+    "thread.started": 1,
+    "item.completed": 2,
+    "turn.started": 1,
+    "error": 1,
+    "turn.failed": 1
+  },
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_verified": false,
+  "final_marker_verified": false,
+  "stdout_sha256": "ee5b87c5e15773e6c0d73a58e04a42312e5ca01262b8e25ec7b5b5e13e5dbf01",
+  "stderr_sha256": "cb2bfb72c39f3fd6bda82bd4c30f3157ebaa04f2954748fce93f45085fa5d3de",
+  "stdout_bytes": 1050,
+  "stderr_bytes": 592,
+  "restored_group_id": 6,
+  "passed": false,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/codex-missing-loops-batch2-20260901/codex-usage-minimax-m3-group63-20260901.json",
+    "artifact_sha256": "55eeb3e5eaab8f3964583ffbde71673198809ff3fc9882818edc8f0e41f38ede",
+    "usage_rows": 0,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": false
+  },
+  "artifact_sha256": "e3410722f0229001c6f22622ddf7e132182de469c52aa1c7aa19bef877cd3c89"
+}

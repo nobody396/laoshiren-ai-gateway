@@ -1,0 +1,22 @@
+{
+  "cases": {
+    "61:deepseek-v4-flash-0731:chat_completions:P-03:default": {
+      "artifact_sha256": "16b8b39d28f1bb63231260b8ff2100be15bfa909520aee5ba0b31592dcd42618",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-chat-terminal-retry-20260901/cases/61_deepseek-v4-flash-0731_chat_completions_P-03_default-56d9b4a0fe42.json",
+      "status": "blocked"
+    },
+    "61:deepseek-v4-pro-0813:chat_completions:P-03:default": {
+      "artifact_sha256": "e7a703c3896ea48e4058796cd5dfb7b25c45185ad9c2096c160213fb37380a1a",
+      "receipt": "artifacts/provider-contract-live-deepseek-group61-chat-terminal-retry-20260901/cases/61_deepseek-v4-pro-0813_chat_completions_P-03_default-7c3c0310cc54.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-08-31T21:34:30.313+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "5910549796aa2847",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T21:32:39.998+00:00"
+}

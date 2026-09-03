@@ -12,6 +12,7 @@ import { emitApiEvent } from './runtime'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 const AUTHENTICATED_GET_CACHE_BUSTER = '_nc'
+export const ANONYMOUS_REQUEST_HEADER = 'X-Anonymous-Request'
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -84,7 +85,9 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // preserves existing sessions while keeping transport away from localStorage.
   authSession.hydrate()
   const token = authSession.accessToken
-  if (token && config.headers) {
+  const anonymousRequest = config.headers?.get(ANONYMOUS_REQUEST_HEADER) === '1'
+  config.headers?.delete(ANONYMOUS_REQUEST_HEADER)
+  if (token && config.headers && !anonymousRequest) {
     config.headers.Authorization = `Bearer ${token}`
     config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     config.headers.Pragma = 'no-cache'

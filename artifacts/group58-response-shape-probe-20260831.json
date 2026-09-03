@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 2,
+    "key_id": 12,
+    "key_name": "测试专属2",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 58,
+      "name": "GPT 经济线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.35
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T16:03:17+00:00",
+      "group": {
+        "id": 58,
+        "name": "GPT 经济线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.35
+      },
+      "key_readback": {
+        "id": 12,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 58
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "8c4b2a2196235432f053f670b5105d3d763952d0802a7659b2c97fe82663c07c",
+        "model_ids": [
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 5,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.4",
+          "protocol": "responses",
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "d324ed43310ebd6de105f4b13af2078ca7df8889185912ff856bf1541f7c47d2",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.4",
+      "protocol": "responses"
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": false,
+  "artifact_sha256": "40d6d298f43d016c52ccc0ab08059c4138f2d2ba48c76844596f25837f682bd9"
+}

@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "c3b767382b69421d73e043dc5f089590fa96d9f63f451d6ee822b56896b8bbc0",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "2cd596e200164eaf",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-transient-retry-group52-daybreak-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1
+  }
+}

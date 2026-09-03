@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "plan",
+  "production_write": false,
+  "contract_write": false,
+  "contracts_changed": 3,
+  "events": 15,
+  "group_access": {
+    "changed": 3,
+    "verified": 3,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "e48be36174e4d5cbde5fc2f11d2404ff64cd39c243e98479311a514a3d09b867",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "group_access",
+          "path": "Gemini 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-16f57a1f7be78180de7c2a52",
+            "evidence-259dc2bcc71bb6506f9a9fca",
+            "evidence-6c4bbf9612aa4110a988610a",
+            "evidence-712d28f3b6622b97751311f9",
+            "evidence-74ff7e7767253815f90634f3",
+            "evidence-7e31c922552a7d332375ba0b",
+            "evidence-c6f2fb380b635548eab2709d",
+            "evidence-e74156476daadeee5a233a24"
+          ],
+          "protocol_status": {
+            "generate_content": "verified"
+          }
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "Gemini CLI/generate_content/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-78ac8b5c425f5006ca55d956",
+            "evidence-eb6ea687a9ac7b93b1c92c04"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "Gemini CLI/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-78ac8b5c425f5006ca55d956",
+            "evidence-d0cb976bcf85c4a274d15f02",
+            "evidence-eb6ea687a9ac7b93b1c92c04"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "group_access",
+          "path": "Gemini 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-099a0653e86736c211f9ae56",
+            "evidence-32c811dda802d8899e52428f",
+            "evidence-5098b73205879eea6974ffa3",
+            "evidence-8e4cc53c63cadb3d82bd6f50",
+            "evidence-a3915581c1b8c130a265b4f2",
+            "evidence-f8951264b3c38460620ff44a"
+          ],
+          "protocol_status": {
+            "generate_content": "verified"
+          }
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Antigravity/generate_content/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e28786409e20a397ab2fcc6",
+            "evidence-219935bc6879bf48da2c3a72",
+            "evidence-249829fffa30f0dea87202c3",
+            "evidence-8ac7acafece4b5dcea747cf5"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Antigravity/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e28786409e20a397ab2fcc6",
+            "evidence-219935bc6879bf48da2c3a72",
+            "evidence-249829fffa30f0dea87202c3",
+            "evidence-8ac7acafece4b5dcea747cf5",
+            "evidence-df5f9558e370a8e0c341df16"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Gemini CLI/generate_content/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-bdc3461ae23fc279a5c96822"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "group_access",
+          "path": "GPT 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-07ce220a408a208baa6ab8ec",
+            "evidence-1af02900fd8bbb22d08c835b",
+            "evidence-2e163c20a58183acd8b4ac87",
+            "evidence-473a4b86268d8ce647e2e67d",
+            "evidence-72022dea1d53b049440fc707",
+            "evidence-964416382e609237c6dda42b",
+            "evidence-c0c618619940fc8399ecbc9a",
+            "evidence-de18171b47f9ba23584ee4d2",
+            "evidence-ead5043f85ccaf95071c3d69"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-192d057793298215db43b036",
+            "evidence-2b874f43eb438d4dfae0a042",
+            "evidence-32b6f86611563b0959e08191",
+            "evidence-536eebf22f0392289ad1edc0",
+            "evidence-72022dea1d53b049440fc707",
+            "evidence-7eef2cc89fe4b7f86a8dbfd0",
+            "evidence-964416382e609237c6dda42b",
+            "evidence-ead5043f85ccaf95071c3d69",
+            "evidence-fab2eb58982486e9e88ce82b"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f1944fa438f5fc13c39ed996",
+            "evidence-f6d8f639d3b244e47d9b78c3"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3e0f014482d35cfe4ce5f8d1"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5c04836eda96df1d86955b88"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-37f9b1e1cc6d3139aeaed213",
+            "evidence-d588d15c9e288b468ef3c2d7"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-33785a2adfd6cb9e2601192b"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6337503c998ac6b23529e0ad"
+          ]
+        }
+      ]
+    }
+  ]
+}

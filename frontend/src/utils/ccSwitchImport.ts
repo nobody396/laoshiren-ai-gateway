@@ -1,10 +1,9 @@
 import type { GroupPlatform } from '@/types'
 import {
   clientAutoConfigDefaults,
-  codexClientModels,
-  optionalCatalogClientDefaultForPlatform,
-  type CodexClientModel
+  optionalCatalogClientDefaultForPlatform
 } from '@/generated/modelCatalog'
+import { codexClientModels, type CodexClientModel } from '@/generated/codexClientCatalog'
 
 export type CcsImportTarget =
   | 'claude'
@@ -43,25 +42,25 @@ export interface BuildCcsImportDeeplinkInput {
 
 export const DEFAULT_OPENAI_MODEL = optionalCatalogClientDefaultForPlatform('openai')?.id ?? 'gpt-5.6-sol'
 
-// Match Codex's native 272K window. The 95% effective window is 258.4K, while
-// the explicit 258K compaction limit keeps the generated client config stable
-// across Codex versions instead of relying on a client-side default.
+// Unknown ad-hoc aliases fall back to the historical Codex window. Every
+// canonical model keeps its own matrix-derived window instead of being forced
+// into one global 272K value.
 export const CODEX_CONTEXT_WINDOW_TOKENS = 272000
 export const CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT = 95
 export const CODEX_AUTO_COMPACT_TOKEN_LIMIT = 258000
 export const CODEX_LONG_CONTEXT_WINDOW_TOKENS = 1000000
 export const CODEX_LONG_AUTO_COMPACT_TOKEN_LIMIT = 900000
 
-const codexContextSettings = (profile: CodexContextProfile) => profile === 'long'
+const codexContextSettings = (profile: CodexContextProfile, nativeContext = CODEX_CONTEXT_WINDOW_TOKENS) => profile === 'long'
   ? {
       contextWindow: CODEX_LONG_CONTEXT_WINDOW_TOKENS,
       effectiveContextWindowPercent: 100,
       autoCompactTokenLimit: CODEX_LONG_AUTO_COMPACT_TOKEN_LIMIT
     }
   : {
-      contextWindow: CODEX_CONTEXT_WINDOW_TOKENS,
+      contextWindow: nativeContext,
       effectiveContextWindowPercent: CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT,
-      autoCompactTokenLimit: CODEX_AUTO_COMPACT_TOKEN_LIMIT
+      autoCompactTokenLimit: Math.floor(nativeContext * CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT / 100)
     }
 
 // One generated source drives both the downloaded Codex catalog and CC Switch
@@ -108,7 +107,9 @@ export const resolveCodexModels = (availableModels?: readonly string[]): readonl
     return [{
       model: modelID,
       displayName: formatModelDisplayName(modelID),
-      contextWindow: CODEX_CONTEXT_WINDOW_TOKENS
+      contextWindow: CODEX_CONTEXT_WINDOW_TOKENS,
+      reasoningLevels: [],
+      defaultReasoningLevel: null,
     }]
   })
 }
@@ -125,26 +126,26 @@ export const selectDefaultOpenAIModel = (
   return models[0]?.model ?? DEFAULT_OPENAI_MODEL
 }
 
-const CODEX_REASONING_LEVELS = [
-  { effort: 'low', description: 'Fast responses with lighter reasoning' },
-  { effort: 'medium', description: 'Balanced reasoning for everyday tasks' },
-  { effort: 'high', description: 'Greater reasoning depth for complex tasks' },
-  { effort: 'xhigh', description: 'Extra high reasoning depth' }
-] as const
-
 export const buildCodexModelCatalog = (
   models: readonly CodexClientModel[] = OPENAI_CODEX_MODELS,
   contextProfile: CodexContextProfile = 'standard'
 ): string => JSON.stringify({
   models: models.map((model, index) => {
-    const context = codexContextSettings(contextProfile)
+    const context = codexContextSettings(contextProfile, model.contextWindow)
     return {
       slug: model.model,
       display_name: model.displayName,
       description: `${model.displayName} coding model.`,
       base_instructions: 'You are Codex, a coding agent. You and the user share the same workspace and collaborate to achieve the user\'s goals.',
-      default_reasoning_level: 'high',
-      supported_reasoning_levels: CODEX_REASONING_LEVELS,
+      default_reasoning_level: model.defaultReasoningLevel,
+      supported_reasoning_levels: model.reasoningLevels.map(effort => ({
+        effort,
+        description: effort === 'none'
+          ? 'Disable explicit reasoning'
+          : effort === 'max'
+            ? 'Maximum reasoning depth'
+            : `${effort[0]?.toUpperCase() ?? ''}${effort.slice(1)} reasoning depth`,
+      })),
       shell_type: 'shell_command',
       visibility: 'list',
       supported_in_api: true,
@@ -277,7 +278,8 @@ const buildCodexImportConfig = (
   defaultModel: string,
   contextProfile: CodexContextProfile
 ): string => {
-  const context = codexContextSettings(contextProfile)
+  const selectedModel = models.find((model) => model.model === defaultModel) ?? models[0]
+  const context = codexContextSettings(contextProfile, selectedModel?.contextWindow)
   const safeEndpoint = escapeTomlString(endpoint)
   const safeProviderName = escapeTomlString(providerName)
   const safeModel = escapeTomlString(defaultModel)
@@ -300,7 +302,7 @@ requires_openai_auth = true
     modelCatalog: {
       models: models.map((model) => ({
         ...model,
-        contextWindow: context.contextWindow,
+        contextWindow: codexContextSettings(contextProfile, model.contextWindow).contextWindow,
         // CC Switch's Codex model catalog follows the same visibility contract
         // as the downloaded catalog file; without it imported models can be
         // hidden from the client model selector.
@@ -376,7 +378,7 @@ const buildProviderName = (
     appLabelForTarget(target),
     trimLabel(key.group?.name),
     trimLabel(key.name),
-    target === 'codex' ? (codexContextProfile === 'long' ? '1M' : '272K') : ''
+    target === 'codex' ? (codexContextProfile === 'long' ? '1M' : '原生上下文') : ''
   ].filter((part, index, values) => part && (index < 3 || part !== values[2]))
 
   const name = parts.join(' - ')

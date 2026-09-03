@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "72eec2016b956222afcb5ab8c71c80ffc0487ffe3911d562f623b927d1e2c970",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "64:qwen3.6-flash:responses:P-15:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 64,
+    "group_name": "Qwen 企业高速线路",
+    "marker": "LSR_CONTRACT_4D234132BBD864E3",
+    "max_output_tokens": 65536,
+    "model_id": "qwen3.6-flash",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:qwen3.6-flash/responses/invalid_request"
+    ]
+  },
+  "case_fingerprint": "2776e4d5be44ace0054e8405962bc5b739b568c18c36c83e760fa1028426c5ab",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:02:18.491+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:02:16.790+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 64,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "354de6216a3e7581ef3563af640ed2807f8594a952fbc7d1c338995578e70d71",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "4c778b67042bcc7ff1691a94342d738aefca3488b32e5b6bfccd90671bd1487a"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "fb45ed00c6123b0bd3e87978d8ece794b144f8bc12765c0791ff224140d89676",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "f68fbef0-b01c-410f-9bed-01517cd36d6e",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

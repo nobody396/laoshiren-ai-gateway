@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "03c36088aa15cfb2d14dedc903008603b61197bc633c73abf48dc199314642b9",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "61:deepseek-v4-flash-0731:responses:P-15:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 61,
+    "group_name": "DeepSeek 企业高速线路",
+    "marker": "LSR_CONTRACT_88106ADD6E30021B",
+    "max_output_tokens": 393216,
+    "model_id": "deepseek-v4-flash-0731",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:deepseek-v4-flash-0731/responses/invalid_request"
+    ]
+  },
+  "case_fingerprint": "59951222581571de05aea7ce11df50e8be253de5f991d9ceca59134a9720da42",
+  "classification": "verified",
+  "finished_at": "2026-08-31T18:57:06.117+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T18:57:04.707+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 61,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "df4c9422302ecebb102d4288305fea53036c257825ad60fb49cfd4815875759e",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "d1ff22e02bfefcf08c2d3c7c8324f1f0b7ba1508aa1d3e26b3b7d1f4b9e6c18c"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "a627a7213e6708e95040d9fd7a55c53b5f00bc2392e88afc6e6567465304324c",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "8f6b4770-1f31-44e5-945d-a555a78db98b",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

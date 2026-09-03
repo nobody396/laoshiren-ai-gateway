@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "0affe470234739cdde0104e0bfb3f44593fde9157120cc847b02a39a41edea51",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "60:glm-5.2:chat_completions:P-15:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 60,
+    "group_name": "GLM 企业高速线路",
+    "marker": "LSR_CONTRACT_518F6A4AB37D4A38",
+    "max_output_tokens": 131072,
+    "model_id": "glm-5.2",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:glm-5.2/chat_completions/features/error_passthrough",
+      "model_protocol:glm-5.2/chat_completions/invalid_request"
+    ]
+  },
+  "case_fingerprint": "b8ec05653c75bdaf3ad24ea55ce57efa38e8c958c46f1216da4e46c9483f389b",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:23:52.096+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:23:50.577+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 60,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "902136c58c426c7a61d8823b3af10d0b5852773371c272a7a53f953b5358e34b",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "bda97801ee082263906f6af54b36b149b9b3e086dfc94366a90b78ce8b02dfc6"
+  },
+  "response": {
+    "body_bytes": 183,
+    "body_sha256": "a3304f929fb99bf11755e01499cfe2c0b2a0ff38a6df30bd965ccbf0ed06f2eb",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "6899cc6d-5de9-4260-b6c3-3090d404d19a",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

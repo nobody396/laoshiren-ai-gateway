@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 60,
+      "name": "GLM 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T20:05:47+00:00",
+      "group": {
+        "id": 60,
+        "name": "GLM 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 60
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "a661dcf6fe14405f3653ae55eb64f8b9523cacea8cc1a3d89e04141893cd5f9b",
+        "model_ids": [
+          "glm-5.2",
+          "glm-5.3"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "glm-5.2",
+          "protocol": "responses",
+          "requested_max_output_tokens": 64,
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "370a3918a0511b834c1f34ebf733173ccbfbb10137a541563a7521cac4e481b0",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "created_at",
+              "id",
+              "model",
+              "object",
+              "output",
+              "status",
+              "usage"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 2,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "glm-5.2",
+          "protocol": "messages",
+          "requested_max_output_tokens": 1024,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 403,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "1c0ad75329424b1c6aa5f2efa2ebab99f995a8a88fb1f7c9cc4b8654b4d373d9",
+          "error": {
+            "type": "permission_error",
+            "message": "This group does not allow /v1/messages dispatch"
+          },
+          "response_shape": {
+            "top_level_keys": [
+              "error",
+              "type"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 60,
+      "model_id": "glm-5.2",
+      "protocol": "responses",
+      "max_output_tokens": 64
+    },
+    {
+      "group_id": 60,
+      "model_id": "glm-5.2",
+      "protocol": "messages",
+      "max_output_tokens": 1024
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": false,
+  "artifact_sha256": "7e606a9d3f1b8fc69138f9ad5795cc91a754caa0d2c128fe382a8d5e4822f7e4"
+}

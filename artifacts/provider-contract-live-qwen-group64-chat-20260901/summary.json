@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "7438be528e7882970029f314284dd5ba36eeb77ed691d46d446b79b2293146df",
+  "case_count": 42,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "47fdc203e560989c",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-qwen-group64-chat-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 18,
+    "pass": 24
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "run_id": "owned-e2e-338f4d8bcea8",
+  "started_at_utc": "2026-08-31T15:19:38.858316+00:00",
+  "finished_at_utc": "2026-08-31T15:19:53.889390+00:00",
+  "base_url": "https://api.laoshirenai.com",
+  "user_agent": "laoshirenai-account-ops/owned-e2e/1.0/gpt/owned-e2e-338f4d8bcea8",
+  "identity": {
+    "platform": "openai",
+    "user_id": 2,
+    "user_email": "231798222@qq.com",
+    "key_id": 128,
+    "key_name": "一键安装 · Codex",
+    "group_id": 6,
+    "group_name": "GPT 标准线路",
+    "status": "active",
+    "expires_at": null
+  },
+  "public_models": [
+    "gpt-5.3-codex-spark",
+    "gpt-5.4",
+    "gpt-5.5",
+    "gpt-5.6",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra"
+  ],
+  "selected_models": [
+    "gpt-5.6-sol"
+  ],
+  "rounds": 1,
+  "parallel": false,
+  "fresh_session": true,
+  "results": [
+    {
+      "round": 1,
+      "model": "gpt-5.6-sol",
+      "http_status": 200,
+      "headers_ms": 4682,
+      "first_byte_ms": 4682,
+      "first_event_ms": 4682,
+      "first_text_ms": 4682,
+      "total_ms": 4825,
+      "event_count": 9,
+      "completed": true,
+      "request_id": "owned-e2e-338f4d8bcea8-1-gpt-5.6-sol",
+      "error": null,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "overall": {
+      "passed": 1,
+      "total": 1,
+      "first_text": {
+        "count": 1,
+        "min_ms": 4682,
+        "median_ms": 4682,
+        "p90_ms": 4682,
+        "p95_ms": 4682,
+        "max_ms": 4682,
+        "mean_ms": 4682
+      },
+      "total_latency": {
+        "count": 1,
+        "min_ms": 4825,
+        "median_ms": 4825,
+        "p90_ms": 4825,
+        "p95_ms": 4825,
+        "max_ms": 4825,
+        "mean_ms": 4825
+      }
+    },
+    "models": {
+      "gpt-5.6-sol": {
+        "passed": 1,
+        "total": 1,
+        "first_text": {
+          "count": 1,
+          "min_ms": 4682,
+          "median_ms": 4682,
+          "p90_ms": 4682,
+          "p95_ms": 4682,
+          "max_ms": 4682,
+          "mean_ms": 4682
+        },
+        "total_latency": {
+          "count": 1,
+          "min_ms": 4825,
+          "median_ms": 4825,
+          "p90_ms": 4825,
+          "p95_ms": 4825,
+          "max_ms": 4825,
+          "mean_ms": 4825
+        }
+      }
+    }
+  },
+  "attribution": {
+    "usage_rows": [
+      {
+        "created_at": "2026-08-31T15:19:43.755458+00:00",
+        "requested_model": "gpt-5.6-sol",
+        "billed_model": "gpt-5.6-sol",
+        "upstream_model": null,
+        "account_id": 80,
+        "account_name": "xingwan-gpt-peer-0.2",
+        "duration_ms": 2932,
+        "first_token_ms": 2761,
+        "stream": true,
+        "request_id": "client:1b77e5da-8635-4f49-9e09-8393cd0c330f"
+      }
+    ],
+    "error_rows": []
+  },
+  "all_passed": true
+}

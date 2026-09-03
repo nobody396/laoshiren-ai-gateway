@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 3,
+  "events": 3,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "be83ef1c95985978178d0b9ad1af7585b805b95e7d312d913b9dc034d047ae53",
+  "changes": [
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/medium",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9c3f22a7046fe98737528fa6",
+            "evidence-ba8d93a0a166d8e310cefa7d"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/high",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a30767bff932f7b11e57b489",
+            "evidence-b45e2513a8465f56d8164989"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_reasoning",
+          "path": "reasoning/model/adaptive",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a4856eacea1211b4298a47ad",
+            "evidence-b90a6a824b77f62564cdd84f"
+          ]
+        }
+      ]
+    }
+  ]
+}

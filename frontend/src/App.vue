@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { RouterView, useRouter, useRoute } from 'vue-router'
-import { onMounted, onBeforeUnmount, watch } from 'vue'
+import { defineAsyncComponent, onMounted, onBeforeUnmount, watch } from 'vue'
 import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
-import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
 import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
 import { useAdminSettingsStore } from '@/stores/adminSettings'
 import { getSetupStatus } from '@/api/setup'
@@ -16,6 +15,9 @@ const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
 const adminSettingsStore = useAdminSettingsStore()
+// Announcements are authenticated-only. Keep their Markdown renderer out of the
+// public bootstrap bundle and load it only after a session exists.
+const AnnouncementPopup = defineAsyncComponent(() => import('@/components/common/AnnouncementPopup.vue'))
 
 function resolveCustomPageTitle(): string | undefined {
   if (route.name !== 'CustomPage') return undefined
@@ -143,5 +145,5 @@ onMounted(async () => {
   <NavigationProgress />
   <RouterView />
   <Toast />
-  <AnnouncementPopup />
+  <AnnouncementPopup v-if="authStore.isAuthenticated" />
 </template>

@@ -410,9 +410,9 @@ func TestModelPricingAddsDisabledLunaWithoutProviderPrice(t *testing.T) {
 	if luna.Model != "gpt-5.6-luna" || !luna.Disabled {
 		t.Fatalf("expected disabled Luna row, got %+v", luna)
 	}
-	if luna.InputPrice != nil || luna.OutputPrice != nil || luna.CacheReadPrice != nil {
-		t.Fatalf("expected unavailable Luna price to remain empty, got %+v", luna)
-	}
+	assertPrice(t, "catalog luna input", luna.InputPrice, 0.1)
+	assertPrice(t, "catalog luna output", luna.OutputPrice, 0.6)
+	assertPrice(t, "catalog luna cache", luna.CacheReadPrice, 0.01)
 }
 
 func TestModelPricingHidesOpenAICompactVariants(t *testing.T) {

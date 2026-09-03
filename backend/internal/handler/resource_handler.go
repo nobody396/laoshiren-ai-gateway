@@ -32,8 +32,13 @@ type ResourceHandler struct {
 }
 
 type clientSetupTicketRequest struct {
-	Target   string `json:"target"`
-	APIKeyID *int64 `json:"api_key_id"`
+	Target           string `json:"target"`
+	APIKeyID         *int64 `json:"api_key_id"`
+	ClientID         string `json:"client_id"`
+	ClientVersionKey string `json:"client_version_key"`
+	Protocol         string `json:"protocol"`
+	ModelID          string `json:"model_id"`
+	OS               string `json:"os"`
 }
 
 type clientSetupExchangeRequest struct {
@@ -323,7 +328,14 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		ticket *service.ClientSetupTicket
 		err    error
 	)
-	if req.APIKeyID != nil {
+	selection, explicit, selectionErr := setupSelectionFromRequest(req)
+	if selectionErr != nil {
+		response.ErrorFrom(c, selectionErr)
+		return
+	}
+	if explicit {
+		ticket, err = h.setup.IssueTicketForSelection(c.Request.Context(), subject.UserID, *req.APIKeyID, selection)
+	} else if req.APIKeyID != nil {
 		ticket, err = h.setup.IssueTicketForAPIKey(c.Request.Context(), subject.UserID, *req.APIKeyID)
 	} else {
 		ticket, err = h.setup.IssueTicket(c.Request.Context(), subject.UserID, req.Target)
@@ -333,13 +345,39 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		return
 	}
 	c.Header("Cache-Control", "private, no-store")
-	response.Success(c, gin.H{
+	payload := gin.H{
 		"ticket":     ticket.Ticket,
 		"expires_in": ticket.ExpiresIn,
 		"target":     ticket.Target,
 		"key_name":   ticket.KeyName,
 		"group_name": ticket.GroupName,
-	})
+	}
+	if ticket.ClientID != "" {
+		payload["client_id"] = ticket.ClientID
+		payload["client_version_key"] = ticket.ClientVersionKey
+		payload["protocol"] = ticket.Protocol
+		payload["model_id"] = ticket.ModelID
+		payload["os"] = ticket.OS
+	}
+	response.Success(c, payload)
+}
+
+func setupSelectionFromRequest(req clientSetupTicketRequest) (service.ClientSetupSelection, bool, error) {
+	selection := service.ClientSetupSelection{
+		ClientID: req.ClientID, ClientVersionKey: req.ClientVersionKey,
+		Protocol: req.Protocol, ModelID: req.ModelID, OS: req.OS,
+	}
+	explicit := strings.TrimSpace(req.ClientID) != "" || strings.TrimSpace(req.ClientVersionKey) != "" ||
+		strings.TrimSpace(req.Protocol) != "" || strings.TrimSpace(req.ModelID) != "" || strings.TrimSpace(req.OS) != ""
+	if !explicit {
+		return selection, false, nil
+	}
+	if req.APIKeyID == nil || *req.APIKeyID <= 0 || strings.TrimSpace(req.ClientID) == "" ||
+		strings.TrimSpace(req.ClientVersionKey) == "" || strings.TrimSpace(req.Protocol) == "" ||
+		strings.TrimSpace(req.ModelID) == "" || strings.TrimSpace(req.OS) == "" {
+		return service.ClientSetupSelection{}, false, service.ErrInvalidClientSetupSelection
+	}
+	return selection, true, nil
 }
 
 func (h *ResourceHandler) ExchangeSetupTicket(c *gin.Context) {
@@ -354,11 +392,19 @@ func (h *ResourceHandler) ExchangeSetupTicket(c *gin.Context) {
 		return
 	}
 	c.Header("Cache-Control", "no-store")
-	response.Success(c, gin.H{
+	payload := gin.H{
 		"target":   credential.Target,
 		"api_key":  credential.APIKey,
 		"base_url": credential.BaseURL,
-	})
+	}
+	if credential.ClientID != "" {
+		payload["client_id"] = credential.ClientID
+		payload["client_version_key"] = credential.ClientVersionKey
+		payload["protocol"] = credential.Protocol
+		payload["model_id"] = credential.ModelID
+		payload["os"] = credential.OS
+	}
+	response.Success(c, payload)
 }
 
 func (h *ResourceHandler) DownloadCodexWindowsLatest(c *gin.Context) {

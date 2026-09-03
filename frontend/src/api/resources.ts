@@ -55,12 +55,29 @@ export interface DownloadVersionStatus {
 
 export type ClientSetupTarget = 'claude' | 'codex' | 'grok' | 'gemini'
 
-export interface ClientSetupTicket {
+export interface ClientSetupTicket<TTarget extends string = ClientSetupTarget> {
   ticket: string
   expires_in: number
-  target: ClientSetupTarget
+  target: TTarget
   key_name: string
   group_name: string
+  client_id?: string
+  client_version_key?: string
+  protocol?: ClientSetupProtocol
+  model_id?: string
+  os?: ClientSetupOS
+}
+
+export type ClientSetupProtocol = 'responses' | 'chat_completions' | 'messages' | 'generate_content'
+export type ClientSetupOS = 'macos' | 'linux' | 'windows'
+
+export interface ClientSetupSelection {
+  api_key_id: number
+  client_id: string
+  client_version_key: string
+  protocol: ClientSetupProtocol
+  model_id: string
+  os: ClientSetupOS
 }
 
 export async function getDownloads(tool: DownloadToolID): Promise<DownloadManifest> {
@@ -105,6 +122,11 @@ export async function createClientSetupTicketForAPIKey(apiKeyId: number): Promis
   return data
 }
 
+export async function createClientSetupTicketForSelection(selection: ClientSetupSelection): Promise<ClientSetupTicket<string>> {
+  const { data } = await apiClient.post<ClientSetupTicket<string>>('/resources/setup-ticket', selection)
+  return data
+}
+
 export async function getVersionStatus(): Promise<DownloadVersionStatus[]> {
   const { data } = await apiClient.get<DownloadVersionStatus[]>('/resources/version-status')
   return data
@@ -119,5 +141,6 @@ export const resourcesAPI = {
   downloadCCSwitchAsset,
   createClientSetupTicket,
   createClientSetupTicketForAPIKey,
+  createClientSetupTicketForSelection,
   getVersionStatus
 }

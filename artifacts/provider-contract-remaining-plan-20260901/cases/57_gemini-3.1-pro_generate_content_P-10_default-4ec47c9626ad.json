@@ -1,0 +1,107 @@
+{
+  "artifact_sha256": "909bb9bcbcc5bd6bca94b96aa0353142328bf4f6377e18d61697ba209184a073",
+  "billing_attribution": {
+    "actual_cost": 0.00123,
+    "status": "verified",
+    "total_cost": 0.00205,
+    "usage_row_ids": [
+      "243430"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "57:gemini-3.1-pro:generate_content:P-10:default",
+    "context_window": 1048576,
+    "declared_status": "blocked",
+    "group_id": 57,
+    "group_name": "Gemini 标准线路",
+    "marker": "LSR_CONTRACT_105803F2F94BBF8F",
+    "max_output_tokens": 65536,
+    "model_id": "gemini-3.1-pro",
+    "name": "structured_output",
+    "p_id": "P-10",
+    "protocol": "generate_content",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:gemini-3.1-pro/generate_content/features/structured_output"
+    ]
+  },
+  "case_fingerprint": "5e9187706701e73488c8cf65a6425761cc5cff360c485eea744661c08e06eda5",
+  "classification": "contract_failed",
+  "finished_at": "2026-09-01T02:56:57.906+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T02:56:50.840+00:00",
+  "offline_verifier": {
+    "reason": "structured output must contain schema-valid object output",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 57,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": "structured output must contain schema-valid object output",
+  "request": {
+    "payload_sha256": "319b5263248992321bd5d18697ced69ae9dcf3f86bdc5d3826ab427a62fe4edf",
+    "url": "https://api.laoshirenai.com/v1beta/models/gemini-3.1-pro:generateContent",
+    "user_agent_sha256": "c02f72e8d2c99ff5e7e73345a6daf0649da8962edd0ff4c1deabfbca08cce2b9"
+  },
+  "response": {
+    "body_bytes": 463,
+    "body_sha256": "39cf02d40e7e9a44e74c6d91aa46cf4b421e9d353b766d7367105f17ccc028a5",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": false,
+    "request_id": "202609010256532953581198268d9d67FgxCf8M",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 281,
+    "output_tokens": 6,
+    "total_tokens": 405
+  },
+  "usage_attribution": {
+    "row_count": 1,
+    "rows": [
+      {
+        "account_id": 48,
+        "account_rate_multiplier": 0.4,
+        "actual_cost": 0.00123,
+        "api_key_id": 128,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 0,
+        "cache_read_tokens": 0,
+        "created_at": "2026-09-01T10:56:55.993717+08:00",
+        "duration_ms": 3020,
+        "first_token_ms": null,
+        "group_id": 57,
+        "id": 243430,
+        "inbound_endpoint": "/v1beta/models",
+        "input_cost": 0.000562,
+        "input_tokens": 281,
+        "model": "gemini-3.1-pro",
+        "output_cost": 0.001488,
+        "output_tokens": 124,
+        "rate_multiplier": 0.6,
+        "request_id": "202609010256532953581198268d9d67FgxCf8M",
+        "request_type": "sync",
+        "stream": false,
+        "total_cost": 0.00205,
+        "upstream_endpoint": "/v1beta/models",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/84a65a48cb8f8375 case/4ec47c9626ad"
+      }
+    ],
+    "status": "verified"
+  }
+}

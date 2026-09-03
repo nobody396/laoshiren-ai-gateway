@@ -20,9 +20,10 @@ const (
 	ClientSetupTargetGrok   = "grok"
 	ClientSetupTargetGemini = "gemini"
 
-	clientSetupTicketPurpose = "client_setup"
-	clientSetupTicketTTL     = 10 * time.Minute
-	clientSetupAPIBaseURL    = "https://api.laoshirenai.com"
+	clientSetupTicketPurpose          = "client_setup"
+	clientSetupSelectionTicketPurpose = "client_setup_selection_v1"
+	clientSetupTicketTTL              = 10 * time.Minute
+	clientSetupAPIBaseURL             = "https://api.laoshirenai.com"
 
 	clientSetupDefaultClaudeGroupName = "MAX 20X"
 	clientSetupDefaultCodexGroupName  = "Pro 20X"
@@ -35,10 +36,12 @@ var (
 	clientSetupClaudeGroupName  = preferredCatalogGroupOrDefault(PlatformAnthropic, clientSetupDefaultClaudeGroupName)
 	clientSetupCodexGroupName   = preferredCatalogGroupOrDefault(PlatformOpenAI, clientSetupDefaultCodexGroupName)
 
-	ErrInvalidClientSetupTarget  = infraerrors.BadRequest("INVALID_CLIENT_SETUP_TARGET", "不支持的一键安装目标")
-	ErrClientSetupGroupMissing   = infraerrors.Forbidden("CLIENT_SETUP_GROUP_MISSING", "当前账户没有可用于该客户端的分组")
-	ErrClientSetupKeyUnavailable = infraerrors.Forbidden("CLIENT_SETUP_KEY_UNAVAILABLE", "当前 API 密钥无法用于一键配置")
-	ErrInvalidClientSetupTicket  = infraerrors.Unauthorized("INVALID_CLIENT_SETUP_TICKET", "一键安装凭证无效、已过期或已使用")
+	ErrInvalidClientSetupTarget        = infraerrors.BadRequest("INVALID_CLIENT_SETUP_TARGET", "不支持的一键安装目标")
+	ErrClientSetupGroupMissing         = infraerrors.Forbidden("CLIENT_SETUP_GROUP_MISSING", "当前账户没有可用于该客户端的分组")
+	ErrClientSetupKeyUnavailable       = infraerrors.Forbidden("CLIENT_SETUP_KEY_UNAVAILABLE", "当前 API 密钥无法用于一键配置")
+	ErrInvalidClientSetupSelection     = infraerrors.BadRequest("INVALID_CLIENT_SETUP_SELECTION", "一键配置选择不完整或不受支持")
+	ErrClientSetupSelectionUnavailable = infraerrors.Forbidden("CLIENT_SETUP_SELECTION_UNAVAILABLE", "该客户端、版本、协议、模型与系统组合尚未开放一键配置")
+	ErrInvalidClientSetupTicket        = infraerrors.Unauthorized("INVALID_CLIENT_SETUP_TICKET", "一键安装凭证无效、已过期或已使用")
 )
 
 func preferredCatalogGroupOrDefault(platform, fallback string) string {
@@ -49,17 +52,40 @@ func preferredCatalogGroupOrDefault(platform, fallback string) string {
 }
 
 type ClientSetupTicket struct {
-	Ticket    string
-	ExpiresIn int
-	Target    string
-	KeyName   string
-	GroupName string
+	Ticket           string
+	ExpiresIn        int
+	Target           string
+	KeyName          string
+	GroupName        string
+	ClientID         string
+	ClientVersionKey string
+	Protocol         string
+	ModelID          string
+	OS               string
 }
 
 type ClientSetupCredential struct {
-	Target  string
-	APIKey  string
-	BaseURL string
+	Target           string
+	APIKey           string
+	BaseURL          string
+	ClientID         string
+	ClientVersionKey string
+	Protocol         string
+	ModelID          string
+	OS               string
+}
+
+type ClientSetupSelection struct {
+	ClientID         string
+	ClientVersionKey string
+	Protocol         string
+	ModelID          string
+	OS               string
+}
+
+type ClientSetupModelDiscovery interface {
+	GetAvailableModels(ctx context.Context, groupID *int64, platform string) []string
+	IsModelRestricted(ctx context.Context, groupID int64, model string) bool
 }
 
 type clientSetupAPIKeyService interface {
@@ -72,13 +98,15 @@ type clientSetupAPIKeyService interface {
 // ClientSetupService binds either a lazily-created install key or a user-selected
 // existing key to a short-lived, one-time setup ticket.
 type ClientSetupService struct {
-	apiKeys clientSetupAPIKeyService
-	tickets SSOTicketCache
-	ensure  singleflight.Group
+	apiKeys        clientSetupAPIKeyService
+	tickets        SSOTicketCache
+	models         ClientSetupModelDiscovery
+	selectionReady func(ClientSetupSelection) bool
+	ensure         singleflight.Group
 }
 
-func NewClientSetupService(apiKeys *APIKeyService, tickets SSOTicketCache) *ClientSetupService {
-	return &ClientSetupService{apiKeys: apiKeys, tickets: tickets}
+func NewClientSetupService(apiKeys *APIKeyService, tickets SSOTicketCache, models ClientSetupModelDiscovery) *ClientSetupService {
+	return &ClientSetupService{apiKeys: apiKeys, tickets: tickets, models: models}
 }
 
 func (s *ClientSetupService) IssueTicket(ctx context.Context, userID int64, target string) (*ClientSetupTicket, error) {
@@ -107,7 +135,7 @@ func (s *ClientSetupService) IssueTicket(ctx context.Context, userID int64, targ
 		return nil, fmt.Errorf("ensure client setup API key returned an unexpected value")
 	}
 
-	return s.issueTicketForAPIKey(ctx, userID, target, apiKey)
+	return s.issueTicketForAPIKey(ctx, userID, target, apiKey, nil)
 }
 
 // IssueTicketForAPIKey creates a short-lived, one-time setup ticket for an
@@ -127,10 +155,31 @@ func (s *ClientSetupService) IssueTicketForAPIKey(ctx context.Context, userID, a
 		return nil, ErrClientSetupKeyUnavailable
 	}
 
-	return s.issueTicketForAPIKey(ctx, userID, target, apiKey)
+	return s.issueTicketForAPIKey(ctx, userID, target, apiKey, nil)
 }
 
-func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID int64, target string, apiKey *APIKey) (*ClientSetupTicket, error) {
+func (s *ClientSetupService) IssueTicketForSelection(ctx context.Context, userID, apiKeyID int64, selection ClientSetupSelection) (*ClientSetupTicket, error) {
+	if s == nil || s.apiKeys == nil || s.tickets == nil || userID <= 0 || apiKeyID <= 0 {
+		return nil, ErrClientSetupKeyUnavailable
+	}
+	selection, err := normalizeClientSetupSelection(selection)
+	if err != nil {
+		return nil, err
+	}
+	if !s.isSelectionReady(selection) {
+		return nil, ErrClientSetupSelectionUnavailable
+	}
+	apiKey, err := s.apiKeys.GetByID(ctx, apiKeyID)
+	if err != nil || apiKey == nil || apiKey.UserID != userID || apiKey.Status != StatusActive || apiKey.Group == nil {
+		return nil, ErrClientSetupKeyUnavailable
+	}
+	if !s.apiKeyExposesModel(ctx, apiKey, selection.ModelID) {
+		return nil, ErrClientSetupSelectionUnavailable
+	}
+	return s.issueTicketForAPIKey(ctx, userID, selection.ClientID, apiKey, &selection)
+}
+
+func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID int64, target string, apiKey *APIKey, selection *ClientSetupSelection) (*ClientSetupTicket, error) {
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, fmt.Errorf("generate client setup ticket: %w", err)
@@ -144,6 +193,14 @@ func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID in
 		TargetKind: target,
 		CreatedAt:  time.Now().UTC(),
 	}
+	if selection != nil {
+		data.Purpose = clientSetupSelectionTicketPurpose
+		data.ClientID = selection.ClientID
+		data.ClientVersionKey = selection.ClientVersionKey
+		data.Protocol = selection.Protocol
+		data.ModelID = selection.ModelID
+		data.OS = selection.OS
+	}
 	if err := s.tickets.StoreSSOTicket(ctx, ticket, data, clientSetupTicketTTL); err != nil {
 		return nil, fmt.Errorf("store client setup ticket: %w", err)
 	}
@@ -152,13 +209,21 @@ func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID in
 	if apiKey.Group != nil {
 		groupName = apiKey.Group.Name
 	}
-	return &ClientSetupTicket{
+	result := &ClientSetupTicket{
 		Ticket:    ticket,
 		ExpiresIn: int(clientSetupTicketTTL.Seconds()),
 		Target:    target,
 		KeyName:   apiKey.Name,
 		GroupName: groupName,
-	}, nil
+	}
+	if selection != nil {
+		result.ClientID = selection.ClientID
+		result.ClientVersionKey = selection.ClientVersionKey
+		result.Protocol = selection.Protocol
+		result.ModelID = selection.ModelID
+		result.OS = selection.OS
+	}
+	return result, nil
 }
 
 func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) (*ClientSetupCredential, error) {
@@ -181,38 +246,128 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 		return nil, fmt.Errorf("consume client setup ticket: %w", err)
 	}
 	now := time.Now().UTC()
-	if data.Purpose != clientSetupTicketPurpose ||
+	if (data.Purpose != clientSetupTicketPurpose && data.Purpose != clientSetupSelectionTicketPurpose) ||
 		data.APIKeyID == nil ||
 		data.CreatedAt.IsZero() ||
 		data.CreatedAt.After(now.Add(5*time.Second)) ||
 		now.Sub(data.CreatedAt) > clientSetupTicketTTL {
 		return nil, ErrInvalidClientSetupTicket
 	}
-	target, err := normalizeClientSetupTarget(data.TargetKind)
-	if err != nil {
-		return nil, ErrInvalidClientSetupTicket
-	}
-
 	apiKey, err := s.apiKeys.GetByID(ctx, *data.APIKeyID)
 	if err != nil {
 		return nil, ErrInvalidClientSetupTicket
 	}
-	if apiKey.UserID != data.UserID ||
-		apiKey.Status != StatusActive ||
-		apiKey.Group == nil ||
-		!clientSetupGroupCompatible(target, apiKey.Group) {
+	if apiKey.UserID != data.UserID || apiKey.Status != StatusActive || apiKey.Group == nil {
 		return nil, ErrInvalidClientSetupTicket
+	}
+
+	selection := ClientSetupSelection{
+		ClientID: data.ClientID, ClientVersionKey: data.ClientVersionKey,
+		Protocol: data.Protocol, ModelID: data.ModelID, OS: data.OS,
+	}
+	explicit := selectionHasAnyField(selection)
+	target := ""
+	if explicit {
+		selection, err = normalizeClientSetupSelection(selection)
+		if err != nil || data.Purpose != clientSetupSelectionTicketPurpose || data.TargetKind != selection.ClientID ||
+			!s.isSelectionReady(selection) || !s.apiKeyExposesModel(ctx, apiKey, selection.ModelID) {
+			return nil, ErrInvalidClientSetupTicket
+		}
+		target = clientSetupInstallerTarget(selection.ClientID)
+		if target == "" {
+			return nil, ErrInvalidClientSetupTicket
+		}
+	} else {
+		target, err = normalizeClientSetupTarget(data.TargetKind)
+		if err != nil || data.Purpose != clientSetupTicketPurpose || !clientSetupGroupCompatible(target, apiKey.Group) {
+			return nil, ErrInvalidClientSetupTicket
+		}
 	}
 
 	baseURL := clientSetupAPIBaseURL
 	if apiKey.Group.Platform == PlatformAntigravity {
 		baseURL += "/antigravity"
 	}
-	return &ClientSetupCredential{
+	credential := &ClientSetupCredential{
 		Target:  target,
 		APIKey:  apiKey.Key,
 		BaseURL: baseURL,
-	}, nil
+	}
+	if explicit {
+		credential.ClientID = selection.ClientID
+		credential.ClientVersionKey = selection.ClientVersionKey
+		credential.Protocol = selection.Protocol
+		credential.ModelID = selection.ModelID
+		credential.OS = selection.OS
+	}
+	return credential, nil
+}
+
+func clientSetupInstallerTarget(clientID string) string {
+	switch clientID {
+	case "claude-code":
+		return ClientSetupTargetClaude
+	case "codex":
+		return ClientSetupTargetCodex
+	case "grok-build":
+		return ClientSetupTargetGrok
+	case "gemini-cli":
+		return ClientSetupTargetGemini
+	default:
+		return ""
+	}
+}
+
+func selectionHasAnyField(selection ClientSetupSelection) bool {
+	return strings.TrimSpace(selection.ClientID) != "" || strings.TrimSpace(selection.ClientVersionKey) != "" ||
+		strings.TrimSpace(selection.Protocol) != "" || strings.TrimSpace(selection.ModelID) != "" || strings.TrimSpace(selection.OS) != ""
+}
+
+func normalizeClientSetupSelection(selection ClientSetupSelection) (ClientSetupSelection, error) {
+	selection.ClientID = strings.ToLower(strings.TrimSpace(selection.ClientID))
+	selection.ClientVersionKey = strings.TrimSpace(selection.ClientVersionKey)
+	selection.Protocol = strings.ToLower(strings.TrimSpace(selection.Protocol))
+	selection.ModelID = strings.ToLower(strings.TrimSpace(selection.ModelID))
+	selection.OS = strings.ToLower(strings.TrimSpace(selection.OS))
+	if selection.ClientID == "" || selection.ClientVersionKey == "" || selection.Protocol == "" || selection.ModelID == "" || selection.OS == "" {
+		return ClientSetupSelection{}, ErrInvalidClientSetupSelection
+	}
+	return selection, nil
+}
+
+func (s *ClientSetupService) isSelectionReady(selection ClientSetupSelection) bool {
+	if !generatedClientSetupModelProtocols[selection.ModelID][selection.Protocol] {
+		return false
+	}
+	if s != nil && s.selectionReady != nil {
+		return s.selectionReady(selection)
+	}
+	contract, ok := generatedClientSetupContracts[selection.ClientID]
+	if !ok || contract.OneClickStatus != "ready" || contract.VersionKey != selection.ClientVersionKey ||
+		!contract.Protocols[selection.Protocol] || !contract.OSReady[selection.OS] {
+		return false
+	}
+	return true
+}
+
+func (s *ClientSetupService) apiKeyExposesModel(ctx context.Context, apiKey *APIKey, modelID string) bool {
+	if s == nil || s.models == nil || apiKey == nil || apiKey.Group == nil {
+		return false
+	}
+	groupID := apiKey.Group.ID
+	models := apiKey.Group.UniversalPublicModels()
+	if apiKey.Group.Platform != PlatformUniversal {
+		models = s.models.GetAvailableModels(ctx, &groupID, "")
+		if s.models.IsModelRestricted(ctx, groupID, modelID) {
+			return false
+		}
+	}
+	for _, model := range models {
+		if strings.EqualFold(strings.TrimSpace(model), modelID) {
+			return true
+		}
+	}
+	return false
 }
 
 func clientSetupTargetForGroup(group *Group) string {
@@ -360,6 +515,10 @@ func clientSetupGrokGroupNameMatches(name, required string) bool {
 	return groupName == requiredName || groupName == requiredName+" 分组"
 }
 
+func clientSetupGrokGroupNameIsVersioned(name string) bool {
+	return strings.ContainsAny(name, "0123456789")
+}
+
 func selectClientSetupGroup(target string, groups []Group) *Group {
 	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
 	// 20X, Codex keys use Pro 20X, and Grok Build keys prefer the version-neutral
@@ -374,13 +533,23 @@ func selectClientSetupGroup(target string, groups []Group) *Group {
 				return &group
 			}
 		}
-		for _, legacyName := range clientSetupLegacyGrokGroups {
-			for i := range groups {
-				if clientSetupGroupCompatible(target, &groups[i]) &&
-					!groups[i].IsSubscriptionType() &&
-					clientSetupGrokGroupNameMatches(groups[i].Name, legacyName) {
-					group := groups[i]
-					return &group
+		// A version-neutral legacy group remains a safer fallback than a
+		// model-version group: it survives catalog upgrades without silently
+		// pinning newly created setup keys to the previous release. Preserve the
+		// catalog order within each class so the newest versioned fallback still
+		// wins when no neutral group exists.
+		for _, versioned := range []bool{false, true} {
+			for _, legacyName := range clientSetupLegacyGrokGroups {
+				if clientSetupGrokGroupNameIsVersioned(legacyName) != versioned {
+					continue
+				}
+				for i := range groups {
+					if clientSetupGroupCompatible(target, &groups[i]) &&
+						!groups[i].IsSubscriptionType() &&
+						clientSetupGrokGroupNameMatches(groups[i].Name, legacyName) {
+						group := groups[i]
+						return &group
+					}
 				}
 			}
 		}

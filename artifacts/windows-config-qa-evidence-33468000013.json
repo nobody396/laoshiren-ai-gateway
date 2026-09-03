@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "windows_client_config_qa",
+  "secret_free": true,
+  "run_url": "https://github.com/nobody396/laoshiren-ai-gateway/actions/runs/33468000013",
+  "run_id": 33468000013,
+  "commit": "e19164a7ca557501af8a77ae90fa298ebeae50a1",
+  "runner": {
+    "os": "Windows",
+    "arch": "X64",
+    "pwsh": "7.6.5",
+    "windows_powershell": "5.1"
+  },
+  "source_equivalence": {
+    "lf_sha256": "fdbc1e516611c859397de98acb72e881e1fff9157913975bff608cda447235c1",
+    "windows_checkout_crlf_sha256": "707f4d9c135be72df26c6d5744567f0356974ca4b67ca46bd781a5d82e5d2110",
+    "crlf_normalization_matches": true
+  },
+  "clients": [
+    "Claude Code",
+    "Codex",
+    "Grok Build",
+    "Gemini CLI"
+  ],
+  "features": [
+    "safe_write",
+    "backup_recovery",
+    "idempotency"
+  ],
+  "restricted_execution_policy": true,
+  "result": "pass",
+  "observed_at": "2026-09-01T03:57:18+00:00"
+}

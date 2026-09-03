@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "c367289ff1789e1890357b51a8062bec70de48c56fc8ffddfcf48242f8dafde6",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "95c3cd795079e9d5",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-minimax-group63-optional-20260901/run-state.json",
+  "status_counts": {
+    "pass": 1
+  }
+}

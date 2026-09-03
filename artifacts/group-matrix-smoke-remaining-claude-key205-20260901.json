@@ -1,0 +1,864 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 5,
+      "name": "Claude 标准线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 15,
+      "name": "Claude 兼容线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.6
+    },
+    {
+      "id": 65,
+      "name": "Claude 经济线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T17:24:10+00:00",
+      "group": {
+        "id": 5,
+        "name": "Claude 标准线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 5
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "7ca2f90bb7e0fef4c92336aed83d30e4e23515cf2f7d0be9cbacd21192503dd1",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-fable-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 400,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "86e3bfe0bdb5e725273824b25e48422e12dbe63225b84a5dd4ad9c502689f49e",
+          "error": {
+            "type": "invalid_request_error",
+            "message": "The request could not be processed. Please verify the request and try again."
+          },
+          "response_shape": {
+            "top_level_keys": [
+              "error",
+              "type"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "fabe8253f52c81f3c9704e3c44986140b8217844a450598fcf6e11463ae0f2ba",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "2d7276dada8d43fb5bf76709052dd5857443a03aa95b15d94b0c248470acd4e7",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 400,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "39a266908f9b53568dc45c2eff9d30a04fa90c2e3e44d7184aed89960743f8e7",
+          "error": {
+            "type": "invalid_request_error",
+            "message": "The request could not be processed. Please verify the request and try again."
+          },
+          "response_shape": {
+            "top_level_keys": [
+              "error",
+              "type"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        },
+        {
+          "model_id": "claude-opus-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 400,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "38c36abda8605d26288299544bf00255b9927c4041b6a51c90bcf62b66505637",
+          "error": {
+            "type": "invalid_request_error",
+            "message": "The request could not be processed. Please verify the request and try again."
+          },
+          "response_shape": {
+            "top_level_keys": [
+              "error",
+              "type"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 400,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "2ec0a79a1509fb5406619ae94f76d3ee66e84d38c4d91f43e385da2308ea0cb5",
+          "error": {
+            "type": "invalid_request_error",
+            "message": "The request could not be processed. Please verify the request and try again."
+          },
+          "response_shape": {
+            "top_level_keys": [
+              "error",
+              "type"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:24:42+00:00",
+      "group": {
+        "id": 15,
+        "name": "Claude 兼容线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.6
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 15
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "7ca2f90bb7e0fef4c92336aed83d30e4e23515cf2f7d0be9cbacd21192503dd1",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-fable-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": false,
+          "request_id": null,
+          "body_sha256": "796aa86aa0fd47c1c35a87d9da521acf72e2980aee18e224f864bfbe836a2a69",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": false
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "1e8bb59296b9b28821c9b3f370984afb3f0d793b7a7e1ddd5d592042bdd7ec2c",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "217d32bf074cdab9e73ff05b1e14dcc874c8d189bef676c879661f78813ac46b",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "40f7dfd3b365b8756aa0c66566837950a4c555c78f49105793c83891c5100ca2",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "d25e7c859e753d5d8a30dcd2bc8437d7cb11c107de93a8257c4f2c7b0408b575",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "9c7002417b749f4c468b3dfd9cbb2785a2e7788a53cf0a256960aecfb0d06c40",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "da250aff438c1adab7231805c1aac2e0c8cf419c7a90981aebdca5b6a315c80b",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T17:25:49+00:00",
+      "group": {
+        "id": 65,
+        "name": "Claude 经济线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 65
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "72a6ec4691b8d62c3abb457c24295b01be84942d42e0721e560b24d7de7b1d94",
+        "model_ids": [
+          "claude-haiku-4-5",
+          "claude-opus-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "4e7b08368882ea4bedc793a7d2ff20d9e850fdc58ef34ea427aceba7e9a6873d",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "edfacd7f60a0a47bd152792344c0bf7cd15905d3a8b84570bf2d884cbc3e68f6",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "77616618a736165ac4c9b9046da3270ba384ecb353afc1c74543ab38fec76825",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "083287b2e4e7fc90f643fecc3453e6022532635cefe999f2991d17dd0b64cbe6",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "48b13470f12ba8c2e16a645c4cd919e4bfbbb7cf9eb7f0e772d6ea44e7878e66",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "f4fb7f4f3be6244bdf18ab5fd492578cde2330c8111dde87fba02e0cb0a350c8",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "protocol": "messages",
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "f0286723f020311887041fd50a4a9b8b167aece16600d1836869a016e784a762",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 5,
+      "model_id": "claude-fable-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-haiku-4-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-opus-4-8",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-opus-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-sonnet-4-6",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-fable-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-haiku-4-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-opus-4-6",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-opus-4-8",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-opus-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-sonnet-4-6",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-haiku-4-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-opus-4-6",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-opus-4-8",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-opus-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-sonnet-4-6",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-sonnet-5",
+      "protocol": "messages"
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": false,
+  "artifact_sha256": "37f68afb10015abe8af2aaeea339740c8e51edab5763c82f92daf02128665f73"
+}

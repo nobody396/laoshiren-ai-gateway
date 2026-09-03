@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "8b4da51cf0458b5b049126d6b553abc6044a234c2707bd56ff240ae400295ba2",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "08e26a1d9c9aec2a",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-transient-retry-group58-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1
+  }
+}

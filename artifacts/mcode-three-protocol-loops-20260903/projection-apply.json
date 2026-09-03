@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "client_matrix_write": false,
+  "changed": false,
+  "events": 0,
+  "matrix_event_counts": {
+    "client_protocol": 0,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "eebf73f4686a86c9894512037ee789dd6c64edfeccc53200017cae8f7f174afd",
+  "client_matrix_before_sha256": "3499e922af3899261cd60b49f877a23117215bf6f9de3d02e598f6e6897db758",
+  "events_detail": [],
+  "client_matrix_after_sha256": "3499e922af3899261cd60b49f877a23117215bf6f9de3d02e598f6e6897db758"
+}

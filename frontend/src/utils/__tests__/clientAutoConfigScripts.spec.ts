@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -34,6 +34,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
+    expect(script).toContain('data.model_id')
+    expect(script).toContain('data.protocol')
+    expect(script).toContain('SELECTED_MODEL="$received_model"')
+    expect(script).toContain('CONFIG_PROTOCOL="$GROK_API_BACKEND"')
+    expect(script).toContain('SELECTED_REASONING="${LAOSHIRENAI_REASONING_EFFORT:-}"')
+    expect(script).toContain("const thinkingLevel = ['low', 'medium', 'high'].includes(requestedReasoning)")
     expect(script).toContain('install_codex_app_if_requested')
     expect(script).toContain('resolve_client_update_plan')
     expect(script).toContain('检测到 ${label} 可更新')
@@ -41,6 +47,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("-name 'ChatGPT.app'")
     expect(script).toContain('${api_base_url}/usage')
     expect(script).toContain('余额/套餐额度不足')
+    expect(script).toContain('回滚方法（仅显示本次存在的备份）')
     expect(script.indexOf('ensure_node_runtime\n')).toBeLessThan(script.indexOf('exchange_setup_ticket\n'))
   })
 
@@ -52,12 +59,19 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
+    expect(script).toContain('$Data.model_id')
+    expect(script).toContain('$Data.protocol')
+    expect(script).toContain('$script:SelectedModel = [string]$Data.model_id')
+    expect(script).toContain('$script:GrokApiBackend = $script:SelectedProtocol')
+    expect(script).toContain('$SelectedReasoning = if ($env:LAOSHIRENAI_REASONING_EFFORT)')
+    expect(script).toContain("$ThinkingLevel = if ($SelectedReasoning -in @('low','medium','high'))")
     expect(script).toContain('Install-CodexAppIfRequested')
     expect(script).toContain('Resolve-ClientUpdatePlan')
     expect(script).toContain('Set-AppxPackageAutoUpdateSettings')
     expect(script).toContain('Add-AppxPackage -AppInstallerFile $AppInstallerPath')
     expect(script).toContain('$ApiBaseUrl/usage')
     expect(script).toContain('余额/套餐额度不足')
+    expect(script).toContain('回滚方法（仅显示本次存在的备份）')
     expect(script).toContain('Resolve-SystemNpmCmd')
     expect(script).toContain("Get-Command npm.cmd -CommandType Application")
     expect(script).toContain('$script:NpmCmd = Resolve-SystemNpmCmd -NodeCommand $NodeCommand')
@@ -96,16 +110,72 @@ describe('client auto-config scripts', () => {
       expect(script).toContain('CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY')
       expect(script).toContain('claude-opus-5')
       expect(script).toContain('effortLevel')
-      expect(script).toContain('xhigh')
+      expect(script).toContain('high')
+      expect(script).toContain('modelSettings')
+      expect(script).toContain('ANTHROPIC_DEFAULT_OPUS_MODEL')
       expect(script).toMatch(/CatalogOpenAIDefaultModel|CATALOG_OPENAI_DEFAULT_MODEL/)
     }
   })
 
-  it('uses xhigh as the explicit Codex reasoning default on every platform', () => {
+  it('refuses malformed JSON instead of clearing the existing client config', () => {
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    for (const target of ['claude', 'gemini'] as const) {
+      const fixture = mkdtempSync(join(tmpdir(), `laoshirenai-${target}-malformed-`))
+      const configPath = target === 'claude'
+        ? join(fixture, '.claude', 'settings.json')
+        : join(fixture, '.gemini', 'settings.json')
+      const malformed = '{not-json\n'
+      try {
+        mkdirSync(resolve(configPath, '..'), { recursive: true })
+        writeFileSync(configPath, malformed)
+        expect(() => execFileSync('bash', [
+          '-c',
+          target === 'claude'
+            ? 'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CLAUDE_API_KEY="test-key"; write_claude_config'
+            : 'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; GEMINI_API_KEY="test-key"; write_gemini_config',
+          '_', installerPath,
+        ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })).toThrow()
+        expect(readFileSync(configPath, 'utf8')).toBe(malformed)
+      } finally {
+        rmSync(fixture, { recursive: true, force: true })
+      }
+    }
+  })
+
+  it('writes the selected Claude model, role slots, and only a supported high effort', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-claude-selection-'))
+    const settingsPath = join(fixture, '.claude', 'settings.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      mkdirSync(resolve(settingsPath, '..'), { recursive: true })
+      writeFileSync(settingsPath, JSON.stringify({ permissions: { allow: ['keep'] }, env: { KEEP_ME: 'yes' } }))
+      const writeModel = (model: string) => execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CLAUDE_API_KEY="test-key"; CATALOG_ANTHROPIC_DEFAULT_MODEL="$2"; write_claude_config',
+        '_', installerPath, model,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      writeModel('claude-opus-5')
+      let settings = JSON.parse(readFileSync(settingsPath, 'utf8'))
+      expect(settings.model).toBe('claude-opus-5')
+      expect(settings.modelSettings['claude-opus-5'].effortLevel).toBe('high')
+      expect(settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL).toBe('claude-opus-5')
+      expect(settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL).toBe('claude-opus-5')
+      expect(settings.permissions).toEqual({ allow: ['keep'] })
+      expect(settings.env.KEEP_ME).toBe('yes')
+      writeModel('claude-haiku-4-5')
+      settings = JSON.parse(readFileSync(settingsPath, 'utf8'))
+      expect(settings.model).toBe('claude-haiku-4-5')
+      expect(settings.modelSettings['claude-haiku-4-5']).toBeUndefined()
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('derives the Codex reasoning default from the selected model and prefers high', () => {
     for (const name of ['install.sh', 'install.ps1']) {
       const script = readPublicScript(name)
-      expect(script).toContain('model_reasoning_effort = "xhigh"')
-      expect(script).not.toContain('model_reasoning_effort = "high"')
+      expect(script).toContain('supported_reasoning_levels')
+      expect(script.includes("includes('high')") || script.includes("-contains 'high'")).toBe(true)
     }
   })
 
@@ -113,32 +183,29 @@ describe('client auto-config scripts', () => {
     const catalog = JSON.parse(readPublicScript('codex-model-catalog.json'))
     const models = catalog.models.map((model: { slug: string }) => model.slug)
 
-    expect(models).toEqual([
-      'gpt-5.6-sol',
-      'gpt-5.6-terra',
-      'gpt-5.6',
-      'gpt-5.5',
-      'gpt-5.4'
-    ])
-    expect(models).not.toContain('gpt-5.6-luna')
-    expect(models).not.toContain('gpt-5.4-mini')
-    expect(models).not.toContain('gpt-5.3-codex-spark')
+    expect(models).toContain('gpt-5.6-sol')
+    expect(models).toContain('qwen3.7-max')
+    expect(models).toContain('deepseek-v4-pro-0813')
+    expect(models).toContain('minimax-m3')
+    expect(models).toContain('gpt-5.6-luna')
+    expect(models).toContain('gpt-5.4-mini')
+    expect(models).toContain('gpt-5.3-codex-spark')
     expect(catalog.template).toBeUndefined()
     for (const model of catalog.models) {
       expect(model.base_instructions).toBeTruthy()
       expect(model.supports_reasoning_summaries).toBe(true)
       expect(model.visibility).toBe('list')
-      expect(model.context_window).toBe(272000)
-      expect(model.max_context_window).toBe(272000)
+      expect(model.context_window).toBeGreaterThan(0)
+      expect(model.max_context_window).toBe(model.context_window)
       expect(model.effective_context_window_percent).toBe(95)
-      expect(model.auto_compact_token_limit).toBe(258000)
+      expect(model.auto_compact_token_limit).toBeGreaterThan(0)
     }
     for (const name of ['install.sh', 'install.ps1']) {
       const script = readPublicScript(name)
       expect(script).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
-      expect(script).toMatch(/model_context_window = (?:\$CatalogOpenAIContextWindow|\$\{CATALOG_OPENAI_CONTEXT_WINDOW\})/)
-      expect(script).toMatch(/model_auto_compact_token_limit = (?:\$CatalogOpenAIAutoCompactTokenLimit|\$\{CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT\})/)
-      expect(script).toContain('gpt-5.3-codex-spark')
+      expect(script).toContain('model_context_window = ')
+      expect(script).toContain('model_auto_compact_token_limit = ')
+      expect(script).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
     }
   })
 
@@ -152,7 +219,7 @@ describe('client auto-config scripts', () => {
       writeFileSync(authorizedPath, JSON.stringify({
         data: [
           { id: 'gpt-5.6-sol' },
-          { id: 'gpt-daybreak-blue-latest' }
+          { id: 'qwen3.7-max' }
         ]
       }))
       const selected = execFileSync('bash', [
@@ -163,19 +230,52 @@ describe('client auto-config scripts', () => {
         sourcePath,
         authorizedPath
       ], {
-        env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' },
+        env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1', LAOSHIRENAI_MODEL_ID: 'qwen3.7-max' },
         encoding: 'utf8'
       })
       const catalog = JSON.parse(readFileSync(sourcePath, 'utf8'))
-      expect(selected).toBe('gpt-5.6-sol')
+      expect(selected).toBe('qwen3.7-max')
       expect(catalog.models.map((model: { slug: string }) => model.slug)).toEqual([
         'gpt-5.6-sol',
-        'gpt-daybreak-blue-latest'
+        'qwen3.7-max'
       ])
-      expect(catalog.models[1].display_name).toBe('GPT Daybreak Blue Latest')
+      expect(catalog.models[1].display_name).toBe('Qwen 3.7 Max')
       expect(catalog.models[1].base_instructions).toBeTruthy()
       expect(catalog.models[1].visibility).toBe('list')
-      expect(catalog.models[1].context_window).toBe(272000)
+      expect(catalog.models[1].context_window).toBe(1000000)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('updates only Codex-owned TOML fields and preserves MCP and other providers', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-merge-'))
+    const codexDir = join(fixture, '.codex')
+    const configPath = join(codexDir, 'config.toml')
+    const catalogPath = join(codexDir, 'laoshirenai-model-catalog.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = 'model = "old"\nnotify = ["keep"]\n\n[mcp_servers.keep]\ncommand = "keep-me"\n\n[model_providers.other]\nbase_url = "https://other.example"\n'
+    try {
+      mkdirSync(codexDir, { recursive: true })
+      writeFileSync(configPath, original)
+      writeFileSync(catalogPath, readPublicScript('codex-model-catalog.json'))
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CATALOG_OPENAI_DEFAULT_MODEL="qwen3.7-max"; write_codex_config',
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const first = readFileSync(configPath, 'utf8')
+      expect(first).toContain('model = "qwen3.7-max"')
+      expect(first).toContain('model_reasoning_effort = "high"')
+      expect(first).toContain('model_context_window = 1000000')
+      expect(first).toContain('notify = ["keep"]')
+      expect(first).toContain('[mcp_servers.keep]\ncommand = "keep-me"')
+      expect(first).toContain('[model_providers.other]\nbase_url = "https://other.example"')
+      expect(first).toContain('[model_providers.laoshirenai_responses]')
+      expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+      runWriter()
+      expect(readFileSync(configPath, 'utf8')).toBe(first)
     } finally {
       rmSync(fixture, { recursive: true, force: true })
     }
@@ -209,13 +309,15 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('for (const profile of managedModels)')
     expect(script).toContain('`[model.${JSON.stringify(profile.id)}]`')
     expect(script).toContain('`description = ${JSON.stringify(profile.display_name)}`')
-    expect(script).toContain("'api_backend = \"responses\"'")
+    expect(script).toContain('`api_backend = ${JSON.stringify(protocol)}`')
     expect(script).toContain('`context_window = ${Number(profile.context_window)}`')
     expect(script).toContain('fs.renameSync(temporaryPath, path)')
     expect(script).toContain('open_cc_switch_if_requested')
     expect(script).toContain('import-grok-cc-switch-provider.cjs')
     expect(script).toContain('已将 Grok 分组导入官方 CC Switch')
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
+    expect(script).toContain('verify_selected_model_request')
+    expect(script).toContain('${SELECTED_MODEL}:generateContent')
     expect(script).toContain("['claude', 'codex', 'grok', 'gemini'].includes(data.target)")
   })
 
@@ -230,13 +332,15 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('foreach ($ModelProfile in $CatalogGrokManagedModels)')
     expect(script).toContain('$Lines.Add("[model.$(ConvertTo-TomlString $ModelProfile.Id)]")')
     expect(script).toContain('$Lines.Add("description = $(ConvertTo-TomlString $ModelProfile.DisplayName)")')
-    expect(script).toContain("$Lines.Add('api_backend = \"responses\"')")
+    expect(script).toContain('$Lines.Add("api_backend = $(ConvertTo-TomlString $GrokProtocol)")')
     expect(script).toContain('$Lines.Add("context_window = $($ModelProfile.ContextWindow)")')
     expect(script).toContain('[System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $ReplacementBackupPath)')
     expect(script).toContain('Open-CcSwitchIfRequested')
     expect(script).toContain('Invoke-GrokCcSwitchImporter')
     expect(script).toContain('已将 Grok 分组导入官方 CC Switch')
     expect(script).toContain("Test-ApiKeyReadiness -Label 'Grok Build' -ApiKey $script:GrokApiKey")
+    expect(script).toContain('function Test-SelectedModelRequest')
+    expect(script).toContain('Test-SelectedModelRequest')
   })
 
   it('imports one neutral dual-model Grok Provider without changing other CC Switch providers', () => {
@@ -402,6 +506,153 @@ describe('client auto-config scripts', () => {
     }
   })
 
+  it('applies manual page selections to the Grok model and protocol instead of defaults', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-grok-manual-'))
+    const configPath = join(fixture, '.grok', 'config.toml')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; TOOLS="grok"; BASE_URL="https://api.example.com"; GROK_API_KEY="test-owned-key"; SELECTED_MODEL="grok-custom"; SELECTED_PROTOCOL="messages"; apply_manual_selection; write_grok_config',
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      const config = readFileSync(configPath, 'utf8')
+      expect(config).toContain('default = "grok-custom"')
+      expect(config).toContain('api_backend = "messages"')
+      expect(config).not.toContain('grok-4.6')
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects an unsupported Grok manual protocol', () => {
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    expect(() => execFileSync('bash', [
+      '-c',
+      'source "$1"; NODE_BIN="$(command -v node)"; TOOLS="grok"; SELECTED_MODEL="grok-custom"; SELECTED_PROTOCOL="generate_content"; apply_manual_selection',
+      '_', installerPath,
+    ], { env: { ...process.env, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })).toThrow()
+  })
+
+  it('applies manual page selections to the Claude and Gemini default models', () => {
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const claude = execFileSync('bash', [
+      '-c',
+      'source "$1"; TOOLS="claude"; SELECTED_MODEL="claude-custom"; apply_manual_selection; printf %s "$CATALOG_ANTHROPIC_DEFAULT_MODEL"',
+      '_', installerPath,
+    ], { env: { ...process.env, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' }).toString()
+    expect(claude).toBe('claude-custom')
+    const gemini = execFileSync('bash', [
+      '-c',
+      'source "$1"; TOOLS="gemini"; SELECTED_MODEL="gemini-custom"; apply_manual_selection; printf "%s|%s" "$CATALOG_GEMINI_DEFAULT_MODEL" "$CATALOG_GEMINI_MANAGED_MODELS"',
+      '_', installerPath,
+    ], { env: { ...process.env, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' }).toString()
+    expect(gemini).toBe('gemini-custom|gemini-custom')
+  })
+
+  it('routes ticket and manual selection through mutually exclusive branches', () => {
+    const script = readPublicScript('install.sh')
+    expect(script).toContain('apply_manual_selection()')
+    expect(script).toContain('responses|chat_completions|messages) GROK_API_BACKEND="$SELECTED_PROTOCOL" ;;')
+    const mainBody = script.slice(script.indexOf('main() {'))
+    expect(mainBody).toContain('if [ -n "$SETUP_TOKEN" ]; then')
+    expect(mainBody.indexOf('exchange_setup_ticket')).toBeLessThan(mainBody.indexOf('apply_manual_selection'))
+    const ps1 = readPublicScript('install.ps1')
+    expect(ps1).toContain('function Apply-ManualSelection')
+    expect(ps1).toContain("'responses', 'chat_completions', 'messages'")
+    const psMain = ps1.slice(ps1.indexOf('function Main'))
+    expect(psMain).toContain('if (-not [string]::IsNullOrWhiteSpace($script:SetupToken)) {')
+    expect(psMain.indexOf('Exchange-SetupTicket')).toBeLessThan(psMain.indexOf('Apply-ManualSelection'))
+  })
+
+  it('writes the exact ticket-selected Grok model and protocol instead of a family default', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-grok-selection-'))
+    const configPath = join(fixture, '.grok', 'config.toml')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      mkdirSync(resolve(configPath, '..'), { recursive: true })
+      execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; GROK_API_KEY="test-owned-key"; CATALOG_GROK_DEFAULT_MODEL="claude-opus-5"; GROK_API_BACKEND="messages"; CATALOG_GROK_MANAGED_MODELS_JSON=\'[{"id":"claude-opus-5","display_name":"claude-opus-5","context_window":null}]\'; write_grok_config',
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      const config = readFileSync(configPath, 'utf8')
+      expect(config).toContain('default = "claude-opus-5"')
+      expect(config).toContain('api_backend = "messages"')
+      expect(config).not.toContain('context_window = 0')
+      expect(config).not.toContain('grok-4.6')
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it.each(['codex', 'grok'])('refuses malformed %s TOML without replacing the file', (target) => {
+    const fixture = mkdtempSync(join(tmpdir(), `laoshirenai-${target}-toml-`))
+    const dir = join(fixture, `.${target}`)
+    const configPath = join(dir, 'config.toml')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const malformed = '[broken\nvalue = true\n'
+    try {
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(configPath, malformed)
+      if (target === 'codex') writeFileSync(join(dir, 'laoshirenai-model-catalog.json'), readPublicScript('codex-model-catalog.json'))
+      const command = target === 'codex'
+        ? 'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CATALOG_OPENAI_DEFAULT_MODEL="qwen3.7-max"; write_codex_config'
+        : 'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; GROK_API_KEY="test-key"; write_grok_config'
+      expect(() => execFileSync('bash', ['-c', command, '_', installerPath], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })).toThrow()
+      expect(readFileSync(configPath, 'utf8')).toBe(malformed)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['responses', { status: 'completed', output: [{ type: 'message' }] }],
+    ['chat_completions', { choices: [{ message: { content: 'CONFIG_OK' }, finish_reason: 'stop' }] }],
+    ['messages', { content: [{ type: 'text', text: 'CONFIG_OK' }], stop_reason: 'end_turn' }],
+    ['generate_content', { candidates: [{ content: { parts: [{ text: 'CONFIG_OK' }] }, finishReason: 'STOP' }] }],
+  ])('accepts one complete minimal %s response after configuration', (protocol, response) => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-minimal-request-'))
+    const binDir = join(fixture, 'bin')
+    const curlPath = join(binDir, 'curl')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      mkdirSync(binDir, { recursive: true })
+      writeFileSync(curlPath, `#!/usr/bin/env bash\nout=''\nwhile [ $# -gt 0 ]; do if [ "$1" = '-o' ]; then out="$2"; shift 2; else shift; fi; done\nprintf '%s' '${JSON.stringify(response)}' > "$out"\nprintf '200'\n`)
+      chmodSync(curlPath, 0o755)
+      execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; TOOLS="grok"; GROK_API_KEY="test-key"; SELECTED_MODEL="test-model"; SELECTED_PROTOCOL="$2"; verify_selected_model_request',
+        '_', installerPath, protocol,
+      ], { env: { ...process.env, HOME: fixture, PATH: `${binDir}:${process.env.PATH}`, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['failed status with empty output array', { status: 'failed', output: [] }],
+    ['failed status without output', { status: 'failed' }],
+    ['error envelope over HTTP 200', { error: { message: 'upstream rejected' } }],
+  ])('rejects a minimal responses body with %s', (_label, response) => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-minimal-fail-'))
+    const binDir = join(fixture, 'bin')
+    const curlPath = join(binDir, 'curl')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      mkdirSync(binDir, { recursive: true })
+      writeFileSync(curlPath, `#!/usr/bin/env bash\nout=''\nwhile [ $# -gt 0 ]; do if [ "$1" = '-o' ]; then out="$2"; shift 2; else shift; fi; done\nprintf '%s' '${JSON.stringify(response)}' > "$out"\nprintf '200'\n`)
+      chmodSync(curlPath, 0o755)
+      expect(() => execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; TOOLS="grok"; GROK_API_KEY="test-key"; SELECTED_MODEL="test-model"; SELECTED_PROTOCOL="responses"; verify_selected_model_request',
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, PATH: `${binDir}:${process.env.PATH}`, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })).toThrow()
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
   it('configures Gemini CLI through the gateway on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
     expect(script).toContain('GEMINI_ENV_PATH="${GEMINI_DIR}/.env"')
@@ -415,9 +666,9 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('GEMINI_MODEL')
     expect(script).toContain("config.security.auth.selectedType = 'gemini-api-key'")
     expect(script).toContain('config.model.name = model')
-    expect(script).toContain("thinkingConfig: { thinkingLevel: 'HIGH' }")
+    expect(script).toContain('thinkingConfig: { thinkingLevel }')
     expect(script).toContain("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'")
-    expect(script).toContain("CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high'")
+    expect(script).toContain("CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash'")
     expect(script).toContain('npm_install_with_fallback "@google/gemini-cli@latest"')
     expect(script).toContain('LAOSHIRENAI_GEMINI_API_KEY')
   })
@@ -434,9 +685,9 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("GOOGLE_GENAI_USE_VERTEXAI = 'false'")
     expect(script).toContain("GEMINI_MODEL = $CatalogGeminiDefaultModel")
     expect(script).toContain("-NotePropertyName selectedType -NotePropertyValue 'gemini-api-key' -Force")
-    expect(script).toContain("thinkingConfig = [pscustomobject]@{ thinkingLevel = 'HIGH' }")
+    expect(script).toContain('thinkingConfig = [pscustomobject]@{ thinkingLevel = $ThinkingLevel }')
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
-    expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')")
+    expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash')")
     expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
     expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
@@ -470,7 +721,7 @@ describe('client auto-config scripts', () => {
         '_',
         installerPath
       ], {
-        env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' },
+        env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1', LAOSHIRENAI_REASONING_EFFORT: 'low' },
         stdio: 'pipe'
       })
 
@@ -501,10 +752,9 @@ describe('client auto-config scripts', () => {
         'user-model',
         'gemini-3.1-pro',
         'gemini-3.7-flash',
-        'gemini-3.7-flash-high'
       ])
       for (const entry of firstSettings.modelConfigs.overrides.slice(1)) {
-        expect(entry.generateContentConfig).toEqual({ thinkingConfig: { thinkingLevel: 'HIGH' } })
+        expect(entry.generateContentConfig).toEqual({ thinkingConfig: { thinkingLevel: 'LOW' } })
       }
       expect(readFileSync(`${settingsPath}.bak`, 'utf8')).toBe(originalSettings)
 

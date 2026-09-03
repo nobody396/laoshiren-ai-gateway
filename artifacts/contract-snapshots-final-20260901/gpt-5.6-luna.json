@@ -1,0 +1,1238 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 1,
+        "name": "GPT 企业高速线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "M8 receipts: evidence-47357b3441545dde48e408cc, evidence-c248c9a490c5f42de8a20e63",
+      "name": "Codex",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-47357b3441545dde48e408cc",
+        "evidence-c248c9a490c5f42de8a20e63"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-69c93a5f2eb44fc1c2d90241, evidence-e81da554243bacdb753623c2",
+      "name": "OpenCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-69c93a5f2eb44fc1c2d90241",
+        "evidence-e81da554243bacdb753623c2"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-8ae060afba194de31bf017b9, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+      "name": "Kimi Code",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-8ae060afba194de31bf017b9",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-cd53fb70b3a69b90ce7cf026, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+      "name": "Grok Build",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-cd53fb70b3a69b90ce7cf026",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-133d2884c31ace7cb676baf8, evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+      "name": "ZCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-133d2884c31ace7cb676baf8",
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ]
+    },
+    {
+      "name": "Hermes Agent",
+      "status": "verified",
+      "protocols": [
+        "responses"
+      ],
+      "evidence": "M8 receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a0a9e164edff66ae639cc111, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-dcbb64623300809699a75ab2, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+      "evidence_ids": [
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-a0a9e164edff66ae639cc111",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ]
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Visual Studio Code Local Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "name": "Codex",
+      "recommended": false,
+      "version": "0.151.0",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-47357b3441545dde48e408cc",
+        "evidence-c248c9a490c5f42de8a20e63"
+      ],
+      "evidence": "M8 receipts: evidence-47357b3441545dde48e408cc, evidence-c248c9a490c5f42de8a20e63"
+    },
+    {
+      "name": "Grok Build",
+      "recommended": false,
+      "version": "1.0.13",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-cd53fb70b3a69b90ce7cf026",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ],
+      "evidence": "M8 receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-cd53fb70b3a69b90ce7cf026, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1"
+    },
+    {
+      "name": "Hermes Agent",
+      "recommended": false,
+      "version": "0.20.0",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-a0a9e164edff66ae639cc111",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ],
+      "evidence": "M8 receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a0a9e164edff66ae639cc111, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-dcbb64623300809699a75ab2, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1"
+    },
+    {
+      "name": "Kimi Code",
+      "recommended": false,
+      "version": "0.38.0+",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-8ae060afba194de31bf017b9",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ],
+      "evidence": "M8 receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-8ae060afba194de31bf017b9, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1"
+    },
+    {
+      "name": "OpenCode",
+      "recommended": false,
+      "version": "1.18.15",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-69c93a5f2eb44fc1c2d90241",
+        "evidence-e81da554243bacdb753623c2"
+      ],
+      "evidence": "M8 receipts: evidence-69c93a5f2eb44fc1c2d90241, evidence-e81da554243bacdb753623c2"
+    },
+    {
+      "name": "ZCode",
+      "recommended": false,
+      "version": "3.10.1 / CLI 0.16.5",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-133d2884c31ace7cb676baf8",
+        "evidence-206783c7127981807c102844",
+        "evidence-30dd12b1306ffcd325b352db",
+        "evidence-5ed2d7af07658cdd126bcdb3",
+        "evidence-84f49e158f30c27869040225",
+        "evidence-a7765310b5f0c72fe276db93",
+        "evidence-a8c6a8770a0997011481405b",
+        "evidence-ad4740e3fbedc22c2ce5102c",
+        "evidence-b11a5886cc6c54d45adf609b",
+        "evidence-d08a11bd565ea73909ea5c85",
+        "evidence-d87b63cc25735815e1b65a73",
+        "evidence-e68e5cc9d2637ce32fc9776b",
+        "evidence-ecf44eedcdaa73462d053de1"
+      ],
+      "evidence": "M8 receipts: evidence-133d2884c31ace7cb676baf8, evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1"
+    }
+  ],
+  "model": {
+    "context_window": 1050000,
+    "display_name": "GPT-5.6 Luna",
+    "family": "gpt",
+    "id": "gpt-5.6-luna",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "max_output_tokens": 128000,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "2026-08-31 Codex, OpenCode, Kimi Code and Grok Build completed owned public-gateway Responses tool-result loops for gpt-5.6-luna.",
+      "name": "responses",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [
+      {
+        "client": "Kimi Code",
+        "levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      }
+    ],
+    "client_mappings": [],
+    "default_level": "medium",
+    "model_levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ]
+  },
+  "recommended_protocol": "responses",
+  "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Codex": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.151.0",
+            "evidence": "migration_gap: no exact linux Codex cli:0.151.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:0.151.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-47357b3441545dde48e408cc, evidence-c248c9a490c5f42de8a20e63",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-47357b3441545dde48e408cc",
+              "evidence-c248c9a490c5f42de8a20e63"
+            ],
+            "pass_evidence_ids": [
+              "evidence-47357b3441545dde48e408cc"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:0.151.0",
+            "evidence": "migration_gap: no exact windows Codex cli:0.151.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Grok Build": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.0.13",
+            "evidence": "migration_gap: no exact linux Grok Build cli:1.0.13 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-cd53fb70b3a69b90ce7cf026, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-206783c7127981807c102844",
+              "evidence-30dd12b1306ffcd325b352db",
+              "evidence-5ed2d7af07658cdd126bcdb3",
+              "evidence-84f49e158f30c27869040225",
+              "evidence-a7765310b5f0c72fe276db93",
+              "evidence-a8c6a8770a0997011481405b",
+              "evidence-ad4740e3fbedc22c2ce5102c",
+              "evidence-b11a5886cc6c54d45adf609b",
+              "evidence-cd53fb70b3a69b90ce7cf026",
+              "evidence-d08a11bd565ea73909ea5c85",
+              "evidence-d87b63cc25735815e1b65a73",
+              "evidence-e68e5cc9d2637ce32fc9776b",
+              "evidence-ecf44eedcdaa73462d053de1"
+            ],
+            "pass_evidence_ids": [
+              "evidence-cd53fb70b3a69b90ce7cf026"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:1.0.13",
+            "evidence": "migration_gap: no exact windows Grok Build cli:1.0.13 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a0a9e164edff66ae639cc111, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-dcbb64623300809699a75ab2, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-206783c7127981807c102844",
+              "evidence-30dd12b1306ffcd325b352db",
+              "evidence-5ed2d7af07658cdd126bcdb3",
+              "evidence-84f49e158f30c27869040225",
+              "evidence-a0a9e164edff66ae639cc111",
+              "evidence-a7765310b5f0c72fe276db93",
+              "evidence-a8c6a8770a0997011481405b",
+              "evidence-ad4740e3fbedc22c2ce5102c",
+              "evidence-b11a5886cc6c54d45adf609b",
+              "evidence-d08a11bd565ea73909ea5c85",
+              "evidence-d87b63cc25735815e1b65a73",
+              "evidence-dcbb64623300809699a75ab2",
+              "evidence-e68e5cc9d2637ce32fc9776b",
+              "evidence-ecf44eedcdaa73462d053de1"
+            ],
+            "pass_evidence_ids": [
+              "evidence-a0a9e164edff66ae639cc111"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "Kimi Code": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.38.0",
+            "evidence": "migration_gap: no exact linux Kimi Code cli:0.38.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-8ae060afba194de31bf017b9, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-206783c7127981807c102844",
+              "evidence-30dd12b1306ffcd325b352db",
+              "evidence-5ed2d7af07658cdd126bcdb3",
+              "evidence-84f49e158f30c27869040225",
+              "evidence-8ae060afba194de31bf017b9",
+              "evidence-a7765310b5f0c72fe276db93",
+              "evidence-a8c6a8770a0997011481405b",
+              "evidence-ad4740e3fbedc22c2ce5102c",
+              "evidence-b11a5886cc6c54d45adf609b",
+              "evidence-d08a11bd565ea73909ea5c85",
+              "evidence-d87b63cc25735815e1b65a73",
+              "evidence-e68e5cc9d2637ce32fc9776b",
+              "evidence-ecf44eedcdaa73462d053de1"
+            ],
+            "pass_evidence_ids": [
+              "evidence-8ae060afba194de31bf017b9"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:0.38.0",
+            "evidence": "migration_gap: no exact windows Kimi Code cli:0.38.0 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "OpenCode": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.18.15",
+            "evidence": "migration_gap: no exact linux OpenCode cli:1.18.15 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-69c93a5f2eb44fc1c2d90241, evidence-e81da554243bacdb753623c2",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-69c93a5f2eb44fc1c2d90241",
+              "evidence-e81da554243bacdb753623c2"
+            ],
+            "pass_evidence_ids": [
+              "evidence-69c93a5f2eb44fc1c2d90241"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:1.18.15",
+            "evidence": "migration_gap: no exact windows OpenCode cli:1.18.15 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "ZCode": {
+        "responses": {
+          "linux": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "migration_gap: no exact linux ZCode app:3.10.1+cli:0.16.5 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-133d2884c31ace7cb676baf8, evidence-206783c7127981807c102844, evidence-30dd12b1306ffcd325b352db, evidence-5ed2d7af07658cdd126bcdb3, evidence-84f49e158f30c27869040225, evidence-a7765310b5f0c72fe276db93, evidence-a8c6a8770a0997011481405b, evidence-ad4740e3fbedc22c2ce5102c, evidence-b11a5886cc6c54d45adf609b, evidence-d08a11bd565ea73909ea5c85, evidence-d87b63cc25735815e1b65a73, evidence-e68e5cc9d2637ce32fc9776b, evidence-ecf44eedcdaa73462d053de1",
+            "legacy_status": "blocked",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-133d2884c31ace7cb676baf8",
+              "evidence-206783c7127981807c102844",
+              "evidence-30dd12b1306ffcd325b352db",
+              "evidence-5ed2d7af07658cdd126bcdb3",
+              "evidence-84f49e158f30c27869040225",
+              "evidence-a7765310b5f0c72fe276db93",
+              "evidence-a8c6a8770a0997011481405b",
+              "evidence-ad4740e3fbedc22c2ce5102c",
+              "evidence-b11a5886cc6c54d45adf609b",
+              "evidence-d08a11bd565ea73909ea5c85",
+              "evidence-d87b63cc25735815e1b65a73",
+              "evidence-e68e5cc9d2637ce32fc9776b",
+              "evidence-ecf44eedcdaa73462d053de1"
+            ],
+            "pass_evidence_ids": [
+              "evidence-133d2884c31ace7cb676baf8"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-09-01"
+          },
+          "windows": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "migration_gap: no exact windows ZCode app:3.10.1+cli:0.16.5 owned public-gateway Responses Agent loop is recorded for gpt-5.6-luna; OS-specific status remains blocked.",
+            "model_id": "gpt-5.6-luna",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "MiniMax Code": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.2.7",
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-5.6-luna",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-5.6-luna",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Visual Studio Code Local Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-5.6-luna",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-5.6-luna",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-5.6-luna",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "GPT 企业高速线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "evidence_ids": [
+          "evidence-30dd12b1306ffcd325b352db",
+          "evidence-84f49e158f30c27869040225",
+          "evidence-a7765310b5f0c72fe276db93",
+          "evidence-a8c6a8770a0997011481405b",
+          "evidence-b11a5886cc6c54d45adf609b",
+          "evidence-d08a11bd565ea73909ea5c85",
+          "evidence-d87b63cc25735815e1b65a73",
+          "evidence-ecf44eedcdaa73462d053de1"
+        ],
+        "model_id": "gpt-5.6-luna",
+        "multiplier": 1,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end public-gateway and coding-client tool-result loop for this model; official Chat Completions support remains omitted until its gateway protocol and client evidence is complete.",
+        "status": "verified",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-30dd12b1306ffcd325b352db",
+              "evidence-84f49e158f30c27869040225",
+              "evidence-a7765310b5f0c72fe276db93",
+              "evidence-a8c6a8770a0997011481405b",
+              "evidence-b11a5886cc6c54d45adf609b",
+              "evidence-d08a11bd565ea73909ea5c85",
+              "evidence-d87b63cc25735815e1b65a73",
+              "evidence-ecf44eedcdaa73462d053de1"
+            ],
+            "pass_evidence_ids": [
+              "evidence-30dd12b1306ffcd325b352db",
+              "evidence-84f49e158f30c27869040225",
+              "evidence-a7765310b5f0c72fe276db93",
+              "evidence-a8c6a8770a0997011481405b",
+              "evidence-b11a5886cc6c54d45adf609b",
+              "evidence-d08a11bd565ea73909ea5c85",
+              "evidence-d87b63cc25735815e1b65a73",
+              "evidence-ecf44eedcdaa73462d053de1"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:21:42+00:00"
+          }
+        },
+        "verified_at": "2026-08-31"
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "legacy contract official limit: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+        "status": "verified"
+      },
+      "max_output_tokens": {
+        "evidence": "legacy contract official limit: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+        "status": "verified"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "legacy modality declaration: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+        "status": "verified"
+      },
+      "text": {
+        "evidence": "legacy modality declaration: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+        "status": "verified"
+      },
+      "video": {
+        "evidence": "legacy modality declaration: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+        "status": "unsupported"
+      }
+    },
+    "pricing": {
+      "GPT 企业高速线路": {
+        "cache_read_price": 0.02,
+        "cache_write_price": 0.25,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 0.2,
+        "long_context": {
+          "input_multiplier": 2,
+          "input_threshold": 272000,
+          "output_multiplier": 1.5
+        },
+        "output_price": 1.2,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "responses": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-33d2be861715d38c755d5195, evidence-53b2dacbbdb8ca45ecce7fb6, evidence-8a60da8ed94ad6037c1ce220",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-33d2be861715d38c755d5195",
+            "evidence-53b2dacbbdb8ca45ecce7fb6",
+            "evidence-8a60da8ed94ad6037c1ce220"
+          ],
+          "pass_evidence_ids": [
+            "evidence-33d2be861715d38c755d5195",
+            "evidence-53b2dacbbdb8ca45ecce7fb6",
+            "evidence-8a60da8ed94ad6037c1ce220"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-18b6a13f91102c6d6639e1fb, evidence-9cea43951ea7a771209a8150",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-18b6a13f91102c6d6639e1fb",
+            "evidence-9cea43951ea7a771209a8150"
+          ],
+          "pass_evidence_ids": [
+            "evidence-18b6a13f91102c6d6639e1fb",
+            "evidence-9cea43951ea7a771209a8150"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "evidence": "M8 receipts: evidence-6bf1ac5c530f0b2d54c1f650, evidence-6ca52381239332d39ed69e26",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6bf1ac5c530f0b2d54c1f650",
+            "evidence-6ca52381239332d39ed69e26"
+          ],
+          "pass_evidence_ids": [
+            "evidence-6bf1ac5c530f0b2d54c1f650",
+            "evidence-6ca52381239332d39ed69e26"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-1bcd94e9cabbee6ac3f89dc8, evidence-8f56ac6eb5944a40f57e5722, evidence-bac3c0a666598e7212bf8cbf",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-1bcd94e9cabbee6ac3f89dc8",
+            "evidence-8f56ac6eb5944a40f57e5722",
+            "evidence-bac3c0a666598e7212bf8cbf"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-1bcd94e9cabbee6ac3f89dc8",
+            "evidence-8f56ac6eb5944a40f57e5722",
+            "evidence-bac3c0a666598e7212bf8cbf"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "evidence": "M8 receipts: evidence-18f8e3746a0c85440ec84610, evidence-d8a078f5dff326408889d6f8",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-18f8e3746a0c85440ec84610",
+            "evidence-d8a078f5dff326408889d6f8"
+          ],
+          "pass_evidence_ids": [
+            "evidence-18f8e3746a0c85440ec84610",
+            "evidence-d8a078f5dff326408889d6f8"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-47a92a660fdd61e08bab71cc",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-47a92a660fdd61e08bab71cc"
+          ],
+          "pass_evidence_ids": [
+            "evidence-47a92a660fdd61e08bab71cc"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-87ced3577469cd3e8f4ba485",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-87ced3577469cd3e8f4ba485"
+          ],
+          "pass_evidence_ids": [
+            "evidence-87ced3577469cd3e8f4ba485"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-923841f9522e4d37928805f3",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-923841f9522e4d37928805f3"
+          ],
+          "pass_evidence_ids": [
+            "evidence-923841f9522e4d37928805f3"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-93a8fa5ae9f7e77792179e7e, evidence-eb79c1a405cb60ae44c31dbe, evidence-fb45177631d9eede502efe73",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e",
+            "evidence-eb79c1a405cb60ae44c31dbe",
+            "evidence-fb45177631d9eede502efe73"
+          ],
+          "pass_evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e",
+            "evidence-eb79c1a405cb60ae44c31dbe",
+            "evidence-fb45177631d9eede502efe73"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "responses": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-6d810902f0bc51dbaadf6eff, evidence-bed6205f01b9ecf8b471defd",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6d810902f0bc51dbaadf6eff",
+            "evidence-bed6205f01b9ecf8b471defd"
+          ],
+          "pass_evidence_ids": [
+            "evidence-6d810902f0bc51dbaadf6eff",
+            "evidence-bed6205f01b9ecf8b471defd"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-6a0bb863f46429c7ebd31fb7, evidence-d08a11bd565ea73909ea5c85, evidence-ecf44eedcdaa73462d053de1",
+          "evidence_ids": [
+            "evidence-6a0bb863f46429c7ebd31fb7",
+            "evidence-d08a11bd565ea73909ea5c85",
+            "evidence-ecf44eedcdaa73462d053de1"
+          ],
+          "status": "verified",
+          "pass_evidence_ids": [
+            "evidence-6a0bb863f46429c7ebd31fb7",
+            "evidence-d08a11bd565ea73909ea5c85",
+            "evidence-ecf44eedcdaa73462d053de1"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-26f3d4cd6f4bb9bff359a49b, evidence-5ed2d7af07658cdd126bcdb3",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-26f3d4cd6f4bb9bff359a49b",
+            "evidence-5ed2d7af07658cdd126bcdb3"
+          ],
+          "pass_evidence_ids": [
+            "evidence-26f3d4cd6f4bb9bff359a49b",
+            "evidence-5ed2d7af07658cdd126bcdb3"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-206783c7127981807c102844, evidence-8db3dd35e0741fc72e8b0793, evidence-e68e5cc9d2637ce32fc9776b",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-206783c7127981807c102844",
+            "evidence-8db3dd35e0741fc72e8b0793",
+            "evidence-e68e5cc9d2637ce32fc9776b"
+          ],
+          "pass_evidence_ids": [
+            "evidence-206783c7127981807c102844",
+            "evidence-8db3dd35e0741fc72e8b0793",
+            "evidence-e68e5cc9d2637ce32fc9776b"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-02fac806f4fdebe0caec8b28, evidence-ad4740e3fbedc22c2ce5102c",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-02fac806f4fdebe0caec8b28",
+            "evidence-ad4740e3fbedc22c2ce5102c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-02fac806f4fdebe0caec8b28",
+            "evidence-ad4740e3fbedc22c2ce5102c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-73bcfa8491e722c0b2e17e2e, evidence-b3e744f1c58a8362ebfee9a9",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-73bcfa8491e722c0b2e17e2e",
+            "evidence-b3e744f1c58a8362ebfee9a9"
+          ],
+          "pass_evidence_ids": [
+            "evidence-73bcfa8491e722c0b2e17e2e",
+            "evidence-b3e744f1c58a8362ebfee9a9"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Codex": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "responses": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "Kimi Code": {
+          "responses": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "Derived from verified model levels and documented explicit client mapping policy.",
+            "mappings": [],
+            "status": "verified",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "OpenCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "MiniMax Code": {
+          "responses": {
+            "client_levels": [
+              "off",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "DeepSeek Harness": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "Visual Studio Code Local Agent": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.6-luna public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        }
+      },
+      "model_levels": {
+        "high": {
+          "evidence": "OpenAI official gpt-5.6-luna specification explicitly lists reasoning.effort=high: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+          "status": "verified"
+        },
+        "low": {
+          "evidence": "OpenAI official gpt-5.6-luna specification explicitly lists reasoning.effort=low: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+          "status": "verified"
+        },
+        "max": {
+          "evidence": "OpenAI official gpt-5.6-luna specification explicitly lists reasoning.effort=max: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+          "status": "verified"
+        },
+        "medium": {
+          "evidence": "M8 receipts: evidence-f6446f8535513360e2662d3e",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-f6446f8535513360e2662d3e"
+          ],
+          "pass_evidence_ids": [
+            "evidence-f6446f8535513360e2662d3e"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        },
+        "none": {
+          "evidence": "OpenAI official gpt-5.6-luna specification explicitly lists reasoning.effort=none: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+          "status": "verified"
+        },
+        "xhigh": {
+          "evidence": "OpenAI official gpt-5.6-luna specification explicitly lists reasoning.effort=xhigh: https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+          "status": "verified"
+        }
+      }
+    },
+    "tools": {
+      "responses": {
+        "apply_patch": {
+          "evidence": "OpenAI lists apply_patch for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "code_interpreter": {
+          "evidence": "OpenAI lists code_interpreter for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "computer_use": {
+          "evidence": "OpenAI lists computer_use for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "file_search": {
+          "evidence": "OpenAI lists file_search for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "function_calling": {
+          "evidence": "2026-08-31 owned public-gateway gpt-5.6-luna Responses Agent loops emitted a function/tool call, accepted the tool result, returned the exact marker, and completed.",
+          "status": "verified",
+          "verified_at": "2026-08-31"
+        },
+        "hosted_shell": {
+          "evidence": "OpenAI lists hosted_shell for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "image_generation": {
+          "evidence": "OpenAI lists image_generation for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "mcp": {
+          "evidence": "OpenAI lists mcp for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "skills": {
+          "evidence": "OpenAI lists skills for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "tool_search": {
+          "evidence": "OpenAI lists tool_search for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+          "status": "blocked"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-93a8fa5ae9f7e77792179e7e, evidence-eb79c1a405cb60ae44c31dbe, evidence-fb45177631d9eede502efe73",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e",
+            "evidence-eb79c1a405cb60ae44c31dbe",
+            "evidence-fb45177631d9eede502efe73"
+          ],
+          "pass_evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e",
+            "evidence-eb79c1a405cb60ae44c31dbe",
+            "evidence-fb45177631d9eede502efe73"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "evidence": "2026-08-31 owned public-gateway gpt-5.6-luna Responses Agent loops emitted a function/tool call, accepted the tool result, returned the exact marker, and completed.",
+      "name": "function_calling",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "evidence": "OpenAI lists web_search for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "web_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists file_search for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "file_search",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists image_generation for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "image_generation",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists code_interpreter for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "code_interpreter",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists hosted_shell for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "hosted_shell",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists apply_patch for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "apply_patch",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists skills for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "skills",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists computer_use for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "computer_use",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists mcp for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "mcp",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "evidence": "OpenAI lists tool_search for gpt-5.6-luna on the Responses API at https://developers.openai.com/api/docs/models/gpt-5.6-luna; no exact owned public-gateway result is recorded, so gateway availability remains blocked.",
+      "name": "tool_search",
+      "protocol": "responses",
+      "status": "blocked"
+    }
+  ],
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "image": "verified",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+    "verified_at": "2026-08-31"
+  }
+}

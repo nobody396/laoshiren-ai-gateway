@@ -1,0 +1,52 @@
+{
+  "cases": {
+    "15:claude-fable-5:messages:P-11:default": {
+      "artifact_sha256": "3dec96314c8cba8b08df0fdfed8ec2dcfd97dfba68c0d53525f7c06c4b146fac",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-fable-5_messages_P-11_default-e0557a330534.json",
+      "status": "pass"
+    },
+    "15:claude-haiku-4-5:messages:P-11:default": {
+      "artifact_sha256": "8f619736db45dc2805d35c84ef16b898d2aa2b0d87b44404f9c5f9d539cb8ce5",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-haiku-4-5_messages_P-11_default-57531266c314.json",
+      "status": "pass"
+    },
+    "15:claude-opus-4-6:messages:P-11:default": {
+      "artifact_sha256": "5a1d1be6bb8179b8eacfbc766a52d4639ce8c5babe382c388482a317d39257fc",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-opus-4-6_messages_P-11_default-dfed09b76d2d.json",
+      "status": "pass"
+    },
+    "15:claude-opus-4-7:messages:P-11:default": {
+      "artifact_sha256": "756c37158efef7d21871001f75d57248fa96a22ac31f101d357f3f6901f1a08e",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-opus-4-7_messages_P-11_default-3dbcf591c583.json",
+      "status": "pass"
+    },
+    "15:claude-opus-4-8:messages:P-11:default": {
+      "artifact_sha256": "c137d2ae7e1615bc2804008d9ae81b0bf0b0f6ff647218ce4328c084a1b83d1b",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-opus-4-8_messages_P-11_default-07c7f7f01081.json",
+      "status": "pass"
+    },
+    "15:claude-opus-5:messages:P-11:default": {
+      "artifact_sha256": "69170989d9b2c8c642cb5c450b83d3e0cd12d25aa332b6706ab15cbfed55e101",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-opus-5_messages_P-11_default-713cefd4d970.json",
+      "status": "pass"
+    },
+    "15:claude-sonnet-4-6:messages:P-11:default": {
+      "artifact_sha256": "4be935e45fcfbb5764c70f6cdf3181aad1dda5a3d1292cb032c6ae55c90c64a8",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-sonnet-4-6_messages_P-11_default-a77515e9c0e3.json",
+      "status": "pass"
+    },
+    "15:claude-sonnet-5:messages:P-11:default": {
+      "artifact_sha256": "daeaa83538c1defa7572d53e0b3875edb6ac6133952a089734239431190761fd",
+      "receipt": "artifacts/provider-contract-live-claude-group15-websearch-strict-20260901/cases/15_claude-sonnet-5_messages_P-11_default-c96a9b0a7fb0.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-08-31T20:34:46.148+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "20bc915d4c7893ca",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:33:02.321+00:00"
+}

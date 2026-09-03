@@ -6,6 +6,12 @@ interface GatewayModelsResponse {
   data?: Array<{ id?: unknown }>
 }
 
+interface GatewayErrorResponse {
+  code?: unknown
+  message?: unknown
+  error?: { code?: unknown; message?: unknown }
+}
+
 const normalizeGatewayBaseUrl = (value: string): string => {
   const normalized = value.trim().replace(/\/+$/, '')
   return normalized.endsWith('/v1') ? normalized.slice(0, -3) : normalized
@@ -25,7 +31,29 @@ export async function getGatewayModels(apiBaseUrl: string, apiKey: string): Prom
     }
   })
   if (!response.ok) {
-    throw new Error(`Gateway model discovery failed with HTTP ${response.status}`)
+    let payload: GatewayErrorResponse = {}
+    try {
+      payload = await response.json() as GatewayErrorResponse
+    } catch {
+      // Non-JSON errors still fall back to the HTTP status below.
+    }
+    const code = typeof payload.code === 'string'
+      ? payload.code
+      : (typeof payload.error?.code === 'string' ? payload.error.code : '')
+    const upstreamMessage = typeof payload.message === 'string'
+      ? payload.message
+      : (typeof payload.error?.message === 'string' ? payload.error.message : '')
+
+    if (code === 'API_KEY_QUOTA_EXHAUSTED') {
+      throw new Error(`这把 API Key 设置的额度已用完。请到 API 密钥页面重置用量、提高或关闭额度上限，也可以换一把 Key。（HTTP ${response.status}）`)
+    }
+    if (response.status === 401) {
+      throw new Error('API Key 无效、已删除或已过期，请重新创建 Key 后再试。（HTTP 401）')
+    }
+    if (upstreamMessage) {
+      throw new Error(`读取模型失败：${upstreamMessage}（HTTP ${response.status}）`)
+    }
+    throw new Error(`读取模型失败，网关返回 HTTP ${response.status}`)
   }
 
   const payload = await response.json() as GatewayModelsResponse

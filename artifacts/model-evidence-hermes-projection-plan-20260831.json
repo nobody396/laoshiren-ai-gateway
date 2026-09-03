@@ -1,0 +1,1431 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "plan",
+  "production_write": false,
+  "contract_write": false,
+  "contracts_changed": 34,
+  "events": 178,
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "Antigravity/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "Gemini CLI/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Antigravity/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Gemini CLI/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.2.json",
+      "events": [
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "glm-5.2",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.3.json",
+      "events": [
+        {
+          "model_id": "glm-5.3",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "glm-5.3",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-718fbbd04f9aab65c13a1146"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-718fbbd04f9aab65c13a1146"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-daybreak-blue-latest.json",
+      "events": [
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.5.json",
+      "events": [
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "grok-4.5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.8-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "test_evidence",
+          "path": "Codex/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "test_evidence",
+          "path": "Grok Build/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/coverage",
+          "status": "blocked",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "verified",
+          "evidence_ids": []
+        }
+      ]
+    }
+  ]
+}

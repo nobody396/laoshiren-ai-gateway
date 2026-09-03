@@ -1,0 +1,169 @@
+{
+  "case_count": 7,
+  "cases": [
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "6716ec851437e4d4bb2a1d5c4727da23dc76060a9b8931505b0db827e5f81b72",
+      "case_key": "63:minimax-m3:chat_completions:P-02:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 63,
+      "group_name": "MiniMax 企业高速线路",
+      "marker": "LSR_CONTRACT_C06864DCF9842DC9",
+      "max_output_tokens": 524288,
+      "model_id": "minimax-m3",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-02_default-42e6ea6b5918.json",
+      "source_case_keys": [
+        "model_protocol:minimax-m3/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "b25684392bff5d86794ec011b34703a4b2921770ac5a8a64839c3d7a7fb8bcff",
+      "case_key": "63:minimax-m3:chat_completions:P-03:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 63,
+      "group_name": "MiniMax 企业高速线路",
+      "marker": "LSR_CONTRACT_7B51AFBD24860A7B",
+      "max_output_tokens": 524288,
+      "model_id": "minimax-m3",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-03_default-03ebfb165c22.json",
+      "source_case_keys": [
+        "model_protocol:minimax-m3/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "ff6a0439f1c47ad422389759df1319ae278d001222421be4a9da0bc7412851ef",
+      "case_key": "63:minimax-m3:chat_completions:P-04:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 63,
+      "group_name": "MiniMax 企业高速线路",
+      "marker": "LSR_CONTRACT_FE8D8BCC7A899EB9",
+      "max_output_tokens": 524288,
+      "model_id": "minimax-m3",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-04_default-ca6eac1fb3ae.json",
+      "source_case_keys": [
+        "model_protocol:minimax-m3/chat_completions/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "1e7ed2c6f392bc5724f47a7d1980f805d8cd71283244fe7d5f67bd531cca2a9f",
+      "case_key": "63:minimax-m3:chat_completions:P-05:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 63,
+      "group_name": "MiniMax 企业高速线路",
+      "marker": "LSR_CONTRACT_00A30FD0D4FA3508",
+      "max_output_tokens": 524288,
+      "model_id": "minimax-m3",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-05_default-24f8dd6fbb7f.json",
+      "source_case_keys": [
+        "model_protocol:minimax-m3/chat_completions/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "d16e2890cfee1d6b74bae433da1ba399229cd88dbe1ce7762cb4972294551687",
+      "case_key": "63:minimax-m3:chat_completions:P-06:adaptive",
+      "context_window": 1048576,
+      "declared_status": "blocked",
+      "group_id": 63,
+      "group_name": "MiniMax 企业高速线路",
+      "marker": "LSR_CONTRACT_32A60B5BA36AED9D",
+      "max_output_tokens": 524288,
+      "model_id": "minimax-m3",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "chat_completions",
+      "reasoning_level": "adaptive",
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-06_adaptive-32a60b5ba36a.json",
+      "source_case_keys": [
+        "model_protocol:minimax-m3/chat_completions/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "3e9a9a1210be74c93e5934069e0ab65e335a54c2107cfa9e83dce35a1bcc9195",
+      "case_key": "63:minimax-m3:chat_completions:P-12:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 63,
+      "group_name": "MiniMax 企业高速线路",
+      "marker": "LSR_CONTRACT_903AFCD192DDBD50",
+      "max_output_tokens": 524288,
+      "model_id": "minimax-m3",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-12_default-07b5f230ca8c.json",
+      "source_case_keys": [
+        "model_protocol:minimax-m3/chat_completions/features/billing",
+        "model_protocol:minimax-m3/chat_completions/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "2783778c6b19781c78f257da2abcb7ed452a78a7a8fd3fcdcaee75dce2d0b620",
+      "case_key": "63:minimax-m3:chat_completions:P-15:default",
+      "context_window": 1048576,
+      "declared_status": null,
+      "group_id": 63,
+      "group_name": "MiniMax 企业高速线路",
+      "marker": "LSR_CONTRACT_74B194515B9CB4B9",
+      "max_output_tokens": 524288,
+      "model_id": "minimax-m3",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-minimax-group63-chat-20260901/cases/63_minimax-m3_chat_completions_P-15_default-a53ea74fa7c2.json",
+      "source_case_keys": [
+        "model_protocol:minimax-m3/chat_completions/features/error_passthrough",
+        "model_protocol:minimax-m3/chat_completions/invalid_request"
+      ],
+      "state": "planned"
+    }
+  ],
+  "kind": "provider_contract_live_plan",
+  "network_execution": "disabled",
+  "owned_identity": {
+    "key_id": 205,
+    "restore_group_id": 6,
+    "user_id": 1
+  },
+  "paid_request_upper_bound": 8,
+  "plan_sha256": "379ad7d25bec48f87ff11dd612d123e7350564d124cef8b13f0fb39bf0fb9181",
+  "schema_version": 1,
+  "secret_source": "Agent Switch name only: LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+  "status_counts": {
+    "planned": 7,
+    "resumable": 0
+  }
+}

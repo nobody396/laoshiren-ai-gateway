@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 6,
+  "observed_at": "2026-08-31T22:49:51+00:00",
+  "query": "",
+  "rows": [],
+  "secret_free": true,
+  "artifact_sha256": "88d346a08d3fc74c69700ce9aed8811fe272feb284b0182b6b5af3c7e973cb47"
+}

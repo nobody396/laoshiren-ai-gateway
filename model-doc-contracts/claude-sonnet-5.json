@@ -1,0 +1,1233 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com",
+    "groups": [
+      {
+        "multiplier": 2.4,
+        "name": "Claude 标准线路"
+      },
+      {
+        "multiplier": 2.4,
+        "name": "Claude 兼容线路"
+      },
+      {
+        "multiplier": 2.4,
+        "name": "Claude Plus 月卡组"
+      },
+      {
+        "multiplier": 2.4,
+        "name": "Claude Pro 月卡组"
+      },
+      {
+        "multiplier": 2.4,
+        "name": "Claude Max 月卡组"
+      },
+      {
+        "multiplier": 1,
+        "name": "Claude 经济线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "No exact terminal receipt yet.",
+      "name": "Claude Code",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified",
+      "evidence_ids": []
+    },
+    {
+      "evidence": "M8 receipts: evidence-044571833c2e6da533b68604, evidence-07fae243b6644d31af303105, evidence-08c26f0ceab24f92b67d5e51, evidence-0c524cd86ea597295f43e79e, evidence-15eea302ade84242a8735cd2, evidence-1a57ad4c6f31dca98068303e, evidence-1a798264c977ace7a1c65191, evidence-1e44ba523ab3e2e90ae77fad, evidence-204e0040ebb0bb96007efcb7, evidence-22a1530eb84478b0cd28af71, evidence-27badd6c3658ad3d6b61bca4, evidence-3175ac437f13621e5f73ab02, evidence-3a6f11268d15421999a4bb34, evidence-3ff394af63569fadc55e520b, evidence-4f7fa4509d774d94aea068c1, evidence-53f094c394b5aacf7f320d5a, evidence-5710e7245f10b0c5bd460bba, evidence-58b86d3fe5126c85b62fd336, evidence-5d638012ad91caaeaa365f9e, evidence-63023568073f48c084ae5666, evidence-630745928d7b95cf42abef8e, evidence-69b7f30d13ac5fb2869a4d6b, evidence-7200e8ca658799000aaac820, evidence-72e074af0664cace03bb1904, evidence-7457f28e347a649bf2ae04b6, evidence-77fb431715353ae126aa4820, evidence-7f8d87c31f095b69be86fce1, evidence-82fb6a94c3d54920ac95cc90, evidence-8515a16ef3b6a3f45cbac8a1, evidence-89831ab670637d3fdceeab75, evidence-8a0b3ac4f8ff473189ddab64, evidence-8b6b7f78d4fe4b1594431379, evidence-95a9dbbedb5f40de921fe032, evidence-97c7d70e0fab448f5c8775e2, evidence-980f84dac9e04b1da258136f, evidence-a2a3ebe48f89a0df64324121, evidence-a2e91c4a410281e2ae09665c, evidence-a9ba152416d72a0b3f4a16c7, evidence-aa41560bbce637fe9a254de5, evidence-abeef26786ed4b88a5034333, evidence-b25a2a79cd8a4de290138d3d, evidence-b6a2990307b97e081c04a534, evidence-b80d1c8e124948981d8cb5e7, evidence-bb465cdf3655843ba63d44b8, evidence-c00dd06a06b23147077e48b0, evidence-cbd521a50d1a5e68295001e8, evidence-ce755ac08caf7933b2311c75, evidence-cefdbf268fc628ba49992ce7, evidence-d340255ed06447a28e7a1e99, evidence-d5846c6d49f54c139e6a76de, evidence-d7cf8425ebc000c2cd82161e, evidence-d8cec755de89e33fb75e8d18, evidence-da1f7f64f135bc3ad9c01583, evidence-df9e0ee3b5a27f88cb8f27fc, evidence-e096789d56224ff7bdc59130, evidence-e501bffa0f85d4cac830eced, evidence-e836dce3595a5dd7c9a4f3bb, evidence-ea8cf7c41ba13e2995f4ef7b, evidence-ec26d722b1a57d681bda1c51, evidence-f244906ca071b563e2c66210, evidence-f91678fd9dff48fea6554986",
+      "name": "Grok Build",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-044571833c2e6da533b68604",
+        "evidence-07fae243b6644d31af303105",
+        "evidence-08c26f0ceab24f92b67d5e51",
+        "evidence-0c524cd86ea597295f43e79e",
+        "evidence-15eea302ade84242a8735cd2",
+        "evidence-1a57ad4c6f31dca98068303e",
+        "evidence-1a798264c977ace7a1c65191",
+        "evidence-1e44ba523ab3e2e90ae77fad",
+        "evidence-204e0040ebb0bb96007efcb7",
+        "evidence-22a1530eb84478b0cd28af71",
+        "evidence-27badd6c3658ad3d6b61bca4",
+        "evidence-3175ac437f13621e5f73ab02",
+        "evidence-3a6f11268d15421999a4bb34",
+        "evidence-3ff394af63569fadc55e520b",
+        "evidence-4f7fa4509d774d94aea068c1",
+        "evidence-53f094c394b5aacf7f320d5a",
+        "evidence-5710e7245f10b0c5bd460bba",
+        "evidence-58b86d3fe5126c85b62fd336",
+        "evidence-5d638012ad91caaeaa365f9e",
+        "evidence-63023568073f48c084ae5666",
+        "evidence-630745928d7b95cf42abef8e",
+        "evidence-69b7f30d13ac5fb2869a4d6b",
+        "evidence-7200e8ca658799000aaac820",
+        "evidence-72e074af0664cace03bb1904",
+        "evidence-7457f28e347a649bf2ae04b6",
+        "evidence-77fb431715353ae126aa4820",
+        "evidence-7f8d87c31f095b69be86fce1",
+        "evidence-82fb6a94c3d54920ac95cc90",
+        "evidence-8515a16ef3b6a3f45cbac8a1",
+        "evidence-89831ab670637d3fdceeab75",
+        "evidence-8a0b3ac4f8ff473189ddab64",
+        "evidence-8b6b7f78d4fe4b1594431379",
+        "evidence-95a9dbbedb5f40de921fe032",
+        "evidence-97c7d70e0fab448f5c8775e2",
+        "evidence-980f84dac9e04b1da258136f",
+        "evidence-a2a3ebe48f89a0df64324121",
+        "evidence-a2e91c4a410281e2ae09665c",
+        "evidence-a9ba152416d72a0b3f4a16c7",
+        "evidence-aa41560bbce637fe9a254de5",
+        "evidence-abeef26786ed4b88a5034333",
+        "evidence-b25a2a79cd8a4de290138d3d",
+        "evidence-b6a2990307b97e081c04a534",
+        "evidence-b80d1c8e124948981d8cb5e7",
+        "evidence-bb465cdf3655843ba63d44b8",
+        "evidence-c00dd06a06b23147077e48b0",
+        "evidence-cbd521a50d1a5e68295001e8",
+        "evidence-ce755ac08caf7933b2311c75",
+        "evidence-cefdbf268fc628ba49992ce7",
+        "evidence-d340255ed06447a28e7a1e99",
+        "evidence-d5846c6d49f54c139e6a76de",
+        "evidence-d7cf8425ebc000c2cd82161e",
+        "evidence-d8cec755de89e33fb75e8d18",
+        "evidence-da1f7f64f135bc3ad9c01583",
+        "evidence-df9e0ee3b5a27f88cb8f27fc",
+        "evidence-e096789d56224ff7bdc59130",
+        "evidence-e501bffa0f85d4cac830eced",
+        "evidence-e836dce3595a5dd7c9a4f3bb",
+        "evidence-ea8cf7c41ba13e2995f4ef7b",
+        "evidence-ec26d722b1a57d681bda1c51",
+        "evidence-f244906ca071b563e2c66210",
+        "evidence-f91678fd9dff48fea6554986"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-07fae243b6644d31af303105, evidence-61640b539b664794bb8bb828, evidence-980f84dac9e04b1da258136f, evidence-9908d33643de41438eb7ac8b, evidence-d340255ed06447a28e7a1e99, evidence-f91678fd9dff48fea6554986",
+      "name": "Kimi Code",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-07fae243b6644d31af303105",
+        "evidence-61640b539b664794bb8bb828",
+        "evidence-980f84dac9e04b1da258136f",
+        "evidence-9908d33643de41438eb7ac8b",
+        "evidence-d340255ed06447a28e7a1e99",
+        "evidence-f91678fd9dff48fea6554986"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-09c9db60f7275d64c5779af2, evidence-9a84d781398bebcd60de8007",
+      "name": "OpenCode",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-09c9db60f7275d64c5779af2",
+        "evidence-9a84d781398bebcd60de8007"
+      ]
+    },
+    {
+      "evidence": "No supported canonical client protocol remains for this model.",
+      "name": "ZCode",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence_ids": []
+    },
+    {
+      "name": "Hermes Agent",
+      "protocols": [
+        "messages"
+      ],
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-82fb6a94c3d54920ac95cc90, evidence-8a0b3ac4f8ff473189ddab64, evidence-95a9dbbedb5f40de921fe032, evidence-afb83b19608b4c79ab2542c8, evidence-e096789d56224ff7bdc59130, evidence-e6db35a87f854ded9a5048e3",
+      "evidence_ids": [
+        "evidence-82fb6a94c3d54920ac95cc90",
+        "evidence-8a0b3ac4f8ff473189ddab64",
+        "evidence-95a9dbbedb5f40de921fe032",
+        "evidence-afb83b19608b4c79ab2542c8",
+        "evidence-e096789d56224ff7bdc59130",
+        "evidence-e6db35a87f854ded9a5048e3"
+      ]
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No exact terminal receipt yet.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "name": "Claude Code",
+      "recommended": false,
+      "version": "2.1.258",
+      "protocol": "messages",
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-273bfe42c9dc2d35c0a5f622",
+      "evidence_ids": [
+        "evidence-273bfe42c9dc2d35c0a5f622"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-044571833c2e6da533b68604, evidence-07fae243b6644d31af303105, evidence-08c26f0ceab24f92b67d5e51, evidence-0c524cd86ea597295f43e79e, evidence-15eea302ade84242a8735cd2, evidence-1a57ad4c6f31dca98068303e, evidence-1a798264c977ace7a1c65191, evidence-1e44ba523ab3e2e90ae77fad, evidence-204e0040ebb0bb96007efcb7, evidence-22a1530eb84478b0cd28af71, evidence-27badd6c3658ad3d6b61bca4, evidence-3175ac437f13621e5f73ab02, evidence-3a6f11268d15421999a4bb34, evidence-3ff394af63569fadc55e520b, evidence-4f7fa4509d774d94aea068c1, evidence-53f094c394b5aacf7f320d5a, evidence-5710e7245f10b0c5bd460bba, evidence-58b86d3fe5126c85b62fd336, evidence-5d638012ad91caaeaa365f9e, evidence-63023568073f48c084ae5666, evidence-630745928d7b95cf42abef8e, evidence-69b7f30d13ac5fb2869a4d6b, evidence-7200e8ca658799000aaac820, evidence-72e074af0664cace03bb1904, evidence-7457f28e347a649bf2ae04b6, evidence-77fb431715353ae126aa4820, evidence-7f8d87c31f095b69be86fce1, evidence-82fb6a94c3d54920ac95cc90, evidence-8515a16ef3b6a3f45cbac8a1, evidence-89831ab670637d3fdceeab75, evidence-8a0b3ac4f8ff473189ddab64, evidence-8b6b7f78d4fe4b1594431379, evidence-95a9dbbedb5f40de921fe032, evidence-97c7d70e0fab448f5c8775e2, evidence-980f84dac9e04b1da258136f, evidence-a2a3ebe48f89a0df64324121, evidence-a2e91c4a410281e2ae09665c, evidence-a9ba152416d72a0b3f4a16c7, evidence-aa41560bbce637fe9a254de5, evidence-abeef26786ed4b88a5034333, evidence-b25a2a79cd8a4de290138d3d, evidence-b6a2990307b97e081c04a534, evidence-b80d1c8e124948981d8cb5e7, evidence-bb465cdf3655843ba63d44b8, evidence-c00dd06a06b23147077e48b0, evidence-cbd521a50d1a5e68295001e8, evidence-ce755ac08caf7933b2311c75, evidence-cefdbf268fc628ba49992ce7, evidence-d340255ed06447a28e7a1e99, evidence-d5846c6d49f54c139e6a76de, evidence-d7cf8425ebc000c2cd82161e, evidence-d8cec755de89e33fb75e8d18, evidence-da1f7f64f135bc3ad9c01583, evidence-df9e0ee3b5a27f88cb8f27fc, evidence-e096789d56224ff7bdc59130, evidence-e501bffa0f85d4cac830eced, evidence-e836dce3595a5dd7c9a4f3bb, evidence-ea8cf7c41ba13e2995f4ef7b, evidence-ec26d722b1a57d681bda1c51, evidence-f244906ca071b563e2c66210, evidence-f91678fd9dff48fea6554986",
+      "name": "Grok Build",
+      "protocol": "messages",
+      "recommended": false,
+      "status": "verified",
+      "version": "1.0.13",
+      "evidence_ids": [
+        "evidence-044571833c2e6da533b68604",
+        "evidence-07fae243b6644d31af303105",
+        "evidence-08c26f0ceab24f92b67d5e51",
+        "evidence-0c524cd86ea597295f43e79e",
+        "evidence-15eea302ade84242a8735cd2",
+        "evidence-1a57ad4c6f31dca98068303e",
+        "evidence-1a798264c977ace7a1c65191",
+        "evidence-1e44ba523ab3e2e90ae77fad",
+        "evidence-204e0040ebb0bb96007efcb7",
+        "evidence-22a1530eb84478b0cd28af71",
+        "evidence-27badd6c3658ad3d6b61bca4",
+        "evidence-3175ac437f13621e5f73ab02",
+        "evidence-3a6f11268d15421999a4bb34",
+        "evidence-3ff394af63569fadc55e520b",
+        "evidence-4f7fa4509d774d94aea068c1",
+        "evidence-53f094c394b5aacf7f320d5a",
+        "evidence-5710e7245f10b0c5bd460bba",
+        "evidence-58b86d3fe5126c85b62fd336",
+        "evidence-5d638012ad91caaeaa365f9e",
+        "evidence-63023568073f48c084ae5666",
+        "evidence-630745928d7b95cf42abef8e",
+        "evidence-69b7f30d13ac5fb2869a4d6b",
+        "evidence-7200e8ca658799000aaac820",
+        "evidence-72e074af0664cace03bb1904",
+        "evidence-7457f28e347a649bf2ae04b6",
+        "evidence-77fb431715353ae126aa4820",
+        "evidence-7f8d87c31f095b69be86fce1",
+        "evidence-82fb6a94c3d54920ac95cc90",
+        "evidence-8515a16ef3b6a3f45cbac8a1",
+        "evidence-89831ab670637d3fdceeab75",
+        "evidence-8a0b3ac4f8ff473189ddab64",
+        "evidence-8b6b7f78d4fe4b1594431379",
+        "evidence-95a9dbbedb5f40de921fe032",
+        "evidence-97c7d70e0fab448f5c8775e2",
+        "evidence-980f84dac9e04b1da258136f",
+        "evidence-a2a3ebe48f89a0df64324121",
+        "evidence-a2e91c4a410281e2ae09665c",
+        "evidence-a9ba152416d72a0b3f4a16c7",
+        "evidence-aa41560bbce637fe9a254de5",
+        "evidence-abeef26786ed4b88a5034333",
+        "evidence-b25a2a79cd8a4de290138d3d",
+        "evidence-b6a2990307b97e081c04a534",
+        "evidence-b80d1c8e124948981d8cb5e7",
+        "evidence-bb465cdf3655843ba63d44b8",
+        "evidence-c00dd06a06b23147077e48b0",
+        "evidence-cbd521a50d1a5e68295001e8",
+        "evidence-ce755ac08caf7933b2311c75",
+        "evidence-cefdbf268fc628ba49992ce7",
+        "evidence-d340255ed06447a28e7a1e99",
+        "evidence-d5846c6d49f54c139e6a76de",
+        "evidence-d7cf8425ebc000c2cd82161e",
+        "evidence-d8cec755de89e33fb75e8d18",
+        "evidence-da1f7f64f135bc3ad9c01583",
+        "evidence-df9e0ee3b5a27f88cb8f27fc",
+        "evidence-e096789d56224ff7bdc59130",
+        "evidence-e501bffa0f85d4cac830eced",
+        "evidence-e836dce3595a5dd7c9a4f3bb",
+        "evidence-ea8cf7c41ba13e2995f4ef7b",
+        "evidence-ec26d722b1a57d681bda1c51",
+        "evidence-f244906ca071b563e2c66210",
+        "evidence-f91678fd9dff48fea6554986"
+      ]
+    },
+    {
+      "name": "Kimi Code",
+      "recommended": false,
+      "version": "0.39.1",
+      "protocol": "messages",
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-07fae243b6644d31af303105, evidence-61640b539b664794bb8bb828, evidence-980f84dac9e04b1da258136f, evidence-9908d33643de41438eb7ac8b, evidence-d340255ed06447a28e7a1e99, evidence-f91678fd9dff48fea6554986",
+      "evidence_ids": [
+        "evidence-07fae243b6644d31af303105",
+        "evidence-61640b539b664794bb8bb828",
+        "evidence-980f84dac9e04b1da258136f",
+        "evidence-9908d33643de41438eb7ac8b",
+        "evidence-d340255ed06447a28e7a1e99",
+        "evidence-f91678fd9dff48fea6554986"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-09c9db60f7275d64c5779af2, evidence-9a84d781398bebcd60de8007",
+      "name": "OpenCode",
+      "protocol": "messages",
+      "recommended": false,
+      "status": "verified",
+      "version": "1.18.15",
+      "evidence_ids": [
+        "evidence-09c9db60f7275d64c5779af2",
+        "evidence-9a84d781398bebcd60de8007"
+      ]
+    },
+    {
+      "name": "Hermes Agent",
+      "recommended": false,
+      "version": "0.20.0",
+      "protocol": "messages",
+      "status": "verified",
+      "evidence": "M8 receipts: evidence-82fb6a94c3d54920ac95cc90, evidence-8a0b3ac4f8ff473189ddab64, evidence-95a9dbbedb5f40de921fe032, evidence-afb83b19608b4c79ab2542c8, evidence-e096789d56224ff7bdc59130, evidence-e6db35a87f854ded9a5048e3",
+      "evidence_ids": [
+        "evidence-82fb6a94c3d54920ac95cc90",
+        "evidence-8a0b3ac4f8ff473189ddab64",
+        "evidence-95a9dbbedb5f40de921fe032",
+        "evidence-afb83b19608b4c79ab2542c8",
+        "evidence-e096789d56224ff7bdc59130",
+        "evidence-e6db35a87f854ded9a5048e3"
+      ]
+    }
+  ],
+  "model": {
+    "context_window": 1000000,
+    "display_name": "Claude Sonnet 5",
+    "family": "claude",
+    "id": "claude-sonnet-5",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "max_output_tokens": 128000,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "Owned production-key probe on 2026-08-31: minimal text, SSE terminal events, forced tool call, tool-result continuation, usage fields and image input returned successfully. A malformed Messages payload returned structured HTTP 400 invalid_request_error at the same gateway.",
+      "name": "messages",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [],
+    "client_mappings": [],
+    "model_levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ]
+  },
+  "recommended_protocol": "messages",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Claude Code": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:2.1.258",
+            "model_id": "claude-sonnet-5",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-273bfe42c9dc2d35c0a5f622",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-273bfe42c9dc2d35c0a5f622"
+            ],
+            "pass_evidence_ids": [
+              "evidence-273bfe42c9dc2d35c0a5f622"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Grok Build": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "model_id": "claude-sonnet-5",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-0c524cd86ea597295f43e79e",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-0c524cd86ea597295f43e79e"
+            ],
+            "pass_evidence_ids": [
+              "evidence-0c524cd86ea597295f43e79e"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "Kimi Code": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:0.39.1",
+            "model_id": "claude-sonnet-5",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-61640b539b664794bb8bb828",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-61640b539b664794bb8bb828"
+            ],
+            "pass_evidence_ids": [
+              "evidence-61640b539b664794bb8bb828"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "OpenCode": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "model_id": "claude-sonnet-5",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-09c9db60f7275d64c5779af2",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-09c9db60f7275d64c5779af2"
+            ],
+            "pass_evidence_ids": [
+              "evidence-09c9db60f7275d64c5779af2"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      },
+      "ZCode": {
+        "messages": {
+          "macos": {
+            "client_version": "legacy:3.10.1",
+            "evidence": "migration_gap: legacy client result does not state exact OS (macos required); exact client version is also missing; legacy_evidence: Existing real Agent file-read, shell, edit and readback loop completed with Anthropic Messages.",
+            "model_id": "claude-sonnet-5",
+            "os": "macos",
+            "protocol": "messages",
+            "status": "blocked"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "messages": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "model_id": "claude-sonnet-5",
+            "os": "macos",
+            "protocol": "messages",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-e6db35a87f854ded9a5048e3",
+            "status": "verified",
+            "verified_at": "2026-09-03",
+            "evidence_ids": [
+              "evidence-e6db35a87f854ded9a5048e3"
+            ],
+            "pass_evidence_ids": [
+              "evidence-e6db35a87f854ded9a5048e3"
+            ],
+            "failure_evidence_ids": []
+          }
+        }
+      }
+    },
+    "group_access": {
+      "Claude Max 月卡组": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-sonnet-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-09-01",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-1a798264c977ace7a1c65191",
+              "evidence-e501bffa0f85d4cac830eced",
+              "evidence-ea8cf7c41ba13e2995f4ef7b"
+            ],
+            "pass_evidence_ids": [
+              "evidence-1a798264c977ace7a1c65191",
+              "evidence-e501bffa0f85d4cac830eced",
+              "evidence-ea8cf7c41ba13e2995f4ef7b"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-09-01T00:00:03+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-1a798264c977ace7a1c65191",
+          "evidence-e501bffa0f85d4cac830eced",
+          "evidence-ea8cf7c41ba13e2995f4ef7b"
+        ]
+      },
+      "Claude Plus 月卡组": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-sonnet-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-7f8d87c31f095b69be86fce1",
+              "evidence-c00dd06a06b23147077e48b0",
+              "evidence-d8cec755de89e33fb75e8d18"
+            ],
+            "pass_evidence_ids": [
+              "evidence-7f8d87c31f095b69be86fce1",
+              "evidence-c00dd06a06b23147077e48b0",
+              "evidence-d8cec755de89e33fb75e8d18"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:13+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-7f8d87c31f095b69be86fce1",
+          "evidence-c00dd06a06b23147077e48b0",
+          "evidence-d8cec755de89e33fb75e8d18"
+        ]
+      },
+      "Claude Pro 月卡组": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-sonnet-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-27badd6c3658ad3d6b61bca4",
+              "evidence-7200e8ca658799000aaac820",
+              "evidence-bb465cdf3655843ba63d44b8"
+            ],
+            "pass_evidence_ids": [
+              "evidence-27badd6c3658ad3d6b61bca4",
+              "evidence-7200e8ca658799000aaac820",
+              "evidence-bb465cdf3655843ba63d44b8"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:38+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-27badd6c3658ad3d6b61bca4",
+          "evidence-7200e8ca658799000aaac820",
+          "evidence-bb465cdf3655843ba63d44b8"
+        ]
+      },
+      "Claude 兼容线路": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-sonnet-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-09-03",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-204e0040ebb0bb96007efcb7",
+              "evidence-3175ac437f13621e5f73ab02",
+              "evidence-8515a16ef3b6a3f45cbac8a1",
+              "evidence-89831ab670637d3fdceeab75",
+              "evidence-cefdbf268fc628ba49992ce7",
+              "evidence-e4ca85e12defa8a71469edc6",
+              "evidence-e836dce3595a5dd7c9a4f3bb",
+              "evidence-ec26d722b1a57d681bda1c51"
+            ],
+            "pass_evidence_ids": [
+              "evidence-204e0040ebb0bb96007efcb7",
+              "evidence-3175ac437f13621e5f73ab02",
+              "evidence-8515a16ef3b6a3f45cbac8a1",
+              "evidence-89831ab670637d3fdceeab75",
+              "evidence-cefdbf268fc628ba49992ce7",
+              "evidence-e4ca85e12defa8a71469edc6",
+              "evidence-e836dce3595a5dd7c9a4f3bb",
+              "evidence-ec26d722b1a57d681bda1c51"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-09-03T07:41:00+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-204e0040ebb0bb96007efcb7",
+          "evidence-3175ac437f13621e5f73ab02",
+          "evidence-8515a16ef3b6a3f45cbac8a1",
+          "evidence-89831ab670637d3fdceeab75",
+          "evidence-cefdbf268fc628ba49992ce7",
+          "evidence-e4ca85e12defa8a71469edc6",
+          "evidence-e836dce3595a5dd7c9a4f3bb",
+          "evidence-ec26d722b1a57d681bda1c51"
+        ]
+      },
+      "Claude 标准线路": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-sonnet-5",
+        "multiplier": 2.4,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-09-03",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-22a1530eb84478b0cd28af71",
+              "evidence-3ff394af63569fadc55e520b",
+              "evidence-5d638012ad91caaeaa365f9e",
+              "evidence-7457f28e347a649bf2ae04b6",
+              "evidence-8efb017625ea4fcdae41b9e2",
+              "evidence-97c7d70e0fab448f5c8775e2",
+              "evidence-a9ba152416d72a0b3f4a16c7",
+              "evidence-b6a2990307b97e081c04a534",
+              "evidence-cbd521a50d1a5e68295001e8",
+              "evidence-f244906ca071b563e2c66210"
+            ],
+            "pass_evidence_ids": [
+              "evidence-22a1530eb84478b0cd28af71",
+              "evidence-3ff394af63569fadc55e520b",
+              "evidence-5d638012ad91caaeaa365f9e",
+              "evidence-8efb017625ea4fcdae41b9e2",
+              "evidence-a9ba152416d72a0b3f4a16c7",
+              "evidence-b6a2990307b97e081c04a534",
+              "evidence-cbd521a50d1a5e68295001e8",
+              "evidence-f244906ca071b563e2c66210"
+            ],
+            "failure_evidence_ids": [
+              "evidence-7457f28e347a649bf2ae04b6",
+              "evidence-97c7d70e0fab448f5c8775e2"
+            ],
+            "observed_at": "2026-09-03T07:40:49+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-22a1530eb84478b0cd28af71",
+          "evidence-3ff394af63569fadc55e520b",
+          "evidence-5d638012ad91caaeaa365f9e",
+          "evidence-7457f28e347a649bf2ae04b6",
+          "evidence-8efb017625ea4fcdae41b9e2",
+          "evidence-97c7d70e0fab448f5c8775e2",
+          "evidence-a9ba152416d72a0b3f4a16c7",
+          "evidence-b6a2990307b97e081c04a534",
+          "evidence-cbd521a50d1a5e68295001e8",
+          "evidence-f244906ca071b563e2c66210"
+        ]
+      },
+      "Claude 经济线路": {
+        "base_url": "https://api.laoshirenai.com",
+        "evidence": "M8 group receipts by protocol: messages=verified",
+        "model_id": "claude-sonnet-5",
+        "multiplier": 1,
+        "protocols": [
+          "messages"
+        ],
+        "recommended_protocol": "messages",
+        "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "messages": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-1a57ad4c6f31dca98068303e",
+              "evidence-1e44ba523ab3e2e90ae77fad",
+              "evidence-3a6f11268d15421999a4bb34",
+              "evidence-53f094c394b5aacf7f320d5a",
+              "evidence-5710e7245f10b0c5bd460bba",
+              "evidence-77fb431715353ae126aa4820",
+              "evidence-a2a3ebe48f89a0df64324121",
+              "evidence-aa41560bbce637fe9a254de5",
+              "evidence-da1f7f64f135bc3ad9c01583",
+              "evidence-df9e0ee3b5a27f88cb8f27fc"
+            ],
+            "pass_evidence_ids": [
+              "evidence-1a57ad4c6f31dca98068303e",
+              "evidence-1e44ba523ab3e2e90ae77fad",
+              "evidence-3a6f11268d15421999a4bb34",
+              "evidence-53f094c394b5aacf7f320d5a",
+              "evidence-5710e7245f10b0c5bd460bba",
+              "evidence-77fb431715353ae126aa4820",
+              "evidence-a2a3ebe48f89a0df64324121",
+              "evidence-aa41560bbce637fe9a254de5",
+              "evidence-da1f7f64f135bc3ad9c01583",
+              "evidence-df9e0ee3b5a27f88cb8f27fc"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T21:56:47+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-1a57ad4c6f31dca98068303e",
+          "evidence-1e44ba523ab3e2e90ae77fad",
+          "evidence-3a6f11268d15421999a4bb34",
+          "evidence-53f094c394b5aacf7f320d5a",
+          "evidence-5710e7245f10b0c5bd460bba",
+          "evidence-77fb431715353ae126aa4820",
+          "evidence-a2a3ebe48f89a0df64324121",
+          "evidence-aa41560bbce637fe9a254de5",
+          "evidence-da1f7f64f135bc3ad9c01583",
+          "evidence-df9e0ee3b5a27f88cb8f27fc"
+        ]
+      }
+    },
+    "limits": {
+      "context_window": {
+        "status": "verified",
+        "evidence": "Anthropic official model overview: https://platform.claude.com/docs/en/models/sonnet-5/overview"
+      },
+      "max_output_tokens": {
+        "status": "verified",
+        "evidence": "Anthropic official model overview: https://platform.claude.com/docs/en/models/sonnet-5/overview"
+      }
+    },
+    "modalities": {
+      "text": {
+        "status": "verified",
+        "evidence": "Anthropic official capability: text and images to text; https://platform.claude.com/docs/en/models/sonnet-5/overview"
+      },
+      "image": {
+        "status": "verified",
+        "evidence": "Anthropic official capability: text and images to text; https://platform.claude.com/docs/en/models/sonnet-5/overview"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": "Anthropic official input-to-output capability lists text and images to text, not native video; https://platform.claude.com/docs/en/models/sonnet-5/overview"
+      }
+    },
+    "pricing": {
+      "Claude Max 月卡组": {
+        "cache_read_price": 0.72,
+        "cache_write_price": 9,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 7.2,
+        "output_price": 36,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude Plus 月卡组": {
+        "cache_read_price": 0.72,
+        "cache_write_price": 9,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 7.2,
+        "output_price": 36,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude Pro 月卡组": {
+        "cache_read_price": 0.72,
+        "cache_write_price": 9,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 7.2,
+        "output_price": 36,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude 兼容线路": {
+        "cache_read_price": 0.78,
+        "cache_write_price": 9.75,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 7.8,
+        "output_price": 39,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude 标准线路": {
+        "cache_read_price": 0.72,
+        "cache_write_price": 9,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 7.2,
+        "output_price": 36,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "Claude 经济线路": {
+        "cache_read_price": 0.3,
+        "cache_write_price": 3.75,
+        "currency": "CNY",
+        "evidence": "2026-08-31 exported public pricing inventory readback",
+        "input_price": 3,
+        "output_price": 15,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "messages": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-2c15cd6f24d86fa0a74b12cb, evidence-62c80b887989b8fdd0d68888, evidence-fd8492d317874a933c3b8bb8",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2c15cd6f24d86fa0a74b12cb",
+            "evidence-62c80b887989b8fdd0d68888",
+            "evidence-fd8492d317874a933c3b8bb8"
+          ],
+          "pass_evidence_ids": [
+            "evidence-2c15cd6f24d86fa0a74b12cb",
+            "evidence-62c80b887989b8fdd0d68888",
+            "evidence-fd8492d317874a933c3b8bb8"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-04497e7d685d08bbe0387dab, evidence-3b783d867bb4b30dbb1ad46d",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-04497e7d685d08bbe0387dab",
+            "evidence-3b783d867bb4b30dbb1ad46d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-04497e7d685d08bbe0387dab",
+            "evidence-3b783d867bb4b30dbb1ad46d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-4f78eda9521aa0ceabff12d4, evidence-9c9b950319abedf55d24dc56",
+          "evidence_ids": [
+            "evidence-4f78eda9521aa0ceabff12d4",
+            "evidence-9c9b950319abedf55d24dc56"
+          ],
+          "pass_evidence_ids": [
+            "evidence-4f78eda9521aa0ceabff12d4",
+            "evidence-9c9b950319abedf55d24dc56"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-a17b927326388932d1f79bdf",
+          "evidence_ids": [
+            "evidence-a17b927326388932d1f79bdf"
+          ],
+          "pass_evidence_ids": [
+            "evidence-a17b927326388932d1f79bdf"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-c463ada79c4a044800279db7, evidence-d7dca05933d7868868e945ba",
+          "evidence_ids": [
+            "evidence-c463ada79c4a044800279db7",
+            "evidence-d7dca05933d7868868e945ba"
+          ],
+          "pass_evidence_ids": [
+            "evidence-c463ada79c4a044800279db7",
+            "evidence-d7dca05933d7868868e945ba"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-aba36854d9e1715548413bd6",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-aba36854d9e1715548413bd6"
+          ],
+          "pass_evidence_ids": [
+            "evidence-aba36854d9e1715548413bd6"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-28903686d98ed2f151f00dbb",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-28903686d98ed2f151f00dbb"
+          ],
+          "pass_evidence_ids": [
+            "evidence-28903686d98ed2f151f00dbb"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-7da23e00d7382dd8380e5dfa",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7da23e00d7382dd8380e5dfa"
+          ],
+          "pass_evidence_ids": [
+            "evidence-7da23e00d7382dd8380e5dfa"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-0e77747aff080cd5e511127f, evidence-2dc04ebd8c51ddc41dd371df, evidence-71011270452d9c1a535527be, evidence-c787888798f0309c165a768b, evidence-d7e993daa797000166b3ec0e",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-0e77747aff080cd5e511127f",
+            "evidence-2dc04ebd8c51ddc41dd371df",
+            "evidence-71011270452d9c1a535527be",
+            "evidence-c787888798f0309c165a768b",
+            "evidence-d7e993daa797000166b3ec0e"
+          ],
+          "pass_evidence_ids": [
+            "evidence-0e77747aff080cd5e511127f"
+          ],
+          "failure_evidence_ids": [
+            "evidence-2dc04ebd8c51ddc41dd371df",
+            "evidence-71011270452d9c1a535527be",
+            "evidence-c787888798f0309c165a768b",
+            "evidence-d7e993daa797000166b3ec0e"
+          ],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "messages": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-28d14091c3b78e8a38959266, evidence-f9fc7dee8715ac4bfdf6b00f",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-28d14091c3b78e8a38959266",
+            "evidence-f9fc7dee8715ac4bfdf6b00f"
+          ],
+          "pass_evidence_ids": [
+            "evidence-28d14091c3b78e8a38959266",
+            "evidence-f9fc7dee8715ac4bfdf6b00f"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-15eea302ade84242a8735cd2, evidence-1e44ba523ab3e2e90ae77fad, evidence-3a6f11268d15421999a4bb34, evidence-3ff394af63569fadc55e520b, evidence-7457f28e347a649bf2ae04b6, evidence-95a9dbbedb5f40de921fe032, evidence-a2a3ebe48f89a0df64324121, evidence-a2e91c4a410281e2ae09665c, evidence-bb465cdf3655843ba63d44b8, evidence-c00dd06a06b23147077e48b0, evidence-d5846c6d49f54c139e6a76de, evidence-ea8cf7c41ba13e2995f4ef7b, evidence-ec26d722b1a57d681bda1c51, evidence-f91678fd9dff48fea6554986",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-15eea302ade84242a8735cd2",
+            "evidence-1e44ba523ab3e2e90ae77fad",
+            "evidence-3a6f11268d15421999a4bb34",
+            "evidence-3ff394af63569fadc55e520b",
+            "evidence-7457f28e347a649bf2ae04b6",
+            "evidence-95a9dbbedb5f40de921fe032",
+            "evidence-a2a3ebe48f89a0df64324121",
+            "evidence-a2e91c4a410281e2ae09665c",
+            "evidence-bb465cdf3655843ba63d44b8",
+            "evidence-c00dd06a06b23147077e48b0",
+            "evidence-d5846c6d49f54c139e6a76de",
+            "evidence-ea8cf7c41ba13e2995f4ef7b",
+            "evidence-ec26d722b1a57d681bda1c51",
+            "evidence-f91678fd9dff48fea6554986"
+          ],
+          "pass_evidence_ids": [
+            "evidence-15eea302ade84242a8735cd2",
+            "evidence-1e44ba523ab3e2e90ae77fad",
+            "evidence-3a6f11268d15421999a4bb34",
+            "evidence-3ff394af63569fadc55e520b",
+            "evidence-95a9dbbedb5f40de921fe032",
+            "evidence-a2a3ebe48f89a0df64324121",
+            "evidence-a2e91c4a410281e2ae09665c",
+            "evidence-bb465cdf3655843ba63d44b8",
+            "evidence-c00dd06a06b23147077e48b0",
+            "evidence-d5846c6d49f54c139e6a76de",
+            "evidence-ea8cf7c41ba13e2995f4ef7b",
+            "evidence-ec26d722b1a57d681bda1c51",
+            "evidence-f91678fd9dff48fea6554986"
+          ],
+          "failure_evidence_ids": [
+            "evidence-7457f28e347a649bf2ae04b6"
+          ],
+          "verified_at": "2026-09-03"
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-07fae243b6644d31af303105, evidence-4f7fa4509d774d94aea068c1, evidence-63023568073f48c084ae5666, evidence-8a0b3ac4f8ff473189ddab64, evidence-b80d1c8e124948981d8cb5e7",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-07fae243b6644d31af303105",
+            "evidence-4f7fa4509d774d94aea068c1",
+            "evidence-63023568073f48c084ae5666",
+            "evidence-8a0b3ac4f8ff473189ddab64",
+            "evidence-b80d1c8e124948981d8cb5e7"
+          ],
+          "pass_evidence_ids": [
+            "evidence-07fae243b6644d31af303105",
+            "evidence-4f7fa4509d774d94aea068c1",
+            "evidence-63023568073f48c084ae5666",
+            "evidence-8a0b3ac4f8ff473189ddab64",
+            "evidence-b80d1c8e124948981d8cb5e7"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-08c26f0ceab24f92b67d5e51, evidence-630745928d7b95cf42abef8e, evidence-69b7f30d13ac5fb2869a4d6b, evidence-72e074af0664cace03bb1904, evidence-82fb6a94c3d54920ac95cc90, evidence-980f84dac9e04b1da258136f, evidence-b25a2a79cd8a4de290138d3d",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-08c26f0ceab24f92b67d5e51",
+            "evidence-630745928d7b95cf42abef8e",
+            "evidence-69b7f30d13ac5fb2869a4d6b",
+            "evidence-72e074af0664cace03bb1904",
+            "evidence-82fb6a94c3d54920ac95cc90",
+            "evidence-980f84dac9e04b1da258136f",
+            "evidence-b25a2a79cd8a4de290138d3d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-08c26f0ceab24f92b67d5e51",
+            "evidence-630745928d7b95cf42abef8e",
+            "evidence-69b7f30d13ac5fb2869a4d6b",
+            "evidence-72e074af0664cace03bb1904",
+            "evidence-82fb6a94c3d54920ac95cc90",
+            "evidence-980f84dac9e04b1da258136f",
+            "evidence-b25a2a79cd8a4de290138d3d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-044571833c2e6da533b68604, evidence-8b6b7f78d4fe4b1594431379, evidence-abeef26786ed4b88a5034333, evidence-d340255ed06447a28e7a1e99, evidence-d7cf8425ebc000c2cd82161e, evidence-e096789d56224ff7bdc59130",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-044571833c2e6da533b68604",
+            "evidence-8b6b7f78d4fe4b1594431379",
+            "evidence-abeef26786ed4b88a5034333",
+            "evidence-d340255ed06447a28e7a1e99",
+            "evidence-d7cf8425ebc000c2cd82161e",
+            "evidence-e096789d56224ff7bdc59130"
+          ],
+          "pass_evidence_ids": [
+            "evidence-044571833c2e6da533b68604",
+            "evidence-8b6b7f78d4fe4b1594431379",
+            "evidence-abeef26786ed4b88a5034333",
+            "evidence-d340255ed06447a28e7a1e99",
+            "evidence-d7cf8425ebc000c2cd82161e",
+            "evidence-e096789d56224ff7bdc59130"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        },
+        "usage": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-2b202a60f1aad807b828e36e, evidence-377be8fed5a74599b1b0ef5f, evidence-7580c6ba2a774707a2aa6988, evidence-92fc4c445fd8496be1a1e1b0, evidence-db5a955bc66b4e4ba70de55b, evidence-fa00de04741c4acaa387900c",
+          "evidence_ids": [
+            "evidence-2b202a60f1aad807b828e36e",
+            "evidence-377be8fed5a74599b1b0ef5f",
+            "evidence-7580c6ba2a774707a2aa6988",
+            "evidence-92fc4c445fd8496be1a1e1b0",
+            "evidence-db5a955bc66b4e4ba70de55b",
+            "evidence-fa00de04741c4acaa387900c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-2b202a60f1aad807b828e36e",
+            "evidence-377be8fed5a74599b1b0ef5f",
+            "evidence-7580c6ba2a774707a2aa6988",
+            "evidence-92fc4c445fd8496be1a1e1b0",
+            "evidence-db5a955bc66b4e4ba70de55b",
+            "evidence-fa00de04741c4acaa387900c"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-03"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Claude Code": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Kimi Code": {
+          "messages": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "fixed client levels fit inside the verified model reasoning matrix",
+            "mappings": [],
+            "status": "verified"
+          }
+        },
+        "OpenCode": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "messages": {
+            "client_levels": [],
+            "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "messages": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "fixed client levels exceed the model reasoning matrix; no mapping evidence",
+            "mappings": [],
+            "status": "unsupported"
+          }
+        }
+      },
+      "model_levels": {
+        "low": {
+          "status": "verified",
+          "evidence": "Anthropic official effort compatibility table: https://platform.claude.com/docs/en/build-with-claude/effort"
+        },
+        "medium": {
+          "status": "verified",
+          "evidence": "M8 receipts: evidence-12e3fce9157edff40925007d",
+          "evidence_ids": [
+            "evidence-12e3fce9157edff40925007d"
+          ],
+          "pass_evidence_ids": [
+            "evidence-12e3fce9157edff40925007d"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-08-31"
+        },
+        "high": {
+          "status": "verified",
+          "evidence": "Anthropic official effort compatibility table: https://platform.claude.com/docs/en/build-with-claude/effort"
+        },
+        "xhigh": {
+          "status": "verified",
+          "evidence": "Anthropic official effort compatibility table: https://platform.claude.com/docs/en/build-with-claude/effort"
+        },
+        "max": {
+          "status": "verified",
+          "evidence": "Anthropic official effort compatibility table: https://platform.claude.com/docs/en/build-with-claude/effort"
+        }
+      }
+    }
+  },
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "text": "verified",
+      "image": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://platform.claude.com/docs/en/models/sonnet-5/overview",
+    "verified_at": "2026-08-31"
+  },
+  "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。"
+}

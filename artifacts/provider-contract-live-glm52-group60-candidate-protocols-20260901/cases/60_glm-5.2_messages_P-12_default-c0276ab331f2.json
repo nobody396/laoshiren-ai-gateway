@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "084e6d72a7b31c848eb3e7d3a1bda8554568acee87126efb7f939dcbd1d4533c",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "60:glm-5.2:messages:P-12:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 60,
+    "group_name": "GLM 企业高速线路",
+    "marker": "LSR_CONTRACT_16A0E86CC2498538",
+    "max_output_tokens": 131072,
+    "model_id": "glm-5.2",
+    "name": "usage",
+    "p_id": "P-12",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "bcf239976270c7db0049541302617f774be906b1eac2054695c876c06e53a4f3",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T20:08:24.706+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T20:08:23.387+00:00",
+  "offline_verifier": {
+    "reason": "usage object is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 60,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "usage object is required",
+  "request": {
+    "payload_sha256": "20d88e6632f93ee174cef8c774195648f8d014cb0338530cd77e1a60011ef165",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "453d1878dedd21e687536ff85bb832f7046fb6f7a30f29891d7bf453cd4e1871"
+  },
+  "response": {
+    "body_bytes": 164,
+    "body_sha256": "0044e2f00f3d442cfc425a37f8672a61e4e47e6d582f124d2572512e24d620ea",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "This group does not allow /v1/messages dispatch",
+      "type": "permission_error"
+    },
+    "event_count": 0,
+    "http_status": 403,
+    "marker_present": false,
+    "request_id": "e7e9ee2b-bc8d-4403-97e5-72f5812acdaa",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

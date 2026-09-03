@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 3,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "d81e2f271ff577f3eac5e6164c1245db5fcc88cb6596fa2c2acfa31bfe3f302d",
+  "changes": [
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "OpenCode/chat_completions/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-36434078fa58703befb3323a"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "OpenCode/generate_content/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-510df58ba90a8a2fbaca92bf"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "test_evidence",
+          "path": "OpenCode/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4d01442af3d9849d4c30fad5",
+            "evidence-510df58ba90a8a2fbaca92bf"
+          ]
+        }
+      ]
+    }
+  ]
+}

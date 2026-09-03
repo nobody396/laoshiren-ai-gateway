@@ -9,6 +9,7 @@ package server
 //  3. 描述尽量采用 "动词 + 业务对象" 结构, 控制在 15-20 字内, 避免与 path 列冗余.
 //  4. 管理员在 API 管理页手工修改后的值受 UpsertAPIs 保护 (仅当新值与旧值不同才覆盖).
 var scannerDescMap = map[string]string{
+	"GET /admin/model-client-matrix":                 "模型与客户端证据矩阵",
 	// ==================== 仪表盘 (dashboard) ====================
 	"GET /admin/dashboard/snapshot-v2":           "仪表盘快照 (v2)",
 	"GET /admin/dashboard/stats":                 "仪表盘统计概览",

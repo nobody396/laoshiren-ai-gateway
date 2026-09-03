@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "claude-haiku-4-5",
+    "upstream_id": "claude-haiku-4-5",
+    "display_name": "Claude Haiku 4.5",
+    "platform": "anthropic",
+    "context_window": 200000,
+    "max_output_tokens": 64000,
+    "codex_catalog_entry": null
+  },
+  "pricing": {
+    "input_per_mtok_usd": 1.0,
+    "cached_input_per_mtok_usd": 0.1,
+    "output_per_mtok_usd": 5.0,
+    "long_context": null,
+    "evidence_url": "https://platform.claude.com/docs/en/models/haiku-4-5/overview"
+  },
+  "production": {
+    "group_name": "Claude 标准线路",
+    "legacy_group_names": [],
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "managed_predecessor_models": []
+  },
+  "evidence": {
+    "public_pricing_snapshot": "artifacts/public-model-pricing-20260831.json",
+    "contract": "model-doc-contracts/claude-haiku-4-5.json"
+  }
+}

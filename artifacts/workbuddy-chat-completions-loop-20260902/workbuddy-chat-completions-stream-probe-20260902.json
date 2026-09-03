@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_protocol_probe",
+  "secret_free": true,
+  "client_id": "workbuddy",
+  "client_version": "app:5.5.1+cli:2.137.1",
+  "os": "macos",
+  "model_id": "grok-4.5",
+  "protocol": "chat_completions",
+  "probe": "streaming_terminal",
+  "observed_at": "2026-09-02T13:37:55+00:00",
+  "duration_ms": 17033,
+  "exit_code": 0,
+  "ndjson_lines": 18,
+  "event_types": {
+    "assistant": 1,
+    "result": 1,
+    "stream_event": 14,
+    "system": 2
+  },
+  "stream_event_count": 14,
+  "result_event_present": true,
+  "stdout_sha256": "efeff947fb152ad58a8b8d3784e86f25b996b9102d52c6b76722c4fe34f481fe",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 11957,
+  "stderr_bytes": 0,
+  "passed": true,
+  "artifact_sha256": "bb0779e72d4e381335c96fd24b99640766653e29ac7642876e44ffd750aeb173"
+}

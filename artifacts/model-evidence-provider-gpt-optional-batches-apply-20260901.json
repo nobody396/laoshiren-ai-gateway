@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 6,
+  "events": 16,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "9aea772d3bbeaddea99e075db3a9c5871884a2070f7c17eaa8817b5d2a387347",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5337f8ec0ab9cb1bd56bffb9"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-06d16f0268359d477ae1c679"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fd9cd58485f24ba32655d1e4"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fd9cd58485f24ba32655d1e4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9cfdd5de9b4d334d17f954d9"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80adea594a427b2476585109"
+          ]
+        },
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-80adea594a427b2476585109"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4269d28b7de33b49566802d9"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-46cd623102837dcd61d576ae"
+          ]
+        },
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-46cd623102837dcd61d576ae"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6bf1ac5c530f0b2d54c1f650"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-93a8fa5ae9f7e77792179e7e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-92a4624e5aeb93421ca67dc1"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "model_protocol",
+          "path": "responses/tools/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-e99f1bd80899a8b45fb3c588"
+          ]
+        }
+      ]
+    }
+  ]
+}

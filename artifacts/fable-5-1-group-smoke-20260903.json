@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 2,
+    "key_id": 128,
+    "key_name": "一键安装 · Codex",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY_USER2",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 5,
+      "name": "Claude 标准线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 15,
+      "name": "Claude 兼容线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.4
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-09-03T07:40:49+00:00",
+      "group": {
+        "id": 5,
+        "name": "Claude 标准线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 5
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "bfe8592f47a34c73bc341dab3854be103415f76874c84c76605911c09f960c72",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-fable-5-1",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 9,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-fable-5-1",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "7ea69eecd2b67cbbf85a4a7324711f3ddaeb2fa4703b8f70e3942ad2d73f6a52",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-09-03T07:41:00+00:00",
+      "group": {
+        "id": 15,
+        "name": "Claude 兼容线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 128,
+        "user_id": 2,
+        "status": "active",
+        "group_id": 15
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "bfe8592f47a34c73bc341dab3854be103415f76874c84c76605911c09f960c72",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-fable-5-1",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 9,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-fable-5-1",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "d0e5aa63beaf11eca09186a86e9c0cba19395d6667a32a260b626951b7411cc8",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 5,
+      "model_id": "claude-fable-5-1",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 15,
+      "model_id": "claude-fable-5-1",
+      "protocol": "messages"
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": true,
+  "artifact_sha256": "846950a42669777ac96a12a699adcae5cf0f7878b5e0659a586a0ccaa9b5500d"
+}

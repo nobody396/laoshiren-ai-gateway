@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "gemini-cli",
+  "client_version": "0.57.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gemini-3.7-flash",
+  "protocol": "generate_content",
+  "group_id": 57,
+  "observed_at": "2026-08-31T18:04:57+00:00",
+  "finished_at": "2026-08-31T18:10:04+00:00",
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901"
+  },
+  "group_readback": {
+    "id": 205,
+    "user_id": 1,
+    "status": "active",
+    "group_id": 57
+  },
+  "model_discovery": {
+    "url": "https://api.laoshirenai.com/v1/models",
+    "http_status": 200,
+    "request_id": null,
+    "body_sha256": "62f898aad64c7ae613fbcd4bfc0eb2cec9fb0a0d5e35fdf2448258cadcbee962",
+    "model_ids": [
+      "gemini-3.1-pro",
+      "gemini-3.7-flash"
+    ],
+    "model_count": 2,
+    "error": null
+  },
+  "command_contract": {
+    "executable": "npx @google/gemini-cli@0.57.0",
+    "model": "gemini-3.7-flash",
+    "approval": "yolo",
+    "output_format": "stream-json"
+  },
+  "exit_code": 247,
+  "timed_out": false,
+  "run_error": null,
+  "passed": false,
+  "event_count": 3,
+  "event_types": [
+    "init",
+    "message",
+    "result"
+  ],
+  "tool_names": [],
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_verified": false,
+  "final_marker_verified": false,
+  "assistant_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assistant_text_bytes": 0,
+  "stdout_bytes": 957,
+  "stdout_sha256": "a48846cb567865623b960c822408dccf0a6b8eacd10d3563bcde1f462d372faf",
+  "stderr_bytes": 19406,
+  "stderr_sha256": "24fa1822401f2fc357c4987273be753786aeb406747e87c0ffbe5efdeb6f10f5",
+  "stderr_summary": "Warning: Basic terminal detected (TERM=dumb). Visual rendering will be limited. For the best experience, use a terminal emulator with truecolor support. Warning: 256-color support not detected. Using a terminal with at least 256-color support is recommended for a better visual experience. YOLO mode is enabled. All tool calls will be automatically approved. YOLO mode is enabled. All tool calls will be automatically approved. Attempt 1 failed with status 503. Retrying with backoff... _ApiError: {\"error\":{\"code\":503,\"message\":\"No available Gemini accounts: no available accounts supporting model: gemini-3.5-flash (model not supported)\",\"request_id\":\"ad1f6b0e-844e-4ff5-959e-65ea9cec1332\",\"status\":\"UNAVAILABLE\"}} at throwErrorIfNotOK (file:///private/tmp/gemini-cli-npx-0570.RLRsPt/_npx/df00fe44a",
+  "usage_endpoint": {
+    "path": "/admin/usage?page=1&page_size=100&api_key_id=205&group_id=57&model=gemini-3.7-flash&sort_by=id&sort_order=desc&exact_total=true",
+    "baseline_rows": 0,
+    "new_rows": 0,
+    "attribution_verified": false,
+    "rows": []
+  },
+  "restoration": {
+    "group_id": 6,
+    "status": "active",
+    "model_discovery_http_status": 200,
+    "model_count": 6
+  }
+}

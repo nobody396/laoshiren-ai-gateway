@@ -138,6 +138,7 @@
                   v-if="row.group"
                   :name="row.group.name"
                   :platform="row.group.platform"
+                  :display-model="getGroupDisplayModel(row.group)"
                   :subscription-type="row.group.subscription_type"
                   :rate-multiplier="row.group.rate_multiplier"
                   :user-rate-multiplier="userGroupRates[row.group.id]"
@@ -350,16 +351,16 @@
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
               <div
-                v-if="getAutoConfigTargetForKey(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
+                v-if="canAutoConfigureKey(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
                 class="flex items-center gap-1 rounded-lg"
                 data-tour="keys-setup-options"
               >
                 <!-- Client Auto Config Button -->
                 <button
-                  v-if="getAutoConfigTargetForKey(row)"
+                  v-if="canAutoConfigureKey(row)"
                   @click="copyClientAutoConfigCommand(row)"
                   :disabled="configuringKeyId === row.id"
-                  :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
+                  title="选择模型、协议和客户端并生成一键配置命令"
                   class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-wait disabled:opacity-60 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
                 >
                   <Icon :name="configuringKeyId === row.id ? 'refresh' : 'terminal'" size="sm" :class="configuringKeyId === row.id ? 'animate-spin' : ''" />
@@ -477,6 +478,7 @@
                 v-if="option"
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
+                :display-model="(option as unknown as GroupOption).displayModel"
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
                 :rate-multiplier="
                   shouldShowGroupOptionMeta(option as unknown as GroupOption)
@@ -503,6 +505,8 @@
                 v-else
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
+                :display-model="(option as unknown as GroupOption).displayModel"
+                :protocol-label="groupDisplayProtocolLabel((option as unknown as GroupOption).displayProtocol)"
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
                 :rate-multiplier="
                   shouldShowGroupOptionMeta(option as unknown as GroupOption)
@@ -1020,6 +1024,29 @@
       @close="closeUseKeyModal"
     />
 
+    <!-- Matrix-driven auto configuration selection -->
+    <BaseDialog
+      :show="showAutoConfigSelection"
+      title="自动配置"
+      width="narrow"
+      @close="closeAutoConfigSelection"
+    >
+      <div class="space-y-4">
+        <p class="text-sm leading-6 text-gray-600 dark:text-gray-400">先选择这把 Key 开放的模型，再选择与该模型协议真实相交的客户端。只有已通过安全写入门禁的客户端会出现在这里。</p>
+        <div v-if="autoConfigModelsLoading" class="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 dark:bg-dark-900">正在读取当前分组模型…</div>
+        <template v-else>
+          <label class="block"><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">模型</span><select v-model="autoConfigModelId" class="input w-full"><option v-for="model in autoConfigModels" :key="model" :value="model">{{ model }}</option></select></label>
+          <label class="block"><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">客户端</span><select v-model="autoConfigClientId" class="input w-full"><option v-for="option in autoConfigClientOptions" :key="option.client.id" :value="option.client.id">{{ option.client.name }} · {{ option.client.version }}</option></select></label>
+          <label class="block"><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">协议</span><select v-model="autoConfigProtocol" class="input w-full"><option v-for="protocol in autoConfigProtocols" :key="protocol" :value="protocol">{{ autoConfigProtocolLabel(protocol) }}</option></select></label>
+          <div><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">当前系统</span><div class="grid grid-cols-3 gap-2"><button v-for="os in autoConfigOperatingSystems" :key="os.id" type="button" class="rounded-xl border px-3 py-2 text-xs font-semibold" :class="autoConfigOS === os.id ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300' : 'border-gray-200 text-gray-500 dark:border-dark-600'" @click="autoConfigOS = os.id">{{ os.label }}</button></div></div>
+          <div v-if="!autoConfigModels.length" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">这把 Key 当前没有可一键导入的模型与客户端交集。</div>
+        </template>
+      </div>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2"><button type="button" class="btn btn-secondary" @click="closeAutoConfigSelection">取消</button><button type="button" class="btn btn-primary" :disabled="autoConfigModelsLoading || !autoConfigSelectionReady" @click="confirmAutoConfigSelection">复制一键命令</button></div>
+      </template>
+    </BaseDialog>
+
     <!-- Codex Setup Scope Dialog -->
     <BaseDialog
       :show="showCodexSetupChoice"
@@ -1324,6 +1351,8 @@
                 <GroupOptionItem
                   :name="option.label"
                   :platform="option.platform"
+                  :display-model="option.displayModel"
+                  :protocol-label="groupDisplayProtocolLabel(option.displayProtocol)"
                   :subscription-type="option.subscriptionType"
                   :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
                   :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
@@ -1357,7 +1386,10 @@ import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 
 const { t } = useI18n()
 import { keysAPI, authAPI, usageAPI, userGroupsAPI, resourcesAPI } from '@/api'
+import type { ClientSetupOS, ClientSetupProtocol, ClientSetupSelection } from '@/api/resources'
 import { getGatewayModels } from '@/api/gatewayModels'
+import type { ClientMatrixEntry } from '@/generated/clientMatrix'
+import { clientAutoConfigOptionsForModel, preferredAutoConfigProtocol } from '@/utils/clientAutoConfigSelection'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import DataTable from '@/components/common/DataTable.vue'
@@ -1403,6 +1435,12 @@ import {
   type GroupOptionFamilyId,
   type GroupOptionSectionId
 } from '@/utils/groupOptionSections'
+import {
+  groupDisplayProtocolLabel,
+  resolveGroupDisplayProtocol,
+  type GroupDisplayProtocol
+} from '@/utils/groupDisplayProtocol'
+import { resolveGroupDisplayModel } from '@/utils/groupDisplayModel'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1420,6 +1458,8 @@ interface GroupOption {
   userRate: number | null
   subscriptionType: SubscriptionType
   platform: GroupPlatform
+  displayProtocol: GroupDisplayProtocol
+  displayModel: string
   cacheHitRatePct: number | null
   cacheWindowDays: number
   groupKey: GroupOptionSectionId
@@ -1495,8 +1535,16 @@ const showDeleteDialog = ref(false)
 const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
+const showAutoConfigSelection = ref(false)
 const showCodexSetupChoice = ref(false)
 const pendingAutoConfigRow = ref<ApiKey | null>(null)
+const pendingAutoConfigSelection = ref<ClientSetupSelection | null>(null)
+const autoConfigModelsLoading = ref(false)
+const autoConfigModels = ref<string[]>([])
+const autoConfigModelId = ref('')
+const autoConfigClientId = ref('')
+const autoConfigProtocol = ref<ClientSetupProtocol>('responses')
+const autoConfigOS = ref<ClientSetupOS>('macos')
 const showCcsClientSelect = ref(false)
 const showCcsDiagnostics = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
@@ -1706,6 +1754,17 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
       userRate: userGroupRates.value[group.id] ?? null,
       subscriptionType,
       platform: group.platform,
+      displayProtocol: resolveGroupDisplayProtocol({
+        name: label,
+        platform: group.platform,
+        defaultMappedModel: group.default_mapped_model,
+        allowMessagesDispatch: group.allow_messages_dispatch
+      }),
+      displayModel: resolveGroupDisplayModel({
+        name: label,
+        platform: group.platform,
+        defaultMappedModel: group.default_mapped_model
+      }),
       cacheHitRatePct: groupCacheHitRateEnabled.value && cacheStats?.has_data ? cacheStats.hit_rate_pct : null,
       cacheWindowDays: groupCacheWindowDays.value,
       groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit'
@@ -1715,6 +1774,13 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
     }
   })
 )
+
+const getGroupDisplayModel = (group: Group): string =>
+  resolveGroupDisplayModel({
+    name: publicGroupDisplayName(group.name),
+    platform: group.platform,
+    defaultMappedModel: group.default_mapped_model
+  })
 
 const groupOptionSections = computed(() => {
   return buildGroupOptionSections(
@@ -1860,17 +1926,53 @@ const copySaveOfficialProviderCommand = async () => {
   await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 
-const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null => {
-  return getClientAutoConfigTarget(row.group?.platform)
+const autoConfigOperatingSystems: Array<{ id: ClientSetupOS; label: string }> = [
+  { id: 'windows', label: 'Windows' },
+  { id: 'macos', label: 'macOS' },
+  { id: 'linux', label: 'Linux' },
+]
+
+const autoConfigClientOptions = computed(() => {
+  return clientAutoConfigOptionsForModel(autoConfigModelId.value)
+})
+
+const selectedAutoConfigClient = computed<ClientMatrixEntry | undefined>(() =>
+  autoConfigClientOptions.value.find(option => option.client.id === autoConfigClientId.value)?.client)
+const autoConfigProtocols = computed<ClientSetupProtocol[]>(() =>
+  autoConfigClientOptions.value.find(option => option.client.id === autoConfigClientId.value)?.protocols ?? [])
+const autoConfigSelectionReady = computed(() => Boolean(
+  pendingAutoConfigRow.value && autoConfigModelId.value && selectedAutoConfigClient.value && autoConfigProtocols.value.includes(autoConfigProtocol.value)
+))
+
+watch([autoConfigModelId, autoConfigClientOptions], () => {
+  const options = autoConfigClientOptions.value
+  if (!options.some(option => option.client.id === autoConfigClientId.value)) autoConfigClientId.value = options[0]?.client.id ?? ''
+})
+watch([autoConfigClientId, autoConfigProtocols], () => {
+  if (autoConfigProtocols.value.includes(autoConfigProtocol.value)) return
+  autoConfigProtocol.value = preferredAutoConfigProtocol(autoConfigModelId.value, autoConfigProtocols.value) ?? 'responses'
+})
+
+const canAutoConfigureKey = (row: ApiKey): boolean => Boolean(row.group && row.group.platform !== 'gpt-image')
+
+const autoConfigProtocolLabel = (protocol: ClientSetupProtocol): string => {
+  if (protocol === 'responses') return 'OpenAI Responses'
+  if (protocol === 'chat_completions') return 'OpenAI Chat Completions'
+  if (protocol === 'messages') return 'Anthropic Messages'
+  return 'Gemini GenerateContent'
 }
 
-const getAutoConfigClientName = (row: ApiKey): string => {
-  const target = getAutoConfigTargetForKey(row)
-  return target ? getClientAutoConfigName(target) : ''
+const autoConfigTargetForClient = (clientId: string): ClientAutoConfigTarget | null => {
+  if (clientId === 'claude-code') return 'claude'
+  if (clientId === 'codex') return 'codex'
+  if (clientId === 'grok-build') return 'grok'
+  if (clientId === 'gemini-cli') return 'gemini'
+  return null
 }
 
 const generateAndCopyClientAutoConfigCommand = async (
   row: ApiKey,
+  selectionOrInstall: ClientSetupSelection | boolean,
   installCodexApp = false,
   grokCcSwitchCompat = false
 ) => {
@@ -1879,17 +1981,24 @@ const generateAndCopyClientAutoConfigCommand = async (
     return
   }
 
-  const target = getAutoConfigTargetForKey(row)
+  const selection = typeof selectionOrInstall === 'boolean' ? null : selectionOrInstall
+  if (typeof selectionOrInstall === 'boolean') {
+    grokCcSwitchCompat = installCodexApp
+    installCodexApp = selectionOrInstall
+  }
+  const target = selection ? autoConfigTargetForClient(selection.client_id) : getClientAutoConfigTarget(row.group?.platform)
   if (!target || !row.group) {
     return
   }
 
   configuringKeyId.value = row.id
   try {
-    const setup = await resourcesAPI.createClientSetupTicketForAPIKey(row.id)
-    const clientName = getClientAutoConfigName(setup.target)
+    const setup = selection
+      ? await resourcesAPI.createClientSetupTicketForSelection(selection)
+      : await resourcesAPI.createClientSetupTicketForAPIKey(row.id)
+    const clientName = getClientAutoConfigName(target)
     const command = buildClientAutoConfigCommand({
-      target: setup.target,
+      target,
       ticket: setup.ticket,
       installCodexApp,
       grokCcSwitchCompat
@@ -1908,26 +2017,69 @@ const copyClientAutoConfigCommand = async (row: ApiKey) => {
     return
   }
 
-  const target = getAutoConfigTargetForKey(row)
-  if (!target || !row.group) return
-  if (target === 'codex') {
-    pendingAutoConfigRow.value = row
+  if (!row.group) return
+  pendingAutoConfigRow.value = row
+  showAutoConfigSelection.value = true
+  autoConfigModelsLoading.value = true
+  autoConfigModels.value = []
+  autoConfigModelId.value = ''
+  autoConfigClientId.value = ''
+  autoConfigOS.value = navigator.userAgent.toLowerCase().includes('windows') ? 'windows' : navigator.userAgent.toLowerCase().includes('linux') ? 'linux' : 'macos'
+  try {
+    const configuredBaseUrl = publicSettings.value?.api_base_url || window.location.origin
+    const requestBaseUrl = ['127.0.0.1', 'localhost'].includes(window.location.hostname) && configuredBaseUrl.startsWith('https://api.laoshirenai.com')
+      ? '/__gateway'
+      : configuredBaseUrl
+    const models = await getGatewayModels(requestBaseUrl, row.key)
+    autoConfigModels.value = models.filter(model => clientAutoConfigOptionsForModel(model).length > 0)
+    const preferred = row.group.default_mapped_model || ''
+    autoConfigModelId.value = autoConfigModels.value.includes(preferred) ? preferred : (autoConfigModels.value[0] ?? '')
+  } catch (error: any) {
+    closeAutoConfigSelection()
+    appStore.showError(error?.message || '读取当前分组模型失败')
+  } finally {
+    autoConfigModelsLoading.value = false
+  }
+}
+
+const closeAutoConfigSelection = () => {
+  showAutoConfigSelection.value = false
+  if (!showCodexSetupChoice.value) pendingAutoConfigRow.value = null
+}
+
+const confirmAutoConfigSelection = async () => {
+  const row = pendingAutoConfigRow.value
+  const client = selectedAutoConfigClient.value
+  if (!row || !client || !autoConfigSelectionReady.value) return
+  const selection: ClientSetupSelection = {
+    api_key_id: row.id,
+    client_id: client.id,
+    client_version_key: client.version_key,
+    protocol: autoConfigProtocol.value,
+    model_id: autoConfigModelId.value,
+    os: autoConfigOS.value,
+  }
+  showAutoConfigSelection.value = false
+  if (client.id === 'codex') {
+    pendingAutoConfigSelection.value = selection
     showCodexSetupChoice.value = true
     return
   }
-
-  await generateAndCopyClientAutoConfigCommand(row)
+  await generateAndCopyClientAutoConfigCommand(row, selection)
+  pendingAutoConfigRow.value = null
 }
 
 const closeCodexSetupChoice = () => {
   showCodexSetupChoice.value = false
   pendingAutoConfigRow.value = null
+  pendingAutoConfigSelection.value = null
 }
 
 const confirmCodexSetup = async (installCodexApp: boolean) => {
   const row = pendingAutoConfigRow.value
+  const selection = pendingAutoConfigSelection.value
   closeCodexSetupChoice()
-  if (row) await generateAndCopyClientAutoConfigCommand(row, installCodexApp)
+  if (row && selection) await generateAndCopyClientAutoConfigCommand(row, selection, installCodexApp)
 }
 
 const isAbortError = (error: unknown) => {

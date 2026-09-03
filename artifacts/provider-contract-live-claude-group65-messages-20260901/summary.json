@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "39420fc84eef3e158c941a91d16dd91639a0fb16d2e861e48f8c91d7a290f4e3",
+  "case_count": 1,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "05f0a3151645aeca",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-claude-group65-messages-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 1
+  }
+}

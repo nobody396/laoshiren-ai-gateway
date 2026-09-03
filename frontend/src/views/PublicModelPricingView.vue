@@ -118,7 +118,7 @@ const error = ref('')
 
 // 厂商分块展示顺序：GPT 在前，然后 Claude，之后 Grok / GLM / Kimi / DeepSeek 等；
 // 月卡（Builder Pass）分块排在厂商分块之后、「其他」之前。
-// 月卡组会同时出现在所属厂商分块和 Builder Pass 分块（运营要求 2026-08-19）。
+// 月卡只进入 Builder Pass 分块，避免在厂商分块与月卡分块重复展示。
 const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'kimi', 'deepseek', 'qwen', 'gemini', 'minimax', 'builderPass', 'other']
 
 // 每个厂商分块 tab / 标题用的品牌图标（ModelIcon 按模型名匹配品牌）
@@ -154,8 +154,74 @@ function classifyBlock(group: PublicPricingGroup): string {
   return 'other'
 }
 
-type PricingBlock = { key: string; groups: PublicPricingGroup[] }
+type DisplayPricingGroup = PublicPricingGroup & { merged_monthly_plans?: string[] }
+type PricingBlock = { key: string; groups: DisplayPricingGroup[] }
 type PricingTab = { key: string; iconModel?: string; icon?: 'grid'; brand?: boolean }
+
+const MONTHLY_DISPLAY_NAME: Record<string, string> = {
+  gpt: 'Codex 月卡',
+  claude: 'Claude 月卡',
+  grok: 'Grok 月卡',
+}
+
+function normalizedModelsSignature(group: PublicPricingGroup): string {
+  return JSON.stringify(
+    [...(group.models ?? [])]
+      .sort((a, b) => a.model.localeCompare(b.model))
+      .map(model => ({ ...model })),
+  )
+}
+
+function monthlyTier(name: string): string {
+  const normalized = name.toLowerCase()
+  if (/\bplus\b/.test(normalized)) return 'Plus'
+  if (/\bpro\b/.test(normalized)) return 'Pro'
+  if (/\bmax\b/.test(normalized)) return 'Max'
+  return name
+}
+
+/**
+ * Builder Pass 的 Plus / Pro / Max 只在用量额度上不同；当模型、倍率和协议
+ * 完全一致时，公开定价页按模型家族合并展示，避免重复三张相同价格表。
+ */
+function collapseMonthlyGroups(list: PublicPricingGroup[]): DisplayPricingGroup[] {
+  const regular: DisplayPricingGroup[] = []
+  const buckets = new Map<string, PublicPricingGroup[]>()
+
+  for (const group of list) {
+    if (group.subscription_type !== 'credit') {
+      regular.push(group)
+      continue
+    }
+    const family = classifyBlock(group)
+    const signature = [
+      family,
+      group.platform,
+      group.rate_multiplier,
+      normalizedModelsSignature(group),
+      JSON.stringify(group.image_generation ?? null),
+    ].join('|')
+    if (!buckets.has(signature)) buckets.set(signature, [])
+    buckets.get(signature)!.push(group)
+  }
+
+  for (const groups of buckets.values()) {
+    const first = groups[0]
+    if (groups.length === 1) {
+      regular.push(first)
+      continue
+    }
+    const family = classifyBlock(first)
+    regular.push({
+      ...first,
+      group_id: Math.min(...groups.map(group => group.group_id)),
+      name: MONTHLY_DISPLAY_NAME[family] ?? first.name.replace(/\s+(Plus|Pro|Max)\s+/i, ' '),
+      merged_monthly_plans: groups.map(group => monthlyTier(group.name)),
+    })
+  }
+
+  return regular
+}
 
 const blocks = computed<PricingBlock[]>(() => {
   if (!catalog.value) return []
@@ -165,15 +231,19 @@ const blocks = computed<PricingBlock[]>(() => {
     map.get(key)!.push(g)
   }
   for (const g of catalog.value.groups) {
-    push(classifyBlock(g), g)
-    // 月卡（credit 订阅）分组额外归入 Builder Pass 分块，与厂商分块同时展示。
-    if (g.subscription_type === 'credit') push('builderPass', g)
+    if (g.subscription_type === 'credit') {
+      push('builderPass', g)
+    } else {
+      push(classifyBlock(g), g)
+    }
   }
-  return BLOCK_ORDER.filter((k) => map.has(k)).map((k) => ({ key: k, groups: sortGroups(map.get(k)!) }))
+  return BLOCK_ORDER
+    .filter((k) => map.has(k))
+    .map((k) => ({ key: k, groups: sortGroups(collapseMonthlyGroups(map.get(k)!)) }))
 })
 
 // 块内统一顺序：文本分组在前、生图在最后；同类中公开按量在前、月卡在后；
-// 月卡固定按 Plus → Pro → Max 排列，其他同类再按用户看到的分组倍率从低到高排序。
+// 未被合并的月卡仍按 Plus → Pro → Max 排列，其他同类再按倍率从低到高排序。
 function isImageOnlyGroup(g: PublicPricingGroup): boolean {
   return Boolean(g.image_generation) && (g.models ?? []).length === 0
 }
@@ -186,6 +256,14 @@ function monthlyPlanRank(g: PublicPricingGroup): number {
   return 3
 }
 
+function monthlyFamilyRank(g: PublicPricingGroup): number {
+  const name = g.name.toLowerCase()
+  if (/\b(codex|gpt)\b/.test(name)) return 0
+  if (/\bclaude\b/.test(name)) return 1
+  if (/\bgrok\b/.test(name)) return 2
+  return 3
+}
+
 function sortGroups(list: PublicPricingGroup[]): PublicPricingGroup[] {
   return [...list].sort((a, b) => {
     const ia = isImageOnlyGroup(a) ? 1 : 0
@@ -195,6 +273,8 @@ function sortGroups(list: PublicPricingGroup[]): PublicPricingGroup[] {
     const mb = b.subscription_type === 'credit' || b.subscription_type === 'subscription' ? 1 : 0
     if (ma !== mb) return ma - mb
     if (ma === 1) {
+      const familyDiff = monthlyFamilyRank(a) - monthlyFamilyRank(b)
+      if (familyDiff !== 0) return familyDiff
       const planDiff = monthlyPlanRank(a) - monthlyPlanRank(b)
       if (planDiff !== 0) return planDiff
     }
@@ -255,7 +335,7 @@ const visibleBlocks = computed<PricingBlock[]>(() => {
   return blocks.value.filter((b) => b.key === activeTab.value)
 })
 
-// 当前可见分块里去重后的模型总数（月卡组在厂商块和 Builder Pass 块重复出现时只计一次）。
+// 当前可见分块里去重后的模型总数。
 const visibleModelCount = computed<number>(() => {
   const names = new Set<string>()
   for (const b of visibleBlocks.value) {
@@ -465,6 +545,7 @@ onMounted(load)
   font-size: 0.8125rem;
   line-height: 1.5;
 }
+
 
 .model-pricing-block__note-text {
   flex: 1;

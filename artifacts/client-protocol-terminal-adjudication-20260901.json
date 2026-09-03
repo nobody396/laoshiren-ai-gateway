@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "client_protocol_terminal_adjudication",
+  "observed_at": "2026-09-01T02:15:00+00:00",
+  "clients": {
+    "kimi-code": {
+      "client_name": "Kimi Code",
+      "version": "cli:0.38.0",
+      "protocols": {
+        "responses": [
+          "evidence-2904f03d831c688d7817ded1"
+        ],
+        "chat_completions": [
+          "evidence-67a0290a0b6fb8822f66681d"
+        ],
+        "messages": [
+          "evidence-ba3be2496dcb0895c204aea0"
+        ],
+        "generate_content": [
+          "evidence-4abd2ca6a7eaedf46bdef9d6"
+        ]
+      },
+      "reason": "Exact 0.38.0 exits 1 before any model request/tool event for every configured native protocol; deterministic internal lifecycle failure, so no further retry is allowed."
+    },
+    "grok-build": {
+      "client_name": "Grok Build",
+      "version": "cli:1.0.13",
+      "protocols": {
+        "chat_completions": [
+          "evidence-2ab5414525856cf640a4c7a0",
+          "evidence-946e94cef1d68113ab3c1cba"
+        ]
+      },
+      "reason": "Two bounded exact 1.0.13 Chat Completions loops exited without a valid tool name/result/final marker; deterministic protocol adapter failure."
+    }
+  },
+  "secret_free": true
+}

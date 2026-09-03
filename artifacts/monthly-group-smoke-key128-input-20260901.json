@@ -1,0 +1,47 @@
+[
+  {
+    "group_id": 40,
+    "model_id": "gpt-5.4",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 42,
+    "model_id": "gpt-5.4",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 44,
+    "model_id": "gpt-5.4",
+    "protocol": "responses"
+  },
+  {
+    "group_id": 41,
+    "model_id": "claude-opus-4-7",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 43,
+    "model_id": "claude-opus-4-7",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 45,
+    "model_id": "claude-opus-4-7",
+    "protocol": "messages"
+  },
+  {
+    "group_id": 48,
+    "model_id": "grok-4.5",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 49,
+    "model_id": "grok-4.5",
+    "protocol": "chat_completions"
+  },
+  {
+    "group_id": 50,
+    "model_id": "grok-4.5",
+    "protocol": "chat_completions"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "80159d1619d333e7e7960a51773e5c53d588a5f703a729e28e72771d486a3bcd",
+  "case_count": 16,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "26066f0ffed2467f",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-kimi-group62-messages-candidate-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 14,
+    "pass": 2
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "518bc781051e11e64606c169ac26ab2677ad3d3549e0160eefcf868c002dfef9",
+  "case_count": 2,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "e9aa80b7fe02fafd",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/fable-5-1-messages-probes-20260903/run-state.json",
+  "status_counts": {
+    "pass": 2
+  }
+}

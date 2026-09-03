@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "kind": "client_protocol_negative",
+  "secret_free": true,
+  "client_id": "qoder",
+  "client_version": "cli:1.1.41",
+  "os": "macos",
+  "architecture": "arm64",
+  "observed_at": "2026-09-03T04:34:56+00:00",
+  "command_contract": {
+    "command": "qoder -p <prompt> -m openai/grok-4.5 --settings <modelConfigs.customModels with provider/apiKey/model/baseURL> --config-dir <isolated> --dangerously-skip-permissions",
+    "credential": "settings-injected customModels apiKey"
+  },
+  "exit_code": 1,
+  "stdout_excerpt": "Not logged in · Please run /login",
+  "result": "unsupported",
+  "reason": "Qoder CLI 1.1.41 gates even fully-specified BYOK customModels (provider/apiKey/model/baseURL injected via --settings) behind a Qoder account login; no account-free custom gateway path exists.",
+  "artifact_sha256": "8cffbabe3cbae4a9aa2bf48beca7792d21854f4767b3ed35731a01a951db056f"
+}

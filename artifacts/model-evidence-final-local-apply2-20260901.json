@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 20,
+  "events": 28,
+  "group_access": {
+    "changed": 2,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "680114e7a878459a84a40baf570056c42c08d3808706807c8b1b5d3a82805972",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "events": [
+        {
+          "model_id": "gpt-5.3-codex-spark",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4-mini.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4-mini",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-luna.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-luna",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "group_access",
+          "path": "GPT Daybreak Blue 安全研究线路",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-0803bc77966e40e99e0946c2",
+            "evidence-192d057793298215db43b036",
+            "evidence-214f6640faeb5603bca79a38",
+            "evidence-29976ff841cadf4d215a1920",
+            "evidence-39f7ce8e0c077806782cd153",
+            "evidence-42dd6bd708ac86b510e29158",
+            "evidence-7eef2cc89fe4b7f86a8dbfd0",
+            "evidence-ad4f1f334fe9d01de1b6896f",
+            "evidence-b1c367ae6d1134e18d1d3717",
+            "evidence-b2f2e9facf054c5ccac6d806",
+            "evidence-c89b39ba55098bb568149b91",
+            "evidence-d34865819a2ef781283751ae",
+            "evidence-fab2eb58982486e9e88ce82b"
+          ],
+          "protocol_status": {
+            "responses": "unsupported"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0d13759f5a36cb025ad8a4fa",
+            "evidence-192d057793298215db43b036",
+            "evidence-2b874f43eb438d4dfae0a042",
+            "evidence-32b6f86611563b0959e08191",
+            "evidence-536eebf22f0392289ad1edc0",
+            "evidence-558f4d27acc4d5afa0c7c230",
+            "evidence-5d0e3e4a263262dfc4500cdc",
+            "evidence-6dd08d5889ffdcae6c534add",
+            "evidence-72022dea1d53b049440fc707",
+            "evidence-7eef2cc89fe4b7f86a8dbfd0",
+            "evidence-964416382e609237c6dda42b",
+            "evidence-c89b39ba55098bb568149b91",
+            "evidence-e5ea36a4542d55305527ca9c",
+            "evidence-ead5043f85ccaf95071c3d69",
+            "evidence-fab2eb58982486e9e88ce82b"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-daybreak-blue-latest.json",
+      "events": [
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "group_access",
+          "path": "GPT Daybreak Blue 安全研究线路",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-184f1f4e11dc450ac362c21b",
+            "evidence-361f67548adb00d32534947a",
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-4e8fa49e9c4b3ec3c51ad6a3",
+            "evidence-67705d306c4fd03b9a5c933c",
+            "evidence-bdea45b8a330ba4698a370c5",
+            "evidence-bf3a1e7c285a0069c70a5b4a",
+            "evidence-dd55d344cb00b3e6d1842ff8",
+            "evidence-f1003fa2ead6134822adbbdb",
+            "evidence-fa9c2ae5988883d04fec6ef9",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ],
+          "protocol_status": {
+            "responses": "unsupported"
+          }
+        },
+        {
+          "model_id": "gpt-daybreak-blue-latest",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-3b6035aaf25db20e1a545224",
+            "evidence-6347a5760f1d55740c1ba2be",
+            "evidence-bdea45b8a330ba4698a370c5",
+            "evidence-fa9c2ae5988883d04fec6ef9",
+            "evidence-fc625ae10a9d9dbcd36b7584"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "test_evidence",
+          "path": "ZCode/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.8-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "test_evidence",
+          "path": "Kimi Code/coverage",
+          "status": "unsupported",
+          "evidence_ids": []
+        }
+      ]
+    }
+  ]
+}

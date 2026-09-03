@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "deepseek-harness",
+  "client_version": "cli:0.1.1-rc.2",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "grok-4.5",
+  "protocol": "chat_completions",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 34,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T04:18:16+00:00",
+  "finished_at": "2026-09-03T04:18:43+00:00",
+  "duration_ms": 15206,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-chat-completions",
+    "api": "openai-completions",
+    "provider_base_url": "https://api.laoshirenai.com/v1",
+    "profile": "headless",
+    "isolated_dsh_home": true,
+    "credential": "apiKeyEnv reference, key only in child env"
+  },
+  "target_group_readback": {
+    "group_id": 34
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "final_text_present": false,
+  "final_marker_note": "final exact-marker is the strict oracle; claude-sonnet-5 over the messages route drifts to an identity reply, so pass/fail keys on final_text_present",
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "usage_stream_flags": [
+    "True"
+  ],
+  "streaming_observed": true,
+  "stdout_bytes": 14,
+  "stdout_sha256": "34774871e00c55525fd5921f577874f56e37432b9d1f2055f5db6e09ddc78293",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/dsh-four-protocol-loops-20260903/dsh-loop-grok-4.5-chat_completions-group34-usage.json",
+    "artifact_sha256": "c2ebf8236d618b4f469ca7e9223a8e3d237e9b3ef703c87b5e4f770fa531e73b",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/chat/completions",
+    "upstream_endpoints": [
+      "/v1/responses"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "cfa7a9cad98fd690c910a7bdb94ec70003415cd7783d80e04beed94bcd17cb94"
+}

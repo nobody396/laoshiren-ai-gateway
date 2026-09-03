@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "8b16499f10417ccdc36d179ab5c5497327b5e8c04039cf4bbfbfd97b4a512f24",
+  "case_count": 42,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "7542659d772b8f95",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-qwen-group64-responses-20260901/run-state.json",
+  "status_counts": {
+    "pass": 42
+  }
+}

@@ -1,0 +1,937 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 21,
+  "events": 44,
+  "group_access": {
+    "changed": 28,
+    "verified": 28,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "1c6c2719d756e2b0a218ef32a73531a7fbad96e69fb93fe9538cd0dae9db5fbd",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-fable-5.json",
+      "events": [
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-04f629c818feaa6b1db501e4",
+            "evidence-121ffe55ed3c2c6d10e784e1",
+            "evidence-2e6705323b84d0d3a28fea66",
+            "evidence-36ce14873bcc8433cad9d31c",
+            "evidence-58c890293e65d12ba199a786",
+            "evidence-84932e22fb2abe8f617d4009",
+            "evidence-8e3b88ba08b2cfd490e0a639",
+            "evidence-b97c9e9a33e2bedf427f7200",
+            "evidence-be45126bf64a0f22e87ecb5f",
+            "evidence-d63d69315dd87cf5b0a550cd",
+            "evidence-f4f8168fc9e33ce25d5102b0"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-fable-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0cb0eb51563a4a9b772a84cf",
+            "evidence-36ce14873bcc8433cad9d31c",
+            "evidence-7c5a935eb355e3cc8068217b",
+            "evidence-b97c9e9a33e2bedf427f7200",
+            "evidence-d63d69315dd87cf5b0a550cd",
+            "evidence-dff186c8ffd11038e985f51e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0db89a2638927d544fbd4aa8",
+            "evidence-2890378cafde5bf1afc1ecd7",
+            "evidence-3aeff0d7ba4ed2b5f11b1788",
+            "evidence-543f3efaacca65d10c5fb3eb",
+            "evidence-639e44645ede75814358b026",
+            "evidence-a7bfd9ae4d71c498a3a5a26f",
+            "evidence-c3a91c46a7d99723839d00ca",
+            "evidence-c8104df9e4d1be7a8dd449c3",
+            "evidence-c8d01646306cdffceb4a1d3c"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0a43e0b85aac77386534d215",
+            "evidence-2597ed46ccd448235c5e568e",
+            "evidence-2910f249bcd70fe7068ca254",
+            "evidence-31f2aebb2f8b858040b3f628",
+            "evidence-7c76f6d0d708d8ba07a0b90f",
+            "evidence-86879a2baaff3814e7e48f0f",
+            "evidence-b9249af20b5080608927e8db",
+            "evidence-bc17ab1286ff58b731daf07e",
+            "evidence-d3054c46dcae20d4604d3646",
+            "evidence-eafd36a39e5de00c627a5e80"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-45d6e94b65d57971154a3dcb",
+            "evidence-57c45be437320f49dd37f571",
+            "evidence-6ad5d928f355b44361e1816e",
+            "evidence-6f4271af558a517293b71baf",
+            "evidence-7cca991177454073504c4864",
+            "evidence-c5755eff1043517a79bbdd50",
+            "evidence-ee06c8c6c5bf5ebbf1b70a5f"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0441d07d88fe066623ceaef2",
+            "evidence-142a66db1308c23c84db36d4",
+            "evidence-15a2b4b2b9716581a3347efd",
+            "evidence-246b136ca61f8b7cb68675c1",
+            "evidence-5f7a2c3972537151a56a3886",
+            "evidence-b9ba845af6c6a0d43b3d5fd0",
+            "evidence-cda9c69083cec046694e15f9",
+            "evidence-d9782918ee8b9544da3ec98a",
+            "evidence-f82682faa6180a7b559823d6"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-05334623276b4b8b2c51ac27",
+            "evidence-3b6b519189a9ac40526bdcc5",
+            "evidence-4a966835bb7dcf2c79efc36b",
+            "evidence-4d586d76ee6ec1dd7d83b897",
+            "evidence-52f4b86b6295e797f29f4a40",
+            "evidence-6e29c0437e98bfbb319dc5ec",
+            "evidence-a20c7ef3dab2315f859f4702",
+            "evidence-b04da4645398511db258368c",
+            "evidence-c40d7a0e680b05059c080d82",
+            "evidence-fe8b7632f78a9b473fb1cffa"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01bdaa354155498075d555cf",
+            "evidence-142a66db1308c23c84db36d4",
+            "evidence-15a2b4b2b9716581a3347efd",
+            "evidence-1d49c7fcc1b248a312789a5b",
+            "evidence-4a966835bb7dcf2c79efc36b",
+            "evidence-6e29c0437e98bfbb319dc5ec",
+            "evidence-c40d7a0e680b05059c080d82"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-71fc8178cd91691f68d3d955",
+            "evidence-732dc4eb3c167798ba93d505",
+            "evidence-927fd2eda2aa80a298315d31",
+            "evidence-9a68a0ac4a9eb4a006f3115d",
+            "evidence-ac51ef5f7d74e3809dad2be0",
+            "evidence-b420ec86f9fdffa6261840ff",
+            "evidence-ed10dc2f0ca7c78bf6260cb4",
+            "evidence-f1d07471887e54377e34c98d",
+            "evidence-f7fcf3d3852a9c0c9a5b6211"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1146dda9baff80a891a09e70",
+            "evidence-3acc5a1ec6779a12c9236cae",
+            "evidence-4a0e0eade14a49a9ec296254",
+            "evidence-5b70821e19450aef697e7d92",
+            "evidence-785f76117f70788c8bb24d97",
+            "evidence-80632aa21484f68fbdb44ac8",
+            "evidence-b5374ff7fad0747662a318a9",
+            "evidence-ce0313c0cc24f1ba7aa2a1a9",
+            "evidence-d6f9cd559b374b7f554dc9a9",
+            "evidence-e0c87bdb29481ca1f0026136",
+            "evidence-f2e97aaf101e9b01a31bc856",
+            "evidence-fec12b5bc82306bd214703b6"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-21d1822a765ae2c6a4a68a91",
+            "evidence-3acc5a1ec6779a12c9236cae",
+            "evidence-4a0e0eade14a49a9ec296254",
+            "evidence-5ccde039d539c302351c3be2",
+            "evidence-601048974020e6db866ad45b",
+            "evidence-80632aa21484f68fbdb44ac8",
+            "evidence-9a68a0ac4a9eb4a006f3115d",
+            "evidence-b420ec86f9fdffa6261840ff",
+            "evidence-d6f9cd559b374b7f554dc9a9"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0628964019b029c294507552",
+            "evidence-110e47308d778febd36fcc39",
+            "evidence-19f2f0f43aa83684e018e048",
+            "evidence-34131420605bd53961b1eb48",
+            "evidence-3d20f643630239ac5ed8ef02",
+            "evidence-4907620898fcd42fb2afb763",
+            "evidence-4c8cc39330e79586a711cbf3",
+            "evidence-8f10c4c6d6cfe40a425380cb",
+            "evidence-97a5ceb03d1bda9b9ec9efd9",
+            "evidence-c0228b093fbd01d64dcc9b9d",
+            "evidence-cd2d91039c70bfa41345984c"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2d52395ff2108cdc9da43d9e",
+            "evidence-32e7d4764f33d132108963a4",
+            "evidence-456d41c011075bc6a747d874",
+            "evidence-4fbf281afabf671075599b61",
+            "evidence-572634c19ed35f681d8c5af9",
+            "evidence-6242b07c2f8c588f2cb15242",
+            "evidence-664fcb2c4fb8ab30064c1dc9",
+            "evidence-66f1ba25ea507cf4f94b6ac8",
+            "evidence-7364294e6c3b536ea11a75fd",
+            "evidence-c9e402f58530604e28c5145a"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0628964019b029c294507552",
+            "evidence-2f05245e97ad88310677845e",
+            "evidence-32e7d4764f33d132108963a4",
+            "evidence-3d20f643630239ac5ed8ef02",
+            "evidence-3e7684407282e0ef7806f5c9",
+            "evidence-456d41c011075bc6a747d874",
+            "evidence-572634c19ed35f681d8c5af9",
+            "evidence-8f10c4c6d6cfe40a425380cb"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-097785117c36c99dd2cff347",
+            "evidence-2dfcd3b3e361f58131f242a3",
+            "evidence-4fa9a2729642c17a5a057913",
+            "evidence-5bad0be13b71780a185ca9f8",
+            "evidence-5de72a7bdbf39db68063b3cb",
+            "evidence-6868b0e5bdfb4e4f023581de",
+            "evidence-9204c99b82c09f8ef06b2d53",
+            "evidence-970d1ff8adedd092b678fa36",
+            "evidence-a5934ac732723111be571f30",
+            "evidence-c161291d29c671c65afdfd24",
+            "evidence-fecc1a359e0b71ee7d1b00f2"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-00d2d12fafaf9c3ebb0ca558",
+            "evidence-0bfc04ce3bb4ce08f1b333bb",
+            "evidence-4ae81babbad9e453b0904987",
+            "evidence-4c518011d2f759cfbd8739c3",
+            "evidence-97ac9a7efa4c72dd834a751f",
+            "evidence-a3b678a28fea6d12eeab5eec",
+            "evidence-a48f74bd34fe6177fc2a7d6e",
+            "evidence-c467aab51b7f6da4653edf45",
+            "evidence-de5ec8a50a548fa041e9f389",
+            "evidence-ec7a8801d5ee36c2b0e9a105"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-00d2d12fafaf9c3ebb0ca558",
+            "evidence-2479446128400bd6f74fbc20",
+            "evidence-4c518011d2f759cfbd8739c3",
+            "evidence-4fa9a2729642c17a5a057913",
+            "evidence-5de72a7bdbf39db68063b3cb",
+            "evidence-6868b0e5bdfb4e4f023581de",
+            "evidence-97ac9a7efa4c72dd834a751f",
+            "evidence-d66d2b914471e00c1cf57404"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1f08a8a83065847378174209",
+            "evidence-2440be434c318690c34f5edd",
+            "evidence-25c8eded6dda17908be3e882",
+            "evidence-39a9ea9899c488d1a24d999e",
+            "evidence-41bd76b2c2a83577d70e3fff",
+            "evidence-4435a06c5743621f9a2523c5",
+            "evidence-6b908403c97656e68e4c61d3",
+            "evidence-a7c72b3fd20279d0153c7829",
+            "evidence-c5f830fef31f78e0e4807324",
+            "evidence-cc619a9c8e2957610f2f3dcb",
+            "evidence-ced11a03b041ff2465a417aa"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01875ad20d13d58fcc93f4e8",
+            "evidence-1762f3075765aa9bbf42f164",
+            "evidence-22676b33c8644afcef85dead",
+            "evidence-22d426c8de909eab87d6e61a",
+            "evidence-8609e2b9df1f576b7d4e0a91",
+            "evidence-9161833712ae93208ace3170",
+            "evidence-ab6abcdb1137f1453a571c5a",
+            "evidence-c27ba06525ae3f5ac50d0fc7",
+            "evidence-c4aa3e1c9a0af5ebaf7f974e",
+            "evidence-ce8c517326e82b2b3176bc0d"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-01875ad20d13d58fcc93f4e8",
+            "evidence-1762f3075765aa9bbf42f164",
+            "evidence-413118602d1930c80336a6b9",
+            "evidence-41bd76b2c2a83577d70e3fff",
+            "evidence-4435a06c5743621f9a2523c5",
+            "evidence-60dfb69f4508763f8df04d83",
+            "evidence-ab6abcdb1137f1453a571c5a",
+            "evidence-cc619a9c8e2957610f2f3dcb"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "group_access",
+          "path": "Claude 标准线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-22a1530eb84478b0cd28af71",
+            "evidence-3ff394af63569fadc55e520b",
+            "evidence-5d638012ad91caaeaa365f9e",
+            "evidence-7457f28e347a649bf2ae04b6",
+            "evidence-97c7d70e0fab448f5c8775e2",
+            "evidence-a9ba152416d72a0b3f4a16c7",
+            "evidence-b6a2990307b97e081c04a534",
+            "evidence-cbd521a50d1a5e68295001e8",
+            "evidence-f244906ca071b563e2c66210"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "group_access",
+          "path": "Claude 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1a57ad4c6f31dca98068303e",
+            "evidence-1e44ba523ab3e2e90ae77fad",
+            "evidence-3a6f11268d15421999a4bb34",
+            "evidence-53f094c394b5aacf7f320d5a",
+            "evidence-5710e7245f10b0c5bd460bba",
+            "evidence-77fb431715353ae126aa4820",
+            "evidence-a2a3ebe48f89a0df64324121",
+            "evidence-aa41560bbce637fe9a254de5",
+            "evidence-da1f7f64f135bc3ad9c01583",
+            "evidence-df9e0ee3b5a27f88cb8f27fc"
+          ],
+          "protocol_status": {
+            "messages": "verified"
+          }
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1e44ba523ab3e2e90ae77fad",
+            "evidence-3a6f11268d15421999a4bb34",
+            "evidence-3ff394af63569fadc55e520b",
+            "evidence-7457f28e347a649bf2ae04b6",
+            "evidence-a2a3ebe48f89a0df64324121",
+            "evidence-ec26d722b1a57d681bda1c51"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "group_access",
+          "path": "DeepSeek 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-259fc26bd74162b9123de520",
+            "evidence-5ae2c01ae7ee78f4dd2f7da3",
+            "evidence-6c4758d4964ef64c45956a78",
+            "evidence-6c8782779c1cc0745492b934",
+            "evidence-72663f428dccdb1d91220f19",
+            "evidence-762d8fcc5f49e68fddfffa8a",
+            "evidence-9297d182374591b7663376c8",
+            "evidence-9db6d772c4cfd2ffa05b035c",
+            "evidence-a45643120f87f8151f149ea6",
+            "evidence-ae9c737335a4b925afdd8549",
+            "evidence-c7cbcccfcaa0d3b466d00927",
+            "evidence-feb37c9ec6f7f129bd9a3f7c"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5ae2c01ae7ee78f4dd2f7da3",
+            "evidence-6c8782779c1cc0745492b934"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "group_access",
+          "path": "DeepSeek 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-098e74cf76021e1168cb4264",
+            "evidence-24d272b7def4a8e66e78e8f0",
+            "evidence-3173ecfc7e04681e69c28d24",
+            "evidence-35693d04151541612e6e8e27",
+            "evidence-5705c47b67afe79a134cc462",
+            "evidence-8cf647a28da8ae7787e26232",
+            "evidence-9be83b303988b25f324de8ad",
+            "evidence-b238185a46d054f6241d3a9e",
+            "evidence-d607bc26b81a46ac4f3975df",
+            "evidence-e36b1ae7621280b608ad6f2c"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-24d272b7def4a8e66e78e8f0",
+            "evidence-b238185a46d054f6241d3a9e"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.4.json",
+      "events": [
+        {
+          "model_id": "gpt-5.4",
+          "matrix": "group_access",
+          "path": "GPT 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0592ca5eef7fc987d9858768",
+            "evidence-37de395a51f53fab78bd963b",
+            "evidence-38988e655d34ffab23ceee47",
+            "evidence-457a512a48b4fb7ca203d067",
+            "evidence-5b36dfabbba716541d2fdcb3",
+            "evidence-8292de461c8bcb7c52eb6c32",
+            "evidence-a36f0e2d6d9070aa1bc6af50",
+            "evidence-bb148b6b7228cf5d841587fd",
+            "evidence-bbbce4c7357c366935f0fd25",
+            "evidence-f80c28c85c888eb105a00d3d"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.5.json",
+      "events": [
+        {
+          "model_id": "gpt-5.5",
+          "matrix": "group_access",
+          "path": "GPT 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-096294d965325063d6199868",
+            "evidence-164a7974c199431e00020f81",
+            "evidence-1a8df73cd60ea4c2ab41682c",
+            "evidence-1c1c1c0ddfe6eebc707058ea",
+            "evidence-2425e04e23c7848a71d4861e",
+            "evidence-4150925bed4d7254e7f97f44",
+            "evidence-4c008b9e24bd84cbe4cc5970",
+            "evidence-5d22b25b1ec21e1fd91aca22",
+            "evidence-663c29235148c0773564c7fe",
+            "evidence-6becdd582b44ba46ea9ce762",
+            "evidence-8b8fcc8297b5ea58550cdf1d",
+            "evidence-f7617d7442bedd0ca40fd955"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "group_access",
+          "path": "GPT 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-32b6f86611563b0959e08191",
+            "evidence-3326063415b33c8e5faa855d",
+            "evidence-558f4d27acc4d5afa0c7c230",
+            "evidence-6c5d84802ae634a3d58d39df",
+            "evidence-73c04738a1973b0fee6a77de",
+            "evidence-95296275f35ede403ab560f6",
+            "evidence-995f4034ed03c32d721a4464",
+            "evidence-9edd136e2f16f2ce4f6b1bd9",
+            "evidence-a99a406d111bccff731a8067",
+            "evidence-de9ca9fc868664f7faeb528e"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "model_protocol",
+          "path": "responses/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-192d057793298215db43b036",
+            "evidence-2b874f43eb438d4dfae0a042",
+            "evidence-32b6f86611563b0959e08191",
+            "evidence-536eebf22f0392289ad1edc0",
+            "evidence-558f4d27acc4d5afa0c7c230",
+            "evidence-72022dea1d53b049440fc707",
+            "evidence-7eef2cc89fe4b7f86a8dbfd0",
+            "evidence-964416382e609237c6dda42b",
+            "evidence-ead5043f85ccaf95071c3d69",
+            "evidence-fab2eb58982486e9e88ce82b"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-terra.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-terra",
+          "matrix": "group_access",
+          "path": "GPT 经济线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-05713b097a5331c5290a97ee",
+            "evidence-1825740c7b197c376c81c8e2",
+            "evidence-19cd736738a159f4255d72c2",
+            "evidence-481ff9a5fbccf80c3d089980",
+            "evidence-5727995e4e45ee11e0a3a6a0",
+            "evidence-65c9e71873aa765ddf74984e",
+            "evidence-74f36f788ff9b0deff699fc2",
+            "evidence-8c5df25c11436f88c8841f7b",
+            "evidence-8f4f4e1668b7c6155e04ce1f",
+            "evidence-b457b5e4ccc358eff31fe35d"
+          ],
+          "protocol_status": {
+            "responses": "verified"
+          }
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-204d900bbafa2116db3a4713",
+            "evidence-23e44bbcbf3d851ca00b26c2",
+            "evidence-341639e489ce8e6d9fbb0383",
+            "evidence-61634f5226e7e9367a8df89f",
+            "evidence-6f9a05344bccb558b5cb4643",
+            "evidence-91b27c91d67a45a4ea7152a4",
+            "evidence-9d8b74c765a7dbf81a13668b",
+            "evidence-a5a3016d221ea013164b1144",
+            "evidence-b445795e655f711aa5ba64a0",
+            "evidence-c48249af23f894b850c9fc94",
+            "evidence-d03b711b2fa23ee24ba1e6dc",
+            "evidence-f212b4a81faca2321eab5d9b"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-6f9a05344bccb558b5cb4643",
+            "evidence-f212b4a81faca2321eab5d9b"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0542b81dcdff90e59da3241d",
+            "evidence-21c12ec2c3efcfd4f9624a60",
+            "evidence-3205b7050cefe745e9e60545",
+            "evidence-50990a50357706023ca0d9e8",
+            "evidence-78e9cdbc96569ebcadf7aacc",
+            "evidence-79f1acc5b928a3637a734dba",
+            "evidence-ac972b4ee459739d0d12e906",
+            "evidence-b2850ae121a05bc61d257b04",
+            "evidence-b75f5d45dc89b8b6e1865da4",
+            "evidence-d362d04922d1f76c34aeb9dc",
+            "evidence-d54c63bfb03d358ecad2046f",
+            "evidence-d8715a833267eca045b398e0"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-79f1acc5b928a3637a734dba",
+            "evidence-b75f5d45dc89b8b6e1865da4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-05c6b9eb625d2534c540adfc",
+            "evidence-292bf3e06997860c981e306e",
+            "evidence-3c466dffbe0aa145051158c4",
+            "evidence-498575b6e35a7d48608199a9",
+            "evidence-5e0a15715b406b9e8882b9f6",
+            "evidence-652cba7974a2304705f1f071",
+            "evidence-8a1fcef377ebd8f924d29bb1",
+            "evidence-8b82868f9dd476786e2c239d",
+            "evidence-9d25df19b3ce0ece69fa20ae",
+            "evidence-a3b054e459228bb726fcbd08",
+            "evidence-ae83e0bf1fde2fa6d3652a70",
+            "evidence-aee0ef4996a45d23a40ff118"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8a1fcef377ebd8f924d29bb1",
+            "evidence-ae83e0bf1fde2fa6d3652a70"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4adf1b2b98b48c40a46588fa",
+            "evidence-4c6f1b1542b4f9f4d5d92c56",
+            "evidence-601b299fc63a211ce19e0467",
+            "evidence-82041fb38041c0c5bfca496f",
+            "evidence-89bd10b5fc9433b613f6161b",
+            "evidence-9ba06cd001f89fa893a562be",
+            "evidence-9bf9a9cdabc562dc35b4f840",
+            "evidence-bb0ba65b7632023389694ced",
+            "evidence-c5adc69a7dd8b409d596bafe",
+            "evidence-cd24bf412ec17af46b2ba5af",
+            "evidence-d66a4b63eb1e1c3b8e4a10de",
+            "evidence-ef24ba978dfdfe8c746df2ec"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-601b299fc63a211ce19e0467",
+            "evidence-bb0ba65b7632023389694ced"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-177380acae21a6d4a05d7644",
+            "evidence-1ce681c4de1936dcf69037bc",
+            "evidence-317bd5b8fb19357f88a84af6",
+            "evidence-39be210f86d71528975fc45f",
+            "evidence-3c984bb08dddba25f0b533ce",
+            "evidence-4073881f5c05486b3a320e35",
+            "evidence-47e5c8c42e0eb070295ecf9e",
+            "evidence-80718bf010726d1a57b41763",
+            "evidence-a63ad629ed1cc93ff85b2f9f",
+            "evidence-b244717b2ed06d735561bea7",
+            "evidence-ceba3cdce2e1c4c8bae67e6a",
+            "evidence-f87af404470ce5f35bffdcb3"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a63ad629ed1cc93ff85b2f9f",
+            "evidence-f87af404470ce5f35bffdcb3"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.8-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "group_access",
+          "path": "Qwen 企业高速线路",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1c166cbdaf0af0926ff5f625",
+            "evidence-226a77dd955d8f3bf7eb538b",
+            "evidence-592182a7779c8cdb0f3014af",
+            "evidence-8020a587404c8c5dadd20668",
+            "evidence-8c1ab61477ee369e6614d6e2",
+            "evidence-92bc6ee0db3f319bc4767976",
+            "evidence-bf4755bc9e656ef3774d1aaa",
+            "evidence-cc2657942872d51310bb9861",
+            "evidence-d33ea0a7e49e8e658fee3661",
+            "evidence-d5e5ee269330768da4495d02"
+          ],
+          "protocol_status": {
+            "chat_completions": "verified",
+            "responses": "verified"
+          }
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/minimal_text",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1c166cbdaf0af0926ff5f625",
+            "evidence-d5e5ee269330768da4495d02"
+          ]
+        }
+      ]
+    }
+  ]
+}

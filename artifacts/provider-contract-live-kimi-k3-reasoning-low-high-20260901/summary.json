@@ -1,0 +1,14 @@
+{
+  "artifact_sha256": "49e3414d9654582206230f94c871520f373af6d1a9594313a0bb3846908a9ddc",
+  "case_count": 2,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "5b92e31c8d00e313",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-kimi-k3-reasoning-low-high-20260901/run-state.json",
+  "status_counts": {
+    "pass": 2
+  }
+}

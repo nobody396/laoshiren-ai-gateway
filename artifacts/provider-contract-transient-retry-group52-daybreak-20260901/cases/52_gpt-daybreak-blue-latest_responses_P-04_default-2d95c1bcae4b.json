@@ -1,0 +1,73 @@
+{
+  "artifact_sha256": "96d3707cad54074cbb38dc1f2a68984255b581ee41b3828f0df9f8765e75e591",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "52:gpt-daybreak-blue-latest:responses:P-04:default",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 52,
+    "group_name": "GPT Daybreak Blue 安全研究线路",
+    "marker": "LSR_CONTRACT_57F31C0C1F462E25",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-daybreak-blue-latest",
+    "name": "tool_call",
+    "p_id": "P-04",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "1619955038178f392fd356ce38545a614f90edc4459f2ae845dfa7e275a0ee0f",
+  "classification": "upstream_overloaded",
+  "finished_at": "2026-09-01T03:11:00.017+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T03:10:58.406+00:00",
+  "offline_verifier": {
+    "reason": "tool_call.name is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 52,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": "tool_call.name is required",
+  "request": {
+    "payload_sha256": "00eec470b07d5646065407a8d1a0ec75bb477b90c702b2f206254e31922629b9",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "ae6561378568794c60bd877fcb5d9df151098feeb1127d44be7afad4f38e2abc"
+  },
+  "response": {
+    "body_bytes": 285,
+    "body_sha256": "3ecbd47e00f1ee5028e6df0dc07e5cde90b71e4f8456b99ccc33ed98edfa1b21",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "code": "service_overloaded",
+      "message": "No service route currently has available capacity. Retry in about 60 seconds or switch to another model. [Request ID: 6724f025-9b50-41ac-a8f9-b29a54e739c6]",
+      "type": "overloaded_error"
+    },
+    "event_count": 0,
+    "http_status": 503,
+    "marker_present": false,
+    "request_id": "6724f025-9b50-41ac-a8f9-b29a54e739c6",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

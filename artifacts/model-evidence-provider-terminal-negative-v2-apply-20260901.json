@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 12,
+  "events": 12,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "20cb545c3ec477473a1ea12df88069f9cc14d14a35ed7f418edf128d3cf49e32",
+  "changes": [
+    {
+      "path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-4911b74b81c4a15f374821d5",
+            "evidence-590f3cf31dc1596cbadae90e",
+            "evidence-59d176b2f28d80d34a60ef8f",
+            "evidence-b96cc9e867fd590adb5279b1",
+            "evidence-f445bf132fc03896365a7bbe"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "events": [
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-61533b6d71cbb8263dbb369f",
+            "evidence-c0178ea5dd05200bcf5d5d7d",
+            "evidence-da149c310667f365277541e8",
+            "evidence-dc7ed4b842c49d33e44987d0",
+            "evidence-e7a3a0a7df39fab607034821"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-47abaf6c9bdd7e4407401ebc",
+            "evidence-dd2646ad1e5f724c5b1cc724",
+            "evidence-e590331699897dc7b4079f81",
+            "evidence-e9df8981f7f9718826287d3c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/glm-5.3.json",
+      "events": [
+        {
+          "model_id": "glm-5.3",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-9236eea554fe1971b7d02221",
+            "evidence-9676df3fba4ac9c4137a0683",
+            "evidence-a15191ecd5531e25c742dbb4",
+            "evidence-cdbb4f093353064160965691"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-239b20de5a56abf98f702f6f",
+            "evidence-6e3b452ac0f709c78b0f68df",
+            "evidence-729fcfe6b3c41c737aedcfa7",
+            "evidence-bf11d0e06064c4544e6da851",
+            "evidence-f8d89451b5351b962a93ddca"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-3cee0d5bd04ed326b6095416",
+            "evidence-6c514040cf66c8a9f9baa9c7",
+            "evidence-ef810e78feec87f7f7a0125b",
+            "evidence-ff0a0f4a7d4ab1bee7279abf"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-66dd66ab87b2af3b869de9a4",
+            "evidence-79ad3956f5164ee07326bfbd",
+            "evidence-cf50d4b364af214f5a886371",
+            "evidence-cf96e7674c827d3b5dc17d13",
+            "evidence-dfcbe73c607424f159a5dbb2"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.6-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.6-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-170c51132ab55a3562e19dab",
+            "evidence-804474592b3e49a3e454b41a",
+            "evidence-a67b2460ac906453852d720a",
+            "evidence-ad4ba2802656ad97339caca5",
+            "evidence-e60a1d7110cab1552c29b71d"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-flash.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-flash",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-438383dda49ca2250de86dfd",
+            "evidence-63e93f76c45ebcfc9fff09f6",
+            "evidence-6d2e3a147c06563321ff181e",
+            "evidence-b79ea9df2eb96f96f7d77e45"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-16b429ed12f78bba5c612909",
+            "evidence-2cf57ea13db84d1b99918d04",
+            "evidence-845df332973cee4201b1d8a0",
+            "evidence-a04fbd0ff0f8709bdd3170c3",
+            "evidence-c9bcf7968f97ea50b08193a6"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.7-plus.json",
+      "events": [
+        {
+          "model_id": "qwen3.7-plus",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-2f74af94b2f8c6e9bc4e2e30",
+            "evidence-3cb48b3b48500b869a883e5e",
+            "evidence-881bd12439ff11ecdacac141",
+            "evidence-cde56949bcd40f95dca96fe2",
+            "evidence-e3f3055462eca29bc0ebbb95"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/qwen3.8-max.json",
+      "events": [
+        {
+          "model_id": "qwen3.8-max",
+          "matrix": "model_protocol",
+          "path": "chat_completions/tool_call",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-220f27273d97a1e07ec1c26f",
+            "evidence-adb0de5c55ec7e03a5207015",
+            "evidence-c40ebe212888fa4b27a47822",
+            "evidence-f436b99f8a3a9c3cfbfd652c",
+            "evidence-ff541b952ac1138f3f25bdf9"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,809 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 5,
+      "name": "Claude 标准线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 2.4
+    },
+    {
+      "id": 58,
+      "name": "GPT 经济线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.35
+    },
+    {
+      "id": 61,
+      "name": "DeepSeek 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 64,
+      "name": "Qwen 企业高速线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.95
+    },
+    {
+      "id": 65,
+      "name": "Claude 经济线路",
+      "platform": "anthropic",
+      "subscription_type": "standard",
+      "rate_multiplier": 1
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T21:54:33+00:00",
+      "group": {
+        "id": 5,
+        "name": "Claude 标准线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 2.4
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 5
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "7ca2f90bb7e0fef4c92336aed83d30e4e23515cf2f7d0be9cbacd21192503dd1",
+        "model_ids": [
+          "claude-fable-5",
+          "claude-haiku-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-fable-5",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "c90ec4a09eb775da482ce99059e21c988f768e418a9c2df6c570640f3935fd30",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "aa06d3c588c2561396beffcf1d8eee0647b7d313085d806c59f14adb9e0ca835",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "4250a549371880723ec21141f712f0a04a8862100b29c2e46edc6f1e7feec75b",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-opus-5",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "a2b6db533e2a9b1d517f3dd0bccdcf90919d24dc1863fee3eb892d9b5779dfa7",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "c80bb4855efe18ef4df75e0209efdbb675b61b6c218837285ee42e2ca6dce6fd",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "container",
+              "content",
+              "context_management",
+              "diagnostics",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "52d8b113b8d9a4a9e7913f3e75a23b015ca737f392b01a3f673824c60aa5f4e1",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T21:55:08+00:00",
+      "group": {
+        "id": 58,
+        "name": "GPT 经济线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.35
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 58
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "8c4b2a2196235432f053f670b5105d3d763952d0802a7659b2c97fe82663c07c",
+        "model_ids": [
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 5,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "protocol": "responses",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/responses",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "6c76aa2b42e90061709d77a9214d24d8b104fd78459a3f1bfb77238f2920220a",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "background",
+              "completed_at",
+              "created_at",
+              "error",
+              "frequency_penalty",
+              "id",
+              "incomplete_details",
+              "instructions",
+              "max_output_tokens",
+              "max_tool_calls",
+              "metadata",
+              "model",
+              "moderation",
+              "object",
+              "output",
+              "parallel_tool_calls",
+              "presence_penalty",
+              "previous_response_id",
+              "prompt_cache_key",
+              "prompt_cache_retention",
+              "reasoning",
+              "safety_identifier",
+              "service_tier",
+              "status",
+              "store",
+              "temperature",
+              "text",
+              "tool_choice",
+              "tool_usage",
+              "tools",
+              "top_logprobs",
+              "top_p",
+              "truncation",
+              "usage",
+              "user"
+            ],
+            "object": "response",
+            "status": "completed",
+            "output_count": 1,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T21:55:59+00:00",
+      "group": {
+        "id": 61,
+        "name": "DeepSeek 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 61
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "70a9e11f45093e86b3b7d7d31a0442c967b193a94b1e6562a049181f715ea6dc",
+        "model_ids": [
+          "deepseek-v4-flash-0731",
+          "deepseek-v4-pro-0813"
+        ],
+        "model_count": 2,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "deepseek-v4-flash-0731",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "586a221c8941bec551013a9cb0c10926fae27c3826f557c554f0a2d24fac01e7",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "deepseek-v4-pro-0813",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "ed2a6ef742b143fe5ac079c1890df892864046cb99df02177f7066a4059fe577",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T21:56:12+00:00",
+      "group": {
+        "id": 64,
+        "name": "Qwen 企业高速线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.95
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 64
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "5f5ff31dcdd97bbc34473fa4e01b7a8b82cb511efed48adb4e5d6364ad86b249",
+        "model_ids": [
+          "qwen3.6-flash",
+          "qwen3.6-plus",
+          "qwen3.7-flash",
+          "qwen3.7-max",
+          "qwen3.7-plus",
+          "qwen3.8-max"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "qwen3.6-flash",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "53bf711110b4611447434d309cb90bb7060c90a4a62f636a56d3e31b7c7b51a4",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.6-plus",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "0e1ad3895e362258d47d650de91ef92b5766d5eb6914b65015c39c4cda0086bf",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.7-flash",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "36278282f468bb77b74f216fa6fa408e9b2b95fb5eeb47d864d2d2ce3624939b",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.7-max",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "db89141e8f4cb15b9188c94a57ca2fdea77d3e699e41f18f2416a3d767bc4809",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.7-plus",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "583b822946ab1398af01faafb0e216365b3cf9f3b0a3dadc97a3428c67579a08",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        },
+        {
+          "model_id": "qwen3.8-max",
+          "protocol": "chat_completions",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/chat/completions",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "124517be5e6c1b75ea8ba0f3ea02895ef6569b921a72b14b41436a91fc1c96cf",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "choices",
+              "created",
+              "id",
+              "model",
+              "object",
+              "usage"
+            ],
+            "object": "chat.completion",
+            "status": null,
+            "output_count": 0,
+            "choices_count": 1,
+            "candidates_count": 0,
+            "content_count": 0
+          },
+          "passed": true
+        }
+      ]
+    },
+    {
+      "observed_at": "2026-08-31T21:56:47+00:00",
+      "group": {
+        "id": 65,
+        "name": "Claude 经济线路",
+        "platform": "anthropic",
+        "subscription_type": "standard",
+        "rate_multiplier": 1
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 65
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "72a6ec4691b8d62c3abb457c24295b01be84942d42e0721e560b24d7de7b1d94",
+        "model_ids": [
+          "claude-haiku-4-5",
+          "claude-opus-4-5",
+          "claude-opus-4-6",
+          "claude-opus-4-7",
+          "claude-opus-4-8",
+          "claude-opus-5",
+          "claude-sonnet-4-6",
+          "claude-sonnet-5"
+        ],
+        "model_count": 8,
+        "error": null
+      },
+      "smoke_probes": [
+        {
+          "model_id": "claude-opus-4-7",
+          "protocol": "messages",
+          "requested_max_output_tokens": null,
+          "url": "https://api.laoshirenai.com/v1/messages",
+          "http_status": 200,
+          "completed": true,
+          "request_id": null,
+          "body_sha256": "919fcc559aae60d33ee125c77530d46e068f65f2dd591cf2d803a2fde51af428",
+          "error": null,
+          "response_shape": {
+            "top_level_keys": [
+              "content",
+              "context_management",
+              "id",
+              "model",
+              "role",
+              "stop_details",
+              "stop_reason",
+              "stop_sequence",
+              "type",
+              "usage"
+            ],
+            "object": null,
+            "status": null,
+            "output_count": 0,
+            "choices_count": 0,
+            "candidates_count": 0,
+            "content_count": 1
+          },
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "planned_smoke_probes": [
+    {
+      "group_id": 5,
+      "model_id": "claude-fable-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-opus-4-6",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-opus-4-8",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-opus-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-sonnet-4-6",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 5,
+      "model_id": "claude-sonnet-5",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 65,
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages"
+    },
+    {
+      "group_id": 58,
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses"
+    },
+    {
+      "group_id": 61,
+      "model_id": "deepseek-v4-flash-0731",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 61,
+      "model_id": "deepseek-v4-pro-0813",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.6-flash",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.6-plus",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.7-flash",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.7-max",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.7-plus",
+      "protocol": "chat_completions"
+    },
+    {
+      "group_id": 64,
+      "model_id": "qwen3.8-max",
+      "protocol": "chat_completions"
+    }
+  ],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": true,
+  "artifact_sha256": "ede17c4474926224c1dc1627081ca4b6c87601e1e1be0b5348b4589cd67f7c58"
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "owned_group_model_discovery",
+  "dry_run": false,
+  "production_write": true,
+  "identity": {
+    "user_id": 1,
+    "key_id": 205,
+    "key_name": "模型矩阵验证 · 20260901",
+    "secret_name": "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+    "original_group_id": 6
+  },
+  "planned_groups": [
+    {
+      "id": 6,
+      "name": "GPT 标准线路",
+      "platform": "openai",
+      "subscription_type": "standard",
+      "rate_multiplier": 0.5
+    }
+  ],
+  "results": [
+    {
+      "observed_at": "2026-08-31T22:08:24+00:00",
+      "group": {
+        "id": 6,
+        "name": "GPT 标准线路",
+        "platform": "openai",
+        "subscription_type": "standard",
+        "rate_multiplier": 0.5
+      },
+      "key_readback": {
+        "id": 205,
+        "user_id": 1,
+        "status": "active",
+        "group_id": 6
+      },
+      "discovery": {
+        "url": "https://api.laoshirenai.com/v1/models",
+        "http_status": 200,
+        "request_id": null,
+        "body_sha256": "9aa85eddfe701041d84a9e320b90205f4f260a60c1d259db8c60b3672e6aaae7",
+        "model_ids": [
+          "gpt-5.3-codex-spark",
+          "gpt-5.4",
+          "gpt-5.5",
+          "gpt-5.6",
+          "gpt-5.6-sol",
+          "gpt-5.6-terra"
+        ],
+        "model_count": 6,
+        "error": null
+      },
+      "smoke_probes": []
+    }
+  ],
+  "planned_smoke_probes": [],
+  "restored_group_id": 6,
+  "secret_free": true,
+  "all_passed": true,
+  "artifact_sha256": "d5ab95a1416ed075670069159f9677a1bd7dcace01fe3c41b358066665a3b143"
+}

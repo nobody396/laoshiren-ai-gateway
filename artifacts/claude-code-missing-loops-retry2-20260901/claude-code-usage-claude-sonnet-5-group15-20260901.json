@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "claude-code",
+  "client_version": "2.1.251",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 15,
+  "observed_at": "2026-08-31T22:09:38+00:00",
+  "rows": [],
+  "secret_free": true,
+  "artifact_sha256": "ce5cc88f373dde8a5983467fa2c43c5a143248ea3cc3ce463c9749424a055b01"
+}

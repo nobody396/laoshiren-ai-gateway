@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "kind": "client_protocol_terminal_adjudication",
+  "observed_at": "2026-09-01T02:35:00+00:00",
+  "client_id": "zcode",
+  "client_version": "app:3.10.1+cli:0.16.5",
+  "protocols": {
+    "chat_completions": [
+      "evidence-0b3918ff6d1e52de154525b7"
+    ],
+    "messages": [
+      "evidence-87808ebf8da2f61dcef04991"
+    ]
+  },
+  "reason": {
+    "chat_completions": "Exact 0.16.5 completed the Read tool but never continued to a final marker before the bounded timeout.",
+    "messages": "Exact 0.16.5 failed before any tool call under both documented Base URL forms."
+  },
+  "secret_free": true
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "grok-4.5",
+  "protocol": "chat_completions",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 34,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T03:47:09+00:00",
+  "finished_at": "2026-09-03T03:48:01+00:00",
+  "duration_ms": 40580,
+  "command_contract": {
+    "executable": "hermes",
+    "prompt_mode": true,
+    "provider": "lsr-chat-completions",
+    "transport": "openai_chat",
+    "provider_base_url": "https://api.laoshirenai.com/v1",
+    "toolsets": "terminal",
+    "max_turns": 10,
+    "isolated_home": true,
+    "credential": "LAOSHIRENAI_HERMES_E2E environment only, referenced via key_env"
+  },
+  "target_group_readback": {
+    "group_id": 34
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stream_event_counts": {
+    "text": 2
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 139,
+  "stdout_sha256": "e801eb8155a0f15483b1815a34fe9a0cb97e4956b0f4cb344f9d13507a1142ac",
+  "stderr_bytes": 36,
+  "stderr_sha256": "47b6b86992e5edccffd133111f5d3a42211a46840f265cdf73d817c9beb00bd5",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/hermes-chat-messages-loops-20260903/hermes-loop-grok-4.5-chat_completions-group34-usage.json",
+    "artifact_sha256": "d0fc6a0479ae442ed2e47a42e67e741c7d0114527b2a75068944af56f7b1a91a",
+    "usage_rows": 5,
+    "inbound_endpoint": "/v1/chat/completions",
+    "upstream_endpoints": [
+      "/v1/responses"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "00d02b1d4e14aba1d132c45fbd61a998d46c72325ba561c10b2aee3fab127af4"
+}

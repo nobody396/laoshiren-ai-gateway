@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 4,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "1d36cc08d3f801e8fac4ac08a7e79a68ec0cbce1c0482fb674738a278b5e7667",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-4a6c850158c73ec4d1e27b57"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2bee4280e8025abf91373957"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ba0439b1ea2fcd48bea4bd6c"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/web_search",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-eae8cc1a7be1d1ac26529a55"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "model_client_disk_guard",
+  "root": "/Users/fujunhao/laoshirenai/local/worktrees/newcomer-public-preview-20260829",
+  "free_gib": 21.489,
+  "used_percent": 95.33,
+  "worktree_mib": 88.87,
+  "limits": {
+    "min_free_gib": 10.0,
+    "max_worktree_gib": 1.5
+  },
+  "allowed": true,
+  "failures": []
+}

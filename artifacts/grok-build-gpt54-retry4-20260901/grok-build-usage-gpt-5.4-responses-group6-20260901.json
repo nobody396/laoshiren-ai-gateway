@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "user_id": 1,
+  "api_key_id": 205,
+  "group_id": 6,
+  "protocol": "responses",
+  "observed_at": "2026-08-31T23:10:11+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-01T07:09:58.235244+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 938,
+      "output_tokens": 37,
+      "account_id": 80,
+      "request_id": "client:4fda11df-8f04-4623-a713-ea813d02fd22"
+    },
+    {
+      "created_at": "2026-09-01T07:10:01.260776+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 486,
+      "output_tokens": 62,
+      "account_id": 80,
+      "request_id": "client:572e9106-cac7-428c-9d27-be325128c704"
+    },
+    {
+      "created_at": "2026-09-01T07:10:05.018373+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 675,
+      "output_tokens": 37,
+      "account_id": 80,
+      "request_id": "client:a671b247-718a-433a-8f8d-eb2ed2f1bd36"
+    },
+    {
+      "created_at": "2026-09-01T07:10:08.6082+08:00",
+      "model": "gpt-5.4",
+      "request_type": "stream",
+      "inbound_endpoint": "/responses",
+      "upstream_endpoint": "/v1/responses",
+      "user_agent": "grok-shell/1.0.13 (macos; aarch64)",
+      "stream": true,
+      "input_tokens": 227,
+      "output_tokens": 11,
+      "account_id": 80,
+      "request_id": "client:1cff9d11-1eb2-4294-9da1-f77c503b4a1d"
+    }
+  ],
+  "artifact_sha256": "1fcd24345047e1d47f6e3490d9cb4cb660cb8784bb44bf89f2de46df1bb6e7ca"
+}

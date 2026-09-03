@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "client_matrix_write": true,
+  "changed": true,
+  "events": 2,
+  "matrix_event_counts": {
+    "client_protocol": 2,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "a1cfad6e356f31025678011c5152eb9939b003bf0bb02227c0fec5375d20b49f",
+  "client_matrix_before_sha256": "23ad520feb0912b0ee1bdedc3ac0ec2f62e41a5cfcb2f2dd186b624a1a4a7473",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "hermes-agent",
+      "protocol": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "hermes-agent",
+      "protocol": "messages",
+      "status": "verified"
+    }
+  ],
+  "client_matrix_after_sha256": "3499e922af3899261cd60b49f877a23117215bf6f9de3d02e598f6e6897db758"
+}

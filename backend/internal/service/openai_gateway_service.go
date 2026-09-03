@@ -2386,11 +2386,20 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 
 	// 规范化 reasoning.effort 参数（minimal -> none），与上游允许值对齐。
 	if reasoning, ok := reqBody["reasoning"].(map[string]any); ok {
-		if effort, ok := reasoning["effort"].(string); ok && effort == "minimal" {
-			reasoning["effort"] = "none"
-			bodyModified = true
-			markPatchSet("reasoning.effort", "none")
-			logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Normalized reasoning.effort: minimal -> none (account: %s)", account.Name)
+		if effort, ok := reasoning["effort"].(string); ok {
+			normalized := effort
+			if normalized == "minimal" {
+				normalized = "none"
+			}
+			if mapped, changed := normalizeQwenResponsesReasoningEffort(upstreamModel, normalized); changed {
+				normalized = mapped
+			}
+			if normalized != effort {
+				reasoning["effort"] = normalized
+				bodyModified = true
+				markPatchSet("reasoning.effort", normalized)
+				logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Normalized reasoning.effort: %s -> %s (model: %s, account: %s)", effort, normalized, upstreamModel, account.Name)
+			}
 		}
 	}
 
@@ -6300,6 +6309,25 @@ func detectOpenAIPassthroughInstructionsRejectReason(reqModel string, body []byt
 	return ""
 }
 
+// normalizeQwenResponsesReasoningEffort keeps generic coding-client effort
+// levels inside the exact set accepted by the current Alibaba Qwen aliases.
+// Live Responses probes show qwen3.6 Flash/Plus and qwen3.7 Flash reject
+// high/xhigh/max while accepting none/minimal/low/medium.
+func normalizeQwenResponsesReasoningEffort(model, effort string) (string, bool) {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if slash := strings.LastIndex(model, "/"); slash >= 0 {
+		model = model[slash+1:]
+	}
+	switch model {
+	case "qwen3.6-flash", "qwen3.6-plus", "qwen3.7-flash":
+		switch strings.ToLower(strings.TrimSpace(effort)) {
+		case "high", "xhigh", "max":
+			return "medium", true
+		}
+	}
+	return effort, false
+}
+
 func extractOpenAIReasoningEffortFromBody(body []byte, requestedModel string) *string {
 	reasoningEffort := strings.TrimSpace(gjson.GetBytes(body, "reasoning.effort").String())
 	if reasoningEffort == "" {
@@ -6770,6 +6798,8 @@ func normalizeOpenAIReasoningEffort(raw string) string {
 		return value
 	case "xhigh", "extrahigh":
 		return "xhigh"
+	case "max":
+		return "max"
 	default:
 		// Only store known effort levels for now to keep UI consistent.
 		return ""

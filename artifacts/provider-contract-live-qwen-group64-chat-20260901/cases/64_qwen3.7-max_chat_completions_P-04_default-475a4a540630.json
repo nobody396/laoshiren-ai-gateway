@@ -1,0 +1,71 @@
+{
+  "artifact_sha256": "24a705d0f32b47f0bf9aca1d56b40e4c81c936c6be5c767dda2222baa107d2c9",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "64:qwen3.7-max:chat_completions:P-04:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 64,
+    "group_name": "Qwen 企业高速线路",
+    "marker": "LSR_CONTRACT_15489CD07B364CBB",
+    "max_output_tokens": 131072,
+    "model_id": "qwen3.7-max",
+    "name": "tool_call",
+    "p_id": "P-04",
+    "protocol": "chat_completions",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:qwen3.7-max/chat_completions/tool_call"
+    ]
+  },
+  "case_fingerprint": "6d7db9e65d2db942765f39cf736a627f95fff575fe94be2f2c9b7309e1d27cfd",
+  "classification": "contract_failed",
+  "finished_at": "2026-08-31T19:16:34.348+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:16:18.658+00:00",
+  "offline_verifier": {
+    "reason": "tool_call.name is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 64,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": "tool_call.name is required",
+  "request": {
+    "payload_sha256": "e743dedfef0217941c3ec2cf53b27fe08ccb7085aa61ecc494dbdfbb5aa925a5",
+    "url": "https://api.laoshirenai.com/v1/chat/completions",
+    "user_agent_sha256": "dc851c03af1f7b61222646bbde696c12e2242c3efce5f4bff05a8a0a7c073eba"
+  },
+  "response": {
+    "body_bytes": 198,
+    "body_sha256": "bff397119b929c57a8ac5cb3cf9d714ab57c790f70559b308972586fbe1d7ba6",
+    "complete": true,
+    "content_type": "text/event-stream; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": false,
+    "request_id": "3de2045e-4dfe-9593-b89d-76347060a230",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

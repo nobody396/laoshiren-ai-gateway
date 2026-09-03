@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "workbuddy",
+  "client_version": "app:5.5.1+cli:2.137.1",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "grok-4.5",
+  "protocol": "chat_completions",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 34,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-02T13:27:46+00:00",
+  "finished_at": "2026-09-02T13:29:19+00:00",
+  "duration_ms": 75725,
+  "command_contract": {
+    "executable": "/Applications/WorkBuddy.app/Contents/Resources/app.asar.unpacked/cli/bin/codebuddy",
+    "bundled_in": "WorkBuddy.app",
+    "model_flag": "grok-4.5",
+    "print_mode": true,
+    "max_turns": 10,
+    "isolated_home": true,
+    "env_based_config": true
+  },
+  "target_group_readback": {
+    "group_id": 34
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stdout_bytes": 39,
+  "stdout_sha256": "085c6c33cc33133e1b7a4494d3f9bc433ee4666865df463a8a0bd5f720d21982",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/workbuddy-chat-completions-loop-20260902/workbuddy-loop-grok-4.5-group34-20260902-usage-attribution.json",
+    "artifact_sha256": "d19112c9ac9b459ee55a5eeabd1b8dc0e442b92b66db1f905b5b0a37b7a93211",
+    "usage_rows": 6,
+    "inbound_endpoint": "/v1/chat/completions",
+    "upstream_endpoints": [
+      "/v1/responses"
+    ],
+    "verified": true
+  },
+  "restoration": {
+    "group_id": 6,
+    "verified": true
+  },
+  "restored_group_id": 6,
+  "passed": true,
+  "artifact_sha256": "b1f6ddda3702b18dda3138af93466bd7240c7bbc7fed15bc4ae18832284520a8"
+}

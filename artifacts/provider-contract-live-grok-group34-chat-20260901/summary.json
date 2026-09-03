@@ -1,0 +1,15 @@
+{
+  "artifact_sha256": "b31a47149061f6d03b3b0885c446cccb8ffdbcb2893860dcc47623f33ba5b19b",
+  "case_count": 14,
+  "kind": "provider_contract_live_run",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "abcf52d1ac618c26",
+  "schema_version": 1,
+  "secret_free": true,
+  "state": "artifacts/provider-contract-live-grok-group34-chat-20260901/run-state.json",
+  "status_counts": {
+    "blocked": 6,
+    "pass": 8
+  }
+}

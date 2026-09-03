@@ -1,0 +1,32 @@
+{
+  "cases": {
+    "57:gemini-3.1-pro:generate_content:P-08:default": {
+      "artifact_sha256": "bef9cdf4178298e304ca17a15774b69fdfccc631c6fb22569fafbc4453441bba",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-optional-20260901/cases/57_gemini-3.1-pro_generate_content_P-08_default-771af59770e7.json",
+      "status": "pass"
+    },
+    "57:gemini-3.1-pro:generate_content:P-11:default": {
+      "artifact_sha256": "c66dbc8db953264d9fe9d105df5a90c6f45c7ff7dbe1486c941f10ba0520f183",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-optional-20260901/cases/57_gemini-3.1-pro_generate_content_P-11_default-44d70f8e2ba7.json",
+      "status": "pass"
+    },
+    "57:gemini-3.7-flash:generate_content:P-08:default": {
+      "artifact_sha256": "8b443cd8db0c06691daf2b96514be699e62b3addbd33f5fa7607477bead5296a",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-optional-20260901/cases/57_gemini-3.7-flash_generate_content_P-08_default-8093fe911ccb.json",
+      "status": "pass"
+    },
+    "57:gemini-3.7-flash:generate_content:P-11:default": {
+      "artifact_sha256": "fd8006405658dd44945067521040bc7638aa6a8b9695ee6c885f995128cbc189",
+      "receipt": "artifacts/provider-contract-live-gemini-group57-optional-20260901/cases/57_gemini-3.7-flash_generate_content_P-11_default-1e6f0b5aa769.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:02:13.840+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "6b9ab82d1c4321c3",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:01:32.299+00:00"
+}

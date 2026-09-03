@@ -1,0 +1,380 @@
+{
+  "schema_version": 1,
+  "kind": "model_client_execution_scope",
+  "as_of_beijing": "2026-08-31T22:40:00+08:00",
+  "source_fingerprints": {
+    "client_matrix_sha256": "3e8159e4547bb2895430a42f8665e9fb7a0530f441615673995ecdab889c1cc9",
+    "matrix_schema_sha256": "af59561bee41634cf1869a1cb6690efb210951bbcfd4bffa0986ca0d3c115ccb",
+    "model_catalog_sha256": "060f80372492656d07a0384757e76457b33eeaaa51b23fc371f1036b2c9203b2",
+    "public_features_sha256": "6cb8705c487ac33089f9c650979d95484ac1bb5051b1617f978db5b9d232132b"
+  },
+  "counts": {
+    "llm_contracts": 34,
+    "image_model_specials": 1,
+    "clients": 17,
+    "existing_client_contracts": 9,
+    "planned_client_contracts": 8,
+    "planned_client_contracts_version_pending": 6,
+    "planned_client_contracts_version_observed": 2
+  },
+  "llm_models": [
+    {
+      "model_id": "claude-fable-5",
+      "contract_path": "model-doc-contracts/claude-fable-5.json",
+      "contract_sha256": "9651438935846d34b3ba50c2923f888dedf36acb82bc2cfef6c7d6c05c27972d",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-haiku-4-5",
+      "contract_path": "model-doc-contracts/claude-haiku-4-5.json",
+      "contract_sha256": "2c6ce8c2cd3559bafda53fc36e82e14a6ff7f9c8ed2ae7be8172ec4ab6c6ce40",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-opus-4-5",
+      "contract_path": "model-doc-contracts/claude-opus-4-5.json",
+      "contract_sha256": "347581a3a971c20dc5fff9b0002523334a329d9c095ad78b3bd80ae0b6fb64de",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-opus-4-6",
+      "contract_path": "model-doc-contracts/claude-opus-4-6.json",
+      "contract_sha256": "1994d5a4bb894edaa58a81a08e965fc60c90458a16b92b562e8f5a3527fe5855",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-opus-4-7",
+      "contract_path": "model-doc-contracts/claude-opus-4-7.json",
+      "contract_sha256": "caa471659fc074f28512fb65688c063e6b0d0b9ca9f5f2bd851241043801f9e6",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-opus-4-8",
+      "contract_path": "model-doc-contracts/claude-opus-4-8.json",
+      "contract_sha256": "3f56e71a60a34a4dc68f2e5f5ea8d73391f20481686c0a88fc36837ddb2f1640",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-opus-5",
+      "contract_path": "model-doc-contracts/claude-opus-5.json",
+      "contract_sha256": "3cd03e89973259d7115a62d76c9b380154ea3bd503b044c950696f9bb95c38de",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-sonnet-4-6",
+      "contract_path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "contract_sha256": "1f3cda31257bd119736eb46880813c13c61d994fb4f8819d308d6dda32a41edf",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "claude-sonnet-5",
+      "contract_path": "model-doc-contracts/claude-sonnet-5.json",
+      "contract_sha256": "cbe31dbaa8968016a4efc35baaa50be1d45b44f5613ec899276ae1b5377d3ebc",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "deepseek-v4-flash-0731",
+      "contract_path": "model-doc-contracts/deepseek-v4-flash-0731.json",
+      "contract_sha256": "6fd6080dcb739de09dd527cb55d60979d49be863168f96e4bbfd5442e8bebcc4",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "deepseek-v4-pro-0813",
+      "contract_path": "model-doc-contracts/deepseek-v4-pro-0813.json",
+      "contract_sha256": "0c20793aa1880b2f60dda5b02782917b764f8992d70f5642ed9e582aadd7c5ef",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gemini-3.1-pro",
+      "contract_path": "model-doc-contracts/gemini-3.1-pro.json",
+      "contract_sha256": "7777f887da27a7a6259938cea5c049464fd82ea89d6fe8a48ab61313f615f439",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gemini-3.7-flash",
+      "contract_path": "model-doc-contracts/gemini-3.7-flash.json",
+      "contract_sha256": "f4eb573a23111b17155d00349a29e5948a6128e699d30b2491ff72a79d5f82bd",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "glm-5.2",
+      "contract_path": "model-doc-contracts/glm-5.2.json",
+      "contract_sha256": "72366a040c121c0804f11c5f8474572f93c6ea802f0d3d63b61b279eec5bc85b",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "glm-5.3",
+      "contract_path": "model-doc-contracts/glm-5.3.json",
+      "contract_sha256": "921dc6dca2e0db1d4955628d9831f2682c33118f85335da656ddf6b5a6b522b5",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-5.3-codex-spark",
+      "contract_path": "model-doc-contracts/gpt-5.3-codex-spark.json",
+      "contract_sha256": "32a44d3707013310377ab5fe94f0782c728146f1fb5502d996e54af39af28983",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-5.4-mini",
+      "contract_path": "model-doc-contracts/gpt-5.4-mini.json",
+      "contract_sha256": "75acc10f50a59cf6ecac2730509ec6437f1452eb710c12d4e0682c46ae300f07",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-5.4",
+      "contract_path": "model-doc-contracts/gpt-5.4.json",
+      "contract_sha256": "8f511e5a14c413b5d97409c239c43b0d8a9c8547c892499d3a25d5bc4da21471",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-5.5",
+      "contract_path": "model-doc-contracts/gpt-5.5.json",
+      "contract_sha256": "6c23b857405a787e5ddf691f2d45ce5b1d44ca183ed233d873cca36290308df2",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-5.6-luna",
+      "contract_path": "model-doc-contracts/gpt-5.6-luna.json",
+      "contract_sha256": "50ffaa1ee22411bb49118b64e6f0d7556e2c2b772eb71f6b6a77dcda9d0bcfdc",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-5.6-sol",
+      "contract_path": "model-doc-contracts/gpt-5.6-sol.json",
+      "contract_sha256": "da73828e23d3eb311e6e5e4b61bd3139904de4a72b380d1f9c2c84d532eac6ea",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-5.6-terra",
+      "contract_path": "model-doc-contracts/gpt-5.6-terra.json",
+      "contract_sha256": "a01e3a8a153a770e979a31440b277ee8f9a74d21c225536c297653e8eb139c10",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "contract_path": "model-doc-contracts/gpt-daybreak-blue-latest.json",
+      "contract_sha256": "0ccd290f139b71deb20e50e7aa58f35cdf81faba5c2712ecc70bd660a7457a57",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "grok-4.5",
+      "contract_path": "model-doc-contracts/grok-4.5.json",
+      "contract_sha256": "5f511f7dc80dfb1bd1480265980a61df6d36eebb8a69418d7327154e85231cd6",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "grok-4.6",
+      "contract_path": "model-doc-contracts/grok-4.6.json",
+      "contract_sha256": "9cea61d0859d043f8e2191b843ffe5ac11b5c9564a23f0ec6c56d8da6fd6cdb0",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "contract_path": "model-doc-contracts/kimi-k2.7-code.json",
+      "contract_sha256": "9da078cc3c3ed886d88305fe1b92c4b3e5cad678ef33d26dc68103d06bb10a81",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "kimi-k3",
+      "contract_path": "model-doc-contracts/kimi-k3.json",
+      "contract_sha256": "fe601ff8872b2ab17169e6e58892ae900ebeea54a4186f38b34519bb03feba52",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "minimax-m3",
+      "contract_path": "model-doc-contracts/minimax-m3.json",
+      "contract_sha256": "57a72e4c2debe19cc877c8dd5c855d711cc5a4e541ad297912e0e3022fdc1ca5",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "qwen3.6-flash",
+      "contract_path": "model-doc-contracts/qwen3.6-flash.json",
+      "contract_sha256": "81972f45fceefef7500c14821f6804a43a636f9220ede1e5da6f0d15fbcb767d",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "qwen3.6-plus",
+      "contract_path": "model-doc-contracts/qwen3.6-plus.json",
+      "contract_sha256": "485b254e0f9738d6a99a560d1d8d70e2005b1c7f7a3f579aaa8bcdbdab447f46",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "qwen3.7-flash",
+      "contract_path": "model-doc-contracts/qwen3.7-flash.json",
+      "contract_sha256": "6386518ef84b4d4d623d119aab9c3efb883071464e7d14ed48cc72d707017f78",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "qwen3.7-max",
+      "contract_path": "model-doc-contracts/qwen3.7-max.json",
+      "contract_sha256": "df9fff1d6ea090cac0735018aa52c89eb7e9d65bef44fd6dae6395cff8605a24",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "qwen3.7-plus",
+      "contract_path": "model-doc-contracts/qwen3.7-plus.json",
+      "contract_sha256": "1f9ea4c7d363e65d0c1d82ee0c207ac7fd78b35f9b3ac900f8c53944e1a97564",
+      "status": "contract_exists_evidence_gate_pending"
+    },
+    {
+      "model_id": "qwen3.8-max",
+      "contract_path": "model-doc-contracts/qwen3.8-max.json",
+      "contract_sha256": "9e950b9c6884f81088e265e698feff9d1f89bde2b17f6f548478b05c1de4cced",
+      "status": "contract_exists_evidence_gate_pending"
+    }
+  ],
+  "image_model_specials": [
+    {
+      "model_id": "gpt-image-2",
+      "status": "schema_gap",
+      "gap_path": "model-doc-contracts/gaps/gpt-image-2.md",
+      "coding_client_expansion": false
+    }
+  ],
+  "clients": [
+    {
+      "client_id": "claude-code",
+      "display_name": "Claude Code",
+      "scope_status": "existing_contract",
+      "version_key": "cli:2.1.251",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "codex",
+      "display_name": "Codex",
+      "scope_status": "existing_contract",
+      "version_key": "cli:0.151.0",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "grok-build",
+      "display_name": "Grok Build",
+      "scope_status": "existing_contract",
+      "version_key": "cli:1.0.13",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "kimi-code",
+      "display_name": "Kimi Code",
+      "scope_status": "existing_contract",
+      "version_key": "cli:0.38.0",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "opencode",
+      "display_name": "OpenCode",
+      "scope_status": "existing_contract",
+      "version_key": "cli:1.18.15",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "zcode",
+      "display_name": "ZCode",
+      "scope_status": "existing_contract",
+      "version_key": "app:3.10.1+cli:0.16.5",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "gemini-cli",
+      "display_name": "Gemini CLI",
+      "scope_status": "existing_contract",
+      "version_key": "cli:0.57.0",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "antigravity",
+      "display_name": "Antigravity",
+      "scope_status": "existing_contract",
+      "version_key": "cli:1.1.22",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json"
+    },
+    {
+      "client_id": "deepseek-harness",
+      "display_name": "DeepSeek Harness",
+      "scope_status": "planned_identity_frozen_version_pending",
+      "version_key": null,
+      "one_click_status": "unavailable",
+      "source": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "client_id": "hermes-agent",
+      "display_name": "Hermes Agent",
+      "scope_status": "existing_contract",
+      "version_key": "cli:0.20.0",
+      "one_click_status": "prototype",
+      "source": "model-doc-contracts/client-matrix.json",
+      "local_inventory_ref": "artifacts/model-client-local-install-inventory-20260831.json"
+    },
+    {
+      "client_id": "qoder",
+      "display_name": "Qoder",
+      "scope_status": "planned_identity_frozen_version_pending",
+      "version_key": null,
+      "one_click_status": "unavailable",
+      "source": "https://docs.qoder.com/"
+    },
+    {
+      "client_id": "minimax-code",
+      "display_name": "MiniMax Code",
+      "scope_status": "planned_identity_frozen_version_pending",
+      "version_key": null,
+      "one_click_status": "unavailable",
+      "source": "https://www.minimax.io/"
+    },
+    {
+      "client_id": "cursor",
+      "display_name": "Cursor",
+      "scope_status": "planned_identity_frozen_version_pending",
+      "version_key": null,
+      "one_click_status": "unavailable",
+      "source": "https://cursor.com/docs"
+    },
+    {
+      "client_id": "vscode",
+      "display_name": "Visual Studio Code",
+      "scope_status": "planned_identity_frozen_version_pending",
+      "version_key": null,
+      "one_click_status": "unavailable",
+      "source": "https://code.visualstudio.com/docs/agent-customization/language-models"
+    },
+    {
+      "client_id": "workbuddy",
+      "display_name": "WorkBuddy",
+      "scope_status": "local_version_observed_contract_pending",
+      "version_key": "app:5.3.14",
+      "one_click_status": "unavailable",
+      "source": "https://www.workbuddy.cn/docs/workbuddy/Overview",
+      "local_inventory_ref": "artifacts/model-client-local-install-inventory-20260831.json"
+    },
+    {
+      "client_id": "trae",
+      "display_name": "TRAE",
+      "scope_status": "local_version_observed_contract_pending",
+      "version_key": "ide:3.5.66+cli:1.107.1@d2e2138fe4eecab29cb2cd7e02ddae37bed2d5fb",
+      "one_click_status": "unavailable",
+      "source": "https://docs.trae.cn/ide_models",
+      "local_inventory_ref": "artifacts/model-client-local-install-inventory-20260831.json"
+    },
+    {
+      "client_id": "doubao-work",
+      "display_name": "豆包工作",
+      "scope_status": "planned_identity_frozen_version_pending",
+      "version_key": null,
+      "one_click_status": "unavailable",
+      "source": "https://www.doubao.com/work"
+    }
+  ],
+  "rules": {
+    "no_duplicate_case_key": "model_contract_fingerprint × protocol × group/base_url × client_version × os/architecture × test_case_id",
+    "unknown_version": "remain planned; never synthesize a version",
+    "evidence_reuse": "exact fingerprint match only"
+  }
+}

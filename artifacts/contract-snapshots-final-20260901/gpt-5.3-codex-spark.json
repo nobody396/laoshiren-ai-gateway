@@ -1,0 +1,1428 @@
+{
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "multiplier": 0.5,
+        "name": "GPT 标准线路"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Plus 月卡组"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Pro 月卡组"
+      },
+      {
+        "multiplier": 0.5,
+        "name": "GPT Max 月卡组"
+      },
+      {
+        "multiplier": 1,
+        "name": "GPT 企业高速线路"
+      }
+    ]
+  },
+  "client_coverage": [
+    {
+      "evidence": "M8 receipts: evidence-8f9cb9561cacd3969c8687f1, evidence-b69b9cc5cf3867be23683e11",
+      "name": "Codex",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-8f9cb9561cacd3969c8687f1",
+        "evidence-b69b9cc5cf3867be23683e11"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1547cafbaa0136c6c9ec992b, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+      "name": "Grok Build",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1547cafbaa0136c6c9ec992b",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-6866d2f59b43c2f2c2337a82, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+      "name": "Kimi Code",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-6866d2f59b43c2f2c2337a82",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-6eb9dca457067a9c75298190, evidence-f919ee36ce7161e48d2a32a4",
+      "name": "OpenCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-6eb9dca457067a9c75298190",
+        "evidence-f919ee36ce7161e48d2a32a4"
+      ]
+    },
+    {
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-10cb3e7953e699c40c54cf83, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+      "name": "ZCode",
+      "protocols": [
+        "responses"
+      ],
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-10cb3e7953e699c40c54cf83",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ]
+    },
+    {
+      "name": "Hermes Agent",
+      "status": "verified",
+      "protocols": [
+        "responses"
+      ],
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-43996b22ecb5456b3cd44362, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-dcbb64623300809699a75ab2, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-43996b22ecb5456b3cd44362",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ]
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    },
+    {
+      "name": "Visual Studio Code Local Agent",
+      "protocols": [],
+      "status": "unsupported",
+      "evidence": "No compatible verified protocol intersection.",
+      "evidence_ids": []
+    }
+  ],
+  "clients": [
+    {
+      "name": "Codex",
+      "recommended": false,
+      "version": "0.151.0",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-8f9cb9561cacd3969c8687f1",
+        "evidence-b69b9cc5cf3867be23683e11"
+      ],
+      "evidence": "M8 receipts: evidence-8f9cb9561cacd3969c8687f1, evidence-b69b9cc5cf3867be23683e11"
+    },
+    {
+      "name": "Grok Build",
+      "recommended": false,
+      "version": "1.0.13",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1547cafbaa0136c6c9ec992b",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ],
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1547cafbaa0136c6c9ec992b, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a"
+    },
+    {
+      "name": "Hermes Agent",
+      "recommended": false,
+      "version": "0.20.0",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-43996b22ecb5456b3cd44362",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-dcbb64623300809699a75ab2",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ],
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-43996b22ecb5456b3cd44362, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-dcbb64623300809699a75ab2, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a"
+    },
+    {
+      "name": "Kimi Code",
+      "recommended": false,
+      "version": "0.38.0+",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-6866d2f59b43c2f2c2337a82",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ],
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-6866d2f59b43c2f2c2337a82, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a"
+    },
+    {
+      "name": "OpenCode",
+      "recommended": false,
+      "version": "1.18.15",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-6eb9dca457067a9c75298190",
+        "evidence-f919ee36ce7161e48d2a32a4"
+      ],
+      "evidence": "M8 receipts: evidence-6eb9dca457067a9c75298190, evidence-f919ee36ce7161e48d2a32a4"
+    },
+    {
+      "name": "ZCode",
+      "recommended": false,
+      "version": "3.10.1 / CLI 0.16.5",
+      "protocol": "responses",
+      "status": "verified",
+      "evidence_ids": [
+        "evidence-02874e3fe068916dfaec1b56",
+        "evidence-10cb3e7953e699c40c54cf83",
+        "evidence-11561f0ab6cdfc048d97ba5f",
+        "evidence-1b9a3e0af9f0895cc8d7b533",
+        "evidence-2a3de3b29df136432021d4d5",
+        "evidence-2f08e0db364b81ef42d13a8c",
+        "evidence-3ae97a736734a9615258cb1f",
+        "evidence-5375a4688860355636d41132",
+        "evidence-5658123441ab722ab0264e98",
+        "evidence-63f73e336ce35fd5a8490bf1",
+        "evidence-7c98a40ba0cff084473db9dd",
+        "evidence-82e0a19b23ee07e9c556b969",
+        "evidence-8a0af9ca340246ae512c1148",
+        "evidence-8bae2056fd509d6b9972c8b6",
+        "evidence-8f64414dfb1a6f0a5fe39221",
+        "evidence-a5876bc26ba9a24370fa97ad",
+        "evidence-c11071653cd4e01b39e2a40b",
+        "evidence-d3383c3f8fd504ae950a1254",
+        "evidence-d4ea40f86be94bb94c5d0a56",
+        "evidence-eb0321111bebfbb690c16c7a",
+        "evidence-f5c78fe2b224e23afbdf434a"
+      ],
+      "evidence": "M8 receipts: evidence-02874e3fe068916dfaec1b56, evidence-10cb3e7953e699c40c54cf83, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a"
+    }
+  ],
+  "model": {
+    "context_window": 128000,
+    "display_name": "GPT-5.3 Codex Spark",
+    "family": "gpt",
+    "id": "gpt-5.3-codex-spark",
+    "input_modalities": [
+      "text"
+    ],
+    "max_output_tokens": null,
+    "max_output_tokens_note": "OpenAI has not published a maximum output limit for GPT-5.3 Codex Spark. This draft intentionally keeps the field null and must not render a maximum-output claim.",
+    "max_output_tokens_public": false,
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "protocols": [
+    {
+      "evidence": "2026-08-30 Hostinger upstream probe completed for gpt-5.3-codex-spark (log.md 9950-9956); earlier 2026-06-10 direct /v1/responses smoke returned HTTP 200 (log.md 714-722). No complete public-gateway tool-result loop is claimed.",
+      "name": "responses",
+      "status": "verified"
+    }
+  ],
+  "reasoning": {
+    "client_levels": [
+      {
+        "client": "Kimi Code",
+        "levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      }
+    ],
+    "client_mappings": [],
+    "model_levels": [
+      "none"
+    ],
+    "default_level": "none"
+  },
+  "recommended_protocol": "responses",
+  "recommended_protocol_reason": "Responses is the only protocol evidenced for this model: OpenAI documents the Responses transport path and historical direct/upstream probes completed; the public gateway tool/client matrix remains blocked.",
+  "schema_version": 1,
+  "test_matrix": {
+    "clients": {
+      "Codex": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.151.0",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:0.151.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-8f9cb9561cacd3969c8687f1, evidence-b69b9cc5cf3867be23683e11",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-8f9cb9561cacd3969c8687f1",
+              "evidence-b69b9cc5cf3867be23683e11"
+            ],
+            "pass_evidence_ids": [
+              "evidence-b69b9cc5cf3867be23683e11"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:0.151.0",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "Grok Build": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.0.13",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:1.0.13",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1547cafbaa0136c6c9ec992b, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-02874e3fe068916dfaec1b56",
+              "evidence-11561f0ab6cdfc048d97ba5f",
+              "evidence-1547cafbaa0136c6c9ec992b",
+              "evidence-1b9a3e0af9f0895cc8d7b533",
+              "evidence-2a3de3b29df136432021d4d5",
+              "evidence-2f08e0db364b81ef42d13a8c",
+              "evidence-3ae97a736734a9615258cb1f",
+              "evidence-5375a4688860355636d41132",
+              "evidence-5658123441ab722ab0264e98",
+              "evidence-63f73e336ce35fd5a8490bf1",
+              "evidence-7c98a40ba0cff084473db9dd",
+              "evidence-82e0a19b23ee07e9c556b969",
+              "evidence-8a0af9ca340246ae512c1148",
+              "evidence-8bae2056fd509d6b9972c8b6",
+              "evidence-8f64414dfb1a6f0a5fe39221",
+              "evidence-a5876bc26ba9a24370fa97ad",
+              "evidence-c11071653cd4e01b39e2a40b",
+              "evidence-d3383c3f8fd504ae950a1254",
+              "evidence-d4ea40f86be94bb94c5d0a56",
+              "evidence-eb0321111bebfbb690c16c7a",
+              "evidence-f5c78fe2b224e23afbdf434a"
+            ],
+            "pass_evidence_ids": [
+              "evidence-1547cafbaa0136c6c9ec992b"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:1.0.13",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.20.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-43996b22ecb5456b3cd44362, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-dcbb64623300809699a75ab2, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "evidence_ids": [
+              "evidence-02874e3fe068916dfaec1b56",
+              "evidence-11561f0ab6cdfc048d97ba5f",
+              "evidence-1b9a3e0af9f0895cc8d7b533",
+              "evidence-2a3de3b29df136432021d4d5",
+              "evidence-2f08e0db364b81ef42d13a8c",
+              "evidence-3ae97a736734a9615258cb1f",
+              "evidence-43996b22ecb5456b3cd44362",
+              "evidence-5375a4688860355636d41132",
+              "evidence-5658123441ab722ab0264e98",
+              "evidence-63f73e336ce35fd5a8490bf1",
+              "evidence-7c98a40ba0cff084473db9dd",
+              "evidence-82e0a19b23ee07e9c556b969",
+              "evidence-8a0af9ca340246ae512c1148",
+              "evidence-8bae2056fd509d6b9972c8b6",
+              "evidence-8f64414dfb1a6f0a5fe39221",
+              "evidence-a5876bc26ba9a24370fa97ad",
+              "evidence-c11071653cd4e01b39e2a40b",
+              "evidence-d3383c3f8fd504ae950a1254",
+              "evidence-d4ea40f86be94bb94c5d0a56",
+              "evidence-dcbb64623300809699a75ab2",
+              "evidence-eb0321111bebfbb690c16c7a",
+              "evidence-f5c78fe2b224e23afbdf434a"
+            ],
+            "pass_evidence_ids": [
+              "evidence-43996b22ecb5456b3cd44362"
+            ],
+            "failure_evidence_ids": [],
+            "verified_at": "2026-09-01"
+          }
+        }
+      },
+      "Kimi Code": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:0.38.0",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:0.38.0",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-02874e3fe068916dfaec1b56, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-6866d2f59b43c2f2c2337a82, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-02874e3fe068916dfaec1b56",
+              "evidence-11561f0ab6cdfc048d97ba5f",
+              "evidence-1b9a3e0af9f0895cc8d7b533",
+              "evidence-2a3de3b29df136432021d4d5",
+              "evidence-2f08e0db364b81ef42d13a8c",
+              "evidence-3ae97a736734a9615258cb1f",
+              "evidence-5375a4688860355636d41132",
+              "evidence-5658123441ab722ab0264e98",
+              "evidence-63f73e336ce35fd5a8490bf1",
+              "evidence-6866d2f59b43c2f2c2337a82",
+              "evidence-7c98a40ba0cff084473db9dd",
+              "evidence-82e0a19b23ee07e9c556b969",
+              "evidence-8a0af9ca340246ae512c1148",
+              "evidence-8bae2056fd509d6b9972c8b6",
+              "evidence-8f64414dfb1a6f0a5fe39221",
+              "evidence-a5876bc26ba9a24370fa97ad",
+              "evidence-c11071653cd4e01b39e2a40b",
+              "evidence-d3383c3f8fd504ae950a1254",
+              "evidence-d4ea40f86be94bb94c5d0a56",
+              "evidence-eb0321111bebfbb690c16c7a",
+              "evidence-f5c78fe2b224e23afbdf434a"
+            ],
+            "pass_evidence_ids": [
+              "evidence-6866d2f59b43c2f2c2337a82"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:0.38.0",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "OpenCode": {
+        "responses": {
+          "linux": {
+            "client_version": "cli:1.18.15",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "cli:1.18.15",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-6eb9dca457067a9c75298190, evidence-f919ee36ce7161e48d2a32a4",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-08-31",
+            "evidence_ids": [
+              "evidence-6eb9dca457067a9c75298190",
+              "evidence-f919ee36ce7161e48d2a32a4"
+            ],
+            "pass_evidence_ids": [
+              "evidence-6eb9dca457067a9c75298190"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "cli:1.18.15",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "ZCode": {
+        "responses": {
+          "linux": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on linux with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          },
+          "macos": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "M8 exact or matrix-intersection receipts: evidence-02874e3fe068916dfaec1b56, evidence-10cb3e7953e699c40c54cf83, evidence-11561f0ab6cdfc048d97ba5f, evidence-1b9a3e0af9f0895cc8d7b533, evidence-2a3de3b29df136432021d4d5, evidence-2f08e0db364b81ef42d13a8c, evidence-3ae97a736734a9615258cb1f, evidence-5375a4688860355636d41132, evidence-5658123441ab722ab0264e98, evidence-63f73e336ce35fd5a8490bf1, evidence-7c98a40ba0cff084473db9dd, evidence-82e0a19b23ee07e9c556b969, evidence-8a0af9ca340246ae512c1148, evidence-8bae2056fd509d6b9972c8b6, evidence-8f64414dfb1a6f0a5fe39221, evidence-a5876bc26ba9a24370fa97ad, evidence-c11071653cd4e01b39e2a40b, evidence-d3383c3f8fd504ae950a1254, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-f5c78fe2b224e23afbdf434a",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "verified",
+            "verified_at": "2026-09-01",
+            "evidence_ids": [
+              "evidence-02874e3fe068916dfaec1b56",
+              "evidence-10cb3e7953e699c40c54cf83",
+              "evidence-11561f0ab6cdfc048d97ba5f",
+              "evidence-1b9a3e0af9f0895cc8d7b533",
+              "evidence-2a3de3b29df136432021d4d5",
+              "evidence-2f08e0db364b81ef42d13a8c",
+              "evidence-3ae97a736734a9615258cb1f",
+              "evidence-5375a4688860355636d41132",
+              "evidence-5658123441ab722ab0264e98",
+              "evidence-63f73e336ce35fd5a8490bf1",
+              "evidence-7c98a40ba0cff084473db9dd",
+              "evidence-82e0a19b23ee07e9c556b969",
+              "evidence-8a0af9ca340246ae512c1148",
+              "evidence-8bae2056fd509d6b9972c8b6",
+              "evidence-8f64414dfb1a6f0a5fe39221",
+              "evidence-a5876bc26ba9a24370fa97ad",
+              "evidence-c11071653cd4e01b39e2a40b",
+              "evidence-d3383c3f8fd504ae950a1254",
+              "evidence-d4ea40f86be94bb94c5d0a56",
+              "evidence-eb0321111bebfbb690c16c7a",
+              "evidence-f5c78fe2b224e23afbdf434a"
+            ],
+            "pass_evidence_ids": [
+              "evidence-10cb3e7953e699c40c54cf83"
+            ],
+            "failure_evidence_ids": []
+          },
+          "windows": {
+            "client_version": "app:3.10.1+cli:0.16.5",
+            "evidence": "No exact gpt-5.3-codex-spark Responses real Agent loop on windows with tool-result continuation and final answer is present in durable evidence.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked",
+            "verified_at": "2026-08-31"
+          }
+        }
+      },
+      "MiniMax Code": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.2.7",
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "responses": {
+          "macos": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "cli:0.1.1-rc.2",
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      },
+      "Visual Studio Code Local Agent": {
+        "responses": {
+          "macos": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "macos",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "linux": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "linux",
+            "protocol": "responses",
+            "status": "blocked"
+          },
+          "windows": {
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0",
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "model_id": "gpt-5.3-codex-spark",
+            "os": "windows",
+            "protocol": "responses",
+            "status": "blocked"
+          }
+        }
+      }
+    },
+    "group_access": {
+      "GPT Max 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.3-codex-spark",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only evidenced model protocol; group-key route/model readback remains blocked.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-0f53d92d7c9ccf8c40fbd18b",
+              "evidence-67ea1c1ba1464a266e110113",
+              "evidence-fa292ab0f9179b59d615fbe7"
+            ],
+            "pass_evidence_ids": [
+              "evidence-0f53d92d7c9ccf8c40fbd18b",
+              "evidence-67ea1c1ba1464a266e110113",
+              "evidence-fa292ab0f9179b59d615fbe7"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:55+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-0f53d92d7c9ccf8c40fbd18b",
+          "evidence-67ea1c1ba1464a266e110113",
+          "evidence-fa292ab0f9179b59d615fbe7"
+        ]
+      },
+      "GPT Plus 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.3-codex-spark",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only evidenced model protocol; group-key route/model readback remains blocked.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-0f2c690d5f0890e79f1711cf",
+              "evidence-391dd556be119de39d99a9c8",
+              "evidence-d57970b278d862bc6d4ecb4c"
+            ],
+            "pass_evidence_ids": [
+              "evidence-0f2c690d5f0890e79f1711cf",
+              "evidence-391dd556be119de39d99a9c8",
+              "evidence-d57970b278d862bc6d4ecb4c"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:05+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-0f2c690d5f0890e79f1711cf",
+          "evidence-391dd556be119de39d99a9c8",
+          "evidence-d57970b278d862bc6d4ecb4c"
+        ]
+      },
+      "GPT Pro 月卡组": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "model_id": "gpt-5.3-codex-spark",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only evidenced model protocol; group-key route/model readback remains blocked.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-87867f13d82be4061f2fc932",
+              "evidence-92235b847f56ff44290b9b14",
+              "evidence-9f4e385b0154534cd186e582"
+            ],
+            "pass_evidence_ids": [
+              "evidence-87867f13d82be4061f2fc932",
+              "evidence-92235b847f56ff44290b9b14",
+              "evidence-9f4e385b0154534cd186e582"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T23:59:31+00:00"
+          }
+        },
+        "evidence_ids": [
+          "evidence-87867f13d82be4061f2fc932",
+          "evidence-92235b847f56ff44290b9b14",
+          "evidence-9f4e385b0154534cd186e582"
+        ]
+      },
+      "GPT 企业高速线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "evidence_ids": [
+          "evidence-2f08e0db364b81ef42d13a8c",
+          "evidence-5375a4688860355636d41132",
+          "evidence-63f73e336ce35fd5a8490bf1",
+          "evidence-8a0af9ca340246ae512c1148",
+          "evidence-a5876bc26ba9a24370fa97ad",
+          "evidence-d3383c3f8fd504ae950a1254",
+          "evidence-d4ea40f86be94bb94c5d0a56",
+          "evidence-eb0321111bebfbb690c16c7a"
+        ],
+        "model_id": "gpt-5.3-codex-spark",
+        "multiplier": 1,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only evidenced model protocol; group-key route/model readback remains blocked.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-2f08e0db364b81ef42d13a8c",
+              "evidence-5375a4688860355636d41132",
+              "evidence-63f73e336ce35fd5a8490bf1",
+              "evidence-8a0af9ca340246ae512c1148",
+              "evidence-a5876bc26ba9a24370fa97ad",
+              "evidence-d3383c3f8fd504ae950a1254",
+              "evidence-d4ea40f86be94bb94c5d0a56",
+              "evidence-eb0321111bebfbb690c16c7a"
+            ],
+            "pass_evidence_ids": [
+              "evidence-2f08e0db364b81ef42d13a8c",
+              "evidence-5375a4688860355636d41132",
+              "evidence-63f73e336ce35fd5a8490bf1",
+              "evidence-8a0af9ca340246ae512c1148",
+              "evidence-a5876bc26ba9a24370fa97ad",
+              "evidence-d3383c3f8fd504ae950a1254",
+              "evidence-d4ea40f86be94bb94c5d0a56",
+              "evidence-eb0321111bebfbb690c16c7a"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:21:42+00:00"
+          }
+        }
+      },
+      "GPT 标准线路": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "evidence": "M8 group receipts by protocol: responses=verified",
+        "evidence_ids": [
+          "evidence-02874e3fe068916dfaec1b56",
+          "evidence-11561f0ab6cdfc048d97ba5f",
+          "evidence-1b9a3e0af9f0895cc8d7b533",
+          "evidence-3ae97a736734a9615258cb1f",
+          "evidence-7c98a40ba0cff084473db9dd",
+          "evidence-82e0a19b23ee07e9c556b969",
+          "evidence-8f64414dfb1a6f0a5fe39221",
+          "evidence-c11071653cd4e01b39e2a40b"
+        ],
+        "model_id": "gpt-5.3-codex-spark",
+        "multiplier": 0.5,
+        "protocols": [
+          "responses"
+        ],
+        "recommended_protocol": "responses",
+        "recommended_protocol_reason": "Responses is the only evidenced model protocol; group-key route/model readback remains blocked.",
+        "status": "verified",
+        "verified_at": "2026-08-31",
+        "protocol_evidence": {
+          "responses": {
+            "status": "verified",
+            "required_features": [
+              "model_discovery",
+              "route_call",
+              "minimal_text"
+            ],
+            "evidence_ids": [
+              "evidence-02874e3fe068916dfaec1b56",
+              "evidence-11561f0ab6cdfc048d97ba5f",
+              "evidence-1b9a3e0af9f0895cc8d7b533",
+              "evidence-3ae97a736734a9615258cb1f",
+              "evidence-7c98a40ba0cff084473db9dd",
+              "evidence-82e0a19b23ee07e9c556b969",
+              "evidence-8f64414dfb1a6f0a5fe39221",
+              "evidence-c11071653cd4e01b39e2a40b"
+            ],
+            "pass_evidence_ids": [
+              "evidence-02874e3fe068916dfaec1b56",
+              "evidence-11561f0ab6cdfc048d97ba5f",
+              "evidence-1b9a3e0af9f0895cc8d7b533",
+              "evidence-3ae97a736734a9615258cb1f",
+              "evidence-7c98a40ba0cff084473db9dd",
+              "evidence-82e0a19b23ee07e9c556b969",
+              "evidence-8f64414dfb1a6f0a5fe39221",
+              "evidence-c11071653cd4e01b39e2a40b"
+            ],
+            "failure_evidence_ids": [],
+            "observed_at": "2026-08-31T17:19:45+00:00"
+          }
+        }
+      }
+    },
+    "limits": {
+      "context_window": {
+        "evidence": "OpenAI release states a 128k context window: https://openai.com/index/introducing-gpt-5-3-codex-spark/",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      },
+      "max_output_tokens": {
+        "evidence": "OpenAI's GPT-5.3-Codex-Spark research-preview release does not publish a maximum output limit: https://openai.com/index/introducing-gpt-5-3-codex-spark/. The field remains null and must render as 未公开; no other model limit is borrowed.",
+        "status": "not_published",
+        "verified_at": "2026-09-01"
+      }
+    },
+    "modalities": {
+      "image": {
+        "evidence": "OpenAI release explicitly states text-only and says multimodal input is future work: https://openai.com/index/introducing-gpt-5-3-codex-spark/",
+        "status": "unsupported",
+        "verified_at": "2026-08-31"
+      },
+      "text": {
+        "evidence": "OpenAI release states GPT-5.3 Codex Spark is text-only: https://openai.com/index/introducing-gpt-5-3-codex-spark/",
+        "status": "verified",
+        "verified_at": "2026-08-31"
+      },
+      "video": {
+        "evidence": "OpenAI release explicitly states text-only and says multimodal input is future work: https://openai.com/index/introducing-gpt-5-3-codex-spark/",
+        "status": "unsupported",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "pricing": {
+      "GPT Max 月卡组": {
+        "cache_read_price": 0.0625,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 public pricing readback from https://api.laoshirenai.com/api/v1/public/model-pricing (updated_at 2026-08-31T11:36:37.816099323Z).",
+        "input_price": 0.625,
+        "output_price": 5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT Plus 月卡组": {
+        "cache_read_price": 0.0625,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 public pricing readback from https://api.laoshirenai.com/api/v1/public/model-pricing (updated_at 2026-08-31T11:36:37.816099323Z).",
+        "input_price": 0.625,
+        "output_price": 5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT Pro 月卡组": {
+        "cache_read_price": 0.0625,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 public pricing readback from https://api.laoshirenai.com/api/v1/public/model-pricing (updated_at 2026-08-31T11:36:37.816099323Z).",
+        "input_price": 0.625,
+        "output_price": 5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 企业高速线路": {
+        "cache_read_price": 0.125,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 public pricing readback from https://api.laoshirenai.com/api/v1/public/model-pricing (updated_at 2026-08-31T11:36:37.816099323Z).",
+        "input_price": 1.25,
+        "output_price": 10,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      },
+      "GPT 标准线路": {
+        "cache_read_price": 0.0625,
+        "cache_write_price": null,
+        "currency": "CNY",
+        "evidence": "2026-08-31 public pricing readback from https://api.laoshirenai.com/api/v1/public/model-pricing (updated_at 2026-08-31T11:36:37.816099323Z).",
+        "input_price": 0.625,
+        "output_price": 5,
+        "status": "verified",
+        "unit": "per_1m_tokens",
+        "verified_at": "2026-08-31"
+      }
+    },
+    "protocol_features": {
+      "responses": {
+        "billing": {
+          "evidence": "M8 receipts: evidence-06d162ec4c4dfb34decdf2d4, evidence-5c946f1f0316c1af3d2b931a, evidence-dda6250845cce735b5953169",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-06d162ec4c4dfb34decdf2d4",
+            "evidence-5c946f1f0316c1af3d2b931a",
+            "evidence-dda6250845cce735b5953169"
+          ],
+          "pass_evidence_ids": [
+            "evidence-06d162ec4c4dfb34decdf2d4",
+            "evidence-5c946f1f0316c1af3d2b931a",
+            "evidence-dda6250845cce735b5953169"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "error_passthrough": {
+          "evidence": "M8 receipts: evidence-159714414375a0c08ce04335, evidence-d7185890fdecded5486df8a1",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-159714414375a0c08ce04335",
+            "evidence-d7185890fdecded5486df8a1"
+          ],
+          "pass_evidence_ids": [
+            "evidence-159714414375a0c08ce04335",
+            "evidence-d7185890fdecded5486df8a1"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "image_input": {
+          "status": "unsupported",
+          "evidence": "M8 receipts: evidence-dd567e3f11fa6929e8734090",
+          "evidence_ids": [
+            "evidence-dd567e3f11fa6929e8734090"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-dd567e3f11fa6929e8734090"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "prompt_cache": {
+          "evidence": "M8 receipts: evidence-0085428cb6fdd3f540282d36, evidence-211833177bdb107072950cfc, evidence-21a545f03e749d8663bc151a, evidence-37bcbba4a7db39b2858b4e70, evidence-786720c99f0fdeb5bd7f2e4d, evidence-c5bc9bd8b509823339a5d0ba, evidence-d8cfd7850a570bdbc31139b5",
+          "status": "unsupported",
+          "evidence_ids": [
+            "evidence-0085428cb6fdd3f540282d36",
+            "evidence-211833177bdb107072950cfc",
+            "evidence-21a545f03e749d8663bc151a",
+            "evidence-37bcbba4a7db39b2858b4e70",
+            "evidence-786720c99f0fdeb5bd7f2e4d",
+            "evidence-c5bc9bd8b509823339a5d0ba",
+            "evidence-d8cfd7850a570bdbc31139b5"
+          ],
+          "pass_evidence_ids": [],
+          "failure_evidence_ids": [
+            "evidence-0085428cb6fdd3f540282d36",
+            "evidence-211833177bdb107072950cfc",
+            "evidence-21a545f03e749d8663bc151a",
+            "evidence-37bcbba4a7db39b2858b4e70",
+            "evidence-786720c99f0fdeb5bd7f2e4d",
+            "evidence-c5bc9bd8b509823339a5d0ba",
+            "evidence-d8cfd7850a570bdbc31139b5"
+          ],
+          "verified_at": "2026-09-01"
+        },
+        "reasoning": {
+          "status": "not_published",
+          "evidence": "OpenAI has not published an API reasoning-effort control contract for the Spark preview; no wire value is guessed: https://openai.com/index/introducing-gpt-5-3-codex-spark/"
+        },
+        "retry": {
+          "evidence": "M8 receipts: evidence-30db851cb395067bb529cf9e",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-30db851cb395067bb529cf9e"
+          ],
+          "pass_evidence_ids": [
+            "evidence-30db851cb395067bb529cf9e"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "stream_disconnect": {
+          "evidence": "M8 receipts: evidence-9be0b72c4f31e4af969ed3f7",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9be0b72c4f31e4af969ed3f7"
+          ],
+          "pass_evidence_ids": [
+            "evidence-9be0b72c4f31e4af969ed3f7"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "timeout": {
+          "evidence": "M8 receipts: evidence-5f1bbb021f5baf1d211b02ce",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5f1bbb021f5baf1d211b02ce"
+          ],
+          "pass_evidence_ids": [
+            "evidence-5f1bbb021f5baf1d211b02ce"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "web_search": {
+          "evidence": "M8 receipts: evidence-2c24f1819cdb3da805d8baa2, evidence-5337f8ec0ab9cb1bd56bffb9, evidence-5f70639037a80b3d3e242fd8",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2c24f1819cdb3da805d8baa2",
+            "evidence-5337f8ec0ab9cb1bd56bffb9",
+            "evidence-5f70639037a80b3d3e242fd8"
+          ],
+          "pass_evidence_ids": [
+            "evidence-2c24f1819cdb3da805d8baa2",
+            "evidence-5337f8ec0ab9cb1bd56bffb9",
+            "evidence-5f70639037a80b3d3e242fd8"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "protocols": {
+      "responses": {
+        "invalid_request": {
+          "evidence": "M8 receipts: evidence-1c03b51296c0c95ab49b21a9, evidence-91ef0ea7472e5bcfdc47091f",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-1c03b51296c0c95ab49b21a9",
+            "evidence-91ef0ea7472e5bcfdc47091f"
+          ],
+          "pass_evidence_ids": [
+            "evidence-1c03b51296c0c95ab49b21a9",
+            "evidence-91ef0ea7472e5bcfdc47091f"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "minimal_text": {
+          "evidence": "M8 receipts: evidence-155eb3422398cb59ba2b0cf4, evidence-1b9a3e0af9f0895cc8d7b533, evidence-391dd556be119de39d99a9c8, evidence-82e0a19b23ee07e9c556b969, evidence-87867f13d82be4061f2fc932, evidence-d4ea40f86be94bb94c5d0a56, evidence-eb0321111bebfbb690c16c7a, evidence-fa292ab0f9179b59d615fbe7",
+          "evidence_ids": [
+            "evidence-155eb3422398cb59ba2b0cf4",
+            "evidence-1b9a3e0af9f0895cc8d7b533",
+            "evidence-391dd556be119de39d99a9c8",
+            "evidence-82e0a19b23ee07e9c556b969",
+            "evidence-87867f13d82be4061f2fc932",
+            "evidence-d4ea40f86be94bb94c5d0a56",
+            "evidence-eb0321111bebfbb690c16c7a",
+            "evidence-fa292ab0f9179b59d615fbe7"
+          ],
+          "status": "verified",
+          "verified_at": "2026-09-01",
+          "pass_evidence_ids": [
+            "evidence-155eb3422398cb59ba2b0cf4",
+            "evidence-1b9a3e0af9f0895cc8d7b533",
+            "evidence-391dd556be119de39d99a9c8",
+            "evidence-82e0a19b23ee07e9c556b969",
+            "evidence-87867f13d82be4061f2fc932",
+            "evidence-d4ea40f86be94bb94c5d0a56",
+            "evidence-eb0321111bebfbb690c16c7a",
+            "evidence-fa292ab0f9179b59d615fbe7"
+          ],
+          "failure_evidence_ids": []
+        },
+        "streaming_terminal": {
+          "evidence": "M8 receipts: evidence-5658123441ab722ab0264e98, evidence-e104df6627ae92d5328d552c",
+          "status": "verified",
+          "verified_at": "2026-09-01",
+          "evidence_ids": [
+            "evidence-5658123441ab722ab0264e98",
+            "evidence-e104df6627ae92d5328d552c"
+          ],
+          "pass_evidence_ids": [
+            "evidence-5658123441ab722ab0264e98",
+            "evidence-e104df6627ae92d5328d552c"
+          ],
+          "failure_evidence_ids": []
+        },
+        "tool_call": {
+          "evidence": "M8 receipts: evidence-8bae2056fd509d6b9972c8b6, evidence-8ec2e3a6d417d84d311ae2ce, evidence-f5c78fe2b224e23afbdf434a",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-8bae2056fd509d6b9972c8b6",
+            "evidence-8ec2e3a6d417d84d311ae2ce",
+            "evidence-f5c78fe2b224e23afbdf434a"
+          ],
+          "pass_evidence_ids": [
+            "evidence-8bae2056fd509d6b9972c8b6",
+            "evidence-8ec2e3a6d417d84d311ae2ce",
+            "evidence-f5c78fe2b224e23afbdf434a"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "tool_result_continuation": {
+          "evidence": "M8 receipts: evidence-2a3de3b29df136432021d4d5, evidence-e19b462de61765f48aedbb1b",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2a3de3b29df136432021d4d5",
+            "evidence-e19b462de61765f48aedbb1b"
+          ],
+          "pass_evidence_ids": [
+            "evidence-2a3de3b29df136432021d4d5",
+            "evidence-e19b462de61765f48aedbb1b"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        },
+        "usage": {
+          "evidence": "M8 receipts: evidence-713851f8a73431b5a46964db, evidence-d7fc86218a564218c9dac41f",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-713851f8a73431b5a46964db",
+            "evidence-d7fc86218a564218c9dac41f"
+          ],
+          "pass_evidence_ids": [
+            "evidence-713851f8a73431b5a46964db",
+            "evidence-d7fc86218a564218c9dac41f"
+          ],
+          "failure_evidence_ids": [],
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "reasoning": {
+      "clients": {
+        "Codex": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Grok Build": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "Hermes Agent": {
+          "responses": {
+            "client_levels": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "ultra"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "Kimi Code": {
+          "responses": {
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "No verified lossless reasoning selector mapping; model remains callable with model default.",
+            "mappings": [],
+            "status": "unsupported",
+            "verified_at": "2026-09-01"
+          }
+        },
+        "OpenCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "ZCode": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "Client Matrix v2 declares model-defined reasoning controls; this client exposes no fixed list independent of the selected model.",
+            "mappings": [],
+            "status": "not_exposed"
+          }
+        },
+        "MiniMax Code": {
+          "responses": {
+            "client_levels": [
+              "off",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "evidence": "blocked: MiniMax Code cli:0.2.7 has an official protocol adapter, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. Source: artifacts/qoder-minimax-code-m8-20260901.json",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "DeepSeek Harness": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: DeepSeek Harness cli:0.1.1-rc.2 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-20a2a9a5952d797b2942c69d is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        },
+        "Visual Studio Code Local Agent": {
+          "responses": {
+            "client_levels": [],
+            "evidence": "blocked: Visual Studio Code Local Agent desktop:1.135.0+builtin-copilot:0.63.0 documents the candidate transport, but no exact gpt-5.3-codex-spark public-gateway tool-result Agent receipt exists. M8 evidence-3d902f688a972506106093d6 is admission/source evidence only.",
+            "mappings": [],
+            "status": "blocked"
+          }
+        }
+      },
+      "model_levels": {
+        "none": {
+          "status": "verified",
+          "evidence": "Spark exposes no configurable reasoning effort; none is the terminal model-default state.",
+          "verified_at": "2026-09-01"
+        }
+      }
+    },
+    "tools": {
+      "responses": {}
+    }
+  },
+  "tools": [],
+  "verification": {
+    "gateway_e2e": true,
+    "limits_source": "official",
+    "modalities": {
+      "image": "unsupported",
+      "text": "verified",
+      "video": "unsupported"
+    },
+    "official_spec_url": "https://openai.com/index/introducing-gpt-5-3-codex-spark/",
+    "verified_at": "2026-08-31"
+  }
+}

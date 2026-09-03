@@ -1,0 +1,316 @@
+{
+  "case_count": 14,
+  "cases": [
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "e3f53c9ba7c2ba20171a106e941bd5587691dac905a0be2f33affdfe5baa2fd4",
+      "case_key": "34:grok-4.5:chat_completions:P-02:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_D0DED8EC5C943BD7",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.5",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-02_default-0bc71fd560f9.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.5/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "fdab2e77e5e4a71aa9829cd0a4e7209506ef29cda69a1a7154f9d7cc20608760",
+      "case_key": "34:grok-4.5:chat_completions:P-03:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_996B364BBAFE29FA",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.5",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-03_default-de13bdcd8216.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.5/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "add4860aa4164a45b8a66fa070980100a5bbc0cec39e71ad9a4212d6733b5e4c",
+      "case_key": "34:grok-4.5:chat_completions:P-04:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_A5BFA6288CC0C5AC",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.5",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-04_default-6c7780cd711f.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.5/chat_completions/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "9971a4b8b47a421f2682af0ac7ffb05adf0db9c09e48b843748809892fd479f5",
+      "case_key": "34:grok-4.5:chat_completions:P-05:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_68E57CA5C3D166B0",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.5",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-05_default-78e355972146.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.5/chat_completions/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "32309ff1d99bbb7ace96e7dfc4fc0d69cdd7a34fa8ce199202bbc3dd99a26944",
+      "case_key": "34:grok-4.5:chat_completions:P-06:medium",
+      "context_window": 500000,
+      "declared_status": "blocked",
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_B28F09FB00F29984",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.5",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "chat_completions",
+      "reasoning_level": "medium",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-06_medium-b28f09fb00f2.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.5/chat_completions/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "ed5134ca5e57e45250110e211a03c0bbfb0ae42ed780dbfd7b7c56525679566e",
+      "case_key": "34:grok-4.5:chat_completions:P-12:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_B5C5BE5A91653ADC",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.5",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-12_default-8cc7aab56e9a.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.5/chat_completions/features/billing",
+        "model_protocol:grok-4.5/chat_completions/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "91ada12848e659a74048dc0b214737263cb717976bfac4db8c3cb8d0068ee705",
+      "case_key": "34:grok-4.5:chat_completions:P-15:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_0DFA308CF04D24DA",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.5",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.5_chat_completions_P-15_default-ba8293ea49fe.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.5/chat_completions/invalid_request"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "e9f5909886cab9aeb67a60e039f3bf9e8c6dc7e6431efd1eea491cd1dc6fe3e2",
+      "case_key": "34:grok-4.6:chat_completions:P-02:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_2A06DA76982D4FFF",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.6",
+      "name": "streaming_sse",
+      "p_id": "P-02",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-02_default-a891bf5c1981.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.6/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "d0328a690e9be1d29f7562bdbe0621d972606aac6bf88e0860b426be4fd237da",
+      "case_key": "34:grok-4.6:chat_completions:P-03:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_E87BDF7E86ED9C33",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.6",
+      "name": "streaming_terminal",
+      "p_id": "P-03",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-03_default-28c0c11849b2.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.6/chat_completions/streaming_terminal"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "e8076c69c4656f6b65e1131e319e6b37205fe701750e15059ffbb1ae858c197a",
+      "case_key": "34:grok-4.6:chat_completions:P-04:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_FD895CA9B4677BE3",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.6",
+      "name": "tool_call",
+      "p_id": "P-04",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-04_default-841f9ec30604.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.6/chat_completions/tool_call"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "f892e1b211ee09c9a507bd11e5f29dbcfe714d58ed8820244a48f19e82aaaae2",
+      "case_key": "34:grok-4.6:chat_completions:P-05:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_6D31D367063E35FE",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.6",
+      "name": "tool_result_continuation",
+      "p_id": "P-05",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-05_default-38c60aa74b31.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.6/chat_completions/tool_result_continuation"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "16f89bd073c3a8f757339101dbf0284aaa593cdd494c35c4f6b398e138243063",
+      "case_key": "34:grok-4.6:chat_completions:P-06:medium",
+      "context_window": 500000,
+      "declared_status": "blocked",
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_DCD3F80EC96F96FE",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.6",
+      "name": "reasoning_transport",
+      "p_id": "P-06",
+      "protocol": "chat_completions",
+      "reasoning_level": "medium",
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-06_medium-dcd3f80ec96f.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.6/chat_completions/features/reasoning"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "9ce6fc02d9976802a45cac0e6cbfb2f7231167bc9bc67ef3db7b3b78570092f2",
+      "case_key": "34:grok-4.6:chat_completions:P-12:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_D995B2E5D92C4BC6",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.6",
+      "name": "usage",
+      "p_id": "P-12",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-12_default-2efdcdd2e0c3.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.6/chat_completions/features/billing",
+        "model_protocol:grok-4.6/chat_completions/usage"
+      ],
+      "state": "planned"
+    },
+    {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "case_fingerprint": "89c87fab86671af1fcd3529565ccfbc3bd214e7b0401ea74c7fe8ba5242134d2",
+      "case_key": "34:grok-4.6:chat_completions:P-15:default",
+      "context_window": 500000,
+      "declared_status": null,
+      "group_id": 34,
+      "group_name": "Grok 标准线路",
+      "marker": "LSR_CONTRACT_33920F7F845016E9",
+      "max_output_tokens": 128000,
+      "model_id": "grok-4.6",
+      "name": "error_passthrough",
+      "p_id": "P-15",
+      "protocol": "chat_completions",
+      "reasoning_level": null,
+      "receipt": "artifacts/provider-contract-live-grok-group34-chat-20260901/cases/34_grok-4.6_chat_completions_P-15_default-bcc5c699b1ca.json",
+      "source_case_keys": [
+        "model_protocol:grok-4.6/chat_completions/invalid_request"
+      ],
+      "state": "planned"
+    }
+  ],
+  "kind": "provider_contract_live_plan",
+  "network_execution": "disabled",
+  "owned_identity": {
+    "key_id": 205,
+    "restore_group_id": 6,
+    "user_id": 1
+  },
+  "paid_request_upper_bound": 16,
+  "plan_sha256": "abcf52d1ac618c26f73b2f41d938f0591957b4f8c36739b35621ed407fb17a22",
+  "schema_version": 1,
+  "secret_source": "Agent Switch name only: LAOSHIRENAI_MODEL_MATRIX_TEST_KEY",
+  "status_counts": {
+    "planned": 14,
+    "resumable": 0
+  }
+}

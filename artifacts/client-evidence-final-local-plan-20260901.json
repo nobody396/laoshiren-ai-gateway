@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "plan",
+  "production_write": false,
+  "client_matrix_write": false,
+  "changed": true,
+  "events": 27,
+  "matrix_event_counts": {
+    "client_protocol": 27,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "02fe9366723debaf407c80b70189e57d4dd83ed5926b26989142d524c474a9df",
+  "client_matrix_before_sha256": "0ed7abf1acb762d1927462581d90c1125b1ff99f6b0a74e92a8914c0c3539d96",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "antigravity",
+      "protocol": "generate_content",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "claude-code",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "codex",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "chat_completions",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "generate_content",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "messages",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "gemini-cli",
+      "protocol": "generate_content",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "grok-build",
+      "protocol": "chat_completions",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "grok-build",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "grok-build",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "hermes-agent",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "chat_completions",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "generate_content",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "messages",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "kimi-code",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "chat_completions",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "messages",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "minimax-code",
+      "protocol": "responses",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "generate_content",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "opencode",
+      "protocol": "responses",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "qoder",
+      "protocol": "chat_completions",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "zcode",
+      "protocol": "chat_completions",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "zcode",
+      "protocol": "messages",
+      "status": "blocked"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "zcode",
+      "protocol": "responses",
+      "status": "verified"
+    }
+  ],
+  "client_matrix_after_sha256": "e0f06acbdfa6afda34b157af46c427639979ab599f37f6976f65d587e673fcf1"
+}

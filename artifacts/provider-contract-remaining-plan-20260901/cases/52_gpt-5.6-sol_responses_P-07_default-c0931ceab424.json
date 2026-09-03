@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "ca3f7238404f3e7ef689074cd9d723e93f31934b116f45d410da622672baf908",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "52:gpt-5.6-sol:responses:P-07:default",
+    "context_window": 1050000,
+    "declared_status": "blocked",
+    "group_id": 52,
+    "group_name": "GPT Daybreak Blue 安全研究线路",
+    "marker": "LSR_CONTRACT_E6E091D879EC81D5",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-5.6-sol",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:gpt-5.6-sol/responses/features/prompt_cache"
+    ]
+  },
+  "case_fingerprint": "a2734c829689223210a93a7466a94b96096d55e446495f05546d8d7b03e799df",
+  "classification": "upstream_overloaded",
+  "finished_at": "2026-09-01T02:56:22.871+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T02:56:20.648+00:00",
+  "offline_verifier": {
+    "reason": "usage object is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 52,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": "usage object is required",
+  "request": {
+    "payload_sha256": "025017ad6f0decc5673248337dec942489afdfe61159cd5e1e04c65154d75724",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "2c50c4afc5cfe142cfbaf73ed25e1a1fc42100ea9d0bbf9972fe4272cdc17129"
+  },
+  "response": {
+    "body_bytes": 285,
+    "body_sha256": "72bb2505cab879c7e3665418f1ba474c3bde796d1132e9f3703f28bc6fa01d47",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "code": "service_overloaded",
+      "message": "No service route currently has available capacity. Retry in about 60 seconds or switch to another model. [Request ID: b7a4185e-854b-4794-ad7f-59ad4aa2a576]",
+      "type": "overloaded_error"
+    },
+    "event_count": 0,
+    "http_status": 503,
+    "marker_present": false,
+    "request_id": "b7a4185e-854b-4794-ad7f-59ad4aa2a576",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

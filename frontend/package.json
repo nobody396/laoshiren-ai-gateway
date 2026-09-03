@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "generate:seo": "node scripts/generate-seo-assets.mjs",
-    "build": "node scripts/generate-seo-assets.mjs && vue-tsc -b && vite build",
+    "docs:check": "python3 ../scripts/client_matrix_catalog.py check && python3 ../scripts/model_doc_catalog.py check && python3 ../scripts/model_doc_matrix.py audit --contracts ../model-doc-contracts --client-matrix ../model-doc-contracts/client-matrix.json --pricing-url http://127.0.0.1:4178/api/v1/public/model-pricing && node scripts/check-docs-content.mjs",
+    "build": "node scripts/generate-seo-assets.mjs && vue-tsc -b && vite build && node scripts/check-admin-matrix-public-boundary.mjs",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
     "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts",
@@ -16,6 +17,7 @@
     "test:coverage": "vitest run --coverage",
     "bundle:check": "node scripts/check-bundle-budget.mjs",
     "bundle:check:test": "node --test scripts/check-bundle-budget.test.mjs",
+    "admin-matrix-boundary:test": "node --test scripts/check-admin-matrix-public-boundary.test.mjs",
     "boundary:check": "node scripts/check-frontend-boundaries.mjs"
   },
   "dependencies": {

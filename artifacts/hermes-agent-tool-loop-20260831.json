@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "client_id": "hermes-agent",
+  "client_version": "cli:0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.6-sol",
+  "protocol": "responses",
+  "observed_at": "2026-08-31T16:08:57+00:00",
+  "command_shape": [
+    "hermes",
+    "chat",
+    "-Q",
+    "-q",
+    "<prompt>",
+    "--provider",
+    "openai-api",
+    "--model",
+    "gpt-5.6-sol",
+    "--toolsets",
+    "terminal",
+    "--ignore-user-config",
+    "--ignore-rules",
+    "--max-turns",
+    "10",
+    "--yolo"
+  ],
+  "exit_code": 0,
+  "stdout": "⚠ tirith security scanner enabled but not available — command scanning will use pattern matching only ┌─ Reasoning ──────────────────────────────────────────────────────────────────┐ **Planning file reading without restricted commands****Planning file reading without restricted commands** **Appending line with newline in Python****Appending line with newline in Python** HERMES_AGENT_DONE",
+  "stderr": "session_id: 20260831_120858_34f1ca",
+  "file_result": "HERMES_INPUT\nHERMES_TOOL_DONE\n",
+  "expected_markers": [
+    "HERMES_TOOL_DONE",
+    "HERMES_AGENT_DONE"
+  ],
+  "passed": true,
+  "secret_free": true,
+  "usage_attribution_ref": "local/worktrees/newcomer-public-preview-20260829/artifacts/hermes-agent-usage-attribution-20260831.json",
+  "observed_endpoints": [
+    "/v1/responses"
+  ],
+  "artifact_sha256": "dd0be52a479a53ac4cf922f151ce01e121ecc835aee1c04bf63fe2431d77fc69"
+}

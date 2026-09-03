@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "plan",
+  "production_write": false,
+  "contract_write": false,
+  "contracts_changed": 4,
+  "events": 7,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "53d2583db86b09267c001a4b0a878557901f89a977b76a2b393ff8c2e9e46825",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Claude Code/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-360a9151b10e7c039b86c59c",
+            "evidence-4059d61312ed03bc44bf5751"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-129fd5da5c2c19ef550840d2",
+            "evidence-360a9151b10e7c039b86c59c",
+            "evidence-4059d61312ed03bc44bf5751"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/messages/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-b79c848ec7d70c6368c157a9"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gpt-5.6-sol.json",
+      "events": [
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Codex/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2034ea4094d4605bf218a88d"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "Hermes Agent/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-718fbbd04f9aab65c13a1146"
+          ]
+        },
+        {
+          "model_id": "gpt-5.6-sol",
+          "matrix": "test_evidence",
+          "path": "OpenCode/responses/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-ff653eef4bd179945c9a89b9"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/grok-4.6.json",
+      "events": [
+        {
+          "model_id": "grok-4.6",
+          "matrix": "test_evidence",
+          "path": "Grok Build/chat_completions/macos",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-2ab5414525856cf640a4c7a0"
+          ]
+        }
+      ]
+    }
+  ]
+}

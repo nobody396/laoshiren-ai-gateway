@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "secret_free": true,
+  "client_id": "deepseek-harness",
+  "client_version": "cli:0.1.1-rc.2",
+  "user_id": 2,
+  "api_key_id": 128,
+  "group_id": 6,
+  "observed_at": "2026-09-03T04:29:29+00:00",
+  "rows": [],
+  "artifact_sha256": "ae763d1a0857664c5f0ceb6e2c944d331ba98e7f3a2d41b60a255675564289e7"
+}

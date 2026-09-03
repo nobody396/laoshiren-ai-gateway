@@ -1,0 +1,92 @@
+{
+  "cases": {
+    "60:glm-5.2:messages:P-01:default": {
+      "artifact_sha256": "245ff70e1e27a3b9a7ec4aae5cc5bae55c68fd8f7adc097e802374e34a75cb7c",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-01_default-38c48df7c7e8.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:messages:P-02:default": {
+      "artifact_sha256": "4dc058e9d4dafc155351abda85878343764cab4beb370f9591a43892cc993c03",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-02_default-3495b4783307.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:messages:P-03:default": {
+      "artifact_sha256": "4621f9d8ad67b0d99de27634bc73dbfa06c5c05b781e5c90baffd978d4ee068f",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-03_default-00a9445a9f24.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:messages:P-04:default": {
+      "artifact_sha256": "d2e84c6a8e026c4534023d3dd487e61f969356058248cfc8c9424d7fe2a59bec",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-04_default-c61bc5cc862f.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:messages:P-05:default": {
+      "artifact_sha256": "78fd23fca5598ec443f3537329a98b620da6a40bb4aab39c5b0729041995817c",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-05_default-6b12d63a29f3.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:messages:P-06:medium": {
+      "artifact_sha256": "3bec45bebe0100dc87f0e1c61722b630ae05794167b25cea136679b1c8929ca8",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-06_medium-e7ab151e91b7.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:messages:P-12:default": {
+      "artifact_sha256": "084e6d72a7b31c848eb3e7d3a1bda8554568acee87126efb7f939dcbd1d4533c",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-12_default-c0276ab331f2.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:messages:P-15:default": {
+      "artifact_sha256": "9fa943098cbfc281bb391ef7d803df8db8d412ea302c99863224bef14c6b9e02",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_messages_P-15_default-79e0014ffcad.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:responses:P-01:default": {
+      "artifact_sha256": "e5a4a4422a7c18f0384404e77f0c8aff27152f68d13c342def8f56e7f1076f8c",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-01_default-6a681a6f12e0.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:responses:P-02:default": {
+      "artifact_sha256": "5c9bb9b15c224066f39628cdfe26e3fc36219df5e6b7dd21e0c75e77416771f1",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-02_default-86a987a5fa46.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:responses:P-03:default": {
+      "artifact_sha256": "9d4c426756b05658d4f405fc18171271b9d98669b8285a5948ce3acff8aabb25",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-03_default-db60a7b17358.json",
+      "status": "blocked"
+    },
+    "60:glm-5.2:responses:P-04:default": {
+      "artifact_sha256": "8b802f3eea8ebbb4a81a87232689d00c6209089fc321f793b376a0ff8dfd4aff",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-04_default-1327c2b6116e.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:responses:P-05:default": {
+      "artifact_sha256": "1680190e056d999279b4fcbf48881d00411c56853c01b083d840fa758bb2e1af",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-05_default-3350f3f65d7e.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:responses:P-06:medium": {
+      "artifact_sha256": "fa6564686fb4c7e911d14d960770a47255177608a62f2a82e98483e3ab1e8ece",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-06_medium-ac2ba1f471d7.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:responses:P-12:default": {
+      "artifact_sha256": "547826be2463dbaf4b8c4439c06bcaa05bbbdb67694a3a320f7ed02fedeead94",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-12_default-7ec1ce2f4a49.json",
+      "status": "pass"
+    },
+    "60:glm-5.2:responses:P-15:default": {
+      "artifact_sha256": "7301e980038a916e414364b38ba0be03e3dc03526c6d7d0d449b34f00ed5dca4",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-candidate-protocols-20260901/cases/60_glm-5.2_responses_P-15_default-8d57c5b34969.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:09:27.733+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "710c274383c07d9e",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:08:07.890+00:00"
+}

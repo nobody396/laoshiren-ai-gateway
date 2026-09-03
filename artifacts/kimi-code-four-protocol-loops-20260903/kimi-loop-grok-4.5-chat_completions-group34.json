@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "kimi-code",
+  "client_version": "cli:0.39.1",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "grok-4.5",
+  "protocol": "chat_completions",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 34,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-09-03T03:26:17+00:00",
+  "finished_at": "2026-09-03T03:26:57+00:00",
+  "duration_ms": 25133,
+  "command_contract": {
+    "executable": "kimi",
+    "prompt_mode": true,
+    "model_alias": "lsr-chat-completions",
+    "provider_type": "openai",
+    "provider_base_url": "https://api.laoshirenai.com/v1",
+    "output_format": "stream-json",
+    "isolated_home": true,
+    "credential": "ephemeral config.toml api_key, mode 0600, destroyed after run"
+  },
+  "target_group_readback": {
+    "group_id": 34
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stream_event_counts": {
+    "system.version": 1,
+    "unknown": 7,
+    "session.resume_hint": 1
+  },
+  "streaming_observed": true,
+  "stdout_bytes": 1315,
+  "stdout_sha256": "ef4c2070652ac8da7cc48fa547c664e86a6d5857626a04c510fc2a72fa7340b7",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-loop-grok-4.5-chat_completions-group34-usage.json",
+    "artifact_sha256": "1898a873629b977333314c732e9e2f6fd728bf38a45fc52cddc4f260a531d596",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/chat/completions",
+    "upstream_endpoints": [
+      "/v1/responses"
+    ],
+    "verified": true
+  },
+  "passed": true,
+  "artifact_sha256": "8a1f01e385ce54903232f3bbc69ac9e6a82d4c354ccfb6444793e452b696f9b1"
+}

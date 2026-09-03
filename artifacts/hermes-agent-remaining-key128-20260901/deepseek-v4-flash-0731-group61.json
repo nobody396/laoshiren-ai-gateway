@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "hermes-agent",
+  "client_version": "0.20.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "deepseek-v4-flash-0731",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 61,
+  "owned_identity": {
+    "user_id": 2,
+    "key_id": 128
+  },
+  "observed_at": "2026-08-31T23:45:53+00:00",
+  "finished_at": "2026-08-31T23:46:27+00:00",
+  "duration_ms": 20650,
+  "command_contract": {
+    "executable": "hermes",
+    "provider": "openai-api",
+    "toolsets": "terminal",
+    "max_turns": 10,
+    "isolated_home": true
+  },
+  "target_group_readback": {
+    "group_id": 61
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "run_error_type": null,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "tool_result_continuation_verified": true,
+  "stdout_bytes": 6047,
+  "stdout_sha256": "9ba61e46c383ebfa16b37ee1c9eccf7c96ed9f877447d8f4421bfd9efe536ede",
+  "stderr_bytes": 36,
+  "stderr_sha256": "efb478afd6781d63e94d21a9ef6e9051b8847f35cbab196ce72aac8201633f55",
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/hermes-agent-remaining-key128-20260901/deepseek-v4-flash-0731-group61-usage-attribution.json",
+    "artifact_sha256": "e7f7b58b76c865c46110b747a0e45ac43c7ed63b6b3a0286ebaca9f592d89033",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "restoration": {
+    "group_id": 6,
+    "verified": true
+  },
+  "restored_group_id": 6,
+  "passed": true,
+  "artifact_sha256": "018e0caa2fdfca5ec4df4e09df65fd2c1ea2189cca726108e5c40d9a9e4c9f67"
+}

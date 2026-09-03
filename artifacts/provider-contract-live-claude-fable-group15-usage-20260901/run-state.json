@@ -1,0 +1,17 @@
+{
+  "cases": {
+    "15:claude-fable-5:messages:P-12:default": {
+      "artifact_sha256": "57d4516c69067b023dbe0e14daafa8bc72a8cba58843a84d6063faa4a08bb2ab",
+      "receipt": "artifacts/provider-contract-live-claude-fable-group15-usage-20260901/cases/15_claude-fable-5_messages_P-12_default-c6fb3d3967bf.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:16:09.349+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "380ed223335d59a1",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:15:47.907+00:00"
+}

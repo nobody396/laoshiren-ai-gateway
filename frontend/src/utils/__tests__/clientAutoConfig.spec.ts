@@ -3,6 +3,7 @@ import { clientAutoConfigVersion } from '@/generated/modelCatalog'
 
 import {
   buildClientAutoConfigCommand,
+  buildClientManualConfigCommand,
   getClientAutoConfigName,
   getClientAutoConfigTarget
 } from '@/utils/clientAutoConfig'
@@ -39,16 +40,44 @@ describe('client auto-config target selection', () => {
 })
 
 describe('client auto-config commands', () => {
+  it('builds a digest-verified manual Grok/Gemini command from visible fields', () => {
+    const shell = buildClientManualConfigCommand({
+      target: 'grok',
+      apiKey: 'fixture-key',
+      baseUrl: 'https://api.laoshirenai.com',
+      modelId: 'gpt-5.6-sol',
+      protocol: 'responses',
+      isWindows: false,
+    })
+    const windows = buildClientManualConfigCommand({
+      target: 'gemini',
+      apiKey: 'fixture-key',
+      baseUrl: 'https://api.laoshirenai.com',
+      modelId: 'gemini-3.7-flash',
+      protocol: 'generate_content',
+      reasoningEffort: 'low',
+      isWindows: true,
+    })
+    expect(shell).toContain("LAOSHIRENAI_GROK_API_KEY='fixture-key'")
+    expect(shell).toContain("LAOSHIRENAI_MODEL_ID='gpt-5.6-sol'")
+    expect(shell).toContain("LAOSHIRENAI_PROTOCOL='responses'")
+    expect(shell).toContain('shasum -a 256')
+    expect(windows).toContain("$env:LAOSHIRENAI_GEMINI_API_KEY='fixture-key'")
+    expect(windows).toContain("$env:LAOSHIRENAI_PROTOCOL='generate_content'")
+    expect(windows).toContain("$env:LAOSHIRENAI_REASONING_EFFORT='low'")
+    expect(windows).toContain('Get-FileHash')
+  })
+
   it('builds a Windows Codex command with a one-time ticket instead of an API key', () => {
-    expect(buildClientAutoConfigCommand({
+    const command = buildClientAutoConfigCommand({
       target: 'codex',
       ticket: 'ticket-codex-test',
       isWindows: true
-    })).toBe(
-      "$env:LAOSHIRENAI_SETUP_TOKEN='ticket-codex-test'; " +
-      "$env:LAOSHIRENAI_TOOLS='codex'; " +
-      `irm https://laoshirenai.com/auto-config/install.ps1?v=${clientAutoConfigVersion} | iex`
-    )
+    })
+    expect(command).toContain("$env:LAOSHIRENAI_SETUP_TOKEN='ticket-codex-test'")
+    expect(command).toContain("$env:LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'")
+    expect(command).toContain(`install.ps1?v=${clientAutoConfigVersion}`)
+    expect(command).toContain('Get-FileHash')
   })
 
   it('adds Codex App installation only when explicitly selected', () => {
@@ -90,45 +119,43 @@ describe('client auto-config commands', () => {
   })
 
   it('builds a one-line macOS Claude Code command with a one-time ticket', () => {
-    expect(buildClientAutoConfigCommand({
+    const command = buildClientAutoConfigCommand({
       target: 'claude',
       ticket: 'ticket-claude-test',
       isWindows: false
-    })).toBe(
-      `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' | ` +
-      "LAOSHIRENAI_SETUP_TOKEN='ticket-claude-test' LAOSHIRENAI_TOOLS='claude' bash"
-    )
+    })
+    expect(command).toContain("LAOSHIRENAI_SETUP_TOKEN='ticket-claude-test'")
+    expect(command).toContain("LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'")
+    expect(command).toContain(`install.sh?v=${clientAutoConfigVersion}`)
+    expect(command).toContain('shasum -a 256')
   })
 
   it('builds a one-line Grok Build command with a one-time ticket', () => {
-    expect(buildClientAutoConfigCommand({
+    const command = buildClientAutoConfigCommand({
       target: 'grok',
       ticket: 'ticket-grok-test',
       isWindows: false
-    })).toBe(
-      `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' | ` +
-      "LAOSHIRENAI_SETUP_TOKEN='ticket-grok-test' LAOSHIRENAI_TOOLS='grok' bash"
-    )
+    })
+    expect(command).toContain("LAOSHIRENAI_SETUP_TOKEN='ticket-grok-test'")
+    expect(command).toContain("LAOSHIRENAI_TOOLS='grok'")
+    expect(command).toContain('shasum -a 256')
   })
 
   it('builds Gemini CLI commands with a one-time ticket on both platforms', () => {
-    expect(buildClientAutoConfigCommand({
+    const shellCommand = buildClientAutoConfigCommand({
       target: 'gemini',
       ticket: 'ticket-gemini-test',
       isWindows: false
-    })).toBe(
-      `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' | ` +
-      "LAOSHIRENAI_SETUP_TOKEN='ticket-gemini-test' LAOSHIRENAI_TOOLS='gemini' bash"
-    )
-    expect(buildClientAutoConfigCommand({
+    })
+    const windowsCommand = buildClientAutoConfigCommand({
       target: 'gemini',
       ticket: 'ticket-gemini-test',
       isWindows: true
-    })).toBe(
-      "$env:LAOSHIRENAI_SETUP_TOKEN='ticket-gemini-test'; " +
-      "$env:LAOSHIRENAI_TOOLS='gemini'; " +
-      `irm https://laoshirenai.com/auto-config/install.ps1?v=${clientAutoConfigVersion} | iex`
-    )
+    })
+    expect(shellCommand).toContain("LAOSHIRENAI_TOOLS='gemini'")
+    expect(shellCommand).toContain('shasum -a 256')
+    expect(windowsCommand).toContain("$env:LAOSHIRENAI_TOOLS='gemini'")
+    expect(windowsCommand).toContain('Get-FileHash')
   })
 
   it.each([false, true])(
@@ -144,9 +171,8 @@ describe('client auto-config commands', () => {
       expect(command).toContain("LAOSHIRENAI_TOOLS='grok'")
       expect(command).toContain("LAOSHIRENAI_GROK_CC_SWITCH_COMPAT='1'")
       if (!isWindows) {
-        expect(command).toContain(
-          `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' |`
-        )
+        expect(command).toContain(`curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' -o "$f"`)
+        expect(command).toContain('shasum -a 256')
         expect(command).not.toContain(
           `curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}`
         )

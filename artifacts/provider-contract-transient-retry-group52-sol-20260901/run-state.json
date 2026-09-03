@@ -1,0 +1,17 @@
+{
+  "cases": {
+    "52:gpt-5.6-sol:responses:P-07:default": {
+      "artifact_sha256": "450043ad6cdd7b54eb194fe1e552a6a8a681a733796af85068aa6d8a362a708f",
+      "receipt": "artifacts/provider-contract-transient-retry-group52-sol-20260901/cases/52_gpt-5.6-sol_responses_P-07_default-c0931ceab424.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-09-01T03:10:42.325+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "5f54c0ef89ea38be",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-09-01T03:10:27.946+00:00"
+}

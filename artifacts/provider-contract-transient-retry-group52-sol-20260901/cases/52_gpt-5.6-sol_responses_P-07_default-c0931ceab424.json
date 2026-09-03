@@ -1,0 +1,73 @@
+{
+  "artifact_sha256": "450043ad6cdd7b54eb194fe1e552a6a8a681a733796af85068aa6d8a362a708f",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "blocked",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "52:gpt-5.6-sol:responses:P-07:default",
+    "context_window": 1050000,
+    "declared_status": "blocked",
+    "group_id": 52,
+    "group_name": "GPT Daybreak Blue 安全研究线路",
+    "marker": "LSR_CONTRACT_E6E091D879EC81D5",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-5.6-sol",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "19d0b0d6e54b0484228a87be50c259376447ea5a12fe1f640d97e5c102843830",
+  "classification": "upstream_overloaded",
+  "finished_at": "2026-09-01T03:10:38.786+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-09-01T03:10:33.819+00:00",
+  "offline_verifier": {
+    "reason": "usage object is required",
+    "status": "failed"
+  },
+  "owned_identity": {
+    "group_id": 52,
+    "key_id": 128,
+    "user_id": 2
+  },
+  "reason": "usage object is required",
+  "request": {
+    "payload_sha256": "025017ad6f0decc5673248337dec942489afdfe61159cd5e1e04c65154d75724",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "62a2120e57c1c54850fabbd4fa880529d2116ce459c1059778093868d7114853"
+  },
+  "response": {
+    "body_bytes": 285,
+    "body_sha256": "f785d18fca64a989f46ffd4a5de47c57f5eff44f59ee8c913b5de3bc86ad8679",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "code": "service_overloaded",
+      "message": "No service route currently has available capacity. Retry in about 60 seconds or switch to another model. [Request ID: 3ac5566a-333a-4749-8196-d89c439638db]",
+      "type": "overloaded_error"
+    },
+    "event_count": 0,
+    "http_status": 503,
+    "marker_present": false,
+    "request_id": "3ac5566a-333a-4749-8196-d89c439638db",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "blocked"
+  }
+}

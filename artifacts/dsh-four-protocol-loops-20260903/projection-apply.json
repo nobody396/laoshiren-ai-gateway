@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "client_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "client_matrix_write": true,
+  "changed": true,
+  "events": 4,
+  "matrix_event_counts": {
+    "client_protocol": 4,
+    "client_reasoning": 0,
+    "client_config_os": 0
+  },
+  "evidence_index_sha256": "309253d54f784da4574eb3d020a654cf8b49d9fa33c1743eaaf273d530a667e3",
+  "client_matrix_before_sha256": "1b082eceda4e71c52f24c6b2a65f3c2fa1cb78756e7dcd7a62377df1198abb5c",
+  "events_detail": [
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "chat_completions",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "generate_content",
+      "status": "unsupported"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "messages",
+      "status": "verified"
+    },
+    {
+      "matrix": "client_protocol",
+      "client_id": "deepseek-harness",
+      "protocol": "responses",
+      "status": "verified"
+    }
+  ],
+  "client_matrix_after_sha256": "3dae586c880709d3d27073e5d0f9af4a1566db25f380c67ff4149548ae2ecaa4"
+}

@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": "6ffc5681a8ced95102081e707f42609324c94c9ce16033f249c9364964a3cc4f",
+  "billing_attribution": {
+    "actual_cost": 0,
+    "status": "not_applicable",
+    "total_cost": 0,
+    "usage_row_ids": []
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com",
+    "case_key": "65:claude-haiku-4-5:messages:P-15:default",
+    "context_window": 200000,
+    "declared_status": null,
+    "group_id": 65,
+    "group_name": "Claude 经济线路",
+    "marker": "LSR_CONTRACT_4CDCAC8A3566C593",
+    "max_output_tokens": 64000,
+    "model_id": "claude-haiku-4-5",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:claude-haiku-4-5/messages/features/error_passthrough",
+      "model_protocol:claude-haiku-4-5/messages/invalid_request"
+    ]
+  },
+  "case_fingerprint": "2d96cf4fcfef049aa2d76f104240b6bd23b47f69213d3b0c9fbedaadb52eede4",
+  "classification": "verified",
+  "finished_at": "2026-08-31T19:38:44.578+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T19:38:40.556+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 65,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "f660ae69baada5efea9cc7c0b1ecef0a481f513ee91af79d6cc59f4114dd6cb9",
+    "url": "https://api.laoshirenai.com/v1/messages",
+    "user_agent_sha256": "9e7bd6b8bd6bf614169e75387ef191daa49c64b6186693efd32434d36a8a9916"
+  },
+  "response": {
+    "body_bytes": 198,
+    "body_sha256": "796215219e6e35f38a30599339059cd589f577c87c739cc711797c90dcd08a4b",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "The request could not be processed. Please verify the request and try again.",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": "59644e6e-6887-408e-ad44-8a58e7bade83",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 0,
+    "rows": [],
+    "status": "not_applicable"
+  }
+}

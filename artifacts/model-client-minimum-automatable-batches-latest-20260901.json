@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "kind": "minimum_automatable_batches",
+  "network_execution": "disabled",
+  "production_write": false,
+  "queue_artifact": "artifacts/model-client-unique-test-queue-latest-20260901.json",
+  "queue_sha256": "c8515e533705bc62ecbf3f600dfd4d61e71e618c0212ffc84faaecb8b204f4ab",
+  "remaining_case_count": 1589,
+  "remaining_execution_batch_count": 1078,
+  "tiers": [
+    {
+      "name": "provider_contract_live",
+      "automation": "live_harness_opt_in",
+      "case_count": 288,
+      "minimum_setup_batch_count": 57,
+      "note": "P-cases consolidated by exact model and protocol; no request was run."
+    },
+    {
+      "name": "group_access_live",
+      "automation": "owned_key_group_probe",
+      "case_count": 47,
+      "minimum_setup_batch_count": 10,
+      "note": "Consolidated by exact group id; discovery and route remain separate."
+    },
+    {
+      "name": "real_client_loop",
+      "automation": "client_harness",
+      "case_count": 658,
+      "minimum_setup_batch_count": 55,
+      "note": "One client setup can cover multiple models sequentially; each model still needs an exact receipt."
+    },
+    {
+      "name": "client_protocol_runtime",
+      "automation": "client_harness",
+      "case_count": 32,
+      "minimum_setup_batch_count": 12,
+      "note": "Protocols grouped by exact client release."
+    },
+    {
+      "name": "client_reasoning_piggyback",
+      "automation": "piggyback_real_client_loop",
+      "case_count": 197,
+      "minimum_setup_batch_count": 19,
+      "note": "Do not schedule a separate setup when the exact real-client loop can carry the effort assertion."
+    },
+    {
+      "name": "macos_config_qa",
+      "automation": "local_offline_config_qa",
+      "case_count": 17,
+      "minimum_setup_batch_count": 17,
+      "note": "macOS only; Linux and Windows remain separate runners."
+    },
+    {
+      "name": "official_spec_offline",
+      "automation": "offline_source_verifier",
+      "case_count": 169,
+      "minimum_setup_batch_count": 34,
+      "note": "No paid request required."
+    },
+    {
+      "name": "model_reasoning_offline",
+      "automation": "offline_contract_verifier",
+      "case_count": 139,
+      "minimum_setup_batch_count": 31,
+      "note": "Verify declarations first; live transport remains in provider_contract_live."
+    }
+  ],
+  "deferred": [
+    {
+      "name": "cross_os_config_qa",
+      "automation": "requires_linux_or_windows_runner",
+      "case_count": 34,
+      "minimum_setup_batch_count": 34,
+      "note": "Not executable on current macOS host."
+    },
+    {
+      "name": "client_contract_research",
+      "automation": "bounded_manual_research",
+      "case_count": 8,
+      "minimum_setup_batch_count": 8,
+      "note": "Identity/config contracts must be frozen before runtime probes."
+    }
+  ],
+  "densest_provider_batches": [
+    {
+      "model_id": "gpt-daybreak-blue-latest",
+      "protocol": "responses",
+      "case_count": 10,
+      "statuses": [
+        "planned",
+        "terminal_fail_review"
+      ],
+      "test_case_ids": [
+        "billing",
+        "image_input",
+        "invalid_request",
+        "minimal_text",
+        "reasoning",
+        "streaming_terminal",
+        "tool_call",
+        "tool_result_continuation",
+        "usage",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "claude-fable-5",
+      "protocol": "messages",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "invalid_request",
+        "prompt_cache",
+        "reasoning",
+        "streaming_terminal",
+        "tool_call",
+        "tool_result_continuation"
+      ]
+    },
+    {
+      "model_id": "glm-5.2",
+      "protocol": "generate_content",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "generate_content",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "messages",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "glm-5.3",
+      "protocol": "responses",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "generate_content",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "responses",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "generate_content",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "responses",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "minimax-m3",
+      "protocol": "generate_content",
+      "case_count": 9,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "error_passthrough",
+        "image_input",
+        "prompt_cache",
+        "reasoning",
+        "retry",
+        "stream_disconnect",
+        "timeout",
+        "web_search"
+      ]
+    },
+    {
+      "model_id": "qwen3.6-flash",
+      "protocol": "chat_completions",
+      "case_count": 7,
+      "statuses": [
+        "planned"
+      ],
+      "test_case_ids": [
+        "billing",
+        "image_input",
+        "reasoning",
+        "streaming_terminal",
+        "tool_call",
+        "tool_result_continuation",
+        "web_search"
+      ]
+    }
+  ],
+  "recommended_first_batch": {
+    "group_id": 6,
+    "model_id": "gpt-5.6-sol",
+    "protocol": "responses",
+    "p_ids": [
+      "P-01",
+      "P-02",
+      "P-03",
+      "P-04",
+      "P-05",
+      "P-06",
+      "P-12",
+      "P-15"
+    ],
+    "planned_cases": 8,
+    "paid_request_upper_bound": 9,
+    "plan": "artifacts/provider-contract-live-dry-run-gpt56sol-group6-20260901/plan.json",
+    "executed": false
+  },
+  "secret_free": true,
+  "artifact_sha256": "1560c94c47fa22b0f4ec7aac63f2eeb7d4ab2c7263c34647859e06486001b92a"
+}

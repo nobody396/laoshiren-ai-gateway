@@ -1,0 +1,22 @@
+{
+  "cases": {
+    "62:kimi-k3:chat_completions:P-06:high": {
+      "artifact_sha256": "9c5aaf425c9e5ea57ceb718ce4a95754d1c6abe87583702c19c4f8e2f668b4e4",
+      "receipt": "artifacts/provider-contract-live-kimi-k3-reasoning-low-high-20260901/cases/62_kimi-k3_chat_completions_P-06_high-b1434d5a04ff.json",
+      "status": "pass"
+    },
+    "62:kimi-k3:chat_completions:P-06:low": {
+      "artifact_sha256": "4a07c49a1111d1b25f6db00c8324f6c205cad881d3405c4567473fb806bb0cda",
+      "receipt": "artifacts/provider-contract-live-kimi-k3-reasoning-low-high-20260901/cases/62_kimi-k3_chat_completions_P-06_low-d07faa6b1e65.json",
+      "status": "pass"
+    }
+  },
+  "finished_at": "2026-08-31T20:56:24.176+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "5b92e31c8d00e313",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:56:04.373+00:00"
+}

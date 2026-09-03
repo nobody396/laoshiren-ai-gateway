@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "client_usage_attribution",
+  "client_id": "claude-code",
+  "client_version": "2.1.258",
+  "user_id": 2,
+  "api_key_id": 128,
+  "group_id": 5,
+  "observed_at": "2026-09-03T07:29:46+00:00",
+  "rows": [
+    {
+      "created_at": "2026-09-03T15:29:31.945718+08:00",
+      "model": "claude-fable-5-1",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.258 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 4,
+      "output_tokens": 105,
+      "reasoning_effort": "high",
+      "account_id": 84
+    },
+    {
+      "created_at": "2026-09-03T15:29:33.1282+08:00",
+      "model": "claude-fable-5-1",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.258 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 1271,
+      "output_tokens": 23,
+      "reasoning_effort": "high",
+      "account_id": 84
+    },
+    {
+      "created_at": "2026-09-03T15:29:35.895904+08:00",
+      "model": "claude-fable-5-1",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.258 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 33,
+      "output_tokens": 192,
+      "reasoning_effort": "high",
+      "account_id": 84
+    },
+    {
+      "created_at": "2026-09-03T15:29:39.573933+08:00",
+      "model": "claude-fable-5-1",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.258 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 33,
+      "output_tokens": 154,
+      "reasoning_effort": "high",
+      "account_id": 84
+    },
+    {
+      "created_at": "2026-09-03T15:29:42.505272+08:00",
+      "model": "claude-fable-5-1",
+      "request_type": "stream",
+      "inbound_endpoint": "/v1/messages",
+      "upstream_endpoint": "/v1/messages",
+      "user_agent": "claude-cli/2.1.258 (external, sdk-cli)",
+      "stream": true,
+      "input_tokens": 33,
+      "output_tokens": 22,
+      "reasoning_effort": "high",
+      "account_id": 84
+    }
+  ],
+  "secret_free": true,
+  "artifact_sha256": "5b3500572c5904371f448fff16e1e93239c36f698b8a5e6972d53d369ab2ff65"
+}

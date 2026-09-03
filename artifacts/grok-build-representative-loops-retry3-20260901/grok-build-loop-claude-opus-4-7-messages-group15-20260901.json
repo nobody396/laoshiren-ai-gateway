@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "grok-build",
+  "client_version": "cli:1.0.13",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "claude-opus-4-7",
+  "protocol": "messages",
+  "api_backend": "messages",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 15,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "group": {
+    "id": 15,
+    "name": "Claude 兼容线路",
+    "platform": "anthropic",
+    "subscription_type": "standard",
+    "rate_multiplier": 2.6
+  },
+  "group_readback": {
+    "id": 205,
+    "user_id": 1,
+    "status": "active",
+    "group_id": 15
+  },
+  "model_discovery": {
+    "url": "https://api.laoshirenai.com/v1/models",
+    "http_status": 200,
+    "request_id": null,
+    "body_sha256": "7ca2f90bb7e0fef4c92336aed83d30e4e23515cf2f7d0be9cbacd21192503dd1",
+    "model_ids": [
+      "claude-fable-5",
+      "claude-haiku-4-5",
+      "claude-opus-4-6",
+      "claude-opus-4-7",
+      "claude-opus-4-8",
+      "claude-opus-5",
+      "claude-sonnet-4-6",
+      "claude-sonnet-5"
+    ],
+    "model_count": 8,
+    "error": null
+  },
+  "observed_at": "2026-08-31T23:08:35+00:00",
+  "finished_at": "2026-08-31T23:09:02+00:00",
+  "duration_ms": 25281,
+  "command_shape": [
+    "grok",
+    "--always-approve",
+    "--permission-mode",
+    "bypassPermissions",
+    "--disable-web-search",
+    "--single",
+    "[prompt]",
+    "--output-format",
+    "streaming-json",
+    "--model",
+    "laoshirenai-messages",
+    "--cwd",
+    "[temporary-workspace]",
+    "--max-turns",
+    "10"
+  ],
+  "config_contract": {
+    "path": "[temporary-home]/.grok/config.toml",
+    "env_key": "LAOSHIRENAI_GROK_API_KEY",
+    "api_backend": "messages",
+    "base_url": "https://api.laoshirenai.com/v1",
+    "key_in_config": false,
+    "key_in_argv": false
+  },
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "available_commands": 6,
+    "text": 4,
+    "usage": 4,
+    "tool_call": 3,
+    "tool_call_update": 7,
+    "end": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": false,
+  "stdout_sha256": "0c120283ff292aa7e12ac1fbefe15b827eabdfb6b2c7a0e49711fc8eecb6b434",
+  "stderr_sha256": "356c4587117256c0af7bd8c8752e5b87f60110e3cbedc6e5149fb10c3343c7df",
+  "stdout_bytes": 8623,
+  "stderr_bytes": 1848,
+  "restored_group_id": 6,
+  "passed": false,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/grok-build-representative-loops-retry3-20260901/grok-build-usage-claude-opus-4-7-messages-group15-20260901.json",
+    "artifact_sha256": "897325bab43c68355e3ba626e052a39ad5998895b4b0dc142d0d73d1df800d5a",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/messages",
+    "upstream_endpoint": "/v1/messages",
+    "verified": true
+  },
+  "artifact_sha256": "fc3f71b9bb49650a79b5f3d7e5a4c79ac8b81fa73688d0d75d888e820eadcda8"
+}

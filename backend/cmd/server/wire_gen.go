@@ -324,7 +324,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	nativeCheckoutHandler := handler.NewNativeCheckoutHandler(nativeCheckoutService)
 	balanceAlertHandler := handler.NewBalanceAlertHandler(balanceAlertService)
 	downloadResourceService := service.ProvideDownloadResourceService(configConfig, gitHubReleaseClient)
-	clientSetupService := service.NewClientSetupService(apiKeyService, ssoTicketCache)
+	clientSetupService := service.NewClientSetupService(apiKeyService, ssoTicketCache, gatewayService)
 	resourceHandler := handler.NewResourceHandler(downloadResourceService, clientSetupService)
 	statusControlService := service.NewStatusControlService(db, settingRepository, reliabilityEvidenceService)
 	incidentControlService := service.NewIncidentControlService(db, settingRepository, statusControlService, reliabilityEvidenceService)

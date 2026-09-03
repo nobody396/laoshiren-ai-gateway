@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 8,
+  "events": 16,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "2b006ae7035715d970720c7a78d2f982cb81e4578a84f8c2627c72cdba01b6c1",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-haiku-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-59648223015c6db57b4f1dfb"
+          ]
+        },
+        {
+          "model_id": "claude-haiku-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-811494b8ea6f96ec9b9109df"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-2b0055b02878c4c1e4ec8a21"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-ba03d348a7e820d63299a2bd"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-5e8ec24f1ab07e4e6ba4c9be"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-751bbd71284066622e6085c4"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-7.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-d03ac1524e4b6a26a719e92f"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-7",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-820c959adb28b2d68d0de73c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-4-8.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-35b73508ea19653abad3f9f2"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-8",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-17ea3f3d35ae398b601e1e17"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-opus-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-47ebc726962ab5614ac1e259"
+          ]
+        },
+        {
+          "model_id": "claude-opus-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-f3b02f4c8155b1e8bd3cb816"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-4-6.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-661480d19cdf7c4a2151b5c4"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-4-6",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-f742feddaf90541fb0460854"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/image_input",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-9c9b950319abedf55d24dc56"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "model_protocol",
+          "path": "messages/features/web_search",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-2dc04ebd8c51ddc41dd371df"
+          ]
+        }
+      ]
+    }
+  ]
+}

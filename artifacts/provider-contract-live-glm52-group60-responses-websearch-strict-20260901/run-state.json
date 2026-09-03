@@ -1,0 +1,17 @@
+{
+  "cases": {
+    "60:glm-5.2:responses:P-11:default": {
+      "artifact_sha256": "ac7e4ab53ecca8cc65bf2fdfc0835e13a8b6776042ec05853db1382a08296b2b",
+      "receipt": "artifacts/provider-contract-live-glm52-group60-responses-websearch-strict-20260901/cases/60_glm-5.2_responses_P-11_default-12d7d79724ad.json",
+      "status": "blocked"
+    }
+  },
+  "finished_at": "2026-08-31T20:53:56.407+00:00",
+  "kind": "provider_contract_live_state",
+  "network_execution": "explicit_live",
+  "restored_group_id": 6,
+  "run_id": "976ec862806429ec",
+  "schema_version": 1,
+  "secret_free": true,
+  "started_at": "2026-08-31T20:53:42.069+00:00"
+}

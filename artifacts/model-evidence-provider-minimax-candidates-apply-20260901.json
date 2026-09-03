@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 3,
+  "events": 12,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "89fdfc876e6a04927375be8a8fc2eed3d8e63889a4350bc11c4bb0ff285cfc09",
+  "changes": [
+    {
+      "path": "model-doc-contracts/kimi-k2.7-code.json",
+      "events": [
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-d07104242c9fd2293d4b5655"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3b0bce30325914edd15761d3"
+          ]
+        },
+        {
+          "model_id": "kimi-k2.7-code",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-dd05e08c68a6734a2fafdd33"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/kimi-k3.json",
+      "events": [
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-af8d60f80b20c1592c6a7a19"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-223a094b2c31b80581d760e3"
+          ]
+        },
+        {
+          "model_id": "kimi-k3",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-191c8b9a79681a3010917f1c"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/minimax-m3.json",
+      "events": [
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "messages/features/billing",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-5b5f8f5ae158420c04ef9a24"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "messages/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3afb4c58d96a9032c88d4106"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "messages/features/reasoning",
+          "status": "blocked",
+          "evidence_ids": [
+            "evidence-810f5f1a9bd01cfef938066d"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/features/billing",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-83222aa62b276b46748738b5"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-a7af86b11d3a7d785410d7a6"
+          ]
+        },
+        {
+          "model_id": "minimax-m3",
+          "matrix": "model_protocol",
+          "path": "responses/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-7d841d2ab78507155343f6ee"
+          ]
+        }
+      ]
+    }
+  ]
+}

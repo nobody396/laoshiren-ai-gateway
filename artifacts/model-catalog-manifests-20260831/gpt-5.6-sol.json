@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "gpt-5.6-sol",
+    "upstream_id": "gpt-5.6-sol",
+    "display_name": "GPT-5.6 Sol",
+    "platform": "openai",
+    "context_window": 1050000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "pricing": {
+    "input_per_mtok_usd": 5.0,
+    "cached_input_per_mtok_usd": 0.5,
+    "output_per_mtok_usd": 30.0,
+    "long_context": {
+      "input_threshold": 272000,
+      "input_multiplier": 2,
+      "output_multiplier": 1.5
+    },
+    "evidence_url": "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
+  },
+  "production": {
+    "group_name": "GPT 标准线路",
+    "legacy_group_names": [],
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "managed_predecessor_models": []
+  },
+  "evidence": {
+    "public_pricing_snapshot": "artifacts/public-model-pricing-20260831.json",
+    "contract": "model-doc-contracts/gpt-5.6-sol.json"
+  }
+}

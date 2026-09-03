@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "codex",
+  "client_version": "cli:0.151.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-5.4",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 6,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T22:23:54+00:00",
+  "finished_at": "2026-08-31T22:24:23+00:00",
+  "duration_ms": 27571,
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "thread.started": 1,
+    "item.completed": 8,
+    "turn.started": 1,
+    "item.started": 3,
+    "turn.completed": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "stdout_sha256": "40a8e9ad8c4b33cd43e6a26a698e9302104146f476d23c9977ab7a68c4f8892e",
+  "stderr_sha256": "9c7663cd9670f6dd804ff4db9b53c7fb45b5cbbe7c60efaaddf5fdfbbb12963d",
+  "stdout_bytes": 2389,
+  "stderr_bytes": 922,
+  "restored_group_id": 6,
+  "passed": true,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/codex-missing-loops-batch1-20260901/codex-usage-gpt-5.4-group6-20260901.json",
+    "artifact_sha256": "791156676b062c3527560bc7d08da5f6de4ecda9608d9f7e2f5807b9b1a94010",
+    "usage_rows": 4,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": true
+  },
+  "artifact_sha256": "53f7347f8ea2c08a5d7df25c587661e96bdc5684b822c89675a463681bcc80a7"
+}

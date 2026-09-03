@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 4,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "7699c3bdc6e0389e1a96c80b4ad0fb1d3a7b4dc465e0286465ca382f42aa02c9",
+  "changes": [
+    {
+      "path": "model-doc-contracts/claude-opus-4-5.json",
+      "events": [
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-fc1f5ef35f087a54da4ae287"
+          ]
+        },
+        {
+          "model_id": "claude-opus-4-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-bca8ee8b0fe0f2bbfc4f4576",
+            "evidence-fc1f5ef35f087a54da4ae287"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/claude-sonnet-5.json",
+      "events": [
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/messages/macos",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-273bfe42c9dc2d35c0a5f622",
+            "evidence-b79c848ec7d70c6368c157a9"
+          ]
+        },
+        {
+          "model_id": "claude-sonnet-5",
+          "matrix": "test_evidence",
+          "path": "Claude Code/coverage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-273bfe42c9dc2d35c0a5f622",
+            "evidence-b67d8798b1f85beaaafd4516",
+            "evidence-b79c848ec7d70c6368c157a9"
+          ]
+        }
+      ]
+    }
+  ]
+}

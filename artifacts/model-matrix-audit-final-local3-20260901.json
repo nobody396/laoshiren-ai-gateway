@@ -1,0 +1,49 @@
+{
+  "inventory_models": 34,
+  "contracts": 34,
+  "complete": false,
+  "matrices": {
+    "public_model": {
+      "complete": true,
+      "failures": []
+    },
+    "model_protocol": {
+      "complete": true,
+      "failures": []
+    },
+    "model_reasoning": {
+      "complete": true,
+      "failures": []
+    },
+    "client_protocol": {
+      "complete": true,
+      "failures": []
+    },
+    "client_reasoning": {
+      "complete": true,
+      "failures": []
+    },
+    "group_access": {
+      "complete": true,
+      "failures": []
+    },
+    "client_config_os": {
+      "complete": true,
+      "failures": []
+    },
+    "test_evidence": {
+      "complete": false,
+      "failures": [
+        "glm-5.3/Grok Build: public client protocol must reference fully verified OS cells"
+      ]
+    },
+    "model_price": {
+      "complete": true,
+      "failures": []
+    }
+  },
+  "stale_evidence": [],
+  "failures": [
+    "glm-5.3/Grok Build: public client protocol must reference fully verified OS cells"
+  ]
+}

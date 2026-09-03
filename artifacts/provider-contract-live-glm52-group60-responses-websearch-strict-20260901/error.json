@@ -1,0 +1,7 @@
+{
+  "error": "filters selected no live provider cases",
+  "kind": "provider_contract_live_error",
+  "network_execution": "explicit_live",
+  "schema_version": 1,
+  "secret_free": true
+}

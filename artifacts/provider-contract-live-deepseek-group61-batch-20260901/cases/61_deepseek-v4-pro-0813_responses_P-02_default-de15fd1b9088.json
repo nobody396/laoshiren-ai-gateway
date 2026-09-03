@@ -1,0 +1,102 @@
+{
+  "artifact_sha256": "af81a02872223a34e385b63529613ecf047b21fd1e93cab108ce6ee9f89b0245",
+  "billing_attribution": {
+    "actual_cost": 0.001038825,
+    "status": "verified",
+    "total_cost": 0.0010935,
+    "usage_row_ids": [
+      "241323"
+    ]
+  },
+  "case": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "case_key": "61:deepseek-v4-pro-0813:responses:P-02:default",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 61,
+    "group_name": "DeepSeek 企业高速线路",
+    "marker": "LSR_CONTRACT_84279CF2BB9B13B1",
+    "max_output_tokens": 393216,
+    "model_id": "deepseek-v4-pro-0813",
+    "name": "streaming_sse",
+    "p_id": "P-02",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": [
+      "model_protocol:deepseek-v4-pro-0813/responses/streaming_terminal"
+    ]
+  },
+  "case_fingerprint": "29553503245b48fcd1346fb9ab03d2fd8e7854ca24842906a9015f9238ecfba5",
+  "classification": "verified",
+  "finished_at": "2026-08-31T18:59:34.375+00:00",
+  "kind": "provider_contract_live_case",
+  "observed_at": "2026-08-31T18:59:29.575+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "owned_identity": {
+    "group_id": 61,
+    "key_id": 205,
+    "user_id": 1
+  },
+  "reason": null,
+  "request": {
+    "payload_sha256": "16331496c54e0cc33ff578de19c8384678dd9385693a4b68d9a3b765664f6930",
+    "url": "https://api.laoshirenai.com/v1/responses",
+    "user_agent_sha256": "178f246d114e0cb8db6e2c78b958e9895a97178a70fa1f47fa74ea654ea63425"
+  },
+  "response": {
+    "body_bytes": 8488,
+    "body_sha256": "8d36425649d30b55e94077d774f32baa6a209350fa482decaf6fcb35692bf961",
+    "complete": true,
+    "content_type": "text/event-stream",
+    "error": null,
+    "event_count": 22,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "933708f0-3456-91b1-ae6a-6fa1f5dbe44c",
+    "sse_framing": true,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 1,
+  "secret_free": true,
+  "usage": null,
+  "usage_attribution": {
+    "row_count": 1,
+    "rows": [
+      {
+        "account_id": 75,
+        "account_rate_multiplier": 1,
+        "actual_cost": 0.001038825,
+        "api_key_id": 205,
+        "cache_creation_cost": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_cost": 0,
+        "cache_read_tokens": 0,
+        "created_at": "2026-09-01T02:59:32.76986+08:00",
+        "duration_ms": 1409,
+        "first_token_ms": 777,
+        "group_id": 61,
+        "id": 241323,
+        "inbound_endpoint": "/v1/responses",
+        "input_cost": 0.0006075,
+        "input_tokens": 135,
+        "model": "deepseek-v4-pro-0813",
+        "output_cost": 0.000486,
+        "output_tokens": 36,
+        "rate_multiplier": 0.95,
+        "request_id": "client:8c4adc2f-7bbd-471c-82a3-2a0dbc4a57d0",
+        "request_type": "stream",
+        "stream": true,
+        "total_cost": 0.0010935,
+        "upstream_endpoint": "/v1/responses",
+        "user_agent": "laoshirenai-provider-contract-live/1.0 run/637734901d4acba8 case/de15fd1b9088"
+      }
+    ],
+    "status": "verified"
+  }
+}

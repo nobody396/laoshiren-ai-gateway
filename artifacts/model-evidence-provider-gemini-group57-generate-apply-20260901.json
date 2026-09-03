@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "kind": "model_evidence_projection",
+  "command": "apply",
+  "production_write": false,
+  "contract_write": true,
+  "contracts_changed": 2,
+  "events": 12,
+  "group_access": {
+    "changed": 0,
+    "verified": 0,
+    "blocked": 0
+  },
+  "evidence_index_sha256": "aa2fcadc540c0b342a801c30b33f11ff99f1e978d8a595b070295b9eed2c3bf6",
+  "changes": [
+    {
+      "path": "model-doc-contracts/gemini-3.1-pro.json",
+      "events": [
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-96de7a08c5bfaacd4c300b94"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-47abaf6c9bdd7e4407401ebc"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-22681ac6b7e1db5a7de33220"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-0a9cba81f11cf375bc3ac7da"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3928bca32c62a188fd457474"
+          ]
+        },
+        {
+          "model_id": "gemini-3.1-pro",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-3f16b6fba70dfa4423df4683"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "model-doc-contracts/gemini-3.7-flash.json",
+      "events": [
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/streaming_terminal",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-56b1882cca00a8c083976b25"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/tool_call",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-aee49a5341c5873fd3a0b829"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/tool_result_continuation",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-cac36c8b5a879cd398f0bfa7"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/usage",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-215c084a6928e58fdce13f0c"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/error_passthrough",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-273a55a5d1a36837e3daec0f"
+          ]
+        },
+        {
+          "model_id": "gemini-3.7-flash",
+          "matrix": "model_protocol",
+          "path": "generate_content/features/reasoning",
+          "status": "verified",
+          "evidence_ids": [
+            "evidence-641ce025ddcfab7ec806f7df"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -12,6 +12,10 @@ import {
 const openaiModels = [
   ...catalogModelsForPlatform('openai'),
   'gpt-5.6-sol', 'gpt-5.6-terra',
+  // Public and routable, but intentionally absent from the strict static
+  // catalog until OpenAI publishes its maximum output limit. The account
+  // whitelist does not require that limit and must still expose the exact ID.
+  'gpt-5.3-codex-spark',
   'gpt-5.5',
   'gpt-5.4', 'gpt-5.4-nano',
   'gpt-5.3-codex',

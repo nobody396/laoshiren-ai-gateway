@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "real_client_loop",
+  "secret_free": true,
+  "client_id": "codex",
+  "client_version": "cli:0.151.0",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "glm-5.2",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com/v1",
+  "group_id": 60,
+  "owned_key": {
+    "user_id": 1,
+    "key_id": 205,
+    "name": "模型矩阵验证 · 20260901"
+  },
+  "observed_at": "2026-08-31T22:24:44+00:00",
+  "finished_at": "2026-08-31T22:25:11+00:00",
+  "duration_ms": 3323,
+  "exit_code": 1,
+  "timed_out": false,
+  "event_types": {
+    "thread.started": 1,
+    "item.completed": 2,
+    "turn.started": 1,
+    "error": 1,
+    "turn.failed": 1
+  },
+  "tool_use_observed": false,
+  "tool_result_observed": false,
+  "file_marker_verified": false,
+  "final_marker_verified": false,
+  "stdout_sha256": "5bae6c66db461ba395181da14ead79f64b7282eb7e1202ac33e0606a6dc9455c",
+  "stderr_sha256": "03abc4e9490a34a69c1e3c2a10b33e3e957863a1be68b46d95ac98c89ea1fa12",
+  "stdout_bytes": 1047,
+  "stderr_bytes": 586,
+  "restored_group_id": 6,
+  "passed": false,
+  "protocol_attribution": {
+    "artifact_uri": "artifacts/codex-missing-loops-batch2-20260901/codex-usage-glm-5.2-group60-20260901.json",
+    "artifact_sha256": "28781a0482350d59a2e702f88c411a4e63af32510a151da1ec7e293026e6261b",
+    "usage_rows": 0,
+    "inbound_endpoint": "/v1/responses",
+    "upstream_endpoint": "/v1/responses",
+    "verified": false
+  },
+  "artifact_sha256": "3427f867658963064fe4e5158c8fb5f9c30abdb707a8d8bcacd2124b6f963253"
+}

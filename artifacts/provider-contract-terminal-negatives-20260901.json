@@ -1,0 +1,504 @@
+{
+  "schema_version": 1,
+  "kind": "provider_contract_terminal_negatives",
+  "observed_at": "2026-09-01T03:25:00+00:00",
+  "rows": [
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "messages",
+        "test_case_id": "billing"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "messages",
+        "test_case_id": "reasoning"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-dc703ab27d4e5169d50a5655"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "messages",
+        "test_case_id": "minimal_text"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-1282c318c7e683956b913da1"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "messages",
+        "test_case_id": "streaming_terminal"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-ba95a07056161439a7d6b967"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "messages",
+        "test_case_id": "tool_call"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-5393a92236f7536eb19af751",
+        "evidence-5fb21d4045e4a6688508493f"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "messages",
+        "test_case_id": "tool_result_continuation"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-da7ead9dd01a30f4dd1213b1"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "messages",
+        "test_case_id": "usage"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-ee0ac6c9d10ed6b9ebbbc9ef"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "glm-5.2",
+        "protocol": "responses",
+        "test_case_id": "prompt_cache"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "chat_completions",
+        "test_case_id": "invalid_request"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "chat_completions",
+        "test_case_id": "minimal_text"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "chat_completions",
+        "test_case_id": "streaming_terminal"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "chat_completions",
+        "test_case_id": "tool_call"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "chat_completions",
+        "test_case_id": "tool_result_continuation"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "gpt-daybreak-blue-latest",
+        "protocol": "chat_completions",
+        "test_case_id": "usage"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k2.7-code",
+        "protocol": "messages",
+        "test_case_id": "billing"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k2.7-code",
+        "protocol": "messages",
+        "test_case_id": "reasoning"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-dd05e08c68a6734a2fafdd33"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k2.7-code",
+        "protocol": "messages",
+        "test_case_id": "minimal_text"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-1e82492cfe6b9c3a8176b6e4"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k2.7-code",
+        "protocol": "messages",
+        "test_case_id": "streaming_terminal"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-72a2f59470a635698d71f7b9"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k2.7-code",
+        "protocol": "messages",
+        "test_case_id": "tool_call"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-1dd48af0fcfc293652878566",
+        "evidence-93bdf9bdc3a3664e3868f6a0"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k2.7-code",
+        "protocol": "messages",
+        "test_case_id": "tool_result_continuation"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-f329182b1d831d23866b9f28"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k2.7-code",
+        "protocol": "messages",
+        "test_case_id": "usage"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-21de3757b9e4d8c83f6f0cca"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k3",
+        "protocol": "messages",
+        "test_case_id": "billing"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k3",
+        "protocol": "messages",
+        "test_case_id": "reasoning"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-191c8b9a79681a3010917f1c"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k3",
+        "protocol": "messages",
+        "test_case_id": "minimal_text"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-c6ae1aa1a5a936b29364fec9"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k3",
+        "protocol": "messages",
+        "test_case_id": "streaming_terminal"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-d5ba2b484d00df3c4aa04d70"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k3",
+        "protocol": "messages",
+        "test_case_id": "tool_call"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-819f5d6ecc4b5a6f30cac476",
+        "evidence-f6241cb5844d750793879296"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k3",
+        "protocol": "messages",
+        "test_case_id": "tool_result_continuation"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-3f673985f916e77030bfad73"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "kimi-k3",
+        "protocol": "messages",
+        "test_case_id": "usage"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-7ec6d165c3ba5d776ea95c4d"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "messages",
+        "test_case_id": "billing"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "messages",
+        "test_case_id": "reasoning"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-810f5f1a9bd01cfef938066d"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "messages",
+        "test_case_id": "minimal_text"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-663de135f1493bb5cfe03081"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "messages",
+        "test_case_id": "streaming_terminal"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-7a3775ebdc50159ce96d805e"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "messages",
+        "test_case_id": "tool_call"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-05405ba9a5284facf2bd93ac",
+        "evidence-4a24e65b1bf5ba2dcca95cdc"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "messages",
+        "test_case_id": "tool_result_continuation"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-1615bf1244f39ed9f1d86fc2"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "messages",
+        "test_case_id": "usage"
+      },
+      "status": "terminal_fail_review",
+      "terminal_results": [
+        "fail"
+      ],
+      "evidence_ids": [
+        "evidence-d29c20e4dac389af523e54cb"
+      ],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    },
+    {
+      "target": {
+        "model_id": "minimax-m3",
+        "protocol": "responses",
+        "test_case_id": "prompt_cache"
+      },
+      "status": "planned",
+      "terminal_results": [],
+      "evidence_ids": [],
+      "reason": "Exact public route is unavailable or the protocol base contract already failed; dependent feature cannot be published as supported."
+    }
+  ],
+  "secret_free": true
+}

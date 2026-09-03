@@ -31,6 +31,8 @@ const (
 	FieldKey = "key"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldGroupIds holds the string denoting the group_ids field in the database.
+	FieldGroupIds = "group_ids"
 	// FieldGroupID holds the string denoting the group_id field in the database.
 	FieldGroupID = "group_id"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -116,6 +118,7 @@ var Columns = []string{
 	FieldTeamOwnerDisabled,
 	FieldKey,
 	FieldName,
+	FieldGroupIds,
 	FieldGroupID,
 	FieldStatus,
 	FieldLastUsedAt,

@@ -60,10 +60,13 @@ export async function create(
   quota?: number,
   expiresInDays?: number,
   rateLimitData?: { rate_limit_5h?: number; rate_limit_1d?: number; rate_limit_7d?: number },
-  scope: 'personal' | 'team' = 'personal'
+  scope: 'personal' | 'team' = 'personal',
+  groupIds?: number[]
 ): Promise<ApiKey> {
   const payload: CreateApiKeyRequest = { name, scope }
-  if (groupId !== undefined) {
+  if (groupIds !== undefined) {
+    payload.group_ids = groupIds
+  } else if (groupId !== undefined) {
     payload.group_id = groupId
   }
   if (customKey) {

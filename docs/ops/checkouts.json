@@ -83,6 +83,16 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-09-07T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-multi-group-api-keys-20260904",
+      "owner": "codex-multi-group-api-keys",
+      "kind": "temporary",
+      "allowed_actions": [
+        "develop",
+        "test"
+      ],
+      "ttl": "2026-09-11T23:59:59+08:00"
     }
   ]
 }

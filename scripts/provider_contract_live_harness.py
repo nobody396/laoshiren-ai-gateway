@@ -7,21 +7,22 @@ explicit ``run --execute --acknowledge-paid-probes`` gate.  ``plan`` is fully
 offline and is the intended default.
 
 Live execution is restricted to the Agent Switch secret
-``LAOSHIRENAI_MODEL_MATRIX_TEST_KEY`` and owned API key 205.  The harness
+``LAOSHIRENAI_MODEL_MATRIX_TEST_KEY_USER2`` and owned API key 128.  The harness
 switches that key group-by-group and restores group 6 in ``finally``.  Every
 case is written atomically as a secret-free immutable receipt before the run
-checkpoint advances, so interrupted batches resume without repeating passed
-paid probes.
+checkpoint advances. Production cross-run reuse is intentionally disabled until
+receipts bind a current deployment digest; old receipts are preserved for review.
 """
 
 from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -44,6 +45,9 @@ SECRET_NAME = "LAOSHIRENAI_MODEL_MATRIX_TEST_KEY_USER2"
 OWNED_USER_ID = 2
 OWNED_KEY_ID = 128
 RESTORE_GROUP_ID = 6
+APPROVED_ORIGIN = "https://api.laoshirenai.com"
+MAX_RECEIPT_AGE = timedelta(hours=24)
+HARNESS_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 PROTOCOLS = {"responses", "chat_completions", "messages", "generate_content"}
 BASE_CASES = ("P-01", "P-02", "P-03", "P-04", "P-05", "P-06", "P-12", "P-15")
 OPTIONAL_CASES = {
@@ -202,6 +206,24 @@ def verify_receipt(path: Path, case_fingerprint: str) -> dict[str, Any] | None:
     body.pop("artifact_sha256", None)
     if embedded != digest_json(body):
         return None
+    if (receipt.get("schema_version") != 2
+            or receipt.get("kind") != "provider_contract_live_case"
+            or receipt.get("network_execution") != "explicit_live"
+            or receipt.get("harness_sha256") != HARNESS_SHA256
+            or receipt.get("offline_verifier", {}).get("status") != "passed"
+            or receipt.get("result") != "pass"
+            or receipt.get("response", {}).get("http_status") not in range(200, 600)):
+        return None
+    try:
+        observed = datetime.fromisoformat(receipt["observed_at"].replace("Z", "+00:00"))
+        age = datetime.now(timezone.utc) - observed
+        if age < timedelta(0) or age > MAX_RECEIPT_AGE:
+            return None
+    except (KeyError, TypeError, ValueError):
+        return None
+    identity = receipt.get("owned_identity", {})
+    if identity.get("user_id") != OWNED_USER_ID or identity.get("key_id") != OWNED_KEY_ID:
+        return None
     assert_secret_free(receipt, str(path))
     return receipt
 
@@ -311,7 +333,7 @@ def build_cases(
     if unknown:
         raise HarnessError("unknown case IDs: " + ", ".join(sorted(unknown)))
     for path in sorted(contracts_dir.glob("*.json")):
-        if path.name in {"client-matrix.json", "matrix-schema.json"}:
+        if path.name in {"client-matrix.json", "matrix-schema.json", "import-provenance.json"}:
             continue
         contract = load_json(path)
         if not isinstance(contract, dict):
@@ -410,6 +432,8 @@ def plan_report(cases: list[LiveCase], output_dir: Path) -> dict[str, Any]:
     return {
         "schema_version": 1,
         "kind": "provider_contract_live_plan",
+        "scope": "protocol probes only, not full public release acceptance",
+        "external_evidence_required": ["advertised context limits", "video input", "disconnect", "timeout", "retry", "owned accounting and balance reconciliation", "real client version/OS tool loops"],
         "network_execution": "disabled",
         "secret_source": f"Agent Switch name only: {SECRET_NAME}",
         "owned_identity": {"user_id": OWNED_USER_ID, "key_id": OWNED_KEY_ID, "restore_group_id": RESTORE_GROUP_ID},
@@ -447,7 +471,9 @@ def headers_for(protocol: str, key: str, user_agent: str) -> dict[str, str]:
 
 def request_payload(case: LiveCase, *, stream: bool = False, invalid: bool = False, cache: bool = False) -> dict[str, Any]:
     prompt = f"Reply with exactly {case.marker}."
-    output_budget = 4096 if case.model_id in {"minimax-m3", "kimi-k2.7-code", "claude-fable-5"} else 96
+    output_budget = 4096 if case.p_id == "P-06" or case.model_id in {"minimax-m3", "kimi-k2.7-code", "claude-fable-5"} else 512
+    if case.p_id == "P-06":
+        prompt = f"Find the smallest integer greater than 100 whose remainder is 3 modulo 7 and 5 modulo 11. Explain briefly and include marker {case.marker}."
     if cache:
         # Stay comfortably above provider cache-minimum thresholds; a 4K-char
         # prefix can tokenize to roughly the 1K boundary and miss by rounding.
@@ -492,7 +518,8 @@ def request_payload(case: LiveCase, *, stream: bool = False, invalid: bool = Fal
         if case.p_id in {"P-04", "P-05"}:
             payload.update({"messages": [{"role": "user", "content": f"Call echo_contract with value {case.marker}."}], "tools": [{"name": "echo_contract", "description": "Echo a value", "input_schema": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"], "additionalProperties": False}}], "tool_choice": {"type": "tool", "name": "echo_contract"}})
         elif case.p_id == "P-06" and case.reasoning_level:
-            payload["effort"] = case.reasoning_level
+            payload["thinking"] = {"type": "adaptive"}
+            payload["output_config"] = {"effort": case.reasoning_level}
         elif case.p_id == "P-11":
             payload["messages"] = [{"role": "user", "content": f"Search the web for the official Anthropic homepage, cite it, then include marker {case.marker}."}]
             payload["tools"] = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 1}]
@@ -507,6 +534,9 @@ def request_payload(case: LiveCase, *, stream: bool = False, invalid: bool = Fal
         if case.p_id in {"P-04", "P-05"}:
             payload["contents"] = [{"role": "user", "parts": [{"text": f"Call echo_contract with value {case.marker}."}]}]
             payload["tools"] = [{"functionDeclarations": [{"name": "echo_contract", "description": "Echo a value", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}}]}]
+            payload["toolConfig"] = {"functionCallingConfig": {"mode": "ANY", "allowedFunctionNames": ["echo_contract"]}}
+        elif case.p_id == "P-06" and case.reasoning_level:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": case.reasoning_level}
         elif case.p_id == "P-10":
             payload["contents"] = [{"role": "user", "parts": [{"text": f'Return JSON with marker exactly "{case.marker}".'}]}]
             payload["generationConfig"].update({"responseMimeType": "application/json", "responseSchema": {"type": "OBJECT", "properties": {"marker": {"type": "STRING"}}, "required": ["marker"]}})
@@ -523,13 +553,28 @@ def request_payload(case: LiveCase, *, stream: bool = False, invalid: bool = Fal
     return payload
 
 
+def approved_url(url: str) -> None:
+    parsed = urllib.parse.urlsplit(url)
+    if (parsed.scheme != "https" or parsed.netloc != "api.laoshirenai.com"
+            or parsed.username or parsed.password or parsed.fragment):
+        raise HarnessError("owned probes require the approved HTTPS API origin")
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise HarnessError("authenticated provider probe redirects are forbidden")
+
+
 class URLTransport:
     def post(self, url: str, headers: dict[str, str], payload: dict[str, Any], timeout: int) -> HTTPResult:
+        approved_url(url)
+        if not 1 <= timeout <= 180:
+            raise HarnessError("timeout must be between 1 and 180 seconds")
         request = urllib.request.Request(
             url, data=json.dumps(payload, separators=(",", ":")).encode(), headers=headers, method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urllib.request.build_opener(NoRedirect()).open(request, timeout=timeout) as response:
                 return HTTPResult(response.status, dict(response.headers.items()), response.read(), None)
         except urllib.error.HTTPError as error:
             return HTTPResult(error.code, dict(error.headers.items()), error.read(), None)
@@ -602,11 +647,17 @@ def extract_usage(protocol: str, decoded: Any) -> dict[str, Any] | None:
         return None
     inp = raw.get("input_tokens", raw.get("prompt_tokens", raw.get("promptTokenCount")))
     out = raw.get("output_tokens", raw.get("completion_tokens", raw.get("candidatesTokenCount")))
+    # Gemini candidatesTokenCount excludes billable thought tokens.
+    if protocol == "generate_content" and isinstance(out, (int, float)) and not isinstance(out, bool):
+        thoughts = raw.get("thoughtsTokenCount", 0)
+        if isinstance(thoughts, bool) or not isinstance(thoughts, (int, float)) or not math.isfinite(thoughts) or thoughts < 0:
+            return None
+        out += thoughts
     cached = raw.get("cached_input_tokens", raw.get("cache_read_input_tokens", raw.get("cachedContentTokenCount", 0)))
     total = raw.get("total_tokens", raw.get("totalTokenCount"))
     result = {"input_tokens": inp, "output_tokens": out, "cached_input_tokens": cached, "total_tokens": total}
     for key in ("input_tokens", "output_tokens", "cached_input_tokens"):
-        if isinstance(result[key], bool) or not isinstance(result[key], (int, float)) or result[key] < 0:
+        if isinstance(result[key], bool) or not isinstance(result[key], (int, float)) or not math.isfinite(result[key]) or result[key] < 0:
             return None
     if result["total_tokens"] is None:
         result["total_tokens"] = result["input_tokens"] + result["output_tokens"]
@@ -678,8 +729,13 @@ def extract_tool_call(protocol: str, decoded: Any) -> tuple[dict[str, Any] | Non
     return None, None
 
 
+def tool_result_marker(case: LiveCase) -> str:
+    return "RESULT_" + digest_bytes((case.case_key + ":tool-result").encode())[:20]
+
+
 def continuation_payload(case: LiveCase, first: dict[str, Any], tool: dict[str, Any], raw: Any) -> dict[str, Any]:
-    followup = f"The tool returned {case.marker}. Reply with exactly {case.marker}."
+    result_marker = tool_result_marker(case)
+    followup = "Reply with exactly the value returned by the tool, without explanation."
     if case.protocol == "responses":
         prior_output = [item for item in first.get("output") or [] if isinstance(item, dict)]
         return {
@@ -688,7 +744,7 @@ def continuation_payload(case: LiveCase, first: dict[str, Any], tool: dict[str, 
             # belongs to Responses WebSocket v2. Replay the prior output and
             # append the correlated tool result instead.
             "input": prior_output + [
-                {"type": "function_call_output", "call_id": tool["call_id"], "output": case.marker},
+                {"type": "function_call_output", "call_id": tool["call_id"], "output": result_marker},
                 {"role": "user", "content": followup},
             ],
             "max_output_tokens": 96,
@@ -699,7 +755,7 @@ def continuation_payload(case: LiveCase, first: dict[str, Any], tool: dict[str, 
             "messages": [
                 {"role": "user", "content": f"Call echo_contract with value {case.marker}."},
                 raw,
-                {"role": "tool", "tool_call_id": tool["call_id"], "content": case.marker},
+                {"role": "tool", "tool_call_id": tool["call_id"], "content": result_marker},
                 {"role": "user", "content": followup},
             ],
             "max_tokens": 96,
@@ -710,7 +766,7 @@ def continuation_payload(case: LiveCase, first: dict[str, Any], tool: dict[str, 
             "messages": [
                 {"role": "user", "content": f"Call echo_contract with value {case.marker}."},
                 {"role": "assistant", "content": raw},
-                {"role": "user", "content": [{"type": "tool_result", "tool_use_id": tool["call_id"], "content": case.marker}, {"type": "text", "text": followup}]},
+                {"role": "user", "content": [{"type": "tool_result", "tool_use_id": tool["call_id"], "content": result_marker}, {"type": "text", "text": followup}]},
             ],
             "max_tokens": 1024,
         }
@@ -718,10 +774,41 @@ def continuation_payload(case: LiveCase, first: dict[str, Any], tool: dict[str, 
         "contents": [
             {"role": "user", "parts": [{"text": f"Call echo_contract with value {case.marker}."}]},
             {"role": "model", "parts": raw.get("parts", []) if isinstance(raw, dict) else []},
-            {"role": "user", "parts": [{"functionResponse": {"name": tool["name"], "response": {"value": case.marker}}}, {"text": followup}]},
+            {"role": "user", "parts": [{"functionResponse": {"name": tool["name"], "response": {"value": result_marker}}}, {"text": followup}]},
         ],
         "generationConfig": {"maxOutputTokens": 96},
     }
+
+
+def stream_result(protocol: str, events: list[Any]) -> tuple[str, str | None]:
+    text_parts=[]
+    terminal=None
+    failed=False
+    for event in events:
+        if isinstance(event,str):
+            if protocol == "chat_completions" and event == "[DONE]": terminal="[DONE]"
+            continue
+        if not isinstance(event,dict): continue
+        kind=event.get("type")
+        if kind in {"error","response.failed","response.incomplete"} or event.get("error"):
+            failed=True
+        if protocol == "responses":
+            if kind == "response.output_text.delta" and isinstance(event.get("delta"),str): text_parts.append(event["delta"])
+            if kind == "response.completed": terminal="response.completed"
+        elif protocol == "messages":
+            delta=event.get("delta",{})
+            if kind == "content_block_delta" and isinstance(delta,dict) and isinstance(delta.get("text"),str): text_parts.append(delta["text"])
+            if kind == "message_stop": terminal="message_stop"
+        elif protocol == "chat_completions":
+            for choice in event.get("choices",[]):
+                delta=choice.get("delta",{})
+                if isinstance(delta.get("content"),str): text_parts.append(delta["content"])
+        else:
+            for candidate in event.get("candidates",[]):
+                for part in candidate.get("content",{}).get("parts",[]):
+                    if isinstance(part.get("text"),str) and not part.get("thought"): text_parts.append(part["text"])
+                if candidate.get("finishReason") in {"STOP","MAX_TOKENS"}: terminal=candidate["finishReason"]
+    return "".join(text_parts), None if failed else terminal
 
 
 def response_shape(protocol: str, result: HTTPResult, decoded: Any, *, streaming: bool = False) -> dict[str, Any]:
@@ -730,25 +817,17 @@ def response_shape(protocol: str, result: HTTPResult, decoded: Any, *, streaming
     text = extract_text(protocol, decoded)
     terminal = False
     if streaming:
-        kinds = []
-        for event in events:
-            if isinstance(event, str):
-                kinds.append(event)
-            elif isinstance(event, dict):
-                kinds.append(event.get("type") or event.get("finish_reason") or event.get("finishReason"))
-        terminal = any(value in {"response.completed", "message_stop", "[DONE]", "STOP", "MAX_TOKENS", "stop", "length", "tool_calls"} for value in kinds)
-        if not text:
-            rendered = json.dumps(events, ensure_ascii=False)
-            text = rendered if rendered else ""
+        text, terminal_event = stream_result(protocol, events)
+        terminal = terminal_event is not None and parse_errors == 0
     elif isinstance(decoded, dict):
         if protocol == "responses":
-            terminal = decoded.get("status") in {None, "completed"} and bool(decoded.get("output") or decoded.get("output_text"))
+            terminal = decoded.get("status") == "completed" and bool(decoded.get("output") or decoded.get("output_text"))
         elif protocol == "chat_completions":
-            terminal = bool(decoded.get("choices"))
+            terminal = any(c.get("finish_reason") in {"stop", "tool_calls", "length"} for c in decoded.get("choices",[]) if isinstance(c,dict))
         elif protocol == "messages":
-            terminal = bool(decoded.get("content"))
+            terminal = decoded.get("stop_reason") in {"end_turn", "tool_use", "max_tokens"}
         else:
-            terminal = bool(decoded.get("candidates"))
+            terminal = any(c.get("finishReason") in {"STOP", "MAX_TOKENS"} for c in decoded.get("candidates",[]) if isinstance(c,dict))
     error = result.error
     if result.status >= 400 and isinstance(decoded, dict):
         candidate = decoded.get("error", decoded)
@@ -814,6 +893,8 @@ def safe_usage_rows(value: Any, started_at: str, case: LiveCase, user_agent: str
 
 class ProductionController:
     def __init__(self) -> None:
+        if os.environ.get("LAOSHIRENAI_MATRIX_TEST_PROFILE", "user2-codex") != "user2-codex":
+            raise HarnessError("live harness requires the user2-codex profile")
         if os.environ.get(SECRET_NAME):
             raise HarnessError(f"{SECRET_NAME} must come from Agent Switch, not the process environment")
         if not GROUP_PROBE_PATH.is_file():
@@ -946,7 +1027,7 @@ def verifier_observation(case: LiveCase, shape: dict[str, Any], usage: dict[str,
     elif case.p_id == "P-05":
         observation.update(correlated=details.get("correlated") is True, final_text=case.marker if shape.get("marker_present") else "")
     elif case.p_id == "P-06":
-        observation.update(effort=case.reasoning_level, reasoning=details.get("reasoning") or {"transport_accepted": shape.get("complete") is True})
+        observation.update(effort=case.reasoning_level, reasoning=details.get("reasoning"))
     elif case.p_id == "P-07":
         observation["usage"] = usage
     elif case.p_id == "P-08":
@@ -954,15 +1035,17 @@ def verifier_observation(case: LiveCase, shape: dict[str, Any], usage: dict[str,
     elif case.p_id == "P-10":
         observation.update(schema_valid=details.get("schema_valid") is True, output=details.get("structured_output"))
     elif case.p_id == "P-11":
+        if details.get("server_tool_observed") is not True:
+            return "failed", "native server-side search/grounding was not observed"
         observation.update(citations=details.get("citations", []), final_text=case.marker if shape.get("text_present") else "")
     elif case.p_id == "P-12":
         observation["usage"] = usage
     elif case.p_id == "P-15":
         error = shape.get("error") or {}
-        observation.update(status_code=shape.get("http_status"), error={"code": str(error.get("code") or error.get("type") or error.get("status") or "provider_error"), "message": str(error.get("message") or "provider rejected invalid request")})
+        observation.update(status_code=shape.get("http_status"), error={"code": str(error.get("code") or error.get("type") or error.get("status") or ""), "message": str(error.get("message") or "")})
     try:
         view = runner._manifest_view(minimal_manifest(case))
-        runner._validate_case(runner.ContractCase(case.case_key, case.protocol, capability, {}), observation, view)
+        runner._validate_case(runner.ContractCase(case.case_key, case.protocol, capability, {"tool_name":"echo_contract", "arguments":{"value":case.marker}}), observation, view)
     except Exception as exc:  # ContractError is private to the imported module
         return "failed", str(exc)
     return "passed", None
@@ -979,10 +1062,10 @@ def run_http_case(case: LiveCase, key: str, transport: Any, timeout: int, user_a
     details: dict[str, Any] = {"observed_at": utc_now(), "request_payload_sha256": digest_json(payload)}
     if streaming:
         events, _ = sse_events(result.body)
-        details["events"] = events
-        rendered = json.dumps(events, ensure_ascii=False)
-        shape["marker_present"] = case.marker in rendered
-        shape["text_present"] = bool(rendered)
+        stream_text, terminal = stream_result(case.protocol, events)
+        details["events"] = [{"type":"chunk"}] + ([{"type":terminal}] if terminal else [])
+        shape["marker_present"] = case.marker in stream_text
+        shape["text_present"] = bool(stream_text)
     else:
         text = extract_text(case.protocol, decoded)
         shape["marker_present"] = case.marker in text
@@ -991,7 +1074,9 @@ def run_http_case(case: LiveCase, key: str, transport: Any, timeout: int, user_a
     if case.p_id in {"P-04", "P-05"}:
         tool, raw_tool = extract_tool_call(case.protocol, decoded)
         details["tool_call"] = tool
-        if case.p_id == "P-05" and tool and isinstance(decoded, dict):
+        tool_check, _ = verifier_observation(
+            LiveCase(**{**asdict(case), "p_id":"P-04"}), shape, usage, details)
+        if case.p_id == "P-05" and tool_check == "passed" and isinstance(decoded, dict):
             second_payload = continuation_payload(case, decoded, tool, raw_tool)
             second = transport.post(
                 endpoint(case.base_url, case.protocol, case.model_id),
@@ -1000,14 +1085,34 @@ def run_http_case(case: LiveCase, key: str, transport: Any, timeout: int, user_a
             second_decoded = decode_json(second.body)
             shape = response_shape(case.protocol, second, second_decoded)
             final_text = extract_text(case.protocol, second_decoded)
-            shape["marker_present"] = case.marker in final_text
+            shape["marker_present"] = final_text.strip().strip(".\n` ") == tool_result_marker(case)
             shape["text_present"] = bool(final_text)
             details["correlated"] = shape["http_status"] == 200 and shape["complete"] and shape["marker_present"]
             details["request_payload_sha256"] = digest_json(second_payload)
             details["attempts"] = 2
             usage = extract_usage(case.protocol, second_decoded)
     if case.p_id == "P-06" and isinstance(decoded, dict):
-        details["reasoning"] = decoded.get("reasoning") or decoded.get("thinking")
+        details["reasoning"] = None
+        reported = decoded.get("reasoning")
+        if isinstance(reported, dict) and reported.get("effort") not in {None, case.reasoning_level}:
+            details["reasoning_mismatch"] = True
+        if case.protocol in {"responses", "chat_completions"}:
+            raw_usage = decoded.get("usage", {})
+            thoughts = raw_usage.get("output_tokens_details", raw_usage.get("completion_tokens_details", {})).get("reasoning_tokens", 0)
+            if isinstance(thoughts,int) and not isinstance(thoughts,bool) and thoughts > 0:
+                details["reasoning"] = {"reasoning_tokens":thoughts}
+            if any(b.get("type") == "reasoning" and b.get("summary") for b in decoded.get("output", []) if isinstance(b,dict)):
+                details["reasoning"] = {"reasoning_summary_present":True}
+        if case.protocol == "generate_content":
+            thoughts = decoded.get("usageMetadata", {}).get("thoughtsTokenCount")
+            if isinstance(thoughts, int) and not isinstance(thoughts, bool) and thoughts > 0:
+                details["reasoning"] = {"thoughts_tokens": thoughts, "requested_level":case.reasoning_level}
+        elif case.protocol == "messages":
+            blocks = [b for b in decoded.get("content", []) if isinstance(b, dict) and b.get("type") == "thinking"]
+            if blocks:
+                details["reasoning"] = {"thinking_blocks":len(blocks), "requested_level":case.reasoning_level}
+    if details.get("reasoning_mismatch"):
+        details["reasoning"] = None
     if case.p_id == "P-10" and shape["text_present"]:
         text = extract_text(case.protocol, decoded)
         try:
@@ -1068,8 +1173,10 @@ def execute_case(case: LiveCase, key: str, transport: Any, controller: Any, time
         result = "blocked"
         classification = "usage_attribution_missing"
     body = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "provider_contract_live_case",
+        "network_execution": "explicit_live",
+        "harness_sha256": HARNESS_SHA256,
         "case_fingerprint": digest_json(asdict(case)),
         "case": asdict(case),
         "result": result,
@@ -1082,7 +1189,8 @@ def execute_case(case: LiveCase, key: str, transport: Any, controller: Any, time
         "usage": usage,
         "usage_attribution": usage_attribution,
         "billing_attribution": {
-            "status": usage_attribution["status"],
+            "status": "not_reconciled",
+            "note": "Usage costs only; ledger, balance delta and unique accounting command not checked.",
             "total_cost": sum(float(row.get("total_cost") or 0) for row in usage_rows),
             "actual_cost": sum(float(row.get("actual_cost") or 0) for row in usage_rows),
             "usage_row_ids": [str(row.get("id")) for row in usage_rows if row.get("id") is not None],
@@ -1099,6 +1207,11 @@ def run_cases(
     controller_factory: Callable[[], Any] = ProductionController,
     transport_factory: Callable[[], Any] = URLTransport,
 ) -> dict[str, Any]:
+    if controller_factory is ProductionController:
+        for case in cases:
+            approved_url(case.base_url)
+    if not 1 <= timeout <= 180:
+        raise HarnessError("timeout must be between 1 and 180 seconds")
     output_dir.mkdir(parents=True, exist_ok=True)
     run_id = digest_json([asdict(case) for case in cases])[:16]
     state_path = output_dir / "run-state.json"
@@ -1111,6 +1224,7 @@ def run_cases(
     transport = transport_factory()
     key = ""
     current_group = None
+    switch_attempted = False
     try:
         key = controller.open()
         if not isinstance(key, str) or not key.startswith("sk-"):
@@ -1119,11 +1233,12 @@ def run_cases(
             fingerprint = digest_json(asdict(case))
             path = receipt_path(output_dir, case)
             prior = verify_receipt(path, fingerprint)
-            if prior and prior.get("result") == "pass":
+            if prior and prior.get("result") == "pass" and controller_factory is not ProductionController:
                 state["cases"][case.case_key] = {"status": "resumed", "receipt": str(path), "artifact_sha256": prior["artifact_sha256"]}
                 atomic_json(state_path, state)
                 continue
             if current_group != case.group_id:
+                switch_attempted = True
                 controller.switch(case.group_id)
                 current_group = case.group_id
             receipt = execute_case(case, key, transport, controller, timeout, run_id)
@@ -1132,8 +1247,9 @@ def run_cases(
             atomic_json(state_path, state)
     finally:
         key = ""
-        controller.restore()
-        state["restored_group_id"] = RESTORE_GROUP_ID
+        if switch_attempted:
+            controller.restore()
+            state["restored_group_id"] = RESTORE_GROUP_ID
         state["finished_at"] = utc_now()
         atomic_json(state_path, state)
     counts: dict[str, int] = {}

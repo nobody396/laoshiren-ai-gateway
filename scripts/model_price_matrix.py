@@ -911,6 +911,8 @@ def main(argv: Iterable[str] | None = None) -> int:
         db_raw = _load_json_file(args.db_export) if args.db_export else None
         catalog, catalog_issues, price_gaps = load_catalog(catalog_raw, catalog_source)
         public_rows, public_meta = normalize_inventory(public_raw, public_source)
+        if not catalog and not public_rows:
+            raise MatrixInputError("catalog and public inventory are both empty; no price was verified")
         if db_raw is not None and db_source is not None:
             db_rows, db_meta = normalize_inventory(db_raw, db_source)
         else:

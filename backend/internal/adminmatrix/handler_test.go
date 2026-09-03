@@ -22,9 +22,9 @@ func TestEmbeddedMatrixContainsCanonicalCartesianDimensions(t *testing.T) {
 		} `json:"client_matrix"`
 	}
 	require.NoError(t, json.Unmarshal(matrixJSON, &payload))
-	require.Equal(t, 35, payload.Counts.Models)
+	require.Equal(t, 36, payload.Counts.Models)
 	require.Equal(t, 14, payload.Counts.Clients)
-	require.Equal(t, 35*14, payload.Counts.Intersections)
-	require.Len(t, payload.Contracts, 35)
+	require.Equal(t, 36*14, payload.Counts.Intersections)
+	require.Len(t, payload.Contracts, 36)
 	require.Len(t, payload.ClientMatrix.Clients, 14)
 }

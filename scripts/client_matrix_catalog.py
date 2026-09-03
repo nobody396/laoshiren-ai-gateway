@@ -17,7 +17,7 @@ CONTRACTS = ROOT / "model-doc-contracts"
 def load_reasoning_profiles() -> list[dict]:
     profiles = []
     for path in sorted(CONTRACTS.glob("*.json")):
-        if path.name in {"client-matrix.json", "matrix-schema.json"}:
+        if path.name in {"client-matrix.json", "matrix-schema.json", "import-provenance.json"}:
             continue
         contract = json.loads(path.read_text())
         model_id = str(contract.get("model", {}).get("id", "")).strip()
@@ -129,7 +129,7 @@ def project_setup_contract(client: dict) -> dict:
 def load_model_protocols() -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
     for path in sorted(CONTRACTS.glob("*.json")):
-        if path.name in {"client-matrix.json", "matrix-schema.json"}:
+        if path.name in {"client-matrix.json", "matrix-schema.json", "import-provenance.json"}:
             continue
         contract = json.loads(path.read_text())
         model_id = str(contract.get("model", {}).get("id", "")).strip()

@@ -936,7 +936,7 @@
     }
   },
   "verification": {
-    "gateway_e2e": false,
+    "gateway_e2e": true,
     "limits_source": "live",
     "modalities": {
       "image": "verified",

@@ -1,0 +1,54 @@
+{
+  "artifact_sha256": "1c33e6f3cc3e17ce047f1ce957f046f31f04c87085b62c49fde143aec4b7edfb",
+  "billing_attribution": {
+    "status": "not_reconciled"
+  },
+  "case": {
+    "base_url": "https://jp.pomoai.xyz",
+    "case_key": "upstream:gemini-3.8-flash:generate_content:P-15:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_19ED9AB5B967",
+    "max_output_tokens": 65536,
+    "model_id": "gemini-3.8-flash",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "generate_content",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "9f2d10bd66fb0e94c4027562857ced2f85843abb6e47c36fd26fea2b510bdef7",
+  "classification": "contract_failed",
+  "direct_runner_sha256": "5971f41fb383b0cbdc0205d6fe91c6da430706ea58fba3c884249b6bdd1299d6",
+  "finished_at": "2026-09-03T12:58:30.549+00:00",
+  "harness_sha256": "be0e50a708bcd768bb0f19013561aa4291a0daa36abf5e1ebc82da4c15316273",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-03T12:58:29.232+00:00",
+  "offline_verifier": {
+    "reason": "error passthrough requires provider code and message",
+    "status": "failed"
+  },
+  "response": {
+    "body_bytes": 156,
+    "body_sha256": "813955e3edad86c893ff6dd9ef6655687915bd1a8f512b8946515e7ae6c13073",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "blocked",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "secret_free": true,
+  "usage": null
+}

@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -532,6 +533,14 @@ def build_plan(manifest: dict[str, Any]) -> dict[str, Any]:
         "manifest_sha256": _digest(manifest),
         "manifest_evidence_ids": sorted(view["matrix"]["evidence"]) if view["matrix"] else [],
         "cases": [case.as_dict() for case in cases],
+        "pending_cases": (
+            [{"protocol":p["protocol"], "feature":"protocol_availability", "status":"untested"}
+             for p in manifest.get("protocol_matrix", []) if p.get("support") == "untested"]
+            + [{"protocol":row["protocol"], "feature":feature, "status":"untested"}
+               for row in manifest.get("protocol_feature_matrix", [])
+               for feature, status in row["features"].items() if status == "untested"]
+        ),
+        "release_authorization": False,
     }
 
 
@@ -568,10 +577,9 @@ def _evidence(observation: dict[str, Any]) -> None:
 
 def _receipt_evidence(observation: dict[str, Any], model_id: str) -> dict[str, Any]:
     """Render a passed observation in the manifest-v2 evidence shape."""
-    source = observation["evidence"]["source"]
-    kind = source if source in {
-        "official_docs", "provider_api", "live_probe", "billing_reconciliation", "release_artifact"
-    } else "release_artifact"
+    # This function is used ONLY by run-fixture, not by the live harness.
+    # Preserve the non-production origin even when fixture input claims live.
+    kind = "offline_fixture"
     payload = {key: value for key, value in observation.items() if key != "evidence"}
     return {
         "id": observation["evidence"]["id"],
@@ -605,7 +613,7 @@ def _text_present(observation: dict[str, Any], expected: str | None = None) -> b
 
 
 def _number(value: Any) -> float | None:
-    return float(value) if not isinstance(value, bool) and isinstance(value, (int, float)) else None
+    return float(value) if not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(float(value)) else None
 
 
 def _usage(observation: dict[str, Any]) -> tuple[float, float, float, float]:
@@ -655,8 +663,23 @@ def _validate_case(case: ContractCase, observation: dict[str, Any], view: dict[s
         if not isinstance(tool, dict) or not isinstance(tool.get("name"), str) or not tool["name"]:
             _fail("tool_call.name is required")
         arguments = tool.get("arguments")
-        if not isinstance(arguments, (dict, str)) or arguments in ({}, ""):
-            _fail("tool_call.arguments is required")
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                _fail("tool_call.arguments must be valid JSON")
+        if not isinstance(arguments, dict) or not arguments:
+            _fail("tool_call.arguments must be a non-empty object")
+        expected_name = case.expectation.get("tool_name")
+        if expected_name and tool["name"] != expected_name:
+            _fail("tool_call.name does not match the requested tool")
+        expected_arguments = case.expectation.get("arguments")
+        if expected_arguments is not None and arguments != expected_arguments:
+            _fail("tool_call.arguments do not match the requested arguments")
+        if case.protocol != "generate_content" and not isinstance(tool.get("call_id"), str):
+            _fail("tool_call.call_id is required")
+        if case.protocol != "generate_content" and not tool["call_id"]:
+            _fail("tool_call.call_id must not be empty")
     elif capability == "tool_result_continuation":
         if observation.get("correlated") is not True or not _text_present(observation):
             _fail("tool result must be correlated and continue to final text")
@@ -715,7 +738,7 @@ def _validate_case(case: ContractCase, observation: dict[str, Any], view: dict[s
             + out * prices["output_per_mtok_usd"] * output_multiplier
         ) / 1_000_000
         billed = _number(observation.get("billed_usd"))
-        if billed is None or abs(billed - expected) > 1e-9:
+        if not math.isfinite(expected) or billed is None or billed < 0 or abs(billed - expected) > 1e-9:
             _fail(f"billing receipt mismatch: expected {expected:.12g}")
         for key in ("request_id", "usage_id", "accounting_command_id"):
             if not isinstance(observation.get(key), str) or not observation[key]:

@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "glm-5.3",
+    "display_name": "GLM 5.3",
+    "family": "glm",
+    "context_window": 1048576,
+    "max_output_tokens": 131072,
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "groups": [
+      {
+        "name": "GLM 企业高速线路",
+        "multiplier": 1
+      }
+    ]
+  },
+  "protocols": [
+    {
+      "name": "chat_completions",
+      "status": "verified",
+      "evidence": "minimal text, streaming, tool call, tool-result continuation and final response passed"
+    },
+    {
+      "name": "responses",
+      "status": "unsupported",
+      "evidence": "basic request can route but native web search is unavailable; not published as a supported GLM contract"
+    }
+  ],
+  "clients": [
+    {
+      "name": "ZCode",
+      "version": "3.10.1",
+      "protocol": "chat_completions",
+      "status": "verified",
+      "recommended": true,
+      "evidence": "real local tool loop completed"
+    },
+    {
+      "name": "OpenCode",
+      "version": "1.18.15",
+      "protocol": "chat_completions",
+      "status": "verified",
+      "recommended": false,
+      "evidence": "real shell tool loop completed"
+    },
+    {
+      "name": "Kimi Code",
+      "version": "0.38.0+",
+      "protocol": "chat_completions",
+      "status": "verified",
+      "recommended": false,
+      "evidence": "real tool continuation completed after reasoning mapping"
+    },
+    {
+      "name": "Grok Build",
+      "version": "1.0.13",
+      "protocol": "chat_completions",
+      "status": "verified",
+      "recommended": false,
+      "evidence": "real shell tool loop completed"
+    }
+  ],
+  "reasoning": {
+    "model_levels": [
+      "low",
+      "high",
+      "max"
+    ],
+    "client_mappings": [
+      {
+        "client": "Kimi Code",
+        "from": "medium",
+        "to": "high"
+      },
+      {
+        "client": "Kimi Code",
+        "from": "xhigh",
+        "to": "max"
+      },
+      {
+        "client": "Kimi Code",
+        "from": "none/minimal",
+        "to": "low"
+      }
+    ],
+    "client_levels": [
+      {
+        "client": "Kimi Code",
+        "levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      }
+    ]
+  },
+  "verification": {
+    "official_spec_url": "https://help.aliyun.com/zh/model-studio/glm-5-3-by-zhipu",
+    "verified_at": "2026-08-31",
+    "limits_source": "official",
+    "modalities": {
+      "text": "verified",
+      "image": "unsupported",
+      "video": "unsupported"
+    },
+    "gateway_e2e": true
+  },
+  "recommended_protocol": "chat_completions",
+  "client_coverage": [
+    {
+      "name": "ZCode",
+      "protocols": [
+        "chat_completions"
+      ],
+      "status": "verified",
+      "evidence": "real local tool loop completed"
+    },
+    {
+      "name": "OpenCode",
+      "protocols": [
+        "chat_completions"
+      ],
+      "status": "verified",
+      "evidence": "real shell tool loop completed"
+    },
+    {
+      "name": "Kimi Code",
+      "protocols": [
+        "chat_completions"
+      ],
+      "status": "verified",
+      "evidence": "real tool continuation completed after reasoning mapping"
+    },
+    {
+      "name": "Grok Build",
+      "protocols": [
+        "chat_completions"
+      ],
+      "status": "verified",
+      "evidence": "real shell tool loop completed"
+    }
+  ]
+}

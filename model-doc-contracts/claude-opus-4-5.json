@@ -814,7 +814,7 @@
       "image": "verified",
       "video": "unsupported"
     },
-    "gateway_e2e": false
+    "gateway_e2e": true
   },
   "recommended_protocol_reason": "Messages 是 Claude 的原生协议；无需跨协议转换，并能保留内容块、推理、工具调用/结果续轮与 usage 语义。"
 }

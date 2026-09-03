@@ -139,7 +139,7 @@ def local_inventory_path(inventory_json: Path | None, pricing_url: str | None) -
 def contracts_from_directory(directory: Path, client_matrix_path: Path) -> list[tuple[Path, dict[str, Any]]]:
     result: list[tuple[Path, dict[str, Any]]] = []
     for path in sorted(directory.glob("*.json")):
-        if path.resolve() == client_matrix_path.resolve() or path.name == "matrix-schema.json":
+        if path.resolve() == client_matrix_path.resolve() or path.name in {"matrix-schema.json", "import-provenance.json"}:
             continue
         raw = load_json(path)
         model_id = raw.get("model", {}).get("id") if isinstance(raw, dict) else None

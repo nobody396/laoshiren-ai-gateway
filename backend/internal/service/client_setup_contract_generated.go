@@ -111,6 +111,7 @@ var generatedClientSetupModelProtocols = map[string]map[string]bool{
 	"deepseek-v4-pro-0813":     {"chat_completions": true, "responses": true},
 	"gemini-3.1-pro":           {"generate_content": true},
 	"gemini-3.7-flash":         {"generate_content": true},
+	"gemini-3.8-flash":         {},
 	"glm-5.2":                  {"chat_completions": true, "responses": true},
 	"glm-5.3":                  {"chat_completions": true},
 	"gpt-5.3-codex-spark":      {"responses": true},

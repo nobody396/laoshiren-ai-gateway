@@ -700,7 +700,7 @@ def main() -> int:
     args = parse_args()
     contract_rows = [
         load(path) for path in sorted(args.contracts.glob("*.json"))
-        if path.name not in {"client-matrix.json", "matrix-schema.json"}
+        if path.name not in {"client-matrix.json", "matrix-schema.json", "import-provenance.json"}
     ]
     report = build_queue(
         load(args.gaps), load(args.client_matrix), load(args.scope), load(args.evidence_inventory),

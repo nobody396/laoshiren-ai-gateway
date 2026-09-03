@@ -186,7 +186,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
       "model_discovery": "当前 Key 的 /v1/models 裁剪模型目录",
       "model_slots": [
         "model",
-        "review_model"
+        "review_model",
+        "model catalog entry"
       ],
       "owned_fields": [
         "auth.OPENAI_API_KEY",
@@ -1185,11 +1186,13 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
     },
     "files": {
       "unix": [
+        "~/.workbuddy/models.json",
         "~/.codebuddy/models.json",
         ".codebuddy/models.json",
         "~/.workbuddy/settings.json"
       ],
       "windows": [
+        "%USERPROFILE%\\.workbuddy\\models.json",
         "%USERPROFILE%\\.codebuddy\\models.json",
         ".codebuddy\\models.json",
         "%USERPROFILE%\\.workbuddy\\settings.json"
@@ -1199,7 +1202,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
     "verification_os": [],
     "config_contract": {
       "base_url_rule": "Default custom-protocol mode: use https://api.laoshirenai.com/v1 and WorkBuddy validates/appends /chat/completions. Exact-URL mode: use https://api.laoshirenai.com/v1/chat/completions and WorkBuddy sends to that URL without path completion.",
-      "credential": "User or project .codebuddy/models.json local model record; never print or copy the API key into commands or logs.",
+      "credential": "WorkBuddy desktop stores each custom model credential in user ~/.workbuddy/models.json (Windows: %USERPROFILE%\\.workbuddy\\models.json). The separate .codebuddy/models.json paths belong to the bundled CodeBuddy CLI / legacy compatibility layer.",
       "model_discovery": "Preset providers may populate a list. Custom requires URL, API key, and exact model name; no authenticated /v1/models discovery/readback is documented.",
       "model_slots": [
         "WorkBuddy custom model selector",
@@ -1214,7 +1217,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "image-input capability",
         "reasoning capability"
       ],
-      "merge_strategy": "One-click is disabled. Use the supported WorkBuddy model UI today. A future installer must strictly parse JSON, back up both user/project files, upsert only its stable custom-local record, preserve every other model and setting, atomically replace, redact credential readback, and prove idempotency.",
+      "merge_strategy": "Desktop setup must strictly parse ~/.workbuddy/models.json, accept the GUI-created empty file plus array and legacy {models:[...]} shapes, back it up, upsert only stable custom-local records, preserve unrelated models, atomically replace, redact credential readback, and prove idempotency. Bundled CodeBuddy CLI configuration is a separate target.",
       "verification": "Exact app/CLI versions plus the login-free env config path (CODEBUDDY_BASE_URL + CODEBUDDY_API_KEY) verified on 2026-09-02. Chat Completions minimal/stream/tool/continuation/usage/error cells and a clean real Agent loop verified by receipts under artifacts/workbuddy-chat-completions-loop-20260902. Reasoning-level mapping to GUI modes remains unverified.",
       "verification_commands": [
         {
@@ -1581,6 +1584,16 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
   },
   {
     "model_id": "gemini-3.7-flash",
+    "model_levels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "client_levels": [],
+    "client_mappings": []
+  },
+  {
+    "model_id": "gemini-3.8-flash",
     "model_levels": [
       "low",
       "medium",

@@ -1,0 +1,1337 @@
+{
+  "schema_version": 1,
+  "lifecycle": {
+    "public_status": "draft"
+  },
+  "model": {
+    "id": "gemini-3.8-flash",
+    "display_name": "Gemini 3.8 Flash",
+    "family": "gemini",
+    "context_window": 1048576,
+    "max_output_tokens": 65536,
+    "input_modalities": [
+      "text",
+      "image",
+      "video"
+    ],
+    "output_modalities": [
+      "text"
+    ]
+  },
+  "access": {
+    "base_url": "https://api.laoshirenai.com",
+    "groups": [
+      {
+        "id": 57,
+        "name": "Gemini 标准线路",
+        "multiplier": 0.6
+      }
+    ]
+  },
+  "protocols": [
+    {
+      "name": "generate_content",
+      "status": "blocked",
+      "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+    },
+    {
+      "name": "chat_completions",
+      "status": "blocked",
+      "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+    },
+    {
+      "name": "messages",
+      "status": "blocked",
+      "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+    },
+    {
+      "name": "responses",
+      "status": "blocked",
+      "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+    }
+  ],
+  "recommended_protocol": "generate_content",
+  "recommended_protocol_reason": "Candidate native protocol; recommendation pending exact gateway acceptance.",
+  "clients": [],
+  "client_coverage": [
+    {
+      "name": "Claude Code",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Codex",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Grok Build",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Kimi Code",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "OpenCode",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "ZCode",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Gemini CLI",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Antigravity",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Hermes Agent",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Qoder",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "MiniMax Code",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "WorkBuddy",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "DeepSeek Harness",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    },
+    {
+      "name": "Visual Studio Code Local Agent",
+      "protocols": [],
+      "status": "blocked",
+      "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+    }
+  ],
+  "reasoning": {
+    "model_levels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "client_levels": [],
+    "client_mappings": []
+  },
+  "verification": {
+    "official_spec_url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
+    "verified_at": "2026-09-03",
+    "limits_source": "official",
+    "gateway_e2e": false,
+    "modalities": {
+      "text": "blocked",
+      "image": "blocked",
+      "video": "blocked"
+    }
+  },
+  "test_matrix": {
+    "limits": {
+      "context_window": {
+        "status": "blocked",
+        "evidence": "Official integer captured; exact evidence snapshot pending import."
+      },
+      "max_output_tokens": {
+        "status": "blocked",
+        "evidence": "Official integer captured; exact evidence snapshot pending import."
+      }
+    },
+    "modalities": {
+      "text": {
+        "status": "blocked",
+        "evidence": "Public gateway modality probe pending."
+      },
+      "image": {
+        "status": "blocked",
+        "evidence": "Public gateway modality probe pending."
+      },
+      "video": {
+        "status": "blocked",
+        "evidence": "Public gateway modality probe pending."
+      }
+    },
+    "protocols": {
+      "generate_content": {
+        "minimal_text": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "streaming_terminal": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_call": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_result_continuation": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "usage": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "invalid_request": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        }
+      },
+      "chat_completions": {
+        "minimal_text": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "streaming_terminal": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_call": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_result_continuation": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "usage": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "invalid_request": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        }
+      },
+      "messages": {
+        "minimal_text": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "streaming_terminal": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_call": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_result_continuation": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "usage": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "invalid_request": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        }
+      },
+      "responses": {
+        "minimal_text": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "streaming_terminal": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_call": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "tool_result_continuation": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "usage": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        },
+        "invalid_request": {
+          "status": "blocked",
+          "evidence": "Exact public-gateway case pending."
+        }
+      }
+    },
+    "protocol_features": {
+      "generate_content": {
+        "web_search": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "reasoning": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "prompt_cache": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "image_input": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "context_window": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "error_passthrough": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "stream_disconnect": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "timeout": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "retry": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "billing": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "structured_output": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        }
+      },
+      "chat_completions": {
+        "web_search": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "reasoning": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "prompt_cache": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "image_input": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "context_window": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "error_passthrough": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "stream_disconnect": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "timeout": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "retry": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "billing": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "structured_output": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        }
+      },
+      "messages": {
+        "web_search": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "reasoning": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "prompt_cache": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "image_input": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "context_window": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "error_passthrough": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "stream_disconnect": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "timeout": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "retry": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "billing": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "structured_output": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        }
+      },
+      "responses": {
+        "web_search": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "reasoning": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "prompt_cache": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "image_input": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "context_window": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "error_passthrough": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "stream_disconnect": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "timeout": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "retry": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "billing": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        },
+        "structured_output": {
+          "status": "blocked",
+          "evidence": "Exact case pending."
+        }
+      }
+    },
+    "clients": {
+      "Claude Code": {
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "cli:2.1.251"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "cli:2.1.251"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "cli:2.1.251"
+          }
+        }
+      },
+      "Codex": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "cli:0.151.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "cli:0.151.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "cli:0.151.0"
+          }
+        }
+      },
+      "Grok Build": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "cli:1.0.13"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "cli:1.0.13"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "cli:1.0.13"
+          }
+        },
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "cli:1.0.13"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "cli:1.0.13"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "cli:1.0.13"
+          }
+        },
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "cli:1.0.13"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "cli:1.0.13"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "cli:1.0.13"
+          }
+        }
+      },
+      "Kimi Code": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "cli:0.38.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "cli:0.38.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "cli:0.38.0"
+          }
+        },
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "cli:0.38.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "cli:0.38.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "cli:0.38.0"
+          }
+        },
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "cli:0.38.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "cli:0.38.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "cli:0.38.0"
+          }
+        },
+        "generate_content": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "macos",
+            "client_version": "cli:0.38.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "linux",
+            "client_version": "cli:0.38.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "windows",
+            "client_version": "cli:0.38.0"
+          }
+        }
+      },
+      "OpenCode": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "cli:1.18.15"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "cli:1.18.15"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "cli:1.18.15"
+          }
+        },
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "cli:1.18.15"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "cli:1.18.15"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "cli:1.18.15"
+          }
+        },
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "cli:1.18.15"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "cli:1.18.15"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "cli:1.18.15"
+          }
+        },
+        "generate_content": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "macos",
+            "client_version": "cli:1.18.15"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "linux",
+            "client_version": "cli:1.18.15"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "windows",
+            "client_version": "cli:1.18.15"
+          }
+        }
+      },
+      "ZCode": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          }
+        },
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          }
+        },
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "app:3.10.1+cli:0.16.5"
+          }
+        }
+      },
+      "Gemini CLI": {
+        "generate_content": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "macos",
+            "client_version": "cli:0.57.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "linux",
+            "client_version": "cli:0.57.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "windows",
+            "client_version": "cli:0.57.0"
+          }
+        }
+      },
+      "Antigravity": {
+        "generate_content": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "macos",
+            "client_version": "cli:1.1.22"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "linux",
+            "client_version": "cli:1.1.22"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "windows",
+            "client_version": "cli:1.1.22"
+          }
+        }
+      },
+      "Hermes Agent": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "cli:0.20.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "cli:0.20.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "cli:0.20.0"
+          }
+        }
+      },
+      "Qoder": {
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "cli:1.1.38"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "cli:1.1.38"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "cli:1.1.38"
+          }
+        }
+      },
+      "MiniMax Code": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "cli:0.2.7"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "cli:0.2.7"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "cli:0.2.7"
+          }
+        },
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "cli:0.2.7"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "cli:0.2.7"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "cli:0.2.7"
+          }
+        },
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "cli:0.2.7"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "cli:0.2.7"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "cli:0.2.7"
+          }
+        }
+      },
+      "WorkBuddy": {
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "app:5.3.14+cli:2.115.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "app:5.3.14+cli:2.115.0"
+          }
+        }
+      },
+      "DeepSeek Harness": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "cli:0.1.1-rc.2"
+          }
+        },
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "cli:0.1.1-rc.2"
+          }
+        },
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "cli:0.1.1-rc.2"
+          }
+        },
+        "generate_content": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "macos",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "linux",
+            "client_version": "cli:0.1.1-rc.2"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "generate_content",
+            "os": "windows",
+            "client_version": "cli:0.1.1-rc.2"
+          }
+        }
+      },
+      "Visual Studio Code Local Agent": {
+        "responses": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "macos",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "linux",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "responses",
+            "os": "windows",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          }
+        },
+        "chat_completions": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "macos",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "linux",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "chat_completions",
+            "os": "windows",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          }
+        },
+        "messages": {
+          "macos": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "macos",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          },
+          "linux": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "linux",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          },
+          "windows": {
+            "status": "blocked",
+            "evidence": "Real local tool and tool-result continuation pending.",
+            "model_id": "gemini-3.8-flash",
+            "protocol": "messages",
+            "os": "windows",
+            "client_version": "desktop:1.135.0+builtin-copilot:0.63.0"
+          }
+        }
+      }
+    },
+    "reasoning": {
+      "model_levels": {
+        "low": {
+          "status": "blocked",
+          "evidence": "Direct-provider preflight passed; gateway wire mapping pending."
+        },
+        "medium": {
+          "status": "blocked",
+          "evidence": "Direct-provider preflight passed; gateway wire mapping pending."
+        },
+        "high": {
+          "status": "blocked",
+          "evidence": "Direct-provider preflight passed; gateway wire mapping pending."
+        }
+      },
+      "clients": {}
+    },
+    "group_access": {
+      "Gemini 标准线路": {
+        "status": "blocked",
+        "evidence": "No production model mapping yet."
+      }
+    },
+    "pricing": {
+      "Gemini 标准线路": {
+        "status": "blocked",
+        "evidence": "Official price captured; customer effective row and accounting readback pending."
+      }
+    }
+  }
+}

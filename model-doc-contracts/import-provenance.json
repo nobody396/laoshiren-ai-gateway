@@ -1,0 +1,61 @@
+{
+ "schema_version": 1,
+ "observed_at": "2026-09-03T13:53:30.507113+00:00",
+ "source_branch": "feat/newcomer-public-preview-20260829",
+ "source_commit": "64049bca0",
+ "source_state": "merged snapshot; client matrix carries the 2026-09-03 re-verified pins",
+ "files": [
+  {
+   "path": "scripts/provider_contract_runner.py",
+   "source_sha256": "a3cf24a4f3f0051eec220cae51c69dc57c023179cb67c10bb26b03b51f3252f0"
+  },
+  {
+   "path": "tests/test_provider_contract_runner.py",
+   "source_sha256": "d7f3403cc1f451ef851208f04802f8dda941fcd61331b3e1efa758d00a20781b"
+  },
+  {
+   "path": "scripts/provider_contract_live_harness.py",
+   "source_sha256": "a618d4a9c7825f9b5f7389477a0b793602c96ea9a26b8222aa1e81bc7d9b75b3"
+  },
+  {
+   "path": "tests/test_provider_contract_live_harness.py",
+   "source_sha256": "00ed2806f778a6cbd8c6ca877f6e5f2e8ee2647bd7503f4b83cd80915ad3ba4c"
+  },
+  {
+   "path": "scripts/model_price_matrix.py",
+   "source_sha256": "58d3000136d87156d518843b71853558915e17e6892cba8e8d40410bf873ec0c"
+  },
+  {
+   "path": "tests/test_model_price_matrix.py",
+   "source_sha256": "f5d14f4a2b436d21bc3444ae5017bf96b4854ca23ffc9fabb4efbe079e58abe0"
+  },
+  {
+   "path": "scripts/model_doc_matrix.py",
+   "source_sha256": "f2b08bc29f03cc3006449162b4184de88066e6696fc8560f43b811996b4aa755"
+  },
+  {
+   "path": "scripts/model_doc_contract.py",
+   "source_sha256": "1ce7980d89ba8da8a6fbebbf120fc7f929a885358d01d1e15cbfe35633dba014"
+  },
+  {
+   "path": "tests/test_model_doc_contract.py",
+   "source_sha256": "5d41010a8d589519f9d9fea7f954db7e66739f28737c3e30a92b522b5e3690b6"
+  },
+  {
+   "path": "model-doc-contracts/matrix-schema.json",
+   "source_sha256": "9a44946310201ad1524b9714a1fbab2375fb5388373aee85d5e4aa9dbc202ec7"
+  },
+  {
+   "path": "model-doc-contracts/client-matrix.json",
+   "source_sha256": "585bfd39d7d9956de404a850be24111257cbc7dec22d0d689db9414b4f1b4fd5"
+  },
+  {
+   "path": "scripts/model_release.py",
+   "source_sha256": "ed6b6c212920ae6bd205dd17ebcb349cc7a6f135b140dc233728af12aa44d8f0"
+  }
+ ],
+ "client_matrix_source": "Skill Hub laoshirenai-client-integration/references/client-matrix.json; snapshot, not a second editable source",
+ "excluded": [
+  "model_evidence_receipt_import: usage attribution must not be promoted into billing reconciliation"
+ ]
+}

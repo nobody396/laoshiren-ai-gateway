@@ -982,3 +982,12 @@ pnpm build
 - MiniMax Code：09-01 的「unsupported」实为「无头安装/配置不可得」，非协议判定，三行伪证据已按更正规程删除。直写 `custom_provider` config.yaml 后三协议（anthropic-messages / openai-completions / openai-responses）全部真实闭环通过（`artifacts/mcode-three-protocol-loops-20260903`）；generate_content 终态不支持（--api-format 枚举无 Gemini）。
 - DeepSeek Harness：09-01「不支持」实为 120s 安装窗口超时；残留安装可正常运行 0.1.1-rc.2。
 - VS Code Local Agent：实锤 `apiKey` 为 secret 字段，chatLanguageModels.json 明文 key 被静默丢弃，仅接受 `${input:...}` 钥匙串引用；一键配置只能做到「命令 + 一次粘贴」。三协议保持未验证。
+
+### 2026-09-03 合并 main 两轮更正（#275–#296）
+
+- 第一轮（#275–#294）：fable-5 与 fable-5-1 双条目共存（生产两个都在售）；采用 main 的 Fable 5.1 缓存写价钉（12.5/20 USD/Mtok）与生成器支持；接受 main 的 KeyGroupSelector 组件化重构，并把分组显示模型/协议标签移植进组件；#275 语义以 main 为准（不可路由公开模型不出现在定价 API）。
+- 第二轮（#296 恢复证据验收门禁）：验收脚本以 main 严版为准（fail-closed：pending_cases、release_authorization=false、离线 fixture 禁伪装 live、tool_call 严格校验、空价格库存失败关闭）。
+- 徽标口径拆分（owner 拍板）：`model_doc_matrix.audit_contract_sections(full_acceptance=False)` 为目录卡展示标准（web_search/reasoning/image_input/billing 四特性 + 无 gateway_e2e 要求），`is_structurally_publishable` + 展示标准零失败 = 卡片「已验证」；严版全量审计（full_acceptance=True 默认）继续作为新模型发布验收门禁，不进 CI 对存量合同强约束。
+- gateway_e2e 翻 true：claude-opus-4-5、grok-4.5、minimax-m3（自有 key 分组冒烟 pass + 已有 verified 客户端行）。glm-5.2/glm-5.3/grok-4.6/kimi-k2.7-code/kimi-k3 维持 false（real_client_loop 实测 fail，clients 为空）；gpt-daybreak-blue-latest 维持 false（分组冒烟 503 overloaded 未闭合）。gemini-3.8-flash 为未发布草稿。
+- 当前目录卡：29 已验证 / 7 待定。严版审计对存量 36 合同报 3464 条差距（test_evidence 物化 receipt 缺口为主），属新版发布标准的历史欠账，需单独排期物化。
+- import-provenance.json 的 client-matrix 字节锁已更新为合并后版本；model_doc_catalog 等 12 处 glob 排除 import-provenance.json。

@@ -98,7 +98,7 @@ export interface ModelDocContract {
   }
   access: {
     base_url: string
-    groups: Array<{ name: string; multiplier: number }>
+    groups: Array<{ id?: number; name: string; multiplier: number }>
   }
   protocols: Array<{
     name: ModelDocProtocolName
@@ -155,7 +155,7 @@ export interface ModelDocContract {
     limits_source: 'official' | 'live'
     gateway_e2e: boolean
     gateway_e2e_scope?: string
-    modalities: Record<'text' | 'image' | 'video', ModelDocVerificationStatus>
+    modalities: Record<'text' | 'image' | 'video', ModelDocVerificationStatus | 'blocked'>
   }
 }
 
@@ -554,7 +554,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -1256,7 +1256,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -1695,13 +1695,13 @@ export const modelDocContracts: readonly ModelDocContract[] = [
         "image": "verified",
         "video": "unsupported"
       },
-      "gateway_e2e": false
+      "gateway_e2e": true
     },
     "publication": {
-      "status": "draft",
-      "publishable": false,
+      "status": "publishable",
+      "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -2137,7 +2137,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -2609,7 +2609,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -3416,7 +3416,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -4381,7 +4381,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -5263,7 +5263,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -6185,7 +6185,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -9205,6 +9205,574 @@ export const modelDocContracts: readonly ModelDocContract[] = [
   {
     "schema_version": 1,
     "model": {
+      "id": "gemini-3.8-flash",
+      "display_name": "Gemini 3.8 Flash",
+      "family": "gemini",
+      "context_window": 1048576,
+      "max_output_tokens": 65536,
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ]
+    },
+    "access": {
+      "base_url": "https://api.laoshirenai.com",
+      "groups": [
+        {
+          "id": 57,
+          "name": "Gemini 标准线路",
+          "multiplier": 0.6
+        }
+      ]
+    },
+    "protocols": [
+      {
+        "name": "generate_content",
+        "status": "blocked",
+        "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+      },
+      {
+        "name": "chat_completions",
+        "status": "blocked",
+        "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+      },
+      {
+        "name": "messages",
+        "status": "blocked",
+        "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+      },
+      {
+        "name": "responses",
+        "status": "blocked",
+        "evidence": "Exact-model public gateway acceptance pending; direct-provider proof is not substituted."
+      }
+    ],
+    "recommended_protocol": "generate_content",
+    "recommended_protocol_reason": "Candidate native protocol; recommendation pending exact gateway acceptance.",
+    "reasoning": {
+      "model_levels": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "client_levels": [],
+      "client_mappings": []
+    },
+    "verification": {
+      "official_spec_url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
+      "verified_at": "2026-09-03",
+      "limits_source": "official",
+      "gateway_e2e": false,
+      "modalities": {
+        "text": "blocked",
+        "image": "blocked",
+        "video": "blocked"
+      }
+    },
+    "publication": {
+      "status": "draft",
+      "publishable": false,
+      "missing_evidence": {
+        "blocked_cells": 170,
+        "audit_failures": 32,
+        "validation_errors": [],
+        "by_matrix": [
+          {
+            "matrix": "public_model",
+            "count": 5
+          },
+          {
+            "matrix": "model_protocol",
+            "count": 5
+          },
+          {
+            "matrix": "model_reasoning",
+            "count": 6
+          },
+          {
+            "matrix": "group_access",
+            "count": 9
+          },
+          {
+            "matrix": "model_price",
+            "count": 7
+          }
+        ]
+      }
+    },
+    "clients": [],
+    "client_coverage": [
+      {
+        "name": "Claude Code",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Codex",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Grok Build",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Kimi Code",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "OpenCode",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "ZCode",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Gemini CLI",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Antigravity",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Hermes Agent",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Qoder",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "MiniMax Code",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "WorkBuddy",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "DeepSeek Harness",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      },
+      {
+        "name": "Visual Studio Code Local Agent",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No exact model/version/OS real Agent-loop evidence yet."
+      }
+    ],
+    "compatibility": {
+      "protocol_checks": [
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "check": "invalid_request"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "check": "minimal_text"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "check": "streaming_terminal"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "check": "tool_call"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "check": "tool_result_continuation"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "check": "usage"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "check": "invalid_request"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "check": "minimal_text"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "check": "streaming_terminal"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "check": "tool_call"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "check": "tool_result_continuation"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "check": "usage"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "check": "invalid_request"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "check": "minimal_text"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "check": "streaming_terminal"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "check": "tool_call"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "check": "tool_result_continuation"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "check": "usage"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "check": "invalid_request"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "check": "minimal_text"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "check": "streaming_terminal"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "check": "tool_call"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "check": "tool_result_continuation"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "check": "usage"
+        }
+      ],
+      "protocol_features": [
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "billing"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "context_window"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "error_passthrough"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "image_input"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "prompt_cache"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "reasoning"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "retry"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "stream_disconnect"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "structured_output"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "timeout"
+        },
+        {
+          "status": "blocked",
+          "protocol": "chat_completions",
+          "feature": "web_search"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "billing"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "context_window"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "error_passthrough"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "image_input"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "prompt_cache"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "reasoning"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "retry"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "stream_disconnect"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "structured_output"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "timeout"
+        },
+        {
+          "status": "blocked",
+          "protocol": "generate_content",
+          "feature": "web_search"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "billing"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "context_window"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "error_passthrough"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "image_input"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "prompt_cache"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "reasoning"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "retry"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "stream_disconnect"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "structured_output"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "timeout"
+        },
+        {
+          "status": "blocked",
+          "protocol": "messages",
+          "feature": "web_search"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "billing"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "context_window"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "error_passthrough"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "image_input"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "prompt_cache"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "reasoning"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "retry"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "stream_disconnect"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "structured_output"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "timeout"
+        },
+        {
+          "status": "blocked",
+          "protocol": "responses",
+          "feature": "web_search"
+        }
+      ],
+      "tools": [],
+      "exact_clients": [],
+      "reasoning": {
+        "model_levels": [
+          {
+            "status": "blocked",
+            "level": "low"
+          },
+          {
+            "status": "blocked",
+            "level": "medium"
+          },
+          {
+            "status": "blocked",
+            "level": "high"
+          }
+        ],
+        "clients": [],
+        "declared_mappings": []
+      },
+      "access": [
+        {
+          "status": "blocked",
+          "group": "Gemini 标准线路"
+        }
+      ],
+      "pricing": [
+        {
+          "status": "blocked",
+          "group": "Gemini 标准线路"
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 1,
+    "model": {
       "context_window": 1048576,
       "display_name": "GLM 5.2",
       "family": "glm",
@@ -10532,7 +11100,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 10,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -11421,7 +11989,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 19,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -12172,7 +12740,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 19,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -13038,7 +13606,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 19,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -14158,7 +14726,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 19,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -14934,7 +15502,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 18,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -16096,7 +16664,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 19,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -17201,7 +17769,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "draft",
       "publishable": false,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 20,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -17578,7 +18146,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       ]
     },
     "verification": {
-      "gateway_e2e": false,
+      "gateway_e2e": true,
       "limits_source": "live",
       "modalities": {
         "image": "verified",
@@ -17589,10 +18157,10 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "verified_at": "2026-08-31"
     },
     "publication": {
-      "status": "draft",
-      "publishable": false,
+      "status": "publishable",
+      "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 2,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -18081,7 +18649,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "draft",
       "publishable": false,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 2,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -18477,7 +19045,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "draft",
       "publishable": false,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 2,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -19050,7 +19618,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "draft",
       "publishable": false,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 2,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []
@@ -19637,7 +20205,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "client_mappings": []
     },
     "verification": {
-      "gateway_e2e": false,
+      "gateway_e2e": true,
       "limits_source": "official",
       "modalities": {
         "text": "verified",
@@ -19648,8 +20216,8 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "verified_at": "2026-08-31"
     },
     "publication": {
-      "status": "draft",
-      "publishable": false,
+      "status": "publishable",
+      "publishable": true,
       "missing_evidence": {
         "blocked_cells": 0,
         "audit_failures": 0,
@@ -23001,7 +23569,7 @@ export const modelDocContracts: readonly ModelDocContract[] = [
       "status": "publishable",
       "publishable": true,
       "missing_evidence": {
-        "blocked_cells": 0,
+        "blocked_cells": 1,
         "audit_failures": 0,
         "validation_errors": [],
         "by_matrix": []

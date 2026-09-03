@@ -417,16 +417,9 @@ func TestModelPricingDoesNotSynthesizeLunaWithoutProviderPrice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 2 {
-		t.Fatalf("expected Sol and disabled Luna, got %+v", catalog.Groups)
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 1 {
+		t.Fatalf("expected only the routable Sol model, got %+v", catalog.Groups)
 	}
-	luna := catalog.Groups[0].Models[1]
-	if luna.Model != "gpt-5.6-luna" || !luna.Disabled {
-		t.Fatalf("expected disabled Luna row, got %+v", luna)
-	}
-	assertPrice(t, "catalog luna input", luna.InputPrice, 0.1)
-	assertPrice(t, "catalog luna output", luna.OutputPrice, 0.6)
-	assertPrice(t, "catalog luna cache", luna.CacheReadPrice, 0.01)
 }
 
 func TestModelPricingHidesOpenAICompactVariants(t *testing.T) {

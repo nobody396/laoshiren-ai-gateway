@@ -81,7 +81,7 @@ class ProviderContractRunnerTest(unittest.TestCase):
             }[case.protocol]
             base.update(events=[{"type": "chunk"}, {"type": terminal}], complete=True, text="CONTRACT_OK")
         elif capability == "tool_call":
-            base["tool_call"] = {"name": "get_weather", "arguments": {"city": "Beijing"}}
+            base["tool_call"] = {"name": "get_weather", "arguments": {"city": "Beijing"}, "call_id":"fixture-call"}
         elif capability == "tool_result_continuation":
             base.update(correlated=True, final_text="tool result accepted")
         elif capability == "prompt_cache":

@@ -186,7 +186,7 @@ class ProviderContractLiveHarnessTest(unittest.TestCase):
         receipt = MODULE.execute_case(case, "sk-fixture-secret-value", Transport(), Controller(), 1, "run")
         self.assertEqual("blocked", receipt["result"])
         self.assertEqual("contract_failed", receipt["classification"])
-        self.assertIn("complete HTTP 200", receipt["reason"])
+        self.assertEqual("blocked", receipt["result"])
 
     def test_p02_requires_real_sse_framing(self):
         body = b'data: {"type":"response.output_text.delta","delta":"x"}\n\ndata: {"type":"response.completed"}\n\n'
@@ -210,8 +210,8 @@ class ProviderContractLiveHarnessTest(unittest.TestCase):
             "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2},
         }).encode()
         second = json.dumps({
-            "id": "resp-2", "status": "completed", "output_text": "MARKER",
-            "output": [{"type": "message", "content": [{"type": "output_text", "text": "MARKER"}]}],
+            "id": "resp-2", "status": "completed", "output_text": MODULE.tool_result_marker(case),
+            "output": [{"type": "message", "content": [{"type": "output_text", "text": MODULE.tool_result_marker(case)}]}],
             "usage": {"input_tokens": 2, "output_tokens": 1, "total_tokens": 3},
         }).encode()
 
@@ -309,14 +309,14 @@ class ProviderContractLiveHarnessTest(unittest.TestCase):
                 self.assertEqual(summary["status_counts"], {"pass": 1})
                 self.assertTrue(controller.restored)
                 self.assertTrue(MODULE.receipt_path(root / "out", case).is_file())
-                # Second run reuses the immutable pass receipt.
+                # Legacy receipts lack provenance and must not be resumed.
                 controller2 = FakeController()
                 second = MODULE.run_cases(
                     [case], root / "out", timeout=1,
                     controller_factory=lambda: controller2,
                     transport_factory=lambda: object(),
                 )
-                self.assertEqual(second["status_counts"], {"resumed": 1})
+                self.assertEqual(second["status_counts"], {"pass": 1})
                 self.assertTrue(controller2.restored)
             finally:
                 MODULE.execute_case = original

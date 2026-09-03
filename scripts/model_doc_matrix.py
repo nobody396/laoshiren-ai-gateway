@@ -38,8 +38,16 @@ REQUIRED_PROTOCOL_CHECKS = {
 }
 # A verified protocol may legitimately have any feature marked unsupported.
 REQUIRED_PROTOCOL_FEATURES = {
-    "web_search", "reasoning", "image_input", "billing",
+    "web_search", "reasoning", "prompt_cache", "image_input", "context_window",
+    "error_passthrough", "stream_disconnect", "timeout", "retry", "billing", "structured_output",
 }
+# The public contract-card badge answers a narrower question than release
+# acceptance: do the protocol, reasoning and price claims shown on the card
+# carry terminal evidence? Release acceptance (full_acceptance=True) keeps the
+# full feature set plus the owned gateway E2E requirement; the catalog
+# projection passes full_acceptance=False so cards verified under the
+# display-claim standard keep their verified badge.
+PUBLICATION_PROTOCOL_FEATURES = {"web_search", "reasoning", "image_input", "billing"}
 PRICE_FIELDS = {"input_price", "output_price", "cache_write_price", "cache_read_price"}
 OPTIONAL_PRICE_FIELDS = {"long_context", "context_intervals", "time_pricing"}
 FINAL_STATUSES = {"verified", "unsupported"}
@@ -428,8 +436,11 @@ def audit_contract_sections(
     as_of: date | None = None,
     max_age_days: int = DEFAULT_MAX_EVIDENCE_AGE_DAYS,
     canonical_price_rows: list[dict[str, Any]] | None = None,
+    full_acceptance: bool = True,
 ) -> dict[str, list[str]]:
     sections = _new_sections()
+    if full_acceptance and contract.get("verification", {}).get("gateway_e2e") is not True:
+        _add(sections, "group_access", "owned gateway E2E has not passed")
     model = contract.get("model")
     model_id = model.get("id") if isinstance(model, dict) else None
     if not _nonempty(model_id):
@@ -444,6 +455,8 @@ def audit_contract_sections(
         item.get("name"): item for item in protocol_rows
         if isinstance(item, dict) and _nonempty(item.get("name"))
     }
+    if len(protocol_by_name) != len(protocol_rows):
+        _add(sections, "model_protocol", f"{model_id}: duplicate or malformed protocol row")
     verified_protocols = {name for name, item in protocol_by_name.items() if item.get("status") == "verified"}
     for name, item in protocol_by_name.items():
         evidence_entry(item, f"{model_id}/protocols/{name}", sections["model_protocol"])
@@ -511,7 +524,8 @@ def audit_contract_sections(
         if not isinstance(features, dict):
             _add(sections, "model_protocol", f"{model_id}/{protocol}: protocol feature matrix missing")
         else:
-            for feature in REQUIRED_PROTOCOL_FEATURES:
+            required_features = REQUIRED_PROTOCOL_FEATURES if full_acceptance else PUBLICATION_PROTOCOL_FEATURES
+            for feature in required_features:
                 evidence_entry(
                     features.get(feature),
                     f"{model_id}/{protocol}/features/{feature}",
@@ -749,6 +763,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("audit", "plan"))
     parser.add_argument("--contracts", type=Path, required=True)
+    parser.add_argument("--evidence-root", type=Path, default=ROOT)
+    parser.add_argument("--require-model", action="append", default=[], help="fail closed when an intended release model is absent from public inventory")
     parser.add_argument("--client-matrix", type=Path, required=True)
     parser.add_argument("--max-evidence-age-days", type=int, default=DEFAULT_MAX_EVIDENCE_AGE_DAYS)
     parser.add_argument("--as-of", help="ISO date used for deterministic stale-evidence checks")
@@ -761,6 +777,8 @@ def main() -> int:
     source.add_argument("--pricing-url")
     args = parser.parse_args()
     try:
+        if args.max_evidence_age_days < 0:
+            raise ValueError("evidence age must be non-negative")
         as_of = date.fromisoformat(args.as_of) if args.as_of else beijing_today()
         inventory = load_inventory_catalog(args.inventory_json, args.pricing_url)
         client_matrix = load_json(args.client_matrix)
@@ -790,6 +808,8 @@ def main() -> int:
             raw = load_json(path)
             model_id = raw.get("model", {}).get("id")
             if isinstance(model_id, str):
+                if model_id in contracts:
+                    raise ValueError("duplicate model contract: " + model_id)
                 contracts[model_id] = raw
 
         sections = _new_sections()
@@ -802,6 +822,17 @@ def main() -> int:
                 ),
             )
         public_models = set(inventory["models"])
+        if not public_models:
+            _add(sections, "public_model", "public inventory is empty; nothing was verified")
+        for required in args.require_model:
+            if required not in public_models:
+                _add(sections, "public_model", "required model missing from public inventory: " + required)
+        # CLI gates resolve actual artifacts. Structural helper functions remain
+        # useful for deterministic fixtures but are NOT publication gates.
+        from model_evidence_integrity import artifact_gaps, fingerprint
+        sections["test_evidence"].extend(artifact_gaps(client_matrix, args.evidence_root, as_of=as_of, max_age_days=args.max_evidence_age_days, path="client-matrix"))
+        for model_id in sorted(public_models.intersection(contracts)):
+            sections["test_evidence"].extend(artifact_gaps(contracts[model_id], args.evidence_root, as_of=as_of, max_age_days=args.max_evidence_age_days, path=model_id))
         missing_models = sorted(public_models - set(contracts))
         if missing_models:
             _add(sections, "public_model", "missing model contracts: " + ", ".join(missing_models))
@@ -814,6 +845,10 @@ def main() -> int:
             ))
         failures = [failure for name in MATRIX_NAMES for failure in sections[name]]
         report = {
+            "schema_version": 1, "kind": "model_doc_matrix_audit", "mode": args.command,
+            "models": sorted(public_models),
+            "contract_fingerprints": {m:fingerprint(contracts[m]) for m in public_models.intersection(contracts)},
+            "inventory_sha256": fingerprint(inventory),
             "inventory_models": len(public_models), "contracts": len(contracts),
             "complete": not failures,
             "matrices": {name: {"complete": not sections[name], "failures": sections[name]} for name in MATRIX_NAMES},

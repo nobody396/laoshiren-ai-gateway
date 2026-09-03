@@ -583,7 +583,7 @@ def main() -> int:
     changes = []
     projected = []
     for path in sorted(args.contracts.glob("*.json")):
-        if path.name in {"client-matrix.json", "matrix-schema.json"}:
+        if path.name in {"client-matrix.json", "matrix-schema.json", "import-provenance.json"}:
             continue
         original = load(path)
         after, events = project_contract(original, rows, groups, clients)

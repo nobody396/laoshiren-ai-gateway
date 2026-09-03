@@ -131,7 +131,7 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
+              "observed_at": "2026-09-01",
               "source_ref": "artifacts/claude-code-missing-loops-retry3-20260901/claude-code-loop-claude-sonnet-5-group15-20260901.json#evidence-273bfe42c9dc2d35c0a5f622",
               "artifact_sha256": "e024b0a61143b7d0ad836abf09afc374c6eb6c6074cf1de297aed08b564d8a74"
             }
@@ -362,7 +362,7 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
+              "observed_at": "2026-09-01",
               "source_ref": "artifacts/codex-missing-loops-batch2-20260901/codex-loop-gpt-5.6-terra-group6-20260901.json#evidence-59d38a78e8e4a2811847f4ae",
               "artifact_sha256": "ac51f1a311c8aff2f6be4a03d8d79f9b333d08b658ce9bc8207bb78f816e79a1"
             }
@@ -563,7 +563,8 @@
         "model_discovery": "当前 Key 的 /v1/models 裁剪模型目录",
         "model_slots": [
           "model",
-          "review_model"
+          "review_model",
+          "model catalog entry"
         ],
         "owned_fields": [
           "auth.OPENAI_API_KEY",
@@ -639,9 +640,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "artifacts/grok-build-gpt54-retry4-20260901/grok-build-loop-gpt-5.4-responses-group6-20260901.json#evidence-d49e8191f93ada23ef7bc701",
-              "artifact_sha256": "7a4e107c75464c5bb3ee44fc327d02b6ecacc8149cf98cec4a96fe5a5bed44af"
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
             }
           },
           {
@@ -675,9 +676,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "artifacts/grok-build-chat-messages-retry4-20260901/grok-build-loop-claude-opus-4-7-messages-group15-20260901.json#evidence-58b86d3fe5126c85b62fd336",
-              "artifact_sha256": "85c5e504b9a63d250e75818f595574de4c32b3f53b8249b849f15bc90911a5de"
+              "observed_at": "2026-09-01",
+              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
+              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
             }
           },
           {
@@ -1129,9 +1130,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "artifacts/opencode-messages-responses-key128-20260901/opencode-responses-gpt-5.6-terra-group6-20260901-loop.json#evidence-a5f6444bfa052dad4e0ddbae",
-              "artifact_sha256": "ecb56e827f658b0183940cd40852e6675da8bcc349914cc5976b1167c216fb68"
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-responses-gpt-5.4-group6-20260901-loop.json#evidence-93c53fa4a263a0500c300794",
+              "artifact_sha256": "6a6aea3d0972636f1bbdcdcb80a789b550482cdf3469478ffba82cf9d909bed2"
             }
           },
           {
@@ -1147,7 +1148,7 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
+              "observed_at": "2026-09-01",
               "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-chat_completions-grok-4.5-group34-20260901-loop.json#evidence-62edd5d70b4d534a6c159cd6",
               "artifact_sha256": "b8888c1687da2c862c870d7723a101ff69c8b3637063c62ab38cc9b1676fc0f6"
             }
@@ -1165,9 +1166,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "artifacts/opencode-messages-responses-key128-20260901/opencode-messages-claude-sonnet-5-group15-20260901-loop.json#evidence-09c9db60f7275d64c5779af2",
-              "artifact_sha256": "5846d4ff05731fce4820603b78253834f28097c17845e982f18f345da1c53832"
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-messages-claude-opus-4-7-group15-20260901-loop.json#evidence-b46729b4e5e8348baaebdc91",
+              "artifact_sha256": "62ac6bbc693ca1904d4375d8aa8fa2d4638f99e128ad54787fc39a9660d70112"
             }
           },
           {
@@ -1183,9 +1184,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "artifacts/opencode-gemini37-key128-20260901/opencode-generate_content-gemini-3.7-flash-group57-20260901-loop.json#evidence-510df58ba90a8a2fbaca92bf",
-              "artifact_sha256": "726a5b6b64d0581778d030a07190179f05ba384c25752bbf27b6286d793617b2"
+              "observed_at": "2026-09-01",
+              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-generate_content-gemini-3.1-pro-group57-20260901-loop.json#evidence-a689d6cb306ab1398ed99749",
+              "artifact_sha256": "fbfcd2ff4556add77815309a41da4b4547f44f2cb797c9176b30be7e4e3afe77"
             }
           }
         ],
@@ -1680,7 +1681,7 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
+              "observed_at": "2026-09-01",
               "source_ref": "artifacts/gemini-cli-tool-loop-key205-gemini31-final-20260901.json#evidence-eb6ea687a9ac7b93b1c92c04",
               "artifact_sha256": "f89f8b3ffb80e8e8db06433cc6d8420d6b73a0092f1030541464a6e1994f22e2"
             }
@@ -1939,7 +1940,7 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
+              "observed_at": "2026-09-01",
               "source_ref": "artifacts/antigravity-tool-loop-key205-gemini37-final3-20260901.json#evidence-1e28786409e20a397ab2fcc6",
               "artifact_sha256": "7bbdbb3d62dd878b9d87e5ad7360a850ddbba2cf979bf047dc3bdf3e5be8a695"
             }
@@ -2132,7 +2133,7 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
+              "observed_at": "2026-09-01",
               "source_ref": "artifacts/hermes-agent-loop-gpt-5.6-sol-group6-recheck-20260901.json#evidence-dcbb64623300809699a75ab2",
               "artifact_sha256": "8f8274721cbae39d5c83fcb99f5c99830237a566e4c6fbe551ecc174c022112d"
             }
@@ -3144,14 +3145,22 @@
             "support": "documented",
             "config_files": [
               {
+                "path": "~/.workbuddy/models.json",
+                "format": "json",
+                "scope": "user",
+                "notes": "WorkBuddy desktop GUI authoritative custom-model file; accepts an array or {models:[...]}."
+              },
+              {
                 "path": "~/.codebuddy/models.json",
                 "format": "json",
-                "scope": "user"
+                "scope": "user",
+                "notes": "Bundled CodeBuddy CLI / legacy compatibility path; not the WorkBuddy desktop GUI authoritative file."
               },
               {
                 "path": ".codebuddy/models.json",
                 "format": "json",
-                "scope": "project"
+                "scope": "project",
+                "notes": "Bundled CodeBuddy CLI project override."
               },
               {
                 "path": "~/.workbuddy/settings.json",
@@ -3161,8 +3170,8 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-candidates-trae-doubao-work-workbuddy-20260901.json",
+              "observed_at": "2026-09-02",
+              "source_ref": "WorkBuddy 5.3.14 local UI screenshot plus /Applications/WorkBuddy.app/Contents/Resources/app.asar#packages/workbuddy-core/src/domains/models/node/desktop-models-repo.ts",
               "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
             }
           },
@@ -3182,14 +3191,22 @@
             "support": "documented",
             "config_files": [
               {
+                "path": "%USERPROFILE%\\.workbuddy\\models.json",
+                "format": "json",
+                "scope": "user",
+                "notes": "WorkBuddy desktop GUI authoritative custom-model file; cross-platform desktop repo resolves homedir/.workbuddy/models.json."
+              },
+              {
                 "path": "%USERPROFILE%\\.codebuddy\\models.json",
                 "format": "json",
-                "scope": "user"
+                "scope": "user",
+                "notes": "Bundled CodeBuddy CLI / legacy compatibility path; not the WorkBuddy desktop GUI authoritative file."
               },
               {
                 "path": ".codebuddy\\models.json",
                 "format": "json",
-                "scope": "project"
+                "scope": "project",
+                "notes": "Bundled CodeBuddy CLI project override."
               },
               {
                 "path": "%USERPROFILE%\\.workbuddy\\settings.json",
@@ -3199,15 +3216,15 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "model-doc-contracts/evidence/client-candidates-trae-doubao-work-workbuddy-20260901.json",
+              "observed_at": "2026-09-02",
+              "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar#packages/workbuddy-core/src/domains/models/node/desktop-models-repo.ts cross-platform homedir resolution",
               "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
             }
           }
         ],
         "endpoint": {
           "base_url_rule": "Default custom-protocol mode: use https://api.laoshirenai.com/v1 and WorkBuddy validates/appends /chat/completions. Exact-URL mode: use https://api.laoshirenai.com/v1/chat/completions and WorkBuddy sends to that URL without path completion.",
-          "credential_location": "User or project .codebuddy/models.json local model record; never print or copy the API key into commands or logs."
+          "credential_location": "WorkBuddy desktop stores each custom model credential in user ~/.workbuddy/models.json (Windows: %USERPROFILE%\\.workbuddy\\models.json). The separate .codebuddy/models.json paths belong to the bundled CodeBuddy CLI / legacy compatibility layer."
         },
         "model_discovery": "Preset providers may populate a list. Custom requires URL, API key, and exact model name; no authenticated /v1/models discovery/readback is documented.",
         "model_slots": [
@@ -3224,7 +3241,7 @@
           "reasoning capability"
         ],
         "mutation": {
-          "merge_strategy": "One-click is disabled. Use the supported WorkBuddy model UI today. A future installer must strictly parse JSON, back up both user/project files, upsert only its stable custom-local record, preserve every other model and setting, atomically replace, redact credential readback, and prove idempotency.",
+          "merge_strategy": "Desktop setup must strictly parse ~/.workbuddy/models.json, accept the GUI-created empty file plus array and legacy {models:[...]} shapes, back it up, upsert only stable custom-local records, preserve unrelated models, atomically replace, redact credential readback, and prove idempotency. Bundled CodeBuddy CLI configuration is a separate target.",
           "strict_parse": true,
           "malformed_existing": "refuse",
           "preserve_unowned": true,

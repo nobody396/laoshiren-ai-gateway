@@ -157,10 +157,12 @@ def validate(data: dict[str, Any], client_matrix: dict[str, Any] | None = None) 
         require_text(protocol.get("evidence"), f"protocols[{index}].evidence")
         if status == "verified":
             verified_protocols.add(name)
-    if not verified_protocols:
+    draft_gateway = data.get("verification", {}).get("gateway_e2e") is False
+    if not verified_protocols and not draft_gateway:
         fail("at least one protocol must be verified")
     recommended_protocol = require_text(data.get("recommended_protocol"), "recommended_protocol")
-    if recommended_protocol not in verified_protocols:
+    candidates = {p["name"] for p in protocols if p.get("status") == "blocked"}
+    if recommended_protocol not in verified_protocols and not (draft_gateway and recommended_protocol in candidates):
         fail("recommended_protocol must reference a verified protocol")
 
     clients = require_list(data.get("clients"), "clients")
@@ -222,10 +224,10 @@ def validate(data: dict[str, Any], client_matrix: dict[str, Any] | None = None) 
     if set(modality_results) != MODALITIES:
         fail("verification.modalities must explicitly cover text, image, and video")
     for modality, status in modality_results.items():
-        if status not in PUBLIC_STATUSES:
+        if status not in PUBLIC_STATUSES and not (draft_gateway and status == "blocked"):
             fail(f"verification.modalities.{modality} must be verified or unsupported")
         supported = modality in inputs
-        if supported != (status == "verified"):
+        if status != "blocked" and supported != (status == "verified"):
             fail(f"model.input_modalities conflicts with verification.modalities.{modality}")
 
     reasoning = data.get("reasoning")
@@ -250,7 +252,7 @@ def validate(data: dict[str, Any], client_matrix: dict[str, Any] | None = None) 
     return data
 
 
-def is_publishable(data: dict[str, Any]) -> bool:
+def is_structurally_publishable(data: dict[str, Any]) -> bool:
     """A public card requires gateway proof and a closed client matrix."""
 
     return (
@@ -267,6 +269,17 @@ def is_publishable(data: dict[str, Any]) -> bool:
         item["status"] != "blocked" for item in data["client_coverage"]
         )
     )
+
+
+def is_publishable(data: dict[str, Any], matrix_report: dict[str, Any] | None = None) -> bool:
+    """Structural validation alone never authorizes a public card."""
+    import hashlib
+    digest = hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+    report = matrix_report or {}
+    return (is_structurally_publishable(data)
+            and report.get("kind") == "model_doc_matrix_audit"
+            and report.get("mode") == "audit" and report.get("complete") is True
+            and report.get("contract_fingerprints", {}).get(data["model"]["id"]) == digest)
 
 
 def template(model_id: str) -> dict[str, Any]:
@@ -287,18 +300,11 @@ def template(model_id: str) -> dict[str, Any]:
         },
         "protocols": [{
             "name": "chat_completions",
-            "status": "verified",
+            "status": "blocked",
             "evidence": "TODO",
         }],
         "recommended_protocol": "chat_completions",
-        "clients": [{
-            "name": "TODO",
-            "version": "TODO",
-            "protocol": "chat_completions",
-            "status": "verified",
-            "recommended": False,
-            "evidence": "TODO",
-        }],
+        "clients": [],
         "client_coverage": [],
         "reasoning": {"model_levels": [], "client_levels": [], "client_mappings": []},
         "test_matrix": {
@@ -314,9 +320,9 @@ def template(model_id: str) -> dict[str, Any]:
             "limits_source": "official",
             "gateway_e2e": False,
             "modalities": {
-                "text": "verified",
-                "image": "unsupported",
-                "video": "unsupported",
+                "text": "blocked",
+                "image": "blocked",
+                "video": "blocked",
             },
         },
     }
@@ -375,7 +381,9 @@ def main() -> int:
                 "verified-clients",
                 "reasoning-caveats",
             ],
-            "publishable": is_publishable(data),
+            "structurally_valid": True,
+            "publishable": False,
+            "required_gate": "model_doc_matrix.py audit with exact live inventory and artifact integrity",
         }, ensure_ascii=False, indent=2))
         return 0
     except (OSError, ValueError, json.JSONDecodeError) as exc:

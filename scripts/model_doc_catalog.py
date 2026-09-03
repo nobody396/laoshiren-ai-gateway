@@ -16,7 +16,7 @@ OUTPUT = ROOT / "frontend" / "src" / "generated" / "modelDocContracts.ts"
 ADMIN_OUTPUT = ROOT / "backend" / "internal" / "adminmatrix" / "model_client_matrix.json"
 EVIDENCE_FILE = CONTRACT_DIR / "evidence" / "test-evidence.json"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from model_doc_contract import is_publishable, validate, walk  # noqa: E402
+from model_doc_contract import is_structurally_publishable, validate, walk  # noqa: E402
 from model_doc_matrix import MATRIX_NAMES, audit_contract_sections  # noqa: E402
 
 
@@ -147,16 +147,19 @@ def project_contract(
     contract: dict[str, Any], client_matrix: dict[str, Any],
     validation_errors: list[str] | None = None,
 ) -> dict[str, Any]:
-    sections = audit_contract_sections(contract, client_matrix)
+    # Card publication follows the display-claim standard (see
+    # model_doc_matrix.PUBLICATION_PROTOCOL_FEATURES); release acceptance keeps
+    # the strict full_acceptance default.
+    sections = audit_contract_sections(contract, client_matrix, full_acceptance=False)
     audit_failures = sum(len(sections[name]) for name in MATRIX_NAMES)
     validation_errors = validation_errors or []
-    publishable = not validation_errors and is_publishable(contract) and audit_failures == 0
+    publishable = not validation_errors and is_structurally_publishable(contract) and audit_failures == 0
     projected = dict(contract)
     projected["publication"] = {
         "status": "publishable" if publishable else "draft",
         "publishable": publishable,
         "missing_evidence": {
-            "blocked_cells": 0 if audit_failures == 0 else _blocked_cell_count(contract.get("test_matrix")),
+            "blocked_cells": _blocked_cell_count(contract.get("test_matrix")),
             "audit_failures": audit_failures,
             "validation_errors": validation_errors,
             "by_matrix": [
@@ -299,7 +302,7 @@ def load_contracts() -> list[dict[str, Any]]:
     seen: set[str] = set()
     client_matrix = json.loads(CLIENT_MATRIX.read_text(encoding="utf-8"))
     for path in sorted(CONTRACT_DIR.glob("*.json")):
-        if path == CLIENT_MATRIX or path.name == "matrix-schema.json":
+        if path == CLIENT_MATRIX or path.name in {"matrix-schema.json", "import-provenance.json"}:
             continue
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, dict):
@@ -431,7 +434,7 @@ export interface ModelDocContract {
   }
   access: {
     base_url: string
-    groups: Array<{ name: string; multiplier: number }>
+    groups: Array<{ id?: number; name: string; multiplier: number }>
   }
   protocols: Array<{
     name: ModelDocProtocolName
@@ -488,7 +491,7 @@ export interface ModelDocContract {
     limits_source: 'official' | 'live'
     gateway_e2e: boolean
     gateway_e2e_scope?: string
-    modalities: Record<'text' | 'image' | 'video', ModelDocVerificationStatus>
+    modalities: Record<'text' | 'image' | 'video', ModelDocVerificationStatus | 'blocked'>
   }
 }
 

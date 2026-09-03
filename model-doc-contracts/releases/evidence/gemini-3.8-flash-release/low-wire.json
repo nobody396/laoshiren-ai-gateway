@@ -1,0 +1,62 @@
+{
+  "artifact_sha256": "9b00e51cf5cf2e43c6323258d9de20895f556eee5d14861009ac81373ef7bf25",
+  "case": {
+    "base_url": "https://jp.pomoai.xyz",
+    "case_key": "release:gemini-3.8-flash:low-wire",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "G38_LOW",
+    "max_output_tokens": 65536,
+    "model_id": "gemini-3.8-flash",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "generate_content",
+    "reasoning_level": "low",
+    "source_case_keys": []
+  },
+  "case_fingerprint": "9d67cdcbae9af80ed0f9afa9578b6e8922e9f31cdfb92ff94302ebce483abd1d",
+  "classification": "verified",
+  "finished_at": "2026-09-03T13:35:18.437+00:00",
+  "harness_sha256": "fe8c76e22db21f6fb59dc6737edb2ae97ff149261d25643669dad75a37798f63",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-03T13:35:14.842+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "response": {
+    "body_bytes": 465,
+    "body_sha256": "93af1245c32807f9f821c5fa64bd0126050d592207168a01b9f36af254058684",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": false,
+    "request_id": "202609031335163605779548268d9d65HF5RhLy",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "secret_free": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 295,
+    "output_tokens": 369,
+    "total_tokens": 664
+  },
+  "wire_observation": {
+    "field": "generationConfig.thinkingConfig.thinkingLevel",
+    "request_payload_sha256": "e3affeb006431eb3941088a4475feed4cc1f4698aecb75f91210426ae1b537c9",
+    "scope": "Requested low wire value accepted and reasoning task answered correctly. No claim about hidden provider-internal effort.",
+    "sent": "low",
+    "verified_answer": 115
+  }
+}

@@ -1,0 +1,549 @@
+{
+  "kind": "provider_invoice_snapshot",
+  "observed_at": "2026-09-03T13:28:59.267653+00:00",
+  "model_id": "gemini-3.8-flash",
+  "token_id": 6140,
+  "source_url": "https://www.pomoai.xyz/api/log/self/",
+  "rows": [
+    {
+      "id": 1,
+      "created_at": 1788441078,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 283,
+      "completion_tokens": 159,
+      "quota": 162,
+      "group": "gemini-normal",
+      "request_id": "20260903131111592531425cupn6Omh",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 2,
+      "created_at": 1788441070,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 13272,
+      "completion_tokens": 47,
+      "quota": 2026,
+      "group": "gemini-normal",
+      "request_id": "202609031311036370670CHDh7exg",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 3,
+      "created_at": 1788441058,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 13272,
+      "completion_tokens": 17,
+      "quota": 2004,
+      "group": "gemini-normal",
+      "request_id": "2026090313105659973870PsSemosU",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 4,
+      "created_at": 1788440416,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 274,
+      "completion_tokens": 118,
+      "quota": 130,
+      "group": "gemini-normal",
+      "request_id": "20260903130013800525942HpLh9I9R",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 5,
+      "created_at": 1788440412,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 297,
+      "completion_tokens": 1003,
+      "quota": 797,
+      "group": "gemini-normal",
+      "request_id": "20260903130007680556528OfG623wn",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 6,
+      "created_at": 1788440406,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 299,
+      "completion_tokens": 801,
+      "quota": 646,
+      "group": "gemini-normal",
+      "request_id": "202609031300012234058957EH3J1M3",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 7,
+      "created_at": 1788440400,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 300,
+      "completion_tokens": 379,
+      "quota": 329,
+      "group": "gemini-normal",
+      "request_id": "20260903125957195889467tti6tx5P",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 8,
+      "created_at": 1788440394,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 272,
+      "completion_tokens": 84,
+      "quota": 104,
+      "group": "gemini-normal",
+      "request_id": "20260903125951905127440ExATYxMY",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 9,
+      "created_at": 1788440309,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 269,
+      "completion_tokens": 86,
+      "quota": 105,
+      "group": "gemini-normal",
+      "request_id": "20260903125827396548196gDyWLQGl",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 10,
+      "created_at": 1788440306,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 274,
+      "completion_tokens": 124,
+      "quota": 134,
+      "group": "gemini-normal",
+      "request_id": "20260903125823602516214vWUz3AOn",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 11,
+      "created_at": 1788440302,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 1361,
+      "completion_tokens": 105,
+      "quota": 283,
+      "group": "gemini-normal",
+      "request_id": "20260903125813512454669QyzvpWNY",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 12,
+      "created_at": 1788440292,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 269,
+      "completion_tokens": 98,
+      "quota": 114,
+      "group": "gemini-normal",
+      "request_id": "20260903125809918618120brnSZc8Q",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 13,
+      "created_at": 1788440288,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 271,
+      "completion_tokens": 45,
+      "quota": 74,
+      "group": "gemini-normal",
+      "request_id": "20260903125806697284495Zv4UdXAj",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 14,
+      "created_at": 1788440285,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 272,
+      "completion_tokens": 15,
+      "quota": 52,
+      "group": "gemini-normal",
+      "request_id": "20260903125801112279037MiPHMOej",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 15,
+      "created_at": 1788440279,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 351,
+      "completion_tokens": 22,
+      "quota": 69,
+      "group": "gemini-normal",
+      "request_id": "20260903125756996197801zLUgLebR",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 16,
+      "created_at": 1788440275,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 314,
+      "completion_tokens": 89,
+      "quota": 114,
+      "group": "gemini-normal",
+      "request_id": "20260903125753776476482REz9vLRA",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 17,
+      "created_at": 1788440272,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 313,
+      "completion_tokens": 88,
+      "quota": 113,
+      "group": "gemini-normal",
+      "request_id": "20260903125749949776837u7jhLcJc",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 18,
+      "created_at": 1788440268,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 272,
+      "completion_tokens": 124,
+      "quota": 134,
+      "group": "gemini-normal",
+      "request_id": "20260903125744559496313pnEfiydn",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 19,
+      "created_at": 1788440263,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 271,
+      "completion_tokens": 124,
+      "quota": 134,
+      "group": "gemini-normal",
+      "request_id": "20260903125733431130685AFdnIY8O",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 20,
+      "created_at": 1788440252,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 271,
+      "completion_tokens": 108,
+      "quota": 122,
+      "group": "gemini-normal",
+      "request_id": "20260903125728797885231Ov00vXzW",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 21,
+      "created_at": 1788432413,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 354,
+      "completion_tokens": 7,
+      "quota": 58,
+      "group": "gemini-normal",
+      "request_id": "20260903104651491072772ixvAEz3J",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 22,
+      "created_at": 1788432411,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 315,
+      "completion_tokens": 17,
+      "quota": 60,
+      "group": "gemini-normal",
+      "request_id": "20260903104647999534819IUAuhlrG",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 23,
+      "created_at": 1788432407,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 1,
+      "quota": 40,
+      "group": "gemini-normal",
+      "request_id": "20260903104645997528021Loeo3Rbp",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 24,
+      "created_at": 1788432407,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 89,
+      "quota": 106,
+      "group": "gemini-normal",
+      "request_id": "20260903104645389261047u17GWEJ9",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 25,
+      "created_at": 1788432405,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 73,
+      "quota": 94,
+      "group": "gemini-normal",
+      "request_id": "20260903104643269820564FIJdtbcL",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 26,
+      "created_at": 1788432405,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 53,
+      "quota": 79,
+      "group": "gemini-normal",
+      "request_id": "202609031046425105583870vd5D4pZ",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 27,
+      "created_at": 1788432405,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 1,
+      "quota": 40,
+      "group": "gemini-normal",
+      "request_id": "20260903104643269390282wv8v0tNZ",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 28,
+      "created_at": 1788432404,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 63,
+      "quota": 86,
+      "group": "gemini-normal",
+      "request_id": "2026090310464237382791282jigznl",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 29,
+      "created_at": 1788432018,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 14,
+      "quota": 49,
+      "group": "gemini-normal",
+      "request_id": "202609031040144232696816qmDJvjT",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    },
+    {
+      "id": 30,
+      "created_at": 1788432017,
+      "model_name": "gemini-3.8-flash",
+      "prompt_tokens": 259,
+      "completion_tokens": 22,
+      "quota": 55,
+      "group": "gemini-normal",
+      "request_id": "20260903104014431293557Icg0L962",
+      "token_id": 6140,
+      "billing_metadata": {
+        "cache_ratio": 0.1,
+        "completion_ratio": 5,
+        "group_ratio": 0.4,
+        "model_price": -1,
+        "model_ratio": 0.375
+      }
+    }
+  ]
+}

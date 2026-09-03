@@ -101,4 +101,43 @@ class ExactFeatureProofTest(unittest.TestCase):
             self.assertEqual(result.returncode,2)
             self.assertFalse(json.loads(result.stdout)['complete'])
 
+
+class ProviderPreAdmissionEvidenceTest(unittest.TestCase):
+    def test_verified_negative_receipt_can_record_a_capability_boundary(self):
+        source=ROOT/'model-doc-contracts/releases/evidence/gemini-3.8-flash-release/implicit-cache.json'
+        receipt=json.loads(source.read_text())
+        wrapper={'status':'unsupported','source_ref':str(source.relative_to(ROOT)),
+                 'artifact_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
+                 'observed_at':receipt['observed_at']}
+        self.assertEqual(artifact_gaps(wrapper,ROOT,as_of=date(2026,9,3)),[])
+        wrapper['status']='verified'
+        self.assertTrue(artifact_gaps(wrapper,ROOT,as_of=date(2026,9,3)))
+
+    def test_provider_billing_is_checked_and_cannot_replace_gateway_accounting(self):
+        with tempfile.TemporaryDirectory() as d:
+            import shutil
+            root=Path(d);source=root/'billing.json'
+            shutil.copytree(ROOT/'model-doc-contracts/releases/evidence',root/'evidence')
+            receipt=json.loads((ROOT/'model-doc-contracts/releases/evidence/gemini-3.8-flash-release/provider-billing.json').read_text())
+            source.write_text(json.dumps(receipt))
+            wrapper={'status':'verified','source_ref':'billing.json',
+                     'artifact_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
+                     'observed_at':receipt['observed_at']}
+            self.assertEqual(artifact_gaps(wrapper,root,as_of=date(2026,9,3)),[])
+            self.assertTrue(artifact_gaps(wrapper,root,as_of=date(2026,9,3),path='test/test_matrix/protocol_features/generate_content/billing'))
+            receipt['rows'][0]['actual_charge']+=1
+            source.write_text(json.dumps(receipt));wrapper['artifact_sha256']=hashlib.sha256(source.read_bytes()).hexdigest()
+            self.assertTrue(artifact_gaps(wrapper,root,as_of=date(2026,9,3)))
+
+class ProviderInvoiceLinkTest(unittest.TestCase):
+    def test_unlinked_arithmetic_and_malformed_rows_never_pass(self):
+        from scripts.model_evidence_integrity import provider_invoice_link_matches
+        root=ROOT/'model-doc-contracts/releases'
+        bill=json.loads((root/'evidence/gemini-3.8-flash-release/provider-billing.json').read_text())
+        row=dict(bill['rows'][0])
+        self.assertTrue(provider_invoice_link_matches(bill,row,root))
+        row.pop('probe_ref')
+        self.assertFalse(provider_invoice_link_matches(bill,row,root))
+        self.assertFalse(provider_invoice_link_matches(bill,None,root))
+
 if __name__=='__main__': unittest.main()

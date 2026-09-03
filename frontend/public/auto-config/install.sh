@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.13'
+SCRIPT_VERSION='0.7.14'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -13,7 +13,7 @@ CATALOG_GROK_DEFAULT_DISPLAY_NAME='Grok 4.6'
 CATALOG_GROK_DEFAULT_CONTEXT_WINDOW=500000
 CATALOG_GROK_MANAGED_MODELS_JSON='[{"id":"grok-4.5","display_name":"Grok 4.5","context_window":500000},{"id":"grok-4.6","display_name":"Grok 4.6","context_window":500000}]'
 CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'
-CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high'
+CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high gemini-3.8-flash'
 # END GENERATED MODEL CATALOG
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"

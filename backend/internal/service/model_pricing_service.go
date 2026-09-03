@@ -94,8 +94,7 @@ func IsInternalOnlyModel(model string) bool {
 }
 
 type disabledPublicModelRule struct {
-	model   string
-	anchors []string
+	model string
 	// allowedGroupIDs lists groups that intentionally re-open the retired
 	// model (e.g. the enterprise line). Requests and price rows scoped to one
 	// of these groups bypass the retirement gate.
@@ -111,12 +110,11 @@ func (rule disabledPublicModelRule) allowsGroup(groupID int64) bool {
 	return false
 }
 
-// Disabled models remain visible as struck-through rows when a related active
-// model is present. This tells users they were intentionally retired instead
-// of making them look accidentally omitted from the price catalog.
+// Disabled models are rejected at the request boundary and omitted from public
+// model catalogs. A model that cannot be routed must never look selectable.
 var disabledPublicModelRules = []disabledPublicModelRule{
-	{model: "gpt-5.6-luna", anchors: []string{"gpt-5.6-sol", "gpt-5.6-terra"}, allowedGroupIDs: []int64{52, 59}},
-	{model: "gpt-5.4-mini", anchors: []string{"gpt-5.4"}, allowedGroupIDs: []int64{52, 59}},
+	{model: "gpt-5.6-luna", allowedGroupIDs: []int64{52, 59}},
+	{model: "gpt-5.4-mini", allowedGroupIDs: []int64{52, 59}},
 }
 
 // GPT Image 2 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套
@@ -149,9 +147,10 @@ func (s *ModelPricingService) isDisplayHiddenModel(model string) bool {
 //
 // 缓存读取按对应厂商规则：Anthropic 为输入价的 10%。
 type manualOfficialPrice struct {
-	input     float64
-	output    float64
-	cacheRead float64
+	input      float64
+	output     float64
+	cacheWrite float64
+	cacheRead  float64
 }
 
 var manualOfficialPrices = map[string]manualOfficialPrice{
@@ -329,11 +328,10 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 				continue
 			}
 			if IsDisabledPublicModelForGroup(model, g.ID) {
-				price.Disabled = true
+				continue
 			}
 			prices = append(prices, price)
 		}
-		prices = s.withDisabledModels(ctx, g.ID, prices, g.RateMultiplier)
 		if len(prices) == 0 && imagePricing == nil {
 			continue
 		}
@@ -388,43 +386,6 @@ func IsDisabledPublicModelForGroup(model string, groupID int64) bool {
 	return false
 }
 
-func (s *ModelPricingService) withDisabledModels(ctx context.Context, groupID int64, prices []PublicModelPrice, rateMultiplier float64) []PublicModelPrice {
-	present := make(map[string]bool, len(prices))
-	for i := range prices {
-		name := strings.ToLower(strings.TrimSpace(prices[i].Model))
-		present[name] = true
-		if IsDisabledPublicModelForGroup(name, groupID) {
-			prices[i].Disabled = true
-		}
-	}
-	for _, rule := range disabledPublicModelRules {
-		// Exempted groups treat the model as available: never synthesize a
-		// struck-through row for them.
-		if rule.allowsGroup(groupID) || present[rule.model] || !containsAnyModelName(present, rule.anchors) {
-			continue
-		}
-		disabled, ok := s.priceForModel(ctx, groupID, rule.model, rateMultiplier)
-		if !ok {
-			// A retired model can disappear from the provider price source before
-			// the public notice is removed. Keep an empty disabled row in that case.
-			disabled = PublicModelPrice{Model: rule.model}
-		}
-		disabled.Disabled = true
-		prices = append(prices, disabled)
-		present[rule.model] = true
-	}
-	return prices
-}
-
-func containsAnyModelName(present map[string]bool, models []string) bool {
-	for _, model := range models {
-		if present[model] {
-			return true
-		}
-	}
-	return false
-}
-
 func publicImageGenerationPricing(g Group, models []string) *PublicImageGenerationPricing {
 	if !g.AllowImageGeneration || !containsModelName(models, "gpt-image-2") {
 		return nil
@@ -469,7 +430,23 @@ func multipliedPrice(price *float64, multiplier float64) *float64 {
 // billing resolver. Nil override fields keep their catalog/manual defaults.
 func (s *ModelPricingService) priceForModel(ctx context.Context, groupID int64, model string, rateMultiplier float64) (PublicModelPrice, bool) {
 	var input, output, cacheWrite, cacheRead *float64
-	if p := s.pricing.GetModelPricing(model); p != nil {
+	// A catalog row with an explicit cache-write contract is complete enough to
+	// override fuzzy LiteLLM matches (for example Fable 5.1 resolving to Fable 5).
+	// Rows without that contract keep the existing dynamic-provider behavior.
+	if mp, ok := generatedCatalogDisplayPrices[strings.ToLower(model)]; ok && mp.cacheWrite > 0 {
+		if mp.input > 0 {
+			input = ptr(mp.input)
+		}
+		if mp.output > 0 {
+			output = ptr(mp.output)
+		}
+		if mp.cacheWrite > 0 {
+			cacheWrite = ptr(mp.cacheWrite)
+		}
+		if mp.cacheRead > 0 {
+			cacheRead = ptr(mp.cacheRead)
+		}
+	} else if p := s.pricing.GetModelPricing(model); p != nil {
 		input = nonZeroPricePerMTok(p.InputCostPerToken)
 		output = nonZeroPricePerMTok(p.OutputCostPerToken)
 		cacheWrite = nonZeroPricePerMTok(p.CacheCreationInputTokenCost)

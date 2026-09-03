@@ -1894,7 +1894,7 @@ func (s *OpenAIGatewayService) ForwardImages(
 			return nil, &UpstreamFailoverError{
 				StatusCode:             resp.StatusCode,
 				ResponseBody:           respBody,
-				RetryableOnSameAccount: account.IsPoolMode() && isPoolModeRetryableStatus(resp.StatusCode),
+				RetryableOnSameAccount: allowOpenAISameAccountRetry(account.IsPoolMode() && isPoolModeRetryableStatus(resp.StatusCode), respBody),
 			}
 		}
 		errorRequestBody := forwardBody

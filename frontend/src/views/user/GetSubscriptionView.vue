@@ -65,7 +65,7 @@
                   >
                     <span class="topup-radio" aria-hidden="true"><span></span></span>
                     <span class="topup-product-name">{{ plan.name }}</span>
-                    <span class="topup-product-price">{{ plan.directPrice }}</span>
+                    <span class="topup-product-price">{{ monthlyPlanPrice(plan) }}</span>
                   </button>
                 </div>
                 <p class="topup-monthly-catalog-note">
@@ -180,7 +180,23 @@
                       <PaymentMethodIcon kind="wechat" />
                       <strong>{{ t('nativeCheckout.wechatPay') }}</strong>
                     </button>
+                    <button
+                      v-if="affiliateWallet?.wallet_checkout_enabled && !selectedBalanceProduct?.promotional"
+                      type="button"
+                      data-testid="topup-method-commission-wallet"
+                      :disabled="effectiveAmountYuan < 20"
+                      :class="{ 'topup-summary-method--active': selectedTopupChannel === 'commission_wallet' }"
+                      class="topup-summary-method"
+                      @click="selectTopupChannel('commission_wallet')"
+                    >
+                      <span class="topup-radio" aria-hidden="true"><span></span></span>
+                      <PaymentMethodIcon kind="commission_wallet" />
+                      <strong>佣金钱包</strong>
+                    </button>
                   </div>
+                  <p v-if="selectedTopupChannel === 'commission_wallet'" class="topup-warning">
+                    可用佣金 {{ affiliateWalletAvailableText }}，本次支付 {{ balanceWalletPriceText }}
+                  </p>
                   <p v-if="paymentNotice" class="topup-warning">{{ paymentNotice }}</p>
                 </section>
 
@@ -198,7 +214,7 @@
                   @click="submitOrder"
                 >
                   <span v-if="submitting">{{ t('topup.submitting') }}</span>
-                  <span v-else>立即支付 ¥{{ displayAmountText }}</span>
+                  <span v-else>{{ selectedTopupChannel === 'commission_wallet' ? `使用佣金钱包支付 ${balanceWalletPriceText}` : `立即支付 ¥${displayAmountText}` }}</span>
                 </button>
 
                 <div v-else class="topup-summary-actions">
@@ -210,10 +226,10 @@
               </template>
 
               <template v-else>
-                <p class="topup-summary-amount">{{ selectedMonthlyPlan?.directPrice }}</p>
+                <p class="topup-summary-amount">{{ selectedMonthlyDisplayPrice }}</p>
                 <div class="topup-summary-rows">
                   <div class="topup-summary-row"><span>产品</span><strong>{{ selectedMonthlyPlan?.name }}</strong></div>
-                  <div class="topup-summary-row"><span>{{ t('topup.monthlyPlanDirectPrice') }}</span><strong>{{ selectedMonthlyPlan?.directPrice }}</strong></div>
+                  <div class="topup-summary-row"><span>网站实时价格</span><strong>{{ selectedMonthlyDisplayPrice }}</strong></div>
                   <div class="topup-summary-row"><span>{{ t('topup.monthlyPlanMonthlyLimit') }}</span><strong>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits</strong></div>
                   <div class="topup-summary-row"><span>有效期</span><strong>31 天</strong></div>
                 </div>
@@ -245,16 +261,44 @@
                       <PaymentMethodIcon kind="wechat" />
                       <strong>{{ t('nativeCheckout.wechatPay') }}</strong>
                     </button>
+                    <button
+                      v-if="affiliateWallet?.wallet_checkout_enabled"
+                      type="button"
+                      data-testid="monthly-method-commission-wallet"
+                      class="topup-summary-method"
+                      :class="{ 'topup-summary-method--active': selectedMonthlyTopupChannel === 'commission_wallet' }"
+                      :disabled="!selectedMonthlyNativeOffer"
+                      @click="selectMonthlyTopupChannel('commission_wallet')"
+                    >
+                      <span class="topup-radio" aria-hidden="true"><span></span></span>
+                      <PaymentMethodIcon kind="commission_wallet" />
+                      <strong>佣金钱包</strong>
+                    </button>
                   </div>
                 </section>
 
+                <div v-if="selectedMonthlyTopupChannel === 'commission_wallet'" class="topup-summary-rows">
+                  <div class="topup-summary-row"><span>可用佣金</span><strong>{{ affiliateWalletAvailableText }}</strong></div>
+                  <div class="topup-summary-row"><span>佣金钱包价</span><strong>{{ commissionWalletPriceText }}</strong></div>
+                  <div class="topup-summary-row"><span>支付后剩余</span><strong>{{ commissionWalletRemainingText }}</strong></div>
+                </div>
+
                 <div class="topup-monthly-actions">
+                  <button
+                    v-if="selectedMonthlyTopupChannel === 'commission_wallet'"
+                    type="button"
+                    class="topup-primary-action"
+                    :disabled="commissionWalletBusy || !canPayMonthlyWithCommission"
+                    @click="payMonthlyWithCommission"
+                  >
+                    {{ commissionWalletBusy ? '正在开通…' : `使用佣金钱包支付 ${commissionWalletPriceText}` }}
+                  </button>
                   <NativeCheckoutTrialOffer
-                    v-if="selectedMonthlyNativeOffer && selectedMonthlyPayMethod"
+                    v-else-if="selectedMonthlyNativeOffer && selectedMonthlyPayMethod"
                     :key="selectedMonthlyPlan.id"
                     :offer-code="selectedMonthlyPlan.id"
                     :preferred-pay-method="selectedMonthlyPayMethod"
-                    :action-label="`立即支付 ${selectedMonthlyPlan.directPrice}`"
+                    :action-label="`立即支付 ${selectedMonthlyDisplayPrice}`"
                     action-only
                   />
                   <button
@@ -293,7 +337,16 @@ import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPla
 import { useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
 import { useNativeCheckoutOffers } from '@/composables/useNativeCheckoutOffers'
 import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
-import type { NativeCheckoutPaymentMethod } from '@/api/nativeCheckout'
+import {
+  createCommissionWalletCheckoutOrder,
+  type NativeCheckoutPaymentMethod,
+} from '@/api/nativeCheckout'
+import {
+  affiliateIdempotencyKey,
+  getAffiliateWallet,
+  purchaseBalanceWithAffiliateCommission,
+  type AffiliateWallet,
+} from '@/api/agent'
 import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 
 const { t } = useI18n()
@@ -303,6 +356,8 @@ const authStore = useAuthStore()
 const presets = BALANCE_TOPUP_PRESETS
 const QR_TTL_SECONDS = 300
 type SelectedProductKind = 'balance' | 'monthly'
+type MonthlyPaymentChannel = NativeCheckoutPaymentMethod | 'commission_wallet'
+type BalancePaymentChannel = TopupPayType | 'commission_wallet'
 type BalanceProduct = {
   id: string
   label: string
@@ -314,12 +369,12 @@ type BalanceProduct = {
 }
 
 const step = ref<1 | 2>(1)
-const selectedTopupChannel = ref<TopupPayType>('alipay')
+const selectedTopupChannel = ref<BalancePaymentChannel>('alipay')
 const selectedProductKind = ref<SelectedProductKind>('balance')
 const selectedBalanceProductId = ref('')
 const selectedQuantity = ref(1)
 const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('plus')
-const selectedMonthlyTopupChannel = ref<NativeCheckoutPaymentMethod>('alipay')
+const selectedMonthlyTopupChannel = ref<MonthlyPaymentChannel>('alipay')
 const payType = ref<TopupPayType>('alipay')
 const submitting = ref(false)
 const qrCodeURL = ref('')
@@ -330,6 +385,10 @@ const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
 const activeOrderCreditedAmountYuan = ref(0)
+const affiliateWallet = ref<AffiliateWallet | null>(null)
+const commissionWalletBusy = ref(false)
+const commissionWalletIdempotencyKey = ref('')
+const balanceWalletIdempotencyKey = ref('')
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 const { loadOffers: loadNativeCheckoutOffers, findNativeOfferByCode } = useNativeCheckoutOffers()
 const {
@@ -410,12 +469,47 @@ const selectedMonthlyNativeOffer = computed(() => {
   if (!plan) return undefined
   return findNativeOfferByCode(plan.id, 'subscription')
 })
-const selectedMonthlyPayMethod = computed<NativeCheckoutPaymentMethod>(() => selectedMonthlyTopupChannel.value)
+const selectedMonthlyPayMethod = computed<NativeCheckoutPaymentMethod | undefined>(() => {
+  return selectedMonthlyTopupChannel.value === 'commission_wallet' ? undefined : selectedMonthlyTopupChannel.value
+})
+const selectedMonthlyDisplayPrice = computed(() => {
+  const fen = selectedMonthlyNativeOffer.value?.pay_amount_cny_fen
+  return typeof fen === 'number' && fen > 0 ? `¥${formatMoney(fen / 100, false)}` : '价格加载失败'
+})
+const commissionWalletChargeFen = computed(() => {
+  const offerFen = selectedMonthlyNativeOffer.value?.pay_amount_cny_fen ?? 0
+  const rateBPS = affiliateWallet.value?.wallet_purchase_rate_bps ?? 0
+  if (offerFen <= 0 || rateBPS <= 0) return 0
+  return Math.ceil((offerFen * rateBPS) / 10_000)
+})
+const affiliateWalletAvailableMicros = computed(() => affiliateWallet.value?.available_cash_micros ?? 0)
+const affiliateWalletAvailableText = computed(() => `¥${(affiliateWalletAvailableMicros.value / 1_000_000).toFixed(2)}`)
+const commissionWalletPriceText = computed(() => `¥${(commissionWalletChargeFen.value / 100).toFixed(2)}`)
+const commissionWalletRemainingText = computed(() => {
+  const remaining = affiliateWalletAvailableMicros.value - commissionWalletChargeFen.value * 10_000
+  return `¥${(Math.max(remaining, 0) / 1_000_000).toFixed(2)}`
+})
+const balanceWalletChargeFen = computed(() => {
+  const priceFen = Math.round(effectiveAmountYuan.value * 100)
+  const rateBPS = affiliateWallet.value?.wallet_purchase_rate_bps ?? 0
+  return priceFen > 0 && rateBPS > 0 ? Math.ceil((priceFen * rateBPS) / 10_000) : 0
+})
+const balanceWalletPriceText = computed(() => `¥${(balanceWalletChargeFen.value / 100).toFixed(2)}`)
+const canPayMonthlyWithCommission = computed(() => {
+  return !!affiliateWallet.value?.wallet_checkout_enabled &&
+    !!selectedMonthlyNativeOffer.value && commissionWalletChargeFen.value > 0 &&
+    affiliateWalletAvailableMicros.value >= commissionWalletChargeFen.value * 10_000
+})
 const showingQrTopup = computed(
   () => selectedProductKind.value === 'balance'
 )
 const canUseSelectedQrMethod = computed(() => {
   if (!showingQrTopup.value) return false
+  if (selectedTopupChannel.value === 'commission_wallet') {
+    return !!affiliateWallet.value?.wallet_checkout_enabled &&
+      !selectedBalanceProduct.value?.promotional &&
+      affiliateWalletAvailableMicros.value >= balanceWalletChargeFen.value * 10_000
+  }
   return selectedTopupChannel.value === 'alipay' ? canUseAlipay.value : canUseWechat.value
 })
 const effectiveAmountYuan = computed<number>(() => {
@@ -490,18 +584,21 @@ function selectBalanceProduct(product: BalanceProduct) {
   selectedProductKind.value = 'balance'
   selectedBalanceProductId.value = product.id
   selectedQuantity.value = 1
+  balanceWalletIdempotencyKey.value = ''
   syncTopupChannelWithSettings()
 }
 
 function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
   selectedProductKind.value = 'monthly'
   selectedMonthlyPlanId.value = plan.id
+  commissionWalletIdempotencyKey.value = ''
   syncMonthlyTopupChannelWithSettings()
 }
 
-function selectMonthlyTopupChannel(channel: NativeCheckoutPaymentMethod) {
+function selectMonthlyTopupChannel(channel: MonthlyPaymentChannel) {
   if (channel === 'alipay' && (!selectedMonthlyNativeOffer.value || !canUseAlipay.value)) return
   if (channel === 'wechat' && (!selectedMonthlyNativeOffer.value || !canUseWechat.value)) return
+  if (channel === 'commission_wallet' && !affiliateWallet.value?.wallet_checkout_enabled) return
   selectedMonthlyTopupChannel.value = channel
 }
 
@@ -515,11 +612,47 @@ function syncMonthlyTopupChannelWithSettings() {
   }
 }
 
-function selectTopupChannel(channel: TopupPayType) {
+function monthlyPlanPrice(plan: MonthlyCreditCardPlan): string {
+  const offer = findNativeOfferByCode(plan.id, 'subscription')
+  return offer ? `¥${formatMoney(offer.pay_amount_cny_fen / 100, false)}` : '价格加载失败'
+}
+
+async function payMonthlyWithCommission() {
+  const offer = selectedMonthlyNativeOffer.value
+  if (!offer || !canPayMonthlyWithCommission.value) return
+  commissionWalletBusy.value = true
+  try {
+    // Refresh immediately before the irreversible debit. The server performs
+    // the same optimistic price check and rejects a changed catalog price.
+    await loadNativeCheckoutOffers()
+    const freshOffer = selectedMonthlyNativeOffer.value
+    if (!freshOffer) throw new Error('月卡实时价格加载失败')
+    if (!commissionWalletIdempotencyKey.value) {
+      commissionWalletIdempotencyKey.value = affiliateIdempotencyKey(`monthly-${freshOffer.code}`)
+    }
+    const order = await createCommissionWalletCheckoutOrder(
+      freshOffer.code,
+      freshOffer.pay_amount_cny_fen,
+      commissionWalletIdempotencyKey.value,
+    )
+    if (order.status !== 'completed') throw new Error('佣金钱包订单尚未完成，请稍后重试')
+    affiliateWallet.value = await getAffiliateWallet()
+    await Promise.all([loadMonthlyCreditCardPlans(), authStore.refreshUser()])
+    commissionWalletIdempotencyKey.value = ''
+    appStore.showSuccess(`${selectedMonthlyPlan.value?.name ?? '月卡'}已开通`)
+  } catch (error) {
+    appStore.showError(extractApiErrorMessage(error, '佣金钱包支付失败'))
+  } finally {
+    commissionWalletBusy.value = false
+  }
+}
+
+function selectTopupChannel(channel: BalancePaymentChannel) {
   if (channel === 'alipay' && (!canUseAlipay.value || effectiveAmountYuan.value < 20)) return
   if (channel === 'wechat' && (!canUseWechat.value || effectiveAmountYuan.value < 20)) return
+  if (channel === 'commission_wallet' && (!affiliateWallet.value?.wallet_checkout_enabled || selectedBalanceProduct.value?.promotional)) return
   selectedTopupChannel.value = channel
-  payType.value = channel
+  if (channel !== 'commission_wallet') payType.value = channel
 }
 
 function decreaseQuantity() {
@@ -620,13 +753,24 @@ async function applyQrCodePayload(payload: string) {
 
 async function submitOrder() {
   if (!showingQrTopup.value || !canUseSelectedQrMethod.value || effectiveAmountYuan.value < 20 || amountError.value) return
-  payType.value = selectedTopupChannel.value as TopupPayType
 
   submitting.value = true
   try {
     const orderAmountYuan = effectiveAmountYuan.value
     const unitAmountYuan = selectedBalanceProduct.value?.amountCny ?? orderAmountYuan
     const quantity = supportsSelectedQuantity.value ? selectedQuantity.value : 1
+    if (selectedTopupChannel.value === 'commission_wallet') {
+      if (!balanceWalletIdempotencyKey.value) {
+        balanceWalletIdempotencyKey.value = affiliateIdempotencyKey('balance-purchase')
+      }
+      await purchaseBalanceWithAffiliateCommission(Math.round(orderAmountYuan * 100), balanceWalletIdempotencyKey.value)
+      affiliateWallet.value = await getAffiliateWallet()
+      await authStore.refreshUser()
+      balanceWalletIdempotencyKey.value = ''
+      appStore.showSuccess(`已充值余额 ¥${orderAmountYuan.toFixed(2)}`)
+      return
+    }
+    payType.value = selectedTopupChannel.value
     const response = await createTopupOrder(Math.round(orderAmountYuan * 100), payType.value, {
       productAmountCnyFen: Math.round(unitAmountYuan * 100),
       quantity,
@@ -714,7 +858,8 @@ void Promise.all([
   loadMonthlyCreditCardPlans(),
   refreshNewcomerOffer(),
   // 月卡原生扫码门控只读这份目录；失败时保持关闭，不回退外部收银台。
-  loadNativeCheckoutOffers().catch(() => {})
+  loadNativeCheckoutOffers().catch(() => {}),
+  getAffiliateWallet().then((wallet) => { affiliateWallet.value = wallet }).catch(() => { affiliateWallet.value = null })
 ]).then(() => {
   syncTopupChannelWithSettings()
   syncMonthlyTopupChannelWithSettings()

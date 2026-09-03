@@ -382,6 +382,7 @@ WHERE description = '[fresh-install compatibility template] Disabled source for 
 		"affiliate_performance_events",
 		"affiliate_qualification_states",
 		"agent_cash_commission_entries",
+		"monthly_commercial_cutovers",
 	} {
 		var regclass sql.NullString
 		require.NoError(t, tx.QueryRowContext(
@@ -394,6 +395,11 @@ WHERE description = '[fresh-install compatibility template] Disabled source for 
 	requireColumn(t, tx, "affiliate_program_settings", "withdrawal_min_micros", "bigint", 0, false)
 	requireColumn(t, tx, "affiliate_reward_entries", "amount_micros", "bigint", 0, false)
 	requireColumn(t, tx, "agent_cash_commission_entries", "amount_micros", "bigint", 0, false)
+	requireIndex(t, tx, "agent_cash_commission_entries", "uq_agent_cash_platform_purchase_reference")
+	requireIndex(t, tx, "agent_cash_commission_entries", "uq_agent_cash_platform_purchase_rate_refund")
+	requireColumn(t, tx, "affiliate_program_settings", "commission_wallet_checkout_enabled", "boolean", 0, false)
+	requireColumn(t, tx, "affiliate_program_settings", "commission_wallet_purchase_rate_bps", "integer", 0, false)
+	requireColumn(t, tx, "affiliate_program_settings", "commission_conversion_enabled", "boolean", 0, false)
 
 	var affiliateMode, affiliateVersion string
 	var agentPoolRateBPS, marginFloorBPS int
@@ -692,7 +698,7 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
 	requireColumn(t, tx, "native_checkout_offers", "manual_redeem_enabled", "boolean", 0, false)
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
-	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
+	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 32, true)
 	requireColumn(t, tx, "native_checkout_orders", "redeem_code_id", "bigint", 0, true)
 	requireColumn(t, tx, "native_checkout_offer_testers", "user_id", "bigint", 0, false)
 	requireColumn(t, tx, "native_checkout_redeem_inventory", "assigned_order_id", "bigint", 0, true)

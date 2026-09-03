@@ -34,6 +34,17 @@ func (s *publicStatsGiftValueStub) SumGiftedRedeemValue(_ context.Context) (floa
 	return s.value, s.err
 }
 
+type publicStatsCompensationValueStub struct {
+	value float64
+	err   error
+	calls int
+}
+
+func (s *publicStatsCompensationValueStub) SumPublicCompensationCNY(_ context.Context) (float64, error) {
+	s.calls++
+	return s.value, s.err
+}
+
 type publicStatsCacheStub struct {
 	data     string
 	getErr   error
@@ -69,8 +80,9 @@ func TestPublicStatsScaledTotalsAndCache(t *testing.T) {
 		TotalTokens:   219638600,
 	}}
 	gifts := &publicStatsGiftValueStub{value: 1557}
+	compensations := &publicStatsCompensationValueStub{value: 830.8612566}
 	cache := &publicStatsCacheStub{}
-	svc := NewPublicStatsService(totals, gifts, cache)
+	svc := NewPublicStatsService(totals, gifts, compensations, cache)
 
 	stats, err := svc.GetPublicStats(context.Background())
 	if err != nil {
@@ -82,15 +94,15 @@ func TestPublicStatsScaledTotalsAndCache(t *testing.T) {
 	if stats.RequestsTotal != 1234560 {
 		t.Fatalf("expected scaled requests_total 1234560, got %d", stats.RequestsTotal)
 	}
-	// (1557 赠送卡密 + 226.8 手工批次) × 10 = 17838
-	if stats.CompensationCNY != 17838.0 {
-		t.Fatalf("expected scaled compensation_cny 17838.0, got %v", stats.CompensationCNY)
+	// (1557 赠送/赔付卡密 + 830.8612566 账本赔付) × 10 = 23878.612566 -> 23878.61
+	if stats.CompensationCNY != 23878.61 {
+		t.Fatalf("expected scaled compensation_cny 23878.61, got %v", stats.CompensationCNY)
 	}
 	if _, err := time.Parse(time.RFC3339, stats.UpdatedAt); err != nil {
 		t.Fatalf("updated_at should be RFC3339, got %q", stats.UpdatedAt)
 	}
-	if gifts.calls != 1 {
-		t.Fatalf("expected gift value source called once, got %d", gifts.calls)
+	if gifts.calls != 1 || compensations.calls != 1 {
+		t.Fatalf("expected value sources called once, got gifts=%d compensations=%d", gifts.calls, compensations.calls)
 	}
 	if cache.setCalls != 1 {
 		t.Fatalf("expected cache write once, got %d", cache.setCalls)
@@ -103,16 +115,17 @@ func TestPublicStatsScaledTotalsAndCache(t *testing.T) {
 	if _, err := svc.GetPublicStats(context.Background()); err != nil {
 		t.Fatalf("second call: %v", err)
 	}
-	if totals.calls != 1 || gifts.calls != 1 {
-		t.Fatalf("expected sources called once (cached), got totals=%d gifts=%d", totals.calls, gifts.calls)
+	if totals.calls != 1 || gifts.calls != 1 || compensations.calls != 1 {
+		t.Fatalf("expected sources called once (cached), got totals=%d gifts=%d compensations=%d", totals.calls, gifts.calls, compensations.calls)
 	}
 }
 
 func TestPublicStatsNilRepoDegrades(t *testing.T) {
 	cases := map[string]*PublicStatsService{
-		"nil totals":      NewPublicStatsService(nil, &publicStatsGiftValueStub{}, nil),
-		"nil gift source": NewPublicStatsService(&publicStatsTotalsStub{}, nil, nil),
-		"all nil":         NewPublicStatsService(nil, nil, nil),
+		"nil totals":              NewPublicStatsService(nil, &publicStatsGiftValueStub{}, &publicStatsCompensationValueStub{}, nil),
+		"nil gift source":         NewPublicStatsService(&publicStatsTotalsStub{}, nil, &publicStatsCompensationValueStub{}, nil),
+		"nil compensation source": NewPublicStatsService(&publicStatsTotalsStub{}, &publicStatsGiftValueStub{}, nil, nil),
+		"all nil":                 NewPublicStatsService(nil, nil, nil, nil),
 	}
 	for name, svc := range cases {
 		_, err := svc.GetPublicStats(context.Background())
@@ -135,7 +148,7 @@ func TestPublicStatsCacheErrorFallsBackToCompute(t *testing.T) {
 		getErr: errors.New("redis down"),
 		setErr: errors.New("redis down"),
 	}
-	svc := NewPublicStatsService(totals, gifts, cache)
+	svc := NewPublicStatsService(totals, gifts, &publicStatsCompensationValueStub{}, cache)
 
 	stats, err := svc.GetPublicStats(context.Background())
 	if err != nil {
@@ -151,7 +164,7 @@ func TestPublicStatsCacheErrorFallsBackToCompute(t *testing.T) {
 
 func TestPublicStatsRepoErrorPropagates(t *testing.T) {
 	totals := &publicStatsTotalsStub{err: errors.New("db down")}
-	svc := NewPublicStatsService(totals, &publicStatsGiftValueStub{}, nil)
+	svc := NewPublicStatsService(totals, &publicStatsGiftValueStub{}, &publicStatsCompensationValueStub{}, nil)
 	if _, err := svc.GetPublicStats(context.Background()); err == nil {
 		t.Fatal("expected error when totals repo fails")
 	}
@@ -161,8 +174,21 @@ func TestPublicStatsGiftValueErrorPropagates(t *testing.T) {
 	// 赠送卡密汇总失败必须整体报错，不能静默丢掉赠送部分按常量兜底。
 	totals := &publicStatsTotalsStub{totals: DashboardLifetimeTotals{TotalRequests: 1, TotalTokens: 2}}
 	gifts := &publicStatsGiftValueStub{err: errors.New("db down")}
-	svc := NewPublicStatsService(totals, gifts, nil)
+	svc := NewPublicStatsService(totals, gifts, &publicStatsCompensationValueStub{}, nil)
 	if _, err := svc.GetPublicStats(context.Background()); err == nil {
 		t.Fatal("expected error when gift value query fails")
+	}
+}
+
+func TestPublicStatsCompensationValueErrorPropagates(t *testing.T) {
+	totals := &publicStatsTotalsStub{totals: DashboardLifetimeTotals{TotalRequests: 1, TotalTokens: 2}}
+	svc := NewPublicStatsService(
+		totals,
+		&publicStatsGiftValueStub{value: 3},
+		&publicStatsCompensationValueStub{err: errors.New("db down")},
+		nil,
+	)
+	if _, err := svc.GetPublicStats(context.Background()); err == nil {
+		t.Fatal("expected error when compensation value query fails")
 	}
 }

@@ -227,6 +227,15 @@ func (r *nativeCheckoutRepository) SetProviderOrder(ctx context.Context, id int6
 	return r.scanOrderRow(row)
 }
 
+func (r *nativeCheckoutRepository) SetCommissionWalletOrderReady(ctx context.Context, id int64, tradeNo string) (*service.NativeCheckoutOrder, error) {
+	row := r.db.QueryRowContext(ctx, `UPDATE native_checkout_orders SET
+		provider_trade_no = $2, payment_url = NULL, payment_method = 'commission_wallet',
+		status = 'checking', failure_code = '', next_check_at = NOW(), updated_at = NOW()
+		WHERE id = $1 AND provider = 'affiliate_wallet' AND status = 'creating'
+		RETURNING `+nativeCheckoutOrderColumns, id, tradeNo)
+	return r.scanOrderRow(row)
+}
+
 func (r *nativeCheckoutRepository) SetOrderState(ctx context.Context, id int64, status, failureCode string, nextCheckAt time.Time) (*service.NativeCheckoutOrder, error) {
 	row := r.db.QueryRowContext(ctx, `UPDATE native_checkout_orders SET
 		status = $2, failure_code = $3, next_check_at = $4, updated_at = NOW()

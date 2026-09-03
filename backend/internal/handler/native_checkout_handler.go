@@ -27,6 +27,11 @@ type createNativeCheckoutOrderRequest struct {
 	PayType string `json:"pay_type" binding:"omitempty,oneof=alipay wechat"`
 }
 
+type createCommissionWalletOrderRequest struct {
+	OfferCode               string `json:"offer_code" binding:"required,max=64"`
+	ExpectedPayAmountCNYFen int64  `json:"expected_pay_amount_cny_fen" binding:"required,gt=0"`
+}
+
 type nativeCheckoutOrderResponse struct {
 	OrderNo             string    `json:"order_no"`
 	Status              string    `json:"status"`
@@ -130,6 +135,27 @@ func (h *NativeCheckoutHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 	order, err := h.service.CreateOrder(c.Request.Context(), userID, request.OfferCode, request.PayType, ip.GetClientIP(c))
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, nativeCheckoutOrderDTO(order))
+}
+
+func (h *NativeCheckoutHandler) CreateCommissionWalletOrder(c *gin.Context) {
+	userID, ok := nativeCheckoutUserID(c)
+	if !ok {
+		return
+	}
+	var request createCommissionWalletOrderRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.BadRequest(c, "Invalid commission-wallet checkout request")
+		return
+	}
+	order, err := h.service.CreateCommissionWalletOrder(
+		c.Request.Context(), userID, request.OfferCode,
+		request.ExpectedPayAmountCNYFen, c.GetHeader("Idempotency-Key"),
+	)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

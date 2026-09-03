@@ -314,6 +314,10 @@ type affiliateWalletAmountRequest struct {
 	AmountMicros int64 `json:"amount_micros"`
 }
 
+type affiliateWalletBalancePurchaseRequest struct {
+	CreditAmountCNYFen int64 `json:"credit_amount_cny_fen" binding:"required,gte=2000,lte=300000"`
+}
+
 func (h *AgentHandler) GetAffiliateWallet(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)
 	if !ok {
@@ -382,6 +386,27 @@ func (h *AgentHandler) ConvertAffiliateCommission(c *gin.Context) {
 		subject.UserID,
 		req.AmountMicros,
 		c.GetHeader("Idempotency-Key"),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Created(c, item)
+}
+
+func (h *AgentHandler) PurchaseBalanceWithAffiliateCommission(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req affiliateWalletBalancePurchaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.PurchaseBalance(
+		c.Request.Context(), subject.UserID, req.CreditAmountCNYFen, c.GetHeader("Idempotency-Key"),
 	)
 	if err != nil {
 		response.ErrorFrom(c, err)

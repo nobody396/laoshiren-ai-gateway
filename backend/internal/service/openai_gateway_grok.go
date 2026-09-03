@@ -177,7 +177,7 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 				StatusCode:             resp.StatusCode,
 				ResponseBody:           respBody,
 				ResponseHeaders:        resp.Header.Clone(),
-				RetryableOnSameAccount: account.IsPoolMode() && account.IsPoolModeRetryableStatus(resp.StatusCode),
+				RetryableOnSameAccount: allowOpenAISameAccountRetry(account.IsPoolMode() && account.IsPoolModeRetryableStatus(resp.StatusCode), respBody),
 			}
 		}
 		return s.handleErrorResponse(ctx, resp, c, account, patchedBody)
@@ -944,7 +944,7 @@ func (s *OpenAIGatewayService) describeGrokComposerImage(
 				StatusCode:             resp.StatusCode,
 				ResponseBody:           respBody,
 				ResponseHeaders:        resp.Header.Clone(),
-				RetryableOnSameAccount: account.IsPoolMode() && account.IsPoolModeRetryableStatus(resp.StatusCode),
+				RetryableOnSameAccount: allowOpenAISameAccountRetry(account.IsPoolMode() && account.IsPoolModeRetryableStatus(resp.StatusCode), respBody),
 			}
 		}
 		return "", OpenAIUsage{}, fmt.Errorf("grok composer image bridge upstream error: %s", upstreamMsg)

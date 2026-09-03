@@ -238,6 +238,8 @@ SELECT
   e.user_id,
   COALESCE(u.email, ''),
   e.api_key_id,
+  COALESCE(k.name, ''),
+  COALESCE(e.user_id IN (1, 2), false),
   e.account_id,
   COALESCE(a.name, ''),
   e.group_id,
@@ -254,6 +256,7 @@ FROM ops_error_logs e
 LEFT JOIN accounts a ON e.account_id = a.id
 LEFT JOIN groups g ON e.group_id = g.id
 LEFT JOIN users u ON e.user_id = u.id
+LEFT JOIN api_keys k ON e.api_key_id = k.id
 LEFT JOIN users u2 ON e.resolved_by_user_id = u2.id
 ` + where + `
 ORDER BY e.created_at DESC
@@ -309,6 +312,8 @@ LIMIT $` + itoa(len(args)+1) + ` OFFSET $` + itoa(len(args)+2)
 			&userID,
 			&userEmail,
 			&apiKeyID,
+			&item.APIKeyName,
+			&item.IsInternal,
 			&accountID,
 			&accountName,
 			&groupID,
@@ -417,6 +422,8 @@ SELECT
   e.user_id,
   COALESCE(u.email, ''),
   e.api_key_id,
+  COALESCE(k.name, ''),
+  COALESCE(e.user_id IN (1, 2), false),
   e.account_id,
   COALESCE(a.name, ''),
   e.group_id,
@@ -441,6 +448,7 @@ SELECT
   COALESCE(e.request_headers::text, '')
 FROM ops_error_logs e
 LEFT JOIN users u ON e.user_id = u.id
+LEFT JOIN api_keys k ON e.api_key_id = k.id
 LEFT JOIN accounts a ON e.account_id = a.id
 LEFT JOIN groups g ON e.group_id = g.id
 WHERE e.id = $1
@@ -494,6 +502,8 @@ LIMIT 1`
 		&userID,
 		&out.UserEmail,
 		&apiKeyID,
+		&out.APIKeyName,
+		&out.IsInternal,
 		&accountID,
 		&out.AccountName,
 		&groupID,

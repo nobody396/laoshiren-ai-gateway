@@ -1341,6 +1341,29 @@ func isOpenAITransientProcessingError(upstreamStatusCode int, upstreamMsg string
 	return match(string(upstreamBody))
 }
 
+const openAISessionBlockedByCyberPolicyCode = "session_blocked_by_cyber_policy"
+
+func isOpenAISessionBlockedByCyberPolicy(upstreamBody []byte) bool {
+	if len(upstreamBody) == 0 {
+		return false
+	}
+	for _, path := range []string{"error.code", "response.error.code"} {
+		code := strings.ToLower(strings.TrimSpace(gjson.GetBytes(upstreamBody, path).String()))
+		if code == openAISessionBlockedByCyberPolicyCode {
+			return true
+		}
+	}
+	return false
+}
+
+// allowOpenAISameAccountRetry keeps the existing retry classification except
+// for request-scoped session policy blocks. Replaying an identical blocked
+// session on the same supplier cannot recover it; the handler should switch to
+// the next eligible upstream account immediately instead.
+func allowOpenAISameAccountRetry(retryable bool, upstreamBody []byte) bool {
+	return retryable && !isOpenAISessionBlockedByCyberPolicy(upstreamBody)
+}
+
 // ExtractSessionID extracts the raw session ID from headers or body without hashing.
 // Used by ForwardAsAnthropic to pass as prompt_cache_key for upstream cache.
 func (s *OpenAIGatewayService) ExtractSessionID(c *gin.Context, body []byte) string {
@@ -2908,7 +2931,7 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 				return nil, &UpstreamFailoverError{
 					StatusCode:             resp.StatusCode,
 					ResponseBody:           respBody,
-					RetryableOnSameAccount: isTransientOpenAIOAuth429(account, resp.StatusCode, resp.Header, respBody) || (account.IsPoolMode() && (isPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody))),
+					RetryableOnSameAccount: allowOpenAISameAccountRetry(isTransientOpenAIOAuth429(account, resp.StatusCode, resp.Header, respBody) || (account.IsPoolMode() && (isPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody))), respBody),
 				}
 			}
 			return s.handleErrorResponse(ctx, resp, c, account, body)
@@ -4270,7 +4293,7 @@ func (s *OpenAIGatewayService) handleErrorResponse(
 		return nil, &UpstreamFailoverError{
 			StatusCode:             resp.StatusCode,
 			ResponseBody:           body,
-			RetryableOnSameAccount: account.IsPoolMode() && isPoolModeRetryableStatus(resp.StatusCode),
+			RetryableOnSameAccount: allowOpenAISameAccountRetry(account.IsPoolMode() && isPoolModeRetryableStatus(resp.StatusCode), body),
 		}
 	}
 
@@ -4407,7 +4430,7 @@ func (s *OpenAIGatewayService) handleCompatErrorResponse(
 		return nil, &UpstreamFailoverError{
 			StatusCode:             resp.StatusCode,
 			ResponseBody:           body,
-			RetryableOnSameAccount: account.IsPoolMode() && isPoolModeRetryableStatus(resp.StatusCode),
+			RetryableOnSameAccount: allowOpenAISameAccountRetry(account.IsPoolMode() && isPoolModeRetryableStatus(resp.StatusCode), body),
 		}
 	}
 
@@ -6612,7 +6635,7 @@ func buildOpenAIFastPolicyBlockedWSEvent(err *OpenAIFastBlockedError, requestID 
 	errorObj := map[string]any{
 		"type":    "invalid_request_error",
 		"code":    "policy_violation",
-		"message": err.Message,
+		"message": clientMessageWithRequestID(err.Message, requestID),
 	}
 	if requestID = strings.TrimSpace(requestID); requestID != "" {
 		errorObj["request_id"] = requestID

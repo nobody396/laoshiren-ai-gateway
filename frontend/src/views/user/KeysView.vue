@@ -127,41 +127,17 @@
           </template>
 
           <template #cell-group="{ row }">
-            <div class="group/dropdown relative">
-              <button
-                :ref="(el) => setGroupButtonRef(row.id, el)"
-                @click="openGroupSelector(row)"
-                class="-mx-2 -my-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-dark-700"
-                :title="t('keys.clickToChangeGroup')"
-              >
-                <GroupBadge
-                  v-if="row.group"
-                  :name="row.group.name"
-                  :platform="row.group.platform"
-                  :display-model="getGroupDisplayModel(row.group)"
-                  :subscription-type="row.group.subscription_type"
-                  :rate-multiplier="row.group.rate_multiplier"
-                  :user-rate-multiplier="userGroupRates[row.group.id]"
-                />
-                <span v-else class="text-sm text-gray-400 dark:text-dark-400">{{
-                  t('keys.noGroup')
-                }}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('keys.selectGroup') }}</span>
-                <svg
-                  class="h-3.5 w-3.5 text-gray-400 opacity-60 transition-opacity group-hover/dropdown:opacity-100"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
-                  />
-                </svg>
-              </button>
-            </div>
+            <KeyGroupSelector
+              :model-value="row.group_id"
+              :options="baseGroupOptions"
+              :fallback-option="getKeyGroupFallbackOption(row)"
+              :include-monthly="subscriptionStore.hasActiveSubscriptions"
+              variant="inline"
+              :placeholder="t('keys.selectGroup')"
+              :search-placeholder="t('keys.searchGroup')"
+              :title="t('keys.clickToChangeGroup')"
+              @update:model-value="changeGroup(row, $event)"
+            />
           </template>
 
           <template #cell-usage="{ row }">
@@ -351,16 +327,16 @@
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
               <div
-                v-if="canAutoConfigureKey(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
+                v-if="getAutoConfigTargetForKey(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
                 class="flex items-center gap-1 rounded-lg"
                 data-tour="keys-setup-options"
               >
                 <!-- Client Auto Config Button -->
                 <button
-                  v-if="canAutoConfigureKey(row)"
+                  v-if="getAutoConfigTargetForKey(row)"
                   @click="copyClientAutoConfigCommand(row)"
                   :disabled="configuringKeyId === row.id"
-                  title="选择模型、协议和客户端并生成一键配置命令"
+                  :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
                   class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-wait disabled:opacity-60 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
                 >
                   <Icon :name="configuringKeyId === row.id ? 'refresh' : 'terminal'" size="sm" :class="configuringKeyId === row.id ? 'animate-spin' : ''" />
@@ -465,71 +441,14 @@
 
         <div>
           <label class="input-label">{{ t('keys.groupLabel') }}</label>
-          <Select
+          <KeyGroupSelector
             v-model="formData.group_id"
-            :options="groupSelectOptions"
+            :options="baseGroupOptions"
             :placeholder="t('keys.selectGroup')"
-            :searchable="true"
             :search-placeholder="t('keys.searchGroup')"
+            :include-monthly="subscriptionStore.hasActiveSubscriptions"
             data-tour="key-form-group"
-          >
-            <template #selected="{ option }">
-              <GroupBadge
-                v-if="option"
-                :name="(option as unknown as GroupOption).label"
-                :platform="(option as unknown as GroupOption).platform"
-                :display-model="(option as unknown as GroupOption).displayModel"
-                :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).rate
-                    : undefined
-                "
-                :user-rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).userRate
-                    : null
-                "
-                :show-rate="shouldShowGroupOptionMeta(option as unknown as GroupOption)"
-              />
-              <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
-            </template>
-            <template #option="{ option, selected }">
-              <GroupSectionHeader
-                v-if="isGroupHeaderOption(option as unknown as GroupSelectOption)"
-                :section="(option as unknown as GroupHeaderOption).groupKey"
-                :label="(option as unknown as GroupHeaderOption).label"
-                :count="(option as unknown as GroupHeaderOption).count"
-              />
-              <GroupOptionItem
-                v-else
-                :name="(option as unknown as GroupOption).label"
-                :platform="(option as unknown as GroupOption).platform"
-                :display-model="(option as unknown as GroupOption).displayModel"
-                :protocol-label="groupDisplayProtocolLabel((option as unknown as GroupOption).displayProtocol)"
-                :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).rate
-                    : undefined
-                "
-                :user-rate-multiplier="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).userRate
-                    : null
-                "
-                :description="
-                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
-                    ? (option as unknown as GroupOption).description
-                    : null
-                "
-                :action-label="getGroupOptionActionLabel(option as unknown as GroupOption)"
-                :cache-hit-rate-pct="(option as unknown as GroupOption).cacheHitRatePct"
-                :cache-window-days="(option as unknown as GroupOption).cacheWindowDays"
-                :selected="selected"
-              />
-            </template>
-          </Select>
+          />
         </div>
 
         <!-- Custom Key Section (only for create) -->
@@ -1024,29 +943,6 @@
       @close="closeUseKeyModal"
     />
 
-    <!-- Matrix-driven auto configuration selection -->
-    <BaseDialog
-      :show="showAutoConfigSelection"
-      title="自动配置"
-      width="narrow"
-      @close="closeAutoConfigSelection"
-    >
-      <div class="space-y-4">
-        <p class="text-sm leading-6 text-gray-600 dark:text-gray-400">先选择这把 Key 开放的模型，再选择与该模型协议真实相交的客户端。只有已通过安全写入门禁的客户端会出现在这里。</p>
-        <div v-if="autoConfigModelsLoading" class="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 dark:bg-dark-900">正在读取当前分组模型…</div>
-        <template v-else>
-          <label class="block"><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">模型</span><select v-model="autoConfigModelId" class="input w-full"><option v-for="model in autoConfigModels" :key="model" :value="model">{{ model }}</option></select></label>
-          <label class="block"><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">客户端</span><select v-model="autoConfigClientId" class="input w-full"><option v-for="option in autoConfigClientOptions" :key="option.client.id" :value="option.client.id">{{ option.client.name }} · {{ option.client.version }}</option></select></label>
-          <label class="block"><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">协议</span><select v-model="autoConfigProtocol" class="input w-full"><option v-for="protocol in autoConfigProtocols" :key="protocol" :value="protocol">{{ autoConfigProtocolLabel(protocol) }}</option></select></label>
-          <div><span class="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">当前系统</span><div class="grid grid-cols-3 gap-2"><button v-for="os in autoConfigOperatingSystems" :key="os.id" type="button" class="rounded-xl border px-3 py-2 text-xs font-semibold" :class="autoConfigOS === os.id ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300' : 'border-gray-200 text-gray-500 dark:border-dark-600'" @click="autoConfigOS = os.id">{{ os.label }}</button></div></div>
-          <div v-if="!autoConfigModels.length" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">这把 Key 当前没有可一键导入的模型与客户端交集。</div>
-        </template>
-      </div>
-      <template #footer>
-        <div class="flex w-full justify-end gap-2"><button type="button" class="btn btn-secondary" @click="closeAutoConfigSelection">取消</button><button type="button" class="btn btn-primary" :disabled="autoConfigModelsLoading || !autoConfigSelectionReady" @click="confirmAutoConfigSelection">复制一键命令</button></div>
-      </template>
-    </BaseDialog>
-
     <!-- Codex Setup Scope Dialog -->
     <BaseDialog
       :show="showCodexSetupChoice"
@@ -1268,114 +1164,11 @@
       </template>
     </BaseDialog>
 
-    <!-- Group Selector Dropdown (Teleported to body to avoid overflow clipping) -->
-    <Teleport to="body">
-      <div
-        v-if="groupSelectorKeyId !== null && dropdownPosition"
-        ref="dropdownRef"
-        class="animate-in fade-in slide-in-from-top-2 fixed z-[100000020] w-[min(560px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl shadow-black/10 duration-200 dark:border-dark-700 dark:bg-dark-800 dark:shadow-black/30"
-        style="pointer-events: auto !important;"
-        :style="{
-          top: dropdownPosition.top !== undefined ? dropdownPosition.top + 'px' : undefined,
-          bottom: dropdownPosition.bottom !== undefined ? dropdownPosition.bottom + 'px' : undefined,
-          left: dropdownPosition.left + 'px'
-        }"
-      >
-        <!-- Search box -->
-        <div class="border-b border-gray-100 p-2 dark:border-dark-700">
-          <div class="relative">
-            <svg class="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              v-model="groupSearchQuery"
-              type="text"
-              class="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-300 dark:border-dark-600 dark:bg-dark-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-primary-600 dark:focus:ring-primary-600"
-              :placeholder="t('keys.searchGroup')"
-              @click.stop
-            />
-          </div>
-          <div class="mt-2 flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-dark-900">
-            <button
-              v-for="section in groupOptionSections"
-              :key="section.id"
-              type="button"
-              :class="[
-                'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
-                activeGroupBillingSection === section.id
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              ]"
-              @click.stop="selectGroupBillingSection(section.id)"
-            >
-              {{ getGroupSectionLabel(section.id) }}
-              <span class="ml-1 opacity-60">{{ section.options.length }}</span>
-            </button>
-          </div>
-          <div v-if="activeGroupFamilies.length > 1" class="mt-2 flex gap-1 overflow-x-auto pb-0.5">
-            <button
-              v-for="family in activeGroupFamilies"
-              :key="family.id"
-              type="button"
-              :class="[
-                'shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                activeGroupFamily === family.id
-                  ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
-                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-800 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-400 dark:hover:text-gray-200'
-              ]"
-              @click.stop="selectGroupFamily(family.id)"
-            >
-              {{ getGroupFamilyLabel(family.id) }}
-              <span class="ml-1 opacity-60">{{ family.options.length }}</span>
-            </button>
-          </div>
-        </div>
-        <!-- Group list -->
-        <div
-          class="overflow-y-auto bg-gray-50/60 p-2 dark:bg-dark-900/40"
-          :style="{ maxHeight: dropdownPosition.listMaxHeight + 'px' }"
-        >
-          <div class="space-y-1">
-              <button
-                v-for="option in visibleGroupOptions"
-                :key="option.value"
-                @click="changeGroup(selectedKeyForGroup!, option.value)"
-                :class="[
-                  'flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm transition-all',
-                  selectedKeyForGroup?.group_id === option.value
-                    ? 'border-primary-200 bg-primary-50 shadow-sm dark:border-primary-800 dark:bg-primary-900/20'
-                    : 'border-transparent bg-white hover:border-gray-200 hover:bg-gray-50 dark:bg-dark-800 dark:hover:border-dark-600 dark:hover:bg-dark-700'
-                ]"
-                :title="getGroupOptionHoverTitle(option)"
-              >
-                <GroupOptionItem
-                  :name="option.label"
-                  :platform="option.platform"
-                  :display-model="option.displayModel"
-                  :protocol-label="groupDisplayProtocolLabel(option.displayProtocol)"
-                  :subscription-type="option.subscriptionType"
-                  :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
-                  :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
-                  :description="shouldShowGroupOptionMeta(option) ? option.description : null"
-                  :action-label="getGroupOptionActionLabel(option)"
-                  :cache-hit-rate-pct="option.cacheHitRatePct"
-                  :cache-window-days="option.cacheWindowDays"
-                  :selected="selectedKeyForGroup?.group_id === option.value"
-                />
-              </button>
-          </div>
-          <!-- Empty state when search has no results -->
-          <div v-if="filteredGroupOptionCount === 0" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-            {{ t('keys.noGroupFound') }}
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-	import { ref, computed, onMounted, onUnmounted, watch, type ComponentPublicInstance } from 'vue'
+	import { ref, computed, onMounted, onUnmounted } from 'vue'
 	import { useRoute, useRouter } from 'vue-router'
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
@@ -1386,10 +1179,7 @@ import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 
 const { t } = useI18n()
 import { keysAPI, authAPI, usageAPI, userGroupsAPI, resourcesAPI } from '@/api'
-import type { ClientSetupOS, ClientSetupProtocol, ClientSetupSelection } from '@/api/resources'
 import { getGatewayModels } from '@/api/gatewayModels'
-import type { ClientMatrixEntry } from '@/generated/clientMatrix'
-import { clientAutoConfigOptionsForModel, preferredAutoConfigProtocol } from '@/utils/clientAutoConfigSelection'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import DataTable from '@/components/common/DataTable.vue'
@@ -1402,9 +1192,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import Icon from '@/components/icons/Icon.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
 	import CcsClientIcon from '@/components/keys/CcsClientIcon.vue'
-	import GroupBadge from '@/components/common/GroupBadge.vue'
-	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
-	import GroupSectionHeader from '@/components/common/GroupSectionHeader.vue'
+	import KeyGroupSelector from '@/components/keys/KeyGroupSelector.vue'
 	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
 import type { GroupCacheStats } from '@/api/groups'
 import type { Column } from '@/components/common/types'
@@ -1428,15 +1216,11 @@ import {
   type ClientAutoConfigTarget
 } from '@/utils/clientAutoConfig'
 import {
-  buildGroupOptionFamilies,
-  buildGroupOptionSections,
   classifyGroupOptionFamily,
-  isMonthlyGroupOption,
   type GroupOptionFamilyId,
   type GroupOptionSectionId
 } from '@/utils/groupOptionSections'
 import {
-  groupDisplayProtocolLabel,
   resolveGroupDisplayProtocol,
   type GroupDisplayProtocol
 } from '@/utils/groupDisplayProtocol'
@@ -1465,18 +1249,6 @@ interface GroupOption {
   groupKey: GroupOptionSectionId
   familyKey: GroupOptionFamilyId
 }
-
-interface GroupHeaderOption {
-  [key: string]: unknown
-  value: string
-  label: string
-  kind: 'group'
-  groupKey: GroupOptionSectionId
-  count: number
-  disabled: true
-}
-
-type GroupSelectOption = GroupOption | GroupHeaderOption
 
 type CcsClientOption = {
   value: CcsImportTarget
@@ -1535,16 +1307,8 @@ const showDeleteDialog = ref(false)
 const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
-const showAutoConfigSelection = ref(false)
 const showCodexSetupChoice = ref(false)
 const pendingAutoConfigRow = ref<ApiKey | null>(null)
-const pendingAutoConfigSelection = ref<ClientSetupSelection | null>(null)
-const autoConfigModelsLoading = ref(false)
-const autoConfigModels = ref<string[]>([])
-const autoConfigModelId = ref('')
-const autoConfigClientId = ref('')
-const autoConfigProtocol = ref<ClientSetupProtocol>('responses')
-const autoConfigOS = ref<ClientSetupOS>('macos')
 const showCcsClientSelect = ref(false)
 const showCcsDiagnostics = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
@@ -1555,16 +1319,7 @@ const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const copiedBaseUrl = ref(false)
 const configuringKeyId = ref<number | null>(null)
-const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
-const dropdownRef = ref<HTMLElement | null>(null)
-const dropdownPosition = ref<{
-  top?: number
-  bottom?: number
-  left: number
-  listMaxHeight: number
-} | null>(null)
-const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
 let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
 let ccsLaunchObserved = false
@@ -1652,20 +1407,6 @@ const ccsHasClaudeCodeTarget = computed(() =>
 const ccsDiagnosticCommand = computed(() =>
   buildCcsDiagnosticCommand(ccsDiagnosticPlatform.value, window.location.origin)
 )
-
-// Get the currently selected key for group change
-const selectedKeyForGroup = computed(() => {
-  if (groupSelectorKeyId.value === null) return null
-  return apiKeys.value.find((k) => k.id === groupSelectorKeyId.value) || null
-})
-
-const setGroupButtonRef = (keyId: number, el: Element | ComponentPublicInstance | null) => {
-  if (el instanceof HTMLElement) {
-    groupButtonRefs.value.set(keyId, el)
-  } else {
-    groupButtonRefs.value.delete(keyId)
-  }
-}
 
 const formData = ref({
   name: '',
@@ -1775,118 +1516,38 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
   })
 )
 
-const getGroupDisplayModel = (group: Group): string =>
-  resolveGroupDisplayModel({
-    name: publicGroupDisplayName(group.name),
+const getKeyGroupFallbackOption = (key: ApiKey): GroupOption | null => {
+  const group = key.group
+  if (!group) return null
+  const existing = baseGroupOptions.value.find((option) => option.value === group.id)
+  if (existing) return existing
+  const subscriptionType = group.subscription_type
+  const label = publicGroupDisplayName(group.name)
+  return {
+    value: group.id,
+    label,
+    description: group.description,
+    rate: group.rate_multiplier,
+    userRate: userGroupRates.value[group.id] ?? null,
+    subscriptionType,
     platform: group.platform,
-    defaultMappedModel: group.default_mapped_model
-  })
-
-const groupOptionSections = computed(() => {
-  return buildGroupOptionSections(
-    baseGroupOptions.value,
-    subscriptionStore.hasActiveSubscriptions
-  )
-})
-
-const getGroupSectionLabel = (section: GroupOptionSectionId): string => {
-  return section === 'monthly'
-    ? t('keys.groupSections.monthly')
-    : t('keys.groupSections.payg')
-}
-
-const getGroupFamilyLabel = (family: GroupOptionFamilyId): string => {
-  return t(`keys.groupFamilies.${family}`)
-}
-
-const groupSelectOptions = computed<GroupSelectOption[]>(() => {
-  return groupOptionSections.value.flatMap((section) =>
-    buildGroupOptionFamilies(section.options).flatMap((family) => [
-      {
-        value: `group:${section.id}:${family.id}`,
-        label: `${getGroupSectionLabel(section.id)} · ${getGroupFamilyLabel(family.id)}`,
-        kind: 'group' as const,
-        groupKey: section.id,
-        count: family.options.length,
-        disabled: true as const
-      },
-      ...family.options
-    ])
-  )
-})
-
-const isGroupHeaderOption = (option: GroupSelectOption): option is GroupHeaderOption => {
-  return 'kind' in option && option.kind === 'group'
-}
-
-const shouldShowGroupOptionMeta = (option: GroupOption): boolean => {
-  return option.subscriptionType !== 'subscription' && option.subscriptionType !== 'credit'
-}
-
-const isMonthlyAccessGroup = (option: GroupOption): boolean => {
-  return isMonthlyGroupOption(option)
-}
-
-const getGroupOptionActionLabel = (option: GroupOption): string | null => {
-  return isMonthlyAccessGroup(option) ? t('keys.groupSections.monthlyOnly') : null
-}
-
-const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
-  return shouldShowGroupOptionMeta(option) ? option.description || undefined : undefined
-}
-
-// Group dropdown search
-const groupSearchQuery = ref('')
-const activeGroupBillingSection = ref<GroupOptionSectionId>('payg')
-const activeGroupFamily = ref<GroupOptionFamilyId>('openai')
-
-const activeBillingSection = computed(() => {
-  return groupOptionSections.value.find((section) => section.id === activeGroupBillingSection.value) ?? groupOptionSections.value[0]
-})
-
-const activeGroupFamilies = computed(() => {
-  return buildGroupOptionFamilies(activeBillingSection.value?.options ?? [])
-})
-
-const visibleGroupOptions = computed(() => {
-  const query = groupSearchQuery.value.trim().toLowerCase()
-  const options = activeBillingSection.value?.options ?? []
-  if (query) {
-    return options.filter((option) => {
-      return option.label.toLowerCase().includes(query) ||
-        (option.description && option.description.toLowerCase().includes(query))
-    })
+    displayProtocol: resolveGroupDisplayProtocol({
+      name: label,
+      platform: group.platform,
+      defaultMappedModel: group.default_mapped_model,
+      allowMessagesDispatch: group.allow_messages_dispatch
+    }),
+    displayModel: resolveGroupDisplayModel({
+      name: label,
+      platform: group.platform,
+      defaultMappedModel: group.default_mapped_model
+    }),
+    cacheHitRatePct: null,
+    cacheWindowDays: groupCacheWindowDays.value,
+    groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit' ? 'monthly' : 'payg',
+    familyKey: classifyGroupOptionFamily({ label, platform: group.platform })
   }
-  return activeGroupFamilies.value.find((family) => family.id === activeGroupFamily.value)?.options ?? []
-})
-
-const filteredGroupOptionCount = computed(() => {
-  return visibleGroupOptions.value.length
-})
-
-const selectGroupBillingSection = (section: GroupOptionSectionId) => {
-  activeGroupBillingSection.value = section
-  const families = buildGroupOptionFamilies(
-    groupOptionSections.value.find((candidate) => candidate.id === section)?.options ?? []
-  )
-  activeGroupFamily.value = families[0]?.id ?? 'openai'
 }
-
-const selectGroupFamily = (family: GroupOptionFamilyId) => {
-  activeGroupFamily.value = family
-}
-
-watch(groupOptionSections, (sections) => {
-  if (!sections.some((section) => section.id === activeGroupBillingSection.value)) {
-    activeGroupBillingSection.value = sections[0]?.id ?? 'payg'
-  }
-  const families = buildGroupOptionFamilies(
-    sections.find((section) => section.id === activeGroupBillingSection.value)?.options ?? []
-  )
-  if (!families.some((family) => family.id === activeGroupFamily.value)) {
-    activeGroupFamily.value = families[0]?.id ?? 'openai'
-  }
-}, { immediate: true })
 
 const maskKey = (key: string): string => {
   if (key.length <= 12) return key
@@ -1926,53 +1587,17 @@ const copySaveOfficialProviderCommand = async () => {
   await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 
-const autoConfigOperatingSystems: Array<{ id: ClientSetupOS; label: string }> = [
-  { id: 'windows', label: 'Windows' },
-  { id: 'macos', label: 'macOS' },
-  { id: 'linux', label: 'Linux' },
-]
-
-const autoConfigClientOptions = computed(() => {
-  return clientAutoConfigOptionsForModel(autoConfigModelId.value)
-})
-
-const selectedAutoConfigClient = computed<ClientMatrixEntry | undefined>(() =>
-  autoConfigClientOptions.value.find(option => option.client.id === autoConfigClientId.value)?.client)
-const autoConfigProtocols = computed<ClientSetupProtocol[]>(() =>
-  autoConfigClientOptions.value.find(option => option.client.id === autoConfigClientId.value)?.protocols ?? [])
-const autoConfigSelectionReady = computed(() => Boolean(
-  pendingAutoConfigRow.value && autoConfigModelId.value && selectedAutoConfigClient.value && autoConfigProtocols.value.includes(autoConfigProtocol.value)
-))
-
-watch([autoConfigModelId, autoConfigClientOptions], () => {
-  const options = autoConfigClientOptions.value
-  if (!options.some(option => option.client.id === autoConfigClientId.value)) autoConfigClientId.value = options[0]?.client.id ?? ''
-})
-watch([autoConfigClientId, autoConfigProtocols], () => {
-  if (autoConfigProtocols.value.includes(autoConfigProtocol.value)) return
-  autoConfigProtocol.value = preferredAutoConfigProtocol(autoConfigModelId.value, autoConfigProtocols.value) ?? 'responses'
-})
-
-const canAutoConfigureKey = (row: ApiKey): boolean => Boolean(row.group && row.group.platform !== 'gpt-image')
-
-const autoConfigProtocolLabel = (protocol: ClientSetupProtocol): string => {
-  if (protocol === 'responses') return 'OpenAI Responses'
-  if (protocol === 'chat_completions') return 'OpenAI Chat Completions'
-  if (protocol === 'messages') return 'Anthropic Messages'
-  return 'Gemini GenerateContent'
+const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null => {
+  return getClientAutoConfigTarget(row.group?.platform)
 }
 
-const autoConfigTargetForClient = (clientId: string): ClientAutoConfigTarget | null => {
-  if (clientId === 'claude-code') return 'claude'
-  if (clientId === 'codex') return 'codex'
-  if (clientId === 'grok-build') return 'grok'
-  if (clientId === 'gemini-cli') return 'gemini'
-  return null
+const getAutoConfigClientName = (row: ApiKey): string => {
+  const target = getAutoConfigTargetForKey(row)
+  return target ? getClientAutoConfigName(target) : ''
 }
 
 const generateAndCopyClientAutoConfigCommand = async (
   row: ApiKey,
-  selectionOrInstall: ClientSetupSelection | boolean,
   installCodexApp = false,
   grokCcSwitchCompat = false
 ) => {
@@ -1981,24 +1606,17 @@ const generateAndCopyClientAutoConfigCommand = async (
     return
   }
 
-  const selection = typeof selectionOrInstall === 'boolean' ? null : selectionOrInstall
-  if (typeof selectionOrInstall === 'boolean') {
-    grokCcSwitchCompat = installCodexApp
-    installCodexApp = selectionOrInstall
-  }
-  const target = selection ? autoConfigTargetForClient(selection.client_id) : getClientAutoConfigTarget(row.group?.platform)
+  const target = getAutoConfigTargetForKey(row)
   if (!target || !row.group) {
     return
   }
 
   configuringKeyId.value = row.id
   try {
-    const setup = selection
-      ? await resourcesAPI.createClientSetupTicketForSelection(selection)
-      : await resourcesAPI.createClientSetupTicketForAPIKey(row.id)
-    const clientName = getClientAutoConfigName(target)
+    const setup = await resourcesAPI.createClientSetupTicketForAPIKey(row.id)
+    const clientName = getClientAutoConfigName(setup.target)
     const command = buildClientAutoConfigCommand({
-      target,
+      target: setup.target,
       ticket: setup.ticket,
       installCodexApp,
       grokCcSwitchCompat
@@ -2017,69 +1635,26 @@ const copyClientAutoConfigCommand = async (row: ApiKey) => {
     return
   }
 
-  if (!row.group) return
-  pendingAutoConfigRow.value = row
-  showAutoConfigSelection.value = true
-  autoConfigModelsLoading.value = true
-  autoConfigModels.value = []
-  autoConfigModelId.value = ''
-  autoConfigClientId.value = ''
-  autoConfigOS.value = navigator.userAgent.toLowerCase().includes('windows') ? 'windows' : navigator.userAgent.toLowerCase().includes('linux') ? 'linux' : 'macos'
-  try {
-    const configuredBaseUrl = publicSettings.value?.api_base_url || window.location.origin
-    const requestBaseUrl = ['127.0.0.1', 'localhost'].includes(window.location.hostname) && configuredBaseUrl.startsWith('https://api.laoshirenai.com')
-      ? '/__gateway'
-      : configuredBaseUrl
-    const models = await getGatewayModels(requestBaseUrl, row.key)
-    autoConfigModels.value = models.filter(model => clientAutoConfigOptionsForModel(model).length > 0)
-    const preferred = row.group.default_mapped_model || ''
-    autoConfigModelId.value = autoConfigModels.value.includes(preferred) ? preferred : (autoConfigModels.value[0] ?? '')
-  } catch (error: any) {
-    closeAutoConfigSelection()
-    appStore.showError(error?.message || '读取当前分组模型失败')
-  } finally {
-    autoConfigModelsLoading.value = false
-  }
-}
-
-const closeAutoConfigSelection = () => {
-  showAutoConfigSelection.value = false
-  if (!showCodexSetupChoice.value) pendingAutoConfigRow.value = null
-}
-
-const confirmAutoConfigSelection = async () => {
-  const row = pendingAutoConfigRow.value
-  const client = selectedAutoConfigClient.value
-  if (!row || !client || !autoConfigSelectionReady.value) return
-  const selection: ClientSetupSelection = {
-    api_key_id: row.id,
-    client_id: client.id,
-    client_version_key: client.version_key,
-    protocol: autoConfigProtocol.value,
-    model_id: autoConfigModelId.value,
-    os: autoConfigOS.value,
-  }
-  showAutoConfigSelection.value = false
-  if (client.id === 'codex') {
-    pendingAutoConfigSelection.value = selection
+  const target = getAutoConfigTargetForKey(row)
+  if (!target || !row.group) return
+  if (target === 'codex') {
+    pendingAutoConfigRow.value = row
     showCodexSetupChoice.value = true
     return
   }
-  await generateAndCopyClientAutoConfigCommand(row, selection)
-  pendingAutoConfigRow.value = null
+
+  await generateAndCopyClientAutoConfigCommand(row)
 }
 
 const closeCodexSetupChoice = () => {
   showCodexSetupChoice.value = false
   pendingAutoConfigRow.value = null
-  pendingAutoConfigSelection.value = null
 }
 
 const confirmCodexSetup = async (installCodexApp: boolean) => {
   const row = pendingAutoConfigRow.value
-  const selection = pendingAutoConfigSelection.value
   closeCodexSetupChoice()
-  if (row && selection) await generateAndCopyClientAutoConfigCommand(row, selection, installCodexApp)
+  if (row) await generateAndCopyClientAutoConfigCommand(row, installCodexApp)
 }
 
 const isAbortError = (error: unknown) => {
@@ -2234,54 +1809,7 @@ const toggleKeyStatus = async (key: ApiKey) => {
   }
 }
 
-const openGroupSelector = (key: ApiKey) => {
-  if (groupSelectorKeyId.value === key.id) {
-    groupSelectorKeyId.value = null
-    dropdownPosition.value = null
-  } else {
-    const buttonEl = groupButtonRefs.value.get(key.id)
-    if (buttonEl) {
-      const rect = buttonEl.getBoundingClientRect()
-      const dropdownWidth = Math.min(560, window.innerWidth - 24)
-      const safeLeft = Math.min(
-        Math.max(12, rect.left),
-        Math.max(12, window.innerWidth - dropdownWidth - 12)
-      )
-      const spaceBelow = window.innerHeight - rect.bottom
-      const spaceAbove = rect.top
-      const openUpward = spaceBelow < 460 && spaceAbove > spaceBelow
-      const availableHeight = openUpward ? spaceAbove : spaceBelow
-      const listMaxHeight = Math.max(160, Math.min(480, availableHeight - 156))
-
-      if (openUpward) {
-        dropdownPosition.value = {
-          bottom: window.innerHeight - rect.top + 4,
-          left: safeLeft,
-          listMaxHeight
-        }
-      } else {
-        dropdownPosition.value = {
-          top: rect.bottom + 4,
-          left: safeLeft,
-          listMaxHeight
-        }
-      }
-    }
-    groupSelectorKeyId.value = key.id
-    groupSearchQuery.value = ''
-    const selectedOption = baseGroupOptions.value.find((option) => option.value === key.group_id)
-    if (selectedOption) {
-      activeGroupBillingSection.value = selectedOption.groupKey
-      activeGroupFamily.value = selectedOption.familyKey
-    } else {
-      selectGroupBillingSection(groupOptionSections.value[0]?.id ?? 'payg')
-    }
-  }
-}
-
 const changeGroup = async (key: ApiKey, newGroupId: number | null) => {
-  groupSelectorKeyId.value = null
-  dropdownPosition.value = null
   if (key.group_id === newGroupId) return
 
   try {
@@ -2290,15 +1818,6 @@ const changeGroup = async (key: ApiKey, newGroupId: number | null) => {
     loadApiKeys()
   } catch (error) {
     appStore.showError(t('keys.failedToChangeGroup'))
-  }
-}
-
-const closeGroupSelector = (event: MouseEvent) => {
-  const target = event.target as HTMLElement
-  // Check if click is inside the dropdown or the trigger button
-  if (!target.closest('.group\\/dropdown') && !dropdownRef.value?.contains(target)) {
-    groupSelectorKeyId.value = null
-    dropdownPosition.value = null
   }
 }
 
@@ -2695,7 +2214,6 @@ onMounted(() => {
   loadGroups()
   loadUserGroupRates()
   loadPublicSettings()
-  document.addEventListener('click', closeGroupSelector)
   resetTimer = setInterval(() => { now.value = new Date() }, 60000)
 })
 
@@ -2709,7 +2227,6 @@ const setScope = async (scope: 'personal' | 'team') => {
 }
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeGroupSelector)
   cleanupCcsLaunchWatch()
   if (resetTimer) clearInterval(resetTimer)
 })

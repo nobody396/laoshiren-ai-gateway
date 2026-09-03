@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
@@ -123,14 +124,65 @@ func TestClientErrorEnvelopesIncludeRequestID(t *testing.T) {
 	openAIError, ok := OpenAIClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable)["error"].(gin.H)
 	require.True(t, ok)
 	assert.Equal(t, "req-visible-1", openAIError["request_id"])
+	assert.Equal(t, ClientCodeServiceUnavailable, openAIError["code"])
+	assert.Contains(t, openAIError["message"], "Request ID: req-visible-1")
 
-	genericError, ok := ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable)["error"].(gin.H)
+	genericEnvelope := ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable)
+	assert.Equal(t, "req-visible-1", genericEnvelope["request_id"])
+	genericError, ok := genericEnvelope["error"].(gin.H)
 	require.True(t, ok)
 	assert.Equal(t, "req-visible-1", genericError["request_id"])
+	assert.Equal(t, ClientCodeServiceUnavailable, genericError["code"])
+	assert.Contains(t, genericError["message"], "Request ID: req-visible-1")
 
 	googleError, ok := GoogleClientErrorEnvelope(c, http.StatusBadGateway, ClientMessageServiceUnavailable)["error"].(gin.H)
 	require.True(t, ok)
 	assert.Equal(t, "req-visible-1", googleError["request_id"])
+	assert.Contains(t, googleError["message"], "Request ID: req-visible-1")
+}
+
+func TestClientErrorObjectUsesStableDefaultCodes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+
+	tests := map[string]string{
+		"invalid_request_error": ClientCodeInvalidRequest,
+		"authentication_error":  ClientCodeAuthenticationFailed,
+		"permission_error":      ClientCodePermissionDenied,
+		"billing_error":         ClientCodeInsufficientBalance,
+		"subscription_error":    ClientCodeSubscriptionLimit,
+		"rate_limit_error":      ClientCodeRateLimitExceeded,
+		"overloaded_error":      ClientCodeServiceOverloaded,
+		"timeout_error":         ClientCodeRequestTimeout,
+		"not_found_error":       ClientCodeResourceNotFound,
+		"api_error":             ClientCodeServiceUnavailable,
+		"upstream_error":        ClientCodeUpstreamFailure,
+	}
+
+	for errType, wantCode := range tests {
+		t.Run(errType, func(t *testing.T) {
+			assert.Equal(t, wantCode, ClientErrorObject(c, errType, "message")["code"])
+		})
+	}
+}
+
+func TestClientErrorMessageDoesNotDuplicateVisibleRequestID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-visible-2"))
+
+	errorObj, ok := OpenAIClientErrorEnvelope(
+		c,
+		"api_error",
+		"Already tagged. [Request ID: req-visible-2]",
+	)["error"].(gin.H)
+	require.True(t, ok)
+	message, ok := errorObj["message"].(string)
+	require.True(t, ok)
+	assert.Equal(t, 1, strings.Count(message, "Request ID: req-visible-2"))
 }
 
 func TestOpenAIResponsesFailedEnvelopeIncludesRequestID(t *testing.T) {
@@ -150,7 +202,8 @@ func TestOpenAIResponsesFailedEnvelopeIncludesRequestID(t *testing.T) {
 	assert.Equal(t, "resp_reqvisible2", response["id"])
 	assert.Equal(t, "gpt-test", response["model"])
 	assert.Equal(t, "req-visible-2", errObj["request_id"])
-	assert.Equal(t, ClientMessageServiceUnavailable, errObj["message"])
+	assert.Contains(t, errObj["message"], ClientMessageServiceUnavailable)
+	assert.Contains(t, errObj["message"], "Request ID: req-visible-2")
 }
 
 func TestOpenAIFastPolicyBlockedWSEventIncludesRequestID(t *testing.T) {
@@ -163,4 +216,5 @@ func TestOpenAIFastPolicyBlockedWSEventIncludesRequestID(t *testing.T) {
 	assert.Equal(t, "error", parsed["type"])
 	assert.Equal(t, "policy_violation", errObj["code"])
 	assert.Equal(t, "req-ws-policy", errObj["request_id"])
+	assert.Contains(t, errObj["message"], "Request ID: req-ws-policy")
 }

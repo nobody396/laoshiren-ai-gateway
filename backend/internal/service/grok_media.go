@@ -959,7 +959,7 @@ func (s *OpenAIGatewayService) handleGrokMediaErrorResponse(
 			StatusCode:             resp.StatusCode,
 			ResponseBody:           body,
 			ResponseHeaders:        resp.Header.Clone(),
-			RetryableOnSameAccount: account.IsPoolMode() && account.IsPoolModeRetryableStatus(resp.StatusCode),
+			RetryableOnSameAccount: allowOpenAISameAccountRetry(account.IsPoolMode() && account.IsPoolModeRetryableStatus(resp.StatusCode), body),
 		}
 	}
 

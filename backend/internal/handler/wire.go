@@ -8,6 +8,12 @@ import (
 	"github.com/google/wire"
 )
 
+func ProvideOpsHandler(ops *service.OpsService, cutover *service.MonthlyCommercialCutoverService) *admin.OpsHandler {
+	handler := admin.NewOpsHandler(ops)
+	handler.SetMonthlyCommercialCutoverService(cutover)
+	return handler
+}
+
 // ProvideAdminHandlers creates the AdminHandlers struct
 func ProvideAdminHandlers(
 	dashboardHandler *admin.DashboardHandler,
@@ -249,7 +255,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewRedeemHandler,
 	admin.NewPromoHandler,
 	admin.NewSettingHandler,
-	admin.NewOpsHandler,
+	ProvideOpsHandler,
 	ProvideSystemHandler,
 	admin.NewSubscriptionHandler,
 	admin.NewUsageHandler,

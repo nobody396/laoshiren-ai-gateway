@@ -27,6 +27,7 @@ describe('useModelWhitelist', () => {
     const models = getModelsByPlatform('anthropic')
 
     expect(models).toContain('claude-fable-5')
+    expect(models).toContain('claude-fable-5-1')
     expect(models).toContain('claude-opus-4-8')
     expect(models).not.toContain('claude-opus-latest')
     expect(models).toContain('claude-opus-4-7')

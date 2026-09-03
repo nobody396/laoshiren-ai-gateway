@@ -113,6 +113,7 @@ func TestOpenAIHandleStreamingAwareError_ResponsesStreamingReusesRequestID(t *te
 	resp, errObj := parseResponsesFailedSSE(t, w.Body.String())
 	assert.Equal(t, "resp_fd277bc5ff7e45d18aa9f54e1df318f1", resp["id"])
 	assert.Equal(t, "fd277bc5-ff7e-45d1-8aa9-f54e1df318f1", errObj["request_id"])
+	assert.Contains(t, errObj["message"], "Request ID: fd277bc5-ff7e-45d1-8aa9-f54e1df318f1")
 }
 
 // 与旧分支的 TestOpenAIHandleStreamingAwareError_JSONEscaping 对齐：

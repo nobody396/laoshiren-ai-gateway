@@ -11,7 +11,7 @@ type generatedCatalogGroupPolicy struct {
 
 var generatedCatalogBillingPrices = map[string]*ModelPricing{
 	"claude-fable-5": {InputPricePerToken: 10e-6, OutputPricePerToken: 50e-6, CacheReadPricePerToken: 1e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
-	"claude-fable-5-1": {InputPricePerToken: 10e-6, OutputPricePerToken: 50e-6, CacheReadPricePerToken: 0.25e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"claude-fable-5-1": {InputPricePerToken: 10e-6, OutputPricePerToken: 50e-6, CacheCreationPricePerToken: 12.5e-6, CacheCreation5mPrice: 12.5e-6, CacheCreation1hPrice: 20e-6, SupportsCacheBreakdown: true, CacheReadPricePerToken: 0.25e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"claude-haiku-4-5": {InputPricePerToken: 1e-6, OutputPricePerToken: 5e-6, CacheReadPricePerToken: 0.1e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"claude-opus-4-5": {InputPricePerToken: 5e-6, OutputPricePerToken: 25e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"claude-opus-4-6": {InputPricePerToken: 5e-6, OutputPricePerToken: 25e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
@@ -50,7 +50,7 @@ var generatedCatalogBillingPrices = map[string]*ModelPricing{
 
 var generatedCatalogDisplayPrices = map[string]manualOfficialPrice{
 	"claude-fable-5": {input: 10, output: 50, cacheRead: 1},
-	"claude-fable-5-1": {input: 10, output: 50, cacheRead: 0.25},
+	"claude-fable-5-1": {input: 10, output: 50, cacheWrite: 12.5, cacheRead: 0.25},
 	"claude-haiku-4-5": {input: 1, output: 5, cacheRead: 0.1},
 	"claude-opus-4-5": {input: 5, output: 25, cacheRead: 0.5},
 	"claude-opus-4-6": {input: 5, output: 25, cacheRead: 0.5},

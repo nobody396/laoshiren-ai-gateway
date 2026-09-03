@@ -18,7 +18,10 @@ const mocks = vi.hoisted(() => ({
   requestNewcomerPurchaseURL: vi.fn(),
   newcomerState: { value: 'available' },
   newcomerMode: { value: 'manual' },
-  nativeOfferByCode: { value: undefined as any },
+  nativeOffersByCode: { value: {} as Record<string, any> },
+  getAffiliateWallet: vi.fn(),
+  purchaseBalanceWithAffiliateCommission: vi.fn(),
+  createCommissionWalletCheckoutOrder: vi.fn(),
 }))
 
 const publicSettings = {
@@ -52,6 +55,16 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/topup', () => ({
   createTopupOrder: mocks.createTopupOrder,
   queryTopupOrderStatus: mocks.queryTopupOrderStatus,
+}))
+
+vi.mock('@/api/agent', () => ({
+  getAffiliateWallet: mocks.getAffiliateWallet,
+  purchaseBalanceWithAffiliateCommission: mocks.purchaseBalanceWithAffiliateCommission,
+  affiliateIdempotencyKey: (action: string) => `test-${action}`,
+}))
+
+vi.mock('@/api/nativeCheckout', () => ({
+  createCommissionWalletCheckoutOrder: mocks.createCommissionWalletCheckoutOrder,
 }))
 
 vi.mock('vue-router', () => ({
@@ -95,7 +108,7 @@ vi.mock('@/composables/useManualNewcomerOffer', () => ({
 vi.mock('@/composables/useNativeCheckoutOffers', () => ({
   useNativeCheckoutOffers: () => ({
     loadOffers: mocks.loadOffers,
-    findNativeOfferByCode: () => mocks.nativeOfferByCode.value,
+    findNativeOfferByCode: (code: string) => mocks.nativeOffersByCode.value[code],
   }),
 }))
 
@@ -124,17 +137,17 @@ describe('GetSubscriptionView payment UX', () => {
     mocks.requestNewcomerPurchaseURL.mockResolvedValue('https://shop.example/5')
     mocks.newcomerState.value = 'available'
     mocks.newcomerMode.value = 'manual'
-    mocks.nativeOfferByCode.value = undefined
+    mocks.nativeOffersByCode.value = {
+      plus: { code: 'plus', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 25500 },
+      pro: { code: 'pro', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 71500 },
+      max: { code: 'max', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 152500 },
+    }
+    mocks.getAffiliateWallet.mockRejectedValue(new Error('not an affiliate'))
     mocks.refreshUser.mockResolvedValue({ balance: 48.48 })
     mocks.toDataURL.mockResolvedValue('data:image/png;base64,QR')
   })
 
   it('reuses the balance checkout rows for developer plans without the nested legacy offer card', async () => {
-    mocks.nativeOfferByCode.value = {
-      code: 'plus',
-      product_kind: 'subscription',
-      provider: 'easypay',
-    }
     const wrapper = mountView()
     await flushPromises()
 
@@ -181,6 +194,44 @@ describe('GetSubscriptionView payment UX', () => {
     expect(wrapper.text()).toContain('¥255')
     expect(wrapper.text()).toContain('¥715')
     expect(wrapper.text()).toContain('¥1525')
+
+    wrapper.unmount()
+  })
+
+  it('shows the dedicated commission-wallet icon only when the partner wallet is available', async () => {
+    mocks.nativeOffersByCode.value = {
+      plus: { code: 'plus', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 29900 },
+      pro: { code: 'pro', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 59900 },
+      max: { code: 'max', product_kind: 'subscription', provider: 'easypay', pay_amount_cny_fen: 99900 },
+    }
+    mocks.getAffiliateWallet.mockResolvedValue({
+      agent_id: 47,
+      available_cash_micros: 1_000_000_000,
+      processing_withdrawal_micros: 0,
+      lifetime_earned_micros: 1_000_000_000,
+      withdrawal_minimum_micros: 50_000_000,
+      withdrawal_sla_hours: 24,
+      conversion_multiplier_millis: 1200,
+      wallet_checkout_enabled: true,
+      wallet_purchase_rate_bps: 8500,
+      conversion_enabled: false,
+      payment_profile_verified: true,
+      can_withdraw: true,
+      cash_asset_symbol: '¥',
+      credit_asset_symbol: '⚡',
+      display_timezone: 'Asia/Shanghai',
+    })
+
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
+    await wrapper.findAll('.topup-product--monthly')[1].trigger('click')
+
+    const walletMethod = wrapper.get('[data-testid="monthly-method-commission-wallet"]')
+    expect(walletMethod.find('img').attributes('src')).toContain('commission-wallet')
+    await walletMethod.trigger('click')
+    expect(wrapper.text()).toContain('佣金钱包价¥509.15')
+    expect(wrapper.text()).toContain('支付后剩余¥490.85')
 
     wrapper.unmount()
   })

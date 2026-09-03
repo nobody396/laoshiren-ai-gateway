@@ -200,3 +200,328 @@ func TestAffiliateWalletRepository_OnDemandWithdrawalFailureAndConversion(t *tes
 	`, conversion.ID).Scan(&conversionLotEligible))
 	require.False(t, conversionLotEligible)
 }
+
+func TestAffiliateWalletRepository_PlatformPurchaseDebitsCashWithoutCreatingCredit(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateWalletRepository(integrationDB)
+	walletService := service.NewAffiliateWalletService(repo)
+	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "wallet-purchase-agent")
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, entry_type, amount_micros,
+			posting_status, source_type, source_id,
+			idempotency_key, occurred_at
+		)
+		VALUES (
+			$1, 'earned', 300000000,
+			'posted', 'integration', 1,
+			$2, NOW()
+		)
+	`, agent.ID, fmt.Sprintf("wallet-purchase-earned:%d", agent.ID))
+	require.NoError(t, err)
+
+	var balanceBefore float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT balance FROM users WHERE id = $1
+	`, agent.ID).Scan(&balanceBefore))
+
+	purchase, err := walletService.Purchase(
+		ctx,
+		agent.ID,
+		255_000_000,
+		service.AffiliateCommissionMachineOperatorID,
+		service.AffiliateCommissionPurchaseKindMonthlyCard,
+		"plus",
+		"monthly-new-cycle-integration-plus",
+		"Plus monthly card paid from affiliate commission",
+		"affiliate-purchase-integration-plus",
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(255_000_000), purchase.AmountMicros)
+	require.Equal(t, int64(45_000_000), purchase.RemainingCashMicros)
+	require.Equal(t, service.AffiliateCommissionPurchaseKindMonthlyCard, purchase.PurchaseKind)
+	require.Equal(t, "plus", purchase.ProductCode)
+	require.Equal(t, "monthly-new-cycle-integration-plus", purchase.ExternalReference)
+	require.Equal(t, service.AffiliateCommissionMachineOperatorID, purchase.OperatorID)
+
+	idempotent, err := walletService.Purchase(
+		ctx,
+		agent.ID,
+		255_000_000,
+		service.AffiliateCommissionMachineOperatorID,
+		service.AffiliateCommissionPurchaseKindMonthlyCard,
+		"plus",
+		"monthly-new-cycle-integration-plus",
+		"Plus monthly card paid from affiliate commission",
+		"affiliate-purchase-integration-plus",
+	)
+	require.NoError(t, err)
+	require.Equal(t, purchase.ID, idempotent.ID)
+
+	sameReference, err := walletService.Purchase(
+		ctx,
+		agent.ID,
+		255_000_000,
+		service.AffiliateCommissionMachineOperatorID,
+		service.AffiliateCommissionPurchaseKindMonthlyCard,
+		"plus",
+		"monthly-new-cycle-integration-plus",
+		"Plus monthly card paid from affiliate commission",
+		"affiliate-purchase-integration-plus-retry",
+	)
+	require.NoError(t, err)
+	require.Equal(t, purchase.ID, sameReference.ID)
+
+	_, err = walletService.Purchase(
+		ctx,
+		agent.ID,
+		254_000_000,
+		service.AffiliateCommissionMachineOperatorID,
+		service.AffiliateCommissionPurchaseKindMonthlyCard,
+		"plus",
+		"monthly-new-cycle-integration-plus",
+		"Plus monthly card paid from affiliate commission",
+		"affiliate-purchase-integration-plus",
+	)
+	require.ErrorIs(t, err, service.ErrAffiliatePurchaseIdempotencyConflict)
+
+	_, err = walletService.Purchase(
+		ctx,
+		agent.ID,
+		100_000_000,
+		service.AffiliateCommissionMachineOperatorID,
+		service.AffiliateCommissionPurchaseKindMonthlyCard,
+		"plus",
+		"monthly-new-cycle-integration-plus-second",
+		"second purchase",
+		"affiliate-purchase-integration-plus-second",
+	)
+	require.ErrorIs(t, err, service.ErrAffiliateInsufficientCash)
+
+	wallet, err := walletService.GetWallet(ctx, agent.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(45_000_000), wallet.AvailableCashMicros)
+	require.Equal(t, int64(300_000_000), wallet.LifetimeEarnedMicros)
+
+	var balanceAfter float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT balance FROM users WHERE id = $1
+	`, agent.ID).Scan(&balanceAfter))
+	require.InDelta(t, balanceBefore, balanceAfter, 0.000001)
+
+	var entryType, sourceType, productCode, externalReference string
+	var ledgerAmount, ledgerOperatorID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			entry_type,
+			source_type,
+			amount_micros,
+			metadata ->> 'product_code',
+			metadata ->> 'external_reference',
+			(metadata ->> 'operator_id')::bigint
+		FROM agent_cash_commission_entries
+		WHERE id = $1
+	`, purchase.ID).Scan(
+		&entryType,
+		&sourceType,
+		&ledgerAmount,
+		&productCode,
+		&externalReference,
+		&ledgerOperatorID,
+	))
+	require.Equal(t, "platform_purchase", entryType)
+	require.Equal(t, "platform_purchase", sourceType)
+	require.Equal(t, int64(-255_000_000), ledgerAmount)
+	require.Equal(t, "plus", productCode)
+	require.Equal(t, "monthly-new-cycle-integration-plus", externalReference)
+	require.Equal(t, service.AffiliateCommissionMachineOperatorID, ledgerOperatorID)
+
+	notices, err := walletService.ListNotices(ctx, agent.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, notices)
+	require.Equal(t, "commission_purchase", notices[0].NoticeType)
+	require.Equal(t, purchase.ID, *notices[0].SourceID)
+	require.Contains(t, notices[0].Message, "¥255.00")
+	require.Contains(t, notices[0].Message, "¥45.00")
+}
+
+func TestAffiliateWalletRepository_PlatformPurchaseRefundCreditsWalletAndNotifiesExactlyOnce(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateWalletRepository(integrationDB)
+	walletService := service.NewAffiliateWalletService(repo)
+	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "wallet-purchase-refund-agent")
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, entry_type, amount_micros,
+			posting_status, source_type, source_id,
+			idempotency_key, occurred_at
+		) VALUES ($1,'earned',300000000,'posted','integration',1,$2,NOW())
+	`, agent.ID, fmt.Sprintf("wallet-purchase-refund-earned:%d", agent.ID))
+	require.NoError(t, err)
+	purchase, err := walletService.Purchase(
+		ctx,
+		agent.ID,
+		255_000_000,
+		service.AffiliateCommissionMachineOperatorID,
+		service.AffiliateCommissionPurchaseKindMonthlyCard,
+		"plus",
+		"monthly-new-cycle-integration-plus-refund",
+		"Plus monthly card paid from affiliate commission",
+		"affiliate-purchase-integration-plus-refund",
+	)
+	require.NoError(t, err)
+
+	refund, err := walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		38_250_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"Apply the partner wallet rate to the original purchase price",
+		"affiliate-purchase-rate-refund-integration-plus",
+	)
+	require.NoError(t, err)
+	require.Equal(t, purchase.ID, refund.PurchaseEntryID)
+	require.Equal(t, int64(255_000_000), refund.OriginalAmountMicros)
+	require.Equal(t, int64(216_750_000), refund.PayableAmountMicros)
+	require.Equal(t, int64(38_250_000), refund.RefundAmountMicros)
+	require.Equal(t, int64(83_250_000), refund.RemainingCashMicros)
+	require.Equal(t, int32(8500), refund.RateBPS)
+	require.NotZero(t, refund.NotificationID)
+	require.Equal(t, fmt.Sprintf("platform-purchase-refund:%d:8500", purchase.ID), refund.NotificationDedupeKey)
+
+	replayed, err := walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		38_250_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"Apply the partner wallet rate to the original purchase price",
+		"affiliate-purchase-rate-refund-integration-plus",
+	)
+	require.NoError(t, err)
+	require.Equal(t, refund.ID, replayed.ID)
+	require.Equal(t, refund.NotificationID, replayed.NotificationID)
+
+	sameRateDifferentRetryKey, err := walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		38_250_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"retry",
+		"affiliate-purchase-rate-refund-integration-plus-retry",
+	)
+	require.NoError(t, err)
+	require.Equal(t, refund.ID, sameRateDifferentRetryKey.ID)
+
+	_, err = walletService.RefundPurchase(
+		ctx,
+		agent.ID,
+		purchase.ID,
+		255_000_000,
+		850_000,
+		service.AffiliateCommissionMachineOperatorID,
+		8500,
+		"wrong expected refund",
+		"affiliate-purchase-rate-refund-integration-plus-wrong",
+	)
+	require.ErrorIs(t, err, service.ErrAffiliatePurchaseRefundConflict)
+
+	wallet, err := walletService.GetWallet(ctx, agent.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(83_250_000), wallet.AvailableCashMicros)
+	require.Equal(t, int64(300_000_000), wallet.LifetimeEarnedMicros)
+
+	var entryType, sourceType string
+	var amountMicros, relatedEntryID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT entry_type,source_type,amount_micros,related_entry_id
+		FROM agent_cash_commission_entries WHERE id=$1
+	`, refund.ID).Scan(&entryType, &sourceType, &amountMicros, &relatedEntryID))
+	require.Equal(t, "platform_purchase_refund", entryType)
+	require.Equal(t, "platform_purchase_refund", sourceType)
+	require.Equal(t, int64(38_250_000), amountMicros)
+	require.Equal(t, purchase.ID, relatedEntryID)
+
+	var notificationCount int
+	var notificationUserID int64
+	var notificationType, title, body, actionURL string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*),MIN(user_id),MIN(type),MIN(title),MIN(body),MIN(action_url)
+		FROM user_notifications WHERE dedupe_key=$1
+	`, refund.NotificationDedupeKey).Scan(
+		&notificationCount,
+		&notificationUserID,
+		&notificationType,
+		&title,
+		&body,
+		&actionURL,
+	))
+	require.Equal(t, 1, notificationCount)
+	require.Equal(t, agent.ID, notificationUserID)
+	require.Equal(t, "affiliate_wallet_refund", notificationType)
+	require.Equal(t, "Plus 月卡合伙人优惠差额已退回", title)
+	require.Contains(t, body, "成交原价为 ¥255.00")
+	require.Contains(t, body, "85% 结算规则")
+	require.Contains(t, body, "实际应付 ¥216.75")
+	require.Contains(t, body, "差额 ¥38.25 已退回")
+	require.Contains(t, body, "退款后佣金钱包余额为 ¥83.25")
+	require.Contains(t, body, "额度升级为免费升级")
+	require.Equal(t, "/affiliate", actionURL)
+}
+
+func TestAffiliateWalletRepository_BalancePurchaseUsesConfiguredRateAndCreditsExactlyOnce(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateWalletRepository(integrationDB)
+	walletService := service.NewAffiliateWalletService(repo)
+	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "wallet-balance-purchase-agent")
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET commission_wallet_checkout_enabled=TRUE,
+		    commission_wallet_purchase_rate_bps=8500
+		WHERE id=1
+	`)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id,entry_type,amount_micros,posting_status,source_type,idempotency_key
+		) VALUES ($1,'earned',100000000,'posted','integration',$2)
+	`, agent.ID, fmt.Sprintf("wallet-balance-earned:%d", agent.ID))
+	require.NoError(t, err)
+	var balanceBefore float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT balance FROM users WHERE id=$1`, agent.ID).Scan(&balanceBefore))
+
+	purchase, err := walletService.PurchaseBalance(ctx, agent.ID, 10_000, "wallet-balance-purchase-100")
+	require.NoError(t, err)
+	require.Equal(t, int64(85_000_000), purchase.CashAmountMicros)
+	require.Equal(t, int64(100_000_000), purchase.CreditAmountMicros)
+	require.Equal(t, int64(15_000_000), purchase.RemainingCashMicros)
+	require.Equal(t, int32(8500), purchase.RateBPS)
+	replayed, err := walletService.PurchaseBalance(ctx, agent.ID, 10_000, "wallet-balance-purchase-100")
+	require.NoError(t, err)
+	require.Equal(t, purchase.LedgerEntryID, replayed.LedgerEntryID)
+
+	var balanceAfter float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT balance FROM users WHERE id=$1`, agent.ID).Scan(&balanceAfter))
+	require.InDelta(t, balanceBefore+100, balanceAfter, 0.000001)
+	var lotAmount int64
+	var eligible bool
+	var policy string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT original_amount_micros,affiliate_eligible,affiliate_policy
+		FROM balance_lots WHERE source_type='commission_purchase' AND source_id=$1
+	`, purchase.LedgerEntryID).Scan(&lotAmount, &eligible, &policy))
+	require.Equal(t, int64(100_000_000), lotAmount)
+	require.False(t, eligible)
+	require.Equal(t, "NONE", policy)
+}

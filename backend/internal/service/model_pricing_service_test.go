@@ -130,8 +130,8 @@ func TestModelPricingPriceFormula(t *testing.T) {
 	if g.GroupID != 1 || g.RateMultiplier != 0.5 {
 		t.Fatalf("unexpected group: %+v", g)
 	}
-	if len(g.Models) != 2 {
-		t.Fatalf("expected active GPT-5.4 plus disabled Mini, got %d", len(g.Models))
+	if len(g.Models) != 1 {
+		t.Fatalf("expected only the routable GPT-5.4 model, got %d", len(g.Models))
 	}
 	m := g.Models[0]
 	if m.Model != "gpt-5.4" {
@@ -140,6 +140,30 @@ func TestModelPricingPriceFormula(t *testing.T) {
 	assertPrice(t, "input", m.InputPrice, 1.25)
 	assertPrice(t, "output", m.OutputPrice, 7.5)
 	assertPrice(t, "cache_read", m.CacheReadPrice, 0.125)
+}
+
+func TestModelPricingCatalogReleaseOverridesStaleFuzzyProviderPricing(t *testing.T) {
+	groups := []Group{{ID: 5, Name: "Claude 标准线路", Platform: "anthropic", RateMultiplier: 2.4}}
+	prices := map[string]*LiteLLMModelPricing{
+		"claude-fable-5-1": {
+			InputCostPerToken:           10e-6,
+			OutputCostPerToken:          50e-6,
+			CacheCreationInputTokenCost: 12.5e-6,
+			CacheReadInputTokenCost:     1e-6,
+		},
+	}
+	models := map[int64][]string{5: {"claude-fable-5-1"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	require.NoError(t, err)
+	require.Len(t, catalog.Groups, 1)
+	require.Len(t, catalog.Groups[0].Models, 1)
+	m := catalog.Groups[0].Models[0]
+	assertPrice(t, "input", m.InputPrice, 24)
+	assertPrice(t, "output", m.OutputPrice, 120)
+	assertPrice(t, "cache_write", m.CacheWritePrice, 30)
+	assertPrice(t, "cache_read", m.CacheReadPrice, 0.6)
 }
 
 func TestModelPricingUsesGroupChannelOverrideIncludingCacheWrite(t *testing.T) {
@@ -351,7 +375,7 @@ func TestModelPricingHidesGPT56(t *testing.T) {
 			t.Fatalf("gpt-5.6 should be hidden from display, got %v", got)
 		}
 	}
-	want := []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"}
+	want := []string{"gpt-5.6-sol", "gpt-5.6-terra"}
 	if len(got) != len(want) {
 		t.Fatalf("expected %v, got %v", want, got)
 	}
@@ -360,12 +384,9 @@ func TestModelPricingHidesGPT56(t *testing.T) {
 			t.Fatalf("expected %v, got %v", want, got)
 		}
 	}
-	if !catalog.Groups[0].Models[2].Disabled {
-		t.Fatal("expected gpt-5.6-luna to be marked disabled")
-	}
 }
 
-func TestModelPricingAddsDisabledLunaWhenRoutingNoLongerExposesIt(t *testing.T) {
+func TestModelPricingOmitsLunaWhenRoutingNoLongerExposesIt(t *testing.T) {
 	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
 	prices := map[string]*LiteLLMModelPricing{
 		"gpt-5.6-sol":   {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6, CacheReadInputTokenCost: 0.5e-6},
@@ -379,19 +400,12 @@ func TestModelPricingAddsDisabledLunaWhenRoutingNoLongerExposesIt(t *testing.T) 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 3 {
-		t.Fatalf("expected sol, terra and disabled luna, got %+v", catalog.Groups)
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 2 {
+		t.Fatalf("expected only routable sol and terra, got %+v", catalog.Groups)
 	}
-	luna := catalog.Groups[0].Models[2]
-	if luna.Model != "gpt-5.6-luna" || !luna.Disabled {
-		t.Fatalf("expected disabled Luna row, got %+v", luna)
-	}
-	assertPrice(t, "luna input", luna.InputPrice, 0.5)
-	assertPrice(t, "luna output", luna.OutputPrice, 3)
-	assertPrice(t, "luna cache", luna.CacheReadPrice, 0.05)
 }
 
-func TestModelPricingAddsDisabledLunaWithoutProviderPrice(t *testing.T) {
+func TestModelPricingDoesNotSynthesizeLunaWithoutProviderPrice(t *testing.T) {
 	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
 	prices := map[string]*LiteLLMModelPricing{
 		"gpt-5.6-sol": {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6},
@@ -460,7 +474,7 @@ func TestModelPricingHidesOpenAICompactVariants(t *testing.T) {
 	}
 }
 
-func TestModelPricingAddsDisabledGPT54MiniWhenRoutingNoLongerExposesIt(t *testing.T) {
+func TestModelPricingOmitsGPT54MiniWhenRoutingNoLongerExposesIt(t *testing.T) {
 	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
 	prices := map[string]*LiteLLMModelPricing{
 		"gpt-5.4":      {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
@@ -473,16 +487,9 @@ func TestModelPricingAddsDisabledGPT54MiniWhenRoutingNoLongerExposesIt(t *testin
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 2 {
-		t.Fatalf("expected GPT-5.4 and disabled Mini, got %+v", catalog.Groups)
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 1 {
+		t.Fatalf("expected only routable GPT-5.4, got %+v", catalog.Groups)
 	}
-	mini := catalog.Groups[0].Models[1]
-	if mini.Model != "gpt-5.4-mini" || !mini.Disabled {
-		t.Fatalf("expected disabled GPT-5.4 Mini row, got %+v", mini)
-	}
-	assertPrice(t, "mini input", mini.InputPrice, 0.4)
-	assertPrice(t, "mini output", mini.OutputPrice, 1.6)
-	assertPrice(t, "mini cache", mini.CacheReadPrice, 0.04)
 }
 
 func TestModelPricingExemptedGroupShowsRetiredModelsAsAvailable(t *testing.T) {
@@ -516,7 +523,7 @@ func TestModelPricingExemptedGroupShowsRetiredModelsAsAvailable(t *testing.T) {
 	for _, g := range catalog.Groups {
 		byID[g.GroupID] = g
 	}
-	for groupID, wantDisabled := range map[int64]bool{6: true, 52: false, 59: false} {
+	for groupID, shouldExist := range map[int64]bool{6: false, 52: true, 59: true} {
 		g := byID[groupID]
 		for _, name := range []string{"gpt-5.6-luna", "gpt-5.4-mini"} {
 			var row *PublicModelPrice
@@ -526,19 +533,17 @@ func TestModelPricingExemptedGroupShowsRetiredModelsAsAvailable(t *testing.T) {
 					break
 				}
 			}
-			if row == nil {
-				t.Fatalf("group %d missing %s row: %+v", groupID, name, g.Models)
+			if (row != nil) != shouldExist {
+				t.Fatalf("group %d %s existence=%v, want %v: %+v", groupID, name, row != nil, shouldExist, g.Models)
 			}
-			if row.Disabled != wantDisabled {
-				t.Fatalf("group %d %s Disabled=%v, want %v", groupID, name, row.Disabled, wantDisabled)
+			if row != nil && row.Disabled {
+				t.Fatalf("allowed group %d must expose %s as enabled", groupID, name)
 			}
 		}
 	}
 }
 
-func TestModelPricingExemptedGroupSkipsSynthesizedDisabledRow(t *testing.T) {
-	// Group 59 does not expose luna through routing; the exemption must not
-	// synthesize a struck-through luna row for it, while group 6 still gets one.
+func TestModelPricingDoesNotSynthesizeMissingDisabledRows(t *testing.T) {
 	groups := []Group{
 		{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5},
 		{ID: 59, Name: "CodeX 企业级分组", Platform: "openai", RateMultiplier: 0.5},
@@ -562,18 +567,11 @@ func TestModelPricingExemptedGroupSkipsSynthesizedDisabledRow(t *testing.T) {
 	for _, g := range catalog.Groups {
 		byID[g.GroupID] = g
 	}
-	var luna6 *PublicModelPrice
-	for i := range byID[6].Models {
-		if byID[6].Models[i].Model == "gpt-5.6-luna" {
-			luna6 = &byID[6].Models[i]
-		}
-	}
-	if luna6 == nil || !luna6.Disabled {
-		t.Fatalf("group 6 should still get a disabled luna row, got %+v", byID[6].Models)
-	}
-	for _, m := range byID[59].Models {
-		if m.Model == "gpt-5.6-luna" {
-			t.Fatalf("group 59 must not get a synthesized luna row, got %+v", byID[59].Models)
+	for _, groupID := range []int64{6, 59} {
+		for _, m := range byID[groupID].Models {
+			if m.Model == "gpt-5.6-luna" {
+				t.Fatalf("group %d must not get a synthesized luna row, got %+v", groupID, byID[groupID].Models)
+			}
 		}
 	}
 }
@@ -680,11 +678,11 @@ func TestModelPricingSortsGPTNewestFirst(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := make([]string, 0, 5)
+	got := make([]string, 0, 3)
 	for _, m := range catalog.Groups[0].Models {
 		got = append(got, m.Model)
 	}
-	want := []string{"gpt-5.6-sol", "gpt-5.6-luna", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"}
+	want := []string{"gpt-5.6-sol", "gpt-5.5", "gpt-5.4"}
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("GPT sort: expected %v, got %v", want, got)

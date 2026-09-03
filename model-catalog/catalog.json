@@ -1250,6 +1250,8 @@
       "pricing": {
         "input_per_mtok_usd": 10.0,
         "cached_input_per_mtok_usd": 0.25,
+        "cache_write_5m_per_mtok_usd": 12.5,
+        "cache_write_1h_per_mtok_usd": 20.0,
         "output_per_mtok_usd": 50.0,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,

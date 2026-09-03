@@ -12,6 +12,20 @@ type currentMonthlyAccountRepoStub struct {
 	accounts map[int64][]Account
 }
 
+type currentMonthlyGroupRepoStub struct {
+	GroupRepository
+	groups map[int64]*Group
+}
+
+func (s *currentMonthlyGroupRepoStub) GetByID(_ context.Context, groupID int64) (*Group, error) {
+	group, ok := s.groups[groupID]
+	if !ok {
+		return nil, ErrGroupNotFound
+	}
+	copy := *group
+	return &copy, nil
+}
+
 func (s *currentMonthlyAccountRepoStub) ListByGroup(_ context.Context, groupID int64) ([]Account, error) {
 	return s.accounts[groupID], nil
 }
@@ -44,9 +58,9 @@ func guardedMonthlyTestGroup(id int64, name, platform string, rate, limit float6
 
 func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
-	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 300)
-	grok := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 300)
+	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 380)
+	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 380)
+	grok := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 380)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
@@ -56,15 +70,46 @@ func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.
 		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
 	}
 
-	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude, grok}, 31, 255)
+	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude, grok}, 31, 299)
 
 	require.NoError(t, err)
 	require.True(t, current)
 }
 
+func TestGenerateRedeemCodesAutoCompletesCurrentMonthlyPair(t *testing.T) {
+	settings := DefaultAffiliateProgramSettings()
+	gpt := guardedMonthlyTestGroup(40, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 380)
+	claude := guardedMonthlyTestGroup(41, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 380)
+	grok := guardedMonthlyTestGroup(48, "Grok Plus 月卡组", PlatformGrok, 0.40, 380)
+	redeemRepo := &redeemCreateRepoCapture{}
+	svc := &adminServiceImpl{
+		groupRepo: &currentMonthlyGroupRepoStub{groups: map[int64]*Group{
+			40: &gpt, 41: &claude, 48: &grok,
+		}},
+		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
+			40: {{ID: 1, Status: StatusActive, Schedulable: true}},
+			41: {{ID: 2, Status: StatusActive, Schedulable: true}},
+			48: {{ID: 3, Status: StatusActive, Schedulable: true}},
+		}},
+		redeemCodeRepo:   redeemRepo,
+		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
+	}
+
+	codes, err := svc.GenerateRedeemCodes(context.Background(), &GenerateRedeemCodesInput{
+		Count: 1, Type: RedeemTypeSubscription, Value: 299,
+		GroupIDs: []int64{40, 41}, ValidityDays: 31,
+		Purpose: RedeemCodePurposeInternalTest, SalesStatus: RedeemCodeSalesStatusGifted,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, codes, 1)
+	require.Equal(t, []int64{40, 41, 48}, codes[0].GroupIDs)
+	require.Equal(t, []int64{40, 41, 48}, redeemRepo.created.GroupIDs)
+}
+
 func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
+	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 380)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
@@ -72,7 +117,7 @@ func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
 	}
 
-	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt}, 31, 255)
+	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt}, 31, 299)
 
 	require.True(t, current)
 	require.ErrorContains(t, err, "complete GPT, Claude, and Grok group bundle")
@@ -80,9 +125,9 @@ func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 
 func TestCurrentMonthlyCardGenerationGuardRejectsUnpricedFaceValue(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
-	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 300)
-	grok := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 300)
+	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 380)
+	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 380)
+	grok := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 380)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
@@ -99,7 +144,7 @@ func TestCurrentMonthlyCardGenerationGuardRejectsUnpricedFaceValue(t *testing.T)
 }
 
 func TestCurrentMonthlyCatalogGroupShapeIsImmutable(t *testing.T) {
-	group := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
+	group := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 380)
 	require.NoError(t, validateCurrentMonthlyCatalogGroupShape(group))
 
 	group.RateMultiplier = 0.51
@@ -107,7 +152,7 @@ func TestCurrentMonthlyCatalogGroupShapeIsImmutable(t *testing.T) {
 }
 
 func TestCurrentMonthlyCatalogGrokGroupUsesNativePlatform(t *testing.T) {
-	group := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 300)
+	group := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 380)
 	require.NoError(t, validateCurrentMonthlyCatalogGroupShape(group))
 
 	group.Platform = PlatformAnthropic

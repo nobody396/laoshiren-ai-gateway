@@ -85,6 +85,19 @@ func buildOpsAlertWebhookTextWithDiagnosis(rule *OpsAlertRule, event *OpsAlertEv
 	}
 	lines = append(lines, "根因："+rootCause)
 	if diagnosis != nil {
+		if len(diagnosis.CallerEvidence) > 0 {
+			lines = append(lines, "请求定位：")
+			for _, evidence := range diagnosis.CallerEvidence {
+				evidence = strings.TrimSpace(evidence)
+				if evidence == "" {
+					continue
+				}
+				lines = append(lines, "- "+evidence)
+			}
+			if diagnosis.CallerEvidenceOmitted > 0 {
+				lines = append(lines, fmt.Sprintf("- 另有 %d 个请求未展开，请到 /admin/ops 按事件窗口查看", diagnosis.CallerEvidenceOmitted))
+			}
+		}
 		if len(diagnosis.Evidence) > 0 {
 			lines = append(lines, "证据：")
 			for _, evidence := range diagnosis.Evidence {

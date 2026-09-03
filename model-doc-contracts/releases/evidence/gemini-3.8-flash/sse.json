@@ -1,0 +1,54 @@
+{
+  "artifact_sha256": "a322a04cbe71ad25c1fa0065974a867db8b4ff8125393ea3d8257325a43d4dc7",
+  "billing_attribution": {
+    "status": "not_reconciled"
+  },
+  "case": {
+    "base_url": "https://jp.pomoai.xyz",
+    "case_key": "upstream:gemini-3.8-flash:generate_content:P-02:default",
+    "context_window": 1048576,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_838362D00DC0",
+    "max_output_tokens": 65536,
+    "model_id": "gemini-3.8-flash",
+    "name": "streaming_sse",
+    "p_id": "P-02",
+    "protocol": "generate_content",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "case_fingerprint": "95ae2cb33f8c574d9b5a336aae6d63d679aefc79b26a35b9a0a05925d54cdfb0",
+  "classification": "verified",
+  "direct_runner_sha256": "5971f41fb383b0cbdc0205d6fe91c6da430706ea58fba3c884249b6bdd1299d6",
+  "finished_at": "2026-09-03T12:57:43.036+00:00",
+  "harness_sha256": "be0e50a708bcd768bb0f19013561aa4291a0daa36abf5e1ebc82da4c15316273",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-03T12:57:32.087+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "response": {
+    "body_bytes": 1570,
+    "body_sha256": "09dfa8688cb33a5ea28837b43f800f9df9312e583ba2791fbe0f672c0a53807f",
+    "complete": true,
+    "content_type": "text/event-stream",
+    "error": null,
+    "event_count": 2,
+    "http_status": 200,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": true,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "secret_free": true,
+  "usage": null
+}

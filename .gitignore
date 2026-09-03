@@ -146,3 +146,26 @@ tasks/
 .omx
 bash.exe.stackdump
 local_sql/
+
+# Repository-owned model contract tooling (legacy scripts/tests ignore exceptions).
+!/scripts/
+/scripts/*
+!/scripts/model_catalog.py
+!/scripts/model_doc_contract.py
+!/scripts/model_doc_matrix.py
+!/scripts/model_evidence_integrity.py
+!/scripts/model_price_matrix.py
+!/scripts/provider_contract_live_harness.py
+!/scripts/provider_contract_runner.py
+!/scripts/test_model_catalog.py
+!/tests/
+/tests/*
+!/tests/test_model*.py
+!/tests/test_provider_contract*.py
+!/tests/test_matrix_schema.py
+!/tests/fixtures/
+__pycache__/
+!/scripts/model_release.py
+!/scripts/model_evidence_integrity.py
+
+!/scripts/provider_contract_direct.py

@@ -160,7 +160,11 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			bound.GroupID = &boundGroup.ID
 			bound.Group = &boundGroup
 			c.Set(string(ContextKeyAPIKey), &bound)
-			c.Set(string(ContextKeySubscription), subscription)
+			if subscription != nil {
+				c.Set(string(ContextKeySubscription), subscription)
+			} else {
+				c.Set(string(ContextKeySubscription), nil)
+			}
 			setGroupContext(c, &boundGroup)
 			c.Next()
 			return

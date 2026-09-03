@@ -219,3 +219,20 @@ func TestMultiGroupAuthorizedWildcardCanDiscoverLaterConcreteNames(t *testing.T)
 	require.Equal(t, 200, w.Code)
 	require.JSONEq(t, `{"group":5,"fallback":null}`, w.Body.String())
 }
+
+func TestMultiGroupWalletRouteDoesNotExposeTypedNilSubscription(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{}}
+	key := &service.APIKey{GroupIDs: []int64{6}, User: &service.User{ID: 2, Balance: 10}}
+	r := gin.New()
+	r.Use(func(c *gin.Context) { c.Set(string(ContextKeyAPIKey), key) })
+	r.Use(MultiGroupRouting(f, f, nil, func(context.Context, *service.Group) ([]string, error) { return []string{"model-test"}, nil }, &config.Config{RunMode: config.RunModeStandard}))
+	r.POST("/v1/responses", func(c *gin.Context) {
+		subscription, ok := GetSubscriptionFromContext(c)
+		require.False(t, ok)
+		require.Nil(t, subscription)
+		c.Status(204)
+	})
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"model-test"}`)))
+	require.Equal(t, 204, w.Code)
+}

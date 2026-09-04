@@ -1,6 +1,6 @@
 # Multi-group API key contract
 
-Status: implementation branch; NOT deployed. Owner approved one key with explicitly selected groups, default selecting all currently eligible groups in the UI. Not Auto model selection and no new protocol bridge.
+Status: first production release verified on 2026-09-04 at `49665225f7b848e3e4ca8a6387b81be2a869fcce` (PR #299). Release and owned-test evidence: `/Users/fujunhao/laoshirenai/local/audits/multi-group-release-20260904/README.md`. This does not assert that every model/client/OS combination was exercised. Owner approved one key with explicitly selected groups, default selecting all currently eligible groups in the UI. Not Auto model selection and no new protocol bridge.
 
 - `group_ids` is a non-empty ordered snapshot (max 100), not a wildcard that silently authorizes future groups. `group_id` and `group_ids` are mutually exclusive. Omitted group_ids preserves legacy keys; explicit group_id updates may return a key to legacy mode.
 - Same-model conflicts use user-visible group priority. Selection uses current account model declarations plus optional channel policy, not transient upstream health, so a failure must not silently switch price/funding source. Authorization/billing is rechecked on the selected group; exhausted subscriptions do NOT fall through to wallet. Account failover within that group remains existing behavior.

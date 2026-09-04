@@ -117,3 +117,11 @@ Never commit secrets, tokens, OAuth client secrets, SMTP passwords, SSH keys, or
 ## Domain docs
 
 **Reliability, Service Status, Channel Monitoring, incidents, routing evidence, Customer Tier, or compensation:** follow `docs/agents/domain.md`.
+
+## Worktree and branch closure
+
+When completing a merged task or cleaning this repository, follow
+`docs/ops/CHECKOUTS.md#required-task-closure`. Archive useful evidence and
+preserve staging data before removing this task's completed temporary checkout.
+Update the registry and report the remaining worktrees/local branches explicitly;
+never equate "deployed" with "workspace cleaned".

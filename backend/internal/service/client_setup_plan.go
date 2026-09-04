@@ -145,6 +145,9 @@ func (s *ClientSetupService) setupPlan(ctx context.Context, userID, keyID int64,
 	return nil, ErrClientSetupSelectionUnavailable
 }
 func (s *ClientSetupService) IssueTicketForPlan(ctx context.Context, userID, keyID int64, clientID, os, fingerprint string) (*ClientSetupTicket, error) {
+	if s == nil || s.tickets == nil {
+		return nil, ErrInvalidClientSetupTicket
+	}
 	plan, err := s.setupPlan(ctx, userID, keyID, clientID, os, fingerprint)
 	if err != nil {
 		return nil, err

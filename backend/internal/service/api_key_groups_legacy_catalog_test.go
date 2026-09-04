@@ -205,3 +205,17 @@ func TestMultiGroupCatalogPreservesLegacyAnthropicAccountKinds(t *testing.T) {
 		})
 	}
 }
+
+func TestMultiGroupNonOpenAIUpstreamPricingDoesNotSkipLegacySelector(t *testing.T) {
+	group := &Group{ID: 5, Platform: PlatformAnthropic}
+	ch := Channel{ID: 4, Status: StatusActive, GroupIDs: []int64{5}, RestrictModels: true, BillingModelSource: BillingModelSourceUpstream, ModelPricing: []ChannelModelPricing{{Platform: PlatformAnthropic, Models: []string{"claude-haiku-4-5-20251001"}}}}
+	channels := &ChannelService{}
+	channels.cache.Store(populateChannelCache([]Channel{ch}, map[int64]string{5: PlatformAnthropic}))
+	account := Account{Platform: PlatformAnthropic, Type: AccountTypeOAuth, Credentials: map[string]any{"model_mapping": map[string]any{"claude-haiku-4-5-20251001": "claude-haiku-4-5-20251001"}}}
+	require.True(t, accountSupportsDeclaredModel(&account, "claude-haiku-4-5"))
+	accounts := &multiGroupInventoryStub{accounts: []Account{account}}
+	d, err := (&GatewayService{channelService: channels, accountRepo: accounts}).MultiGroupCatalog(context.Background(), group)
+	require.NoError(t, err)
+	require.True(t, d.MatchesProtocol(group, "messages", "claude-haiku-4-5"))
+	require.Contains(t, d.Models, "claude-haiku-4-5")
+}

@@ -229,6 +229,12 @@ func (catalog *GroupModelCatalog) Declaration(ctx context.Context, group *Group)
 			if lookup == nil || !channel.RestrictModels {
 				return true
 			}
+			// The non-OpenAI selector does not enforce upstream-price names
+			// before forwarding; OAuth/Bedrock can transform them later. Do
+			// not guess a price name here and silently select another payer.
+			if account.Platform != PlatformOpenAI && channel.BillingModelSource == BillingModelSourceUpstream {
+				return true
+			}
 			mapped := resolveMapping(lookup, group.ID, model)
 			billingModel := billingModelForRestriction(mapped.BillingModelSource, model, mapped.MappedModel)
 			if billingModel == "" {

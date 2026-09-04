@@ -9,6 +9,8 @@ export interface TextClientGuide {
   referenceVersion: string
   verification?: Partial<Record<GuideOS, string>>
   mode: GuideMode
+  navLabel?: string
+  notice?: { title: string; body: string }
   baseUrl: string
   protocol: string
   files: Partial<Record<GuideOS, string[]>>
@@ -109,17 +111,23 @@ export const textClientGuides: readonly TextClientGuide[] = [
     sources: [{ label: 'Hermes 0.20.0 对应源码说明', url: 'https://github.com/NousResearch/hermes-agent/blob/c0106e50e7ecedb3ce34e785d949725dc4e0e457/website/docs/integrations/providers.md' }],
   },
   {
-    id: 'qoder', referenceVersion: 'cli:1.1.38', scope: '普通 Qoder CLI，不是 SDK 或企业专用入口', mode: 'pending', baseUrl: '本站自定义地址入口待核验', protocol: '不要套用其他工具', files: {}, blocks: [],
-    instructions: ['官方入口是 /model → Custom → Add custom model。', '只有该入口明确支持本站地址时才填写本站 Key；没有地址输入项时，不要把它填进官方供应商登录入口。', '目前不提供 settings.json 手改模板，凭证存储格式未公开。'],
-    notes: ['这不是声称 Qoder 永远不能自定义 URL，而是本站普通 CLI 接入还没有完成验证。'],
-    sources: [{ label: 'Qoder 官方 Custom Models', url: 'https://docs.qoder.com/cli/custom-models' }],
+    id: 'qoder', referenceVersion: 'cli:1.1.42', scope: 'Qoder CLI · 使用账号开放的 Custom URL 入口', mode: 'native', navLabel: '需权限', baseUrl: v1, protocol: 'openai · Chat Completions 示例',
+    notice: { title: '先登录 Qoder，并确认有 Custom URL 权限', body: '这不是免登录接入。已核对 1.1.42 的配置流程；当前隔离测试停在官方账号登录，尚未完成本站模型调用验收。没有 Custom URL 选项时，请先联系 Qoder 确认账号权限，不要把本站 Key 填给其他官方供应商。' },
+    files: filePaths(['~/.qoder/settings.json（不是 BYOK 手改入口）'], ['%USERPROFILE%\\.qoder\\settings.json（不是 BYOK 手改入口）']),
+    blocks: [{ label: '终端 · 确认版本并启动', content: 'qoder --version\nqoder' }, { label: '进入 Qoder 后输入 · 不是系统终端命令', content: '/model' }],
+    instructions: ['启动 qoder，按提示登录你自己的 Qoder 账号；本站 API Key 不是 Qoder 的登录凭证。', '在 Qoder 内输入 /model → Custom → Add custom model...，在供应商列表选择 Custom URL...。', 'Base URL 填 https://api.laoshirenai.com/v1；Model name 填 YOUR_MODEL_ID，替换成 Key 可用、支持 Chat Completions 和工具调用的模型 ID。', 'Display name 可填「老实人AI」；接口格式选择 openai，再在 API Key 输入框填写专门为 Qoder 创建的 Key。', '等待工具校验成功，再回到 Custom 列表选中刚添加的模型；不要继续使用默认 Auto 模型来验证本站接入。'],
+    notes: ['Custom URL 的显示由 Qoder 账号权限控制。找不到入口不代表本站 Base URL 写错，也不要靠修改内部开关绕过限制。', '这里选择 openai，并填带 /v1 的基础地址；不追加 /responses，不把其他工具的协议名称照搬过来。', 'Qoder 会将自定义 URL、模型及 Key 发给它的服务做 BYOK 校验；这不是凭证仅在你电脑与本站之间传递的方案。请使用独立、限额的 Key，停用时撤销。', '不要在 settings.json 中手写 BYOK，也不填写 QODER_PERSONAL_ACCESS_TOKEN 来冒充本站 Key。实际供应商选项以你的账号界面为准。', '这是普通 CLI 教程，不是 Qoder SDK、企业入口或 IDE 的配置说明；Windows ARM64 暂不在官方支持范围。'],
+    sources: [{ label: 'Qoder 官方 Custom Models', url: 'https://docs.qoder.com/cli/custom-models' }, { label: 'Qoder 官方版本记录', url: 'https://docs.qoder.com/release-notes/qoder-cli' }, { label: '1.1.42 官方发行包', url: 'https://www.npmjs.com/package/@qoder-ai/qodercli/v/1.1.42' }],
   },
   {
-    id: 'minimax-code', referenceVersion: 'cli:0.2.7', scope: 'MiniMax Code CLI（mcode）', mode: 'pending', baseUrl: '配置模板待核验', protocol: 'CLI 与 Desktop 分开核对',
-    files: filePaths(['~/.minimax/config.yaml（结构待核验）'], ['%USERPROFILE%\\.minimax\\config.yaml（结构待核验）']), blocks: [],
-    instructions: ['先确认安装的是 mcode CLI，不是 MiniMax Desktop、Mini-Agent 或 MCP 工具。', '当前不提供可复制的完整配置：精确版本的字段和凭证保存行为还需核对。'],
-    notes: ['不编造 api_key_env 或用一个看似完整的 YAML 让你反复试错。'],
-    sources: [{ label: 'MiniMax Code 官方仓库', url: 'https://github.com/MiniMax-AI/minimax-code' }],
+    id: 'minimax-code', referenceVersion: 'cli:0.3.2', scope: 'MiniMax Code CLI（mcode），不是 MiniMax Desktop', mode: 'native', navLabel: '本机存 Key', baseUrl: v1, protocol: 'openai-responses · Responses 示例',
+    verification: { macos: '配置与本地模拟接口验证通过 · 非生产调用验收' },
+    notice: { title: '这个工具会把 Key 保存到本机', body: '0.3.2 会把第三方 Key 明文写入 config.yaml。即使使用 --api-key-env，也不是只引用环境变量。下方采用工具自己的配置入口；请用独立、限额的 Key，不共享或上传配置文件。本次只用了模拟凭证验证，没有写入真实 Key 或做本站生产调用。' },
+    files: filePaths(['~/.minimax/config.yaml'], ['%USERPROFILE%\\.minimax\\config.yaml']),
+    blocks: [{ label: '终端 · 确认版本并启动', content: 'mcode --version\nmcode' }, { label: '进入 MiniMax Code 后输入 · 不是系统终端命令', content: '/model' }],
+    instructions: ['确认使用 @minimax-ai/code 的 mcode CLI。0.3.2 需要 Node.js 22.19 及以上的 22.x，或 24–26；先在终端启动 mcode。', '在工具内输入 /model，选择 Add 3rd-party provider…，再选择 Custom Provider。不要在 MiniMax 官方登录框填写本站 Key。', '供应商名称填 laoshirenai；接口格式选 openai-responses；Base URL 填 https://api.laoshirenai.com/v1。', '模型 ID 填 YOUR_MODEL_ID，替换成 Key 可用、支持 Responses 和工具调用的模型 ID；API Key 填你为这个工具创建的 Key。', '先测试连接，成功后保存并应用该模型。回到 /model 确认选中的是 laoshirenai 下的模型，再开始新会话。'],
+    notes: ['无需手写或覆盖 YAML，工具负责保存供应商和默认模型；设置过 MINIMAX_DATA_DIR / MAVIS_DATA_DIR 时，以实际目录为准。', '带 /v1 的地址配 openai-responses；不要保留默认 anthropic-messages 协议却填写这套配置。', '本次确认了新增供应商、保存、读取和 /v1/responses 模拟请求，不等于真实模型或 Windows/Linux 客户端已完成验收。', '命令行 provider add 的 --use 不能跳过连接测试；简单接入按上面的交互流程操作，不反复追加供应商。', '关掉终端不会删除已经保存的 Key。不再使用时，在工具里移除该供应商，并在本站撤销专用 Key。'],
+    sources: [{ label: 'MiniMax Code 0.3.2 官方发行包与说明', url: 'https://www.npmjs.com/package/@minimax-ai/code/v/0.3.2' }],
   },
   {
     id: 'workbuddy', referenceVersion: 'app:5.3.14+cli:2.115.0', scope: 'WorkBuddy 桌面版，不是内置 CodeBuddy CLI', mode: 'native', baseUrl: `${v1}/chat/completions`, protocol: 'Chat Completions · 完整 URL 模式',

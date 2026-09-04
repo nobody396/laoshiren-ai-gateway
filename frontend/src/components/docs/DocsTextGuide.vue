@@ -15,7 +15,7 @@
           <button v-for="item in textGuideClients" :key="item.client.id" :data-client-id="item.client.id" class="guide-nav-item" :aria-current="activeId === item.client.id ? 'page' : undefined" @click="select(item.client.id)">
             <span class="nav-icon" aria-hidden="true"><b>{{ item.client.name.slice(0, 1) }}</b><img :src="item.client.icon" alt="" @error="hideIcon" /></span>
             <span>{{ item.client.id === 'vscode-local-agent' ? 'VS Code Local Agent' : item.client.name }}</span>
-            <small v-if="item.guide?.mode === 'pending'">待补</small>
+            <small v-if="item.guide?.navLabel || item.guide?.mode === 'pending'">{{ item.guide?.navLabel ?? '待补' }}</small>
           </button>
         </nav>
         <div class="navigation-note">只看你用的工具。<br />不用读完所有教程。</div>
@@ -42,7 +42,7 @@
             <div class="featured-tools">
               <button v-for="id in featuredIds" :key="id" @click="select(id)"><span>{{ clientName(id) }}</span><b>查看教程 →</b></button>
             </div>
-            <p class="secondary">还有 Grok Build、Kimi、ZCode 等工具，全部在左侧。标为「待补」的条目尚不能作为可用配置使用。</p>
+            <p class="secondary">还有 Grok Build、Kimi、ZCode 等工具，全部在左侧。请留意账号权限、凭证保存方式和每篇教程的验收说明。</p>
           </section>
           <section id="verify" class="overview-section">
             <div class="section-title"><span>03</span><h2>发出第一条请求</h2></div>
@@ -61,6 +61,7 @@
           </div>
           <aside v-if="unsupportedOS" class="reading-note warning" role="status"><strong>此工具暂不提供 Linux 配置</strong><p>不要将 Windows 或 macOS 的配置路径直接套过来。请选择受支持系统的教程。</p></aside>
           <template v-else>
+            <aside v-if="guide.notice" class="reading-note warning" role="status"><strong>{{ guide.notice.title }}</strong><p>{{ guide.notice.body }}</p></aside>
             <aside v-if="usesWSL" class="reading-note warning"><strong>Windows：请先进入 WSL</strong><p>下面的命令在 WSL 的 Linux 终端执行，不在 PowerShell。配置文件也属于 WSL 用户目录；这不是 Windows 原生客户端的验收声明。</p></aside>
             <section id="step-key" class="guide-step">
               <div class="section-title"><span>01</span><h2>准备 Key 和模型 ID</h2></div>

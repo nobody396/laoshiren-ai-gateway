@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.15'
+SCRIPT_VERSION='0.7.16'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -64,6 +64,8 @@ SKIP_CLIENT_INSTALL=0
 FORCE_CLIENT_INSTALL=0
 INSTALL_CODEX_APP=0
 SETUP_TOKEN="${LAOSHIRENAI_SETUP_TOKEN:-}"
+SETUP_PLAN_JSON=""
+SETUP_CLIENT_VERSION=""
 SELECTED_MODEL="${LAOSHIRENAI_MODEL_ID:-}"
 SELECTED_PROTOCOL="${LAOSHIRENAI_PROTOCOL:-}"
 SELECTED_REASONING="${LAOSHIRENAI_REASONING_EFFORT:-}"
@@ -567,6 +569,7 @@ check_client_update() {
 }
 
 resolve_client_update_plan() {
+  [ -z "$SETUP_CLIENT_VERSION" ] || return 0
   [ "$SKIP_CLIENT_INSTALL" -eq 0 ] || return 0
   [ "$FORCE_CLIENT_INSTALL" -eq 0 ] || return 0
   [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || check_client_update "Claude Code CLI" "$EXISTING_CLAUDE_COMMAND" '@anthropic-ai%2Fclaude-code' INSTALL_CLAUDE_CLIENT
@@ -746,6 +749,7 @@ exchange_setup_ticket() {
   local received_base_url
   local received_model
   local received_protocol
+  local received_plan
 
   tmp_dir="$(mktemp -d)"
   request_path="${tmp_dir}/request.json"
@@ -777,7 +781,8 @@ process.stdout.write([
   Buffer.from(String(data.api_key)).toString('base64'),
   Buffer.from(String(data.base_url)).toString('base64'),
   Buffer.from(String(data.model_id || '')).toString('base64'),
-  Buffer.from(String(data.protocol || '')).toString('base64')
+  Buffer.from(String(data.protocol || '')).toString('base64'),
+  Buffer.from(data.plan ? JSON.stringify(data.plan) : '').toString('base64')
 ].join(':'))
 EOF
   )" || {
@@ -786,7 +791,7 @@ EOF
   }
   rm -rf "$tmp_dir"
 
-  IFS=: read -r target received_key received_base_url received_model received_protocol <<<"$parsed"
+  IFS=: read -r target received_key received_base_url received_model received_protocol received_plan <<<"$parsed"
   target="$(printf '%s' "$target" | base64 -d)"
   received_key="$(printf '%s' "$received_key" | base64 -d)"
   received_base_url="$(printf '%s' "$received_base_url" | base64 -d)"
@@ -794,6 +799,7 @@ EOF
   received_protocol="$(printf '%s' "$received_protocol" | base64 -d)"
   [ "$target" = "$TOOLS" ] || log_error "安装凭证与当前工具不匹配，请重新生成"
 
+  SETUP_PLAN_JSON="$(printf '%s' "$received_plan" | base64 -d)"
   BASE_URL="$received_base_url"
   SELECTED_MODEL="$received_model"
   SELECTED_PROTOCOL="$received_protocol"
@@ -817,9 +823,62 @@ EOF
       CATALOG_GROK_MANAGED_MODELS_JSON="$(MODEL_ID="$SELECTED_MODEL" "$NODE_BIN" -e 'process.stdout.write(JSON.stringify([{id:process.env.MODEL_ID,display_name:process.env.MODEL_ID,context_window:null}]))')"
     fi
   fi
+  apply_setup_plan
   SETUP_TOKEN=""
   unset LAOSHIRENAI_SETUP_TOKEN SETUP_TICKET
   log_info "专用配置领取成功"
+}
+
+# Only metadata travels through this plan. Never evaluate server strings as shell.
+apply_setup_plan() {
+  [ -n "$SETUP_PLAN_JSON" ] || return 0
+  local parsed
+  parsed="$(PLAN_JSON="$SETUP_PLAN_JSON" PLAN_TARGET="$TOOLS" "$NODE_BIN" <<'EOF'
+const p = JSON.parse(process.env.PLAN_JSON)
+const os = process.platform === 'darwin' ? 'macos' : process.platform
+const protocols = {claude: ['messages'], codex: ['responses'], grok: ['responses', 'messages'], gemini: ['generate_content']}
+if (!p.available || p.target !== process.env.PLAN_TARGET || p.os !== os || !/^cli:[0-9]+\.[0-9]+\.[0-9]+$/.test(p.client_version_key) || !Array.isArray(p.models) || !p.models.length || p.models.length > 500) throw Error('invalid setup plan or OS')
+for (const m of p.models) if (!/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(m.id) || !protocols[p.target]?.includes(m.protocol)) throw Error('invalid plan model')
+if (!p.models.some(m => m.id === p.default_model)) throw Error('missing default model')
+process.stdout.write(p.client_version_key.slice(4))
+EOF
+  )" || log_error "配置计划与当前系统或客户端不匹配，未修改客户端配置"
+  SETUP_CLIENT_VERSION="$parsed"
+  FORCE_CLIENT_INSTALL=0
+  INSTALL_CODEX_APP=0
+  GROK_CC_SWITCH_COMPAT=0
+  if [ "$TOOLS" = "grok" ]; then
+    CATALOG_GROK_MANAGED_MODELS_JSON="$(PLAN_JSON="$SETUP_PLAN_JSON" "$NODE_BIN" -e 'process.stdout.write(JSON.stringify(JSON.parse(process.env.PLAN_JSON).models.map(m=>({id:m.id,display_name:m.id,protocol:m.protocol,context_window:null}))))')"
+  elif [ "$TOOLS" = "gemini" ]; then
+    CATALOG_GEMINI_MANAGED_MODELS="$(PLAN_JSON="$SETUP_PLAN_JSON" "$NODE_BIN" -e 'process.stdout.write(JSON.parse(process.env.PLAN_JSON).models.map(m=>m.id).join(" "))')"
+  fi
+  export SETUP_PLAN_JSON
+}
+
+verify_setup_plan_models() {
+  [ -n "$SETUP_PLAN_JSON" ] || return 0
+  local key
+  case "$TOOLS" in claude) key="$CLAUDE_API_KEY";; codex) key="$CODEX_API_KEY";; grok) key="$GROK_API_KEY";; gemini) key="$GEMINI_API_KEY";; esac
+  PLAN_JSON="$SETUP_PLAN_JSON" PLAN_KEY="$key" PLAN_BASE_URL="$BASE_URL" "$NODE_BIN" <<'EOF' || log_error "当前 Key 的模型列表已变化或不可用，未写入配置；请重新生成命令"
+const https = require('node:https')
+const p = JSON.parse(process.env.PLAN_JSON)
+const root = process.env.PLAN_BASE_URL.replace(/\/v1\/?$/, '').replace(/\/$/, '')
+const req = https.get(root + '/v1/models', {headers:{Authorization:'Bearer '+process.env.PLAN_KEY},timeout:30000}, res => {
+  let raw = ''; res.on('data', chunk => { raw += chunk; if (raw.length > 4*1024*1024) req.destroy() })
+  res.on('end', () => { try { const ids = new Set(JSON.parse(raw).data.map(m=>m.id)); if (res.statusCode!==200 || p.models.some(m=>!ids.has(m.id))) process.exitCode=1 } catch { process.exitCode=1 } })
+})
+req.on('timeout',()=>req.destroy());req.on('error',()=>{process.exitCode=1})
+EOF
+}
+
+verify_setup_plan_client_version() {
+  [ -n "$SETUP_CLIENT_VERSION" ] || return 0
+  local command_name command_path actual
+  case "$TOOLS" in claude) command_name=claude;; codex) command_name=codex;; grok) command_name=grok;; gemini) command_name=gemini;; esac
+  command_path="$(get_usable_client_command "$command_name" || true)"
+  [ -n "$command_path" ] || log_error "未检测到客户端，未写入配置"
+  actual="$(get_client_version "$command_path" || true)"
+  [ "$actual" = "$SETUP_CLIENT_VERSION" ] || log_error "当前客户端版本 ${actual:-unknown} 与已核验版本 ${SETUP_CLIENT_VERSION} 不同，保留现有安装和配置；请使用匹配版本后重新生成命令"
 }
 
 # 手动路径（无一次性票据）下，页面表单选择通过 LAOSHIRENAI_MODEL_ID 等环境变量
@@ -891,12 +950,12 @@ install_requested_clients() {
 
   if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
     log_info "正在安装或更新 Claude Code"
-    npm_install_with_fallback "@anthropic-ai/claude-code@latest"
+    npm_install_with_fallback "@anthropic-ai/claude-code@${SETUP_CLIENT_VERSION:-latest}"
   fi
 
   if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
     log_info "正在安装或更新 Codex"
-    npm_install_with_fallback "@openai/codex@latest"
+    npm_install_with_fallback "@openai/codex@${SETUP_CLIENT_VERSION:-latest}"
   fi
 
   if [ "$INSTALL_GROK_CLIENT" -eq 1 ]; then
@@ -906,7 +965,7 @@ install_requested_clients() {
 
   if [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]; then
     log_info "正在安装或更新 Gemini CLI"
-    npm_install_with_fallback "@google/gemini-cli@latest"
+    npm_install_with_fallback "@google/gemini-cli@${SETUP_CLIENT_VERSION:-latest}"
   fi
 }
 
@@ -1156,11 +1215,13 @@ const models = Array.isArray(source.models) ? source.models : []
 const required = ['slug', 'base_instructions', 'supports_reasoning_summaries', 'context_window', 'visibility']
 const authorized = []
 const preferredModel = (process.env.PREFERRED_MODEL || '').trim()
+const setupPlan = process.env.SETUP_PLAN_JSON ? JSON.parse(process.env.SETUP_PLAN_JSON) : null
+const plannedIds = setupPlan ? new Set(setupPlan.models.map(m => m.id)) : null
 const seen = new Set()
 
 for (const row of Array.isArray(response.data) ? response.data : []) {
   const id = typeof row?.id === 'string' ? row.id.trim() : ''
-  if (!id || id === 'codex-auto-review' || seen.has(id)) continue
+  if (!id || id === 'codex-auto-review' || seen.has(id) || (plannedIds && !plannedIds.has(id))) continue
   seen.add(id)
   authorized.push(id)
 }
@@ -1181,6 +1242,7 @@ const filtered = authorized
   .flatMap((id) => byID.has(id) ? [{ ...byID.get(id) }] : [])
   .map((model, index) => ({ ...model, priority: index + 1 }))
 
+if (plannedIds && filtered.length !== plannedIds.size) throw new Error('setup plan models are missing from the current catalog; regenerate the command')
 if (filtered.length === 0) throw new Error('the current key has no Codex-compatible Responses model')
 if (preferredModel && !filtered.some(model => model.slug === preferredModel)) {
   throw new Error('ticket model is not present in the Codex Responses catalog')
@@ -1308,10 +1370,11 @@ const fs = require('node:fs')
 const path = process.env.CONFIG_PATH
 const baseUrl = process.env.CONFIG_BASE_URL
 const apiKey = process.env.CONFIG_API_KEY
-const model = process.env.CONFIG_MODEL
+const planOwned = Boolean(process.env.SETUP_PLAN_JSON)
+const model = (planOwned ? 'laoshirenai/' : '') + process.env.CONFIG_MODEL
 const protocol = process.env.CONFIG_PROTOCOL || 'responses'
 const managedModels = JSON.parse(process.env.CONFIG_MANAGED_MODELS || '[]')
-const managedModelIds = managedModels.map((profile) => profile.id)
+const managedModelIds = managedModels.map((profile) => (planOwned ? 'laoshirenai/' : '') + profile.id)
 const managedSections = new Set(managedModelIds.flatMap((id) => [`model.${id}`, `model."${id}"`]))
 let text = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : ''
 let lines = text.split(/\r?\n/)
@@ -1323,7 +1386,7 @@ for (const line of lines) {
   const trimmed = line.trim()
   const header = trimmed.match(/^\[([^\]]+)\]$/)
   if (trimmed.startsWith('[') && !header) throw new Error(`refusing to rewrite malformed Grok TOML header: ${trimmed}`)
-  if (header) droppingModel = managedSections.has(header[1])
+  if (header) droppingModel = managedSections.has(header[1]) || (planOwned && header[1].startsWith('model."laoshirenai/'))
   if (!droppingModel && line.trim() !== '# Managed by laoshirenai one-click setup') kept.push(line)
 }
 lines = kept
@@ -1353,13 +1416,13 @@ while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
 lines.push('', '# Managed by laoshirenai one-click setup')
 for (const profile of managedModels) {
   const block = [
-    `[model.${JSON.stringify(profile.id)}]`,
+    `[model.${JSON.stringify((planOwned ? "laoshirenai/" : "") + profile.id)}]`,
     `model = ${JSON.stringify(profile.id)}`,
-    `base_url = ${JSON.stringify(baseUrl)}`,
+    `base_url = ${JSON.stringify((profile.protocol || protocol) === "messages" ? baseUrl.replace(/\/v1$/, "") : baseUrl)}`,
     `name = ${JSON.stringify(profile.display_name)}`,
     `description = ${JSON.stringify(profile.display_name)}`,
     `api_key = ${JSON.stringify(apiKey)}`,
-    `api_backend = ${JSON.stringify(protocol)}`,
+    `api_backend = ${JSON.stringify(profile.protocol || protocol)}`,
   ]
   if (Number(profile.context_window) > 0) block.push(`context_window = ${Number(profile.context_window)}`)
   block.push('')
@@ -1450,7 +1513,7 @@ if (!config.security || typeof config.security !== 'object' || Array.isArray(con
 if (!config.security.auth || typeof config.security.auth !== 'object' || Array.isArray(config.security.auth)) {
   config.security.auth = {}
 }
-config.security.auth.selectedType = 'gemini-api-key'
+config.security.auth.selectedType = process.env.SETUP_PLAN_JSON ? 'gateway' : 'gemini-api-key'
 
 if (!config.model || typeof config.model !== 'object' || Array.isArray(config.model)) {
   config.model = {}
@@ -1675,7 +1738,7 @@ verify_selected_model_request() {
       ;;
     generate_content)
       endpoint="${root_url}/v1beta/models/${SELECTED_MODEL}:generateContent"
-      printf '%s' '{"contents":[{"role":"user","parts":[{"text":"只回复 CONFIG_OK"}]}],"generationConfig":{"maxOutputTokens":32}}' >"$request_path"
+      printf '%s' '{"contents":[{"role":"user","parts":[{"text":"只回复 CONFIG_OK"}]}],"generationConfig":{"maxOutputTokens":2048}}' >"$request_path"
       status_code="$(curl -sS -o "$response_path" -w '%{http_code}' -H 'Content-Type: application/json' -H "x-goog-api-key: ${api_key}" --data-binary "@${request_path}" "$endpoint" || true)"
       ;;
     *) log_error "票据返回了不支持的协议: ${SELECTED_PROTOCOL}" ;;
@@ -1690,7 +1753,7 @@ let ok = false
 if (protocol === 'responses') {
   const output = Array.isArray(body.output) ? body.output : []
   const hasText = output.some(item => item?.type === 'message' && (Array.isArray(item?.content) ? item.content : []).some(part => part?.type === 'output_text' && part?.text))
-  ok = body.status === 'completed' || Boolean(body.output_text) || hasText
+  ok = body.status === 'completed' && (Boolean(body.output_text) || hasText)
 }
 if (protocol === 'chat_completions') ok = Boolean(body.choices?.[0]?.message?.content) && Boolean(body.choices?.[0]?.finish_reason)
 if (protocol === 'messages') ok = Array.isArray(body.content) && body.content.some(part => part?.type === 'text' && part.text) && Boolean(body.stop_reason)
@@ -1699,7 +1762,7 @@ if (!ok) process.exit(2)
 EOF
   rm -f "$request_path" "$response_path"
   trap - RETURN
-  log_info "${SELECTED_MODEL} · ${SELECTED_PROTOCOL} 最小真实请求通过"
+  log_info "${SELECTED_MODEL} · ${SELECTED_PROTOCOL} 最小接口请求通过（不等于客户端工具调用验收）"
 }
 
 verify_claude_api_key() {
@@ -1887,6 +1950,7 @@ main() {
   else
     apply_manual_selection
   fi
+  verify_setup_plan_models
   resolve_client_install_plan
   resolve_client_update_plan
   if needs_client_install; then
@@ -1895,6 +1959,7 @@ main() {
     log_info "检测到所选客户端已存在或已要求跳过安装；不修改 PATH"
   fi
   install_requested_clients
+  verify_setup_plan_client_version
   install_codex_app_if_requested
   ensure_wrapper_scripts
   configure_claude

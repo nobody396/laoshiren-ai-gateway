@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.15'
+$ScriptVersion = '0.7.16'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -30,6 +30,8 @@ $DefaultGrokCcSwitchImporterUrl = "https://laoshirenai.com/auto-config/import-gr
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
+$SetupPlan = $null
+$SetupClientVersion = ''
 $DefaultNodeIndexPrimary = 'https://npmmirror.com/mirrors/node/index.json'
 $DefaultNodeIndexFallback = 'https://nodejs.org/dist/index.json'
 $DefaultNodeDistPrimary = 'https://npmmirror.com/mirrors/node'
@@ -216,10 +218,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.15 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.16 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.15 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.16 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -345,9 +347,48 @@ function Exchange-SetupTicket {
       $script:CatalogGrokManagedModelSections = @("model.$($script:SelectedModel)", "model.`"$($script:SelectedModel)`"")
     }
   }
+  if ($Data.PSObject.Properties.Name -contains 'plan' -and $null -ne $Data.plan) { Apply-SetupPlan -Plan $Data.plan }
   $script:SetupToken = ''
   Remove-Item Env:LAOSHIRENAI_SETUP_TOKEN -ErrorAction SilentlyContinue
   Write-Info '专用配置领取成功'
+}
+
+function Apply-SetupPlan {
+  param([Parameter(Mandatory = $true)]$Plan)
+  $ProtocolMap = @{ claude = @('messages'); codex = @('responses'); grok = @('responses', 'messages'); gemini = @('generate_content') }
+  if (-not $Plan.available -or $Plan.target -cne $script:Tools -or $Plan.os -cne 'windows' -or $Plan.client_version_key -cnotmatch '^cli:[0-9]+\.[0-9]+\.[0-9]+$' -or @($Plan.models).Count -eq 0 -or @($Plan.models).Count -gt 500) { Stop-Script '配置计划与当前系统或客户端不匹配，未修改客户端配置' }
+  foreach ($Model in $Plan.models) {
+    if ($Model.id -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$' -or $Model.protocol -cnotin $ProtocolMap[$Plan.target]) { Stop-Script '配置计划模型无效' }
+  }
+  if ($Plan.default_model -cnotin @($Plan.models | ForEach-Object { $_.id })) { Stop-Script '配置计划缺少默认模型' }
+  $script:ForceClientInstall = $false
+  $script:InstallCodexApp = $false
+  $script:GrokCcSwitchCompat = $false
+  $script:SetupPlan = $Plan
+  $script:SetupClientVersion = $Plan.client_version_key.Substring(4)
+  if ($script:Tools -eq 'grok') {
+    $script:CatalogGrokManagedModels = @($Plan.models | ForEach-Object { [pscustomobject]@{ Id = $_.id; DisplayName = $_.id; Protocol = $_.protocol; ContextWindow = $null } })
+    $script:CatalogGrokManagedModelSections = @($Plan.models | ForEach-Object { "model.$($_.id)"; "model.`"$($_.id)`"" })
+  } elseif ($script:Tools -eq 'gemini') { $script:CatalogGeminiManagedModels = @($Plan.models | ForEach-Object { $_.id }) }
+}
+function Test-SetupPlanModels {
+  if ($null -eq $script:SetupPlan) { return }
+  $Keys = @{ claude = $script:ClaudeApiKey; codex = $script:CodexApiKey; grok = $script:GrokApiKey; gemini = $script:GeminiApiKey }
+  try {
+    $Root = $script:BaseUrl.TrimEnd('/') -replace '/v1$', ''
+    $Response = Invoke-RestMethod -Uri "$Root/v1/models" -Headers @{ Authorization = "Bearer $($Keys[$script:Tools])" } -TimeoutSec 30
+    $Ids = @($Response.data | ForEach-Object { $_.id })
+    if (@($script:SetupPlan.models | Where-Object { $_.id -cnotin $Ids }).Count) { throw 'model unavailable' }
+  } catch { Stop-Script '当前 Key 的模型列表已变化或不可用，未写入配置；请重新生成命令' }
+}
+
+function Test-SetupPlanClientVersion {
+  if (-not $script:SetupClientVersion) { return }
+  $Names = @{ claude = 'claude'; codex = 'codex'; grok = 'grok'; gemini = 'gemini' }
+  $Command = Get-UsableClientCommand -CommandName $Names[$script:Tools]
+  if (-not $Command) { Stop-Script '未检测到客户端，未写入配置' }
+  $Actual = Get-ClientVersion -CommandPath $Command
+  if ($Actual -cne $script:SetupClientVersion) { Stop-Script "客户端版本 $Actual 与核验版本 $($script:SetupClientVersion) 不同，保留现有安装与配置" }
 }
 
 # 手动路径（无一次性票据）下，页面表单选择通过 LAOSHIRENAI_MODEL_ID 等环境变量
@@ -551,6 +592,7 @@ function Test-VersionOlder {
 }
 
 function Resolve-ClientUpdatePlan {
+  if ($script:SetupClientVersion) { return }
   if ($script:SkipClientInstall -or $script:ForceClientInstall) { return }
 
   $Checks = @(
@@ -1169,12 +1211,12 @@ function Install-RequestedClients {
 
   if ($script:InstallClaudeClient) {
     Write-Info '正在安装或更新 Claude Code'
-    Install-NpmPackageWithFallback -PackageName '@anthropic-ai/claude-code@latest'
+    Install-NpmPackageWithFallback -PackageName ('@anthropic-ai/claude-code@' + $(if ($script:SetupClientVersion) { $script:SetupClientVersion } else { 'latest' }))
   }
 
   if ($script:InstallCodexClient) {
     Write-Info '正在安装或更新 Codex'
-    Install-NpmPackageWithFallback -PackageName '@openai/codex@latest'
+    Install-NpmPackageWithFallback -PackageName ('@openai/codex@' + $(if ($script:SetupClientVersion) { $script:SetupClientVersion } else { 'latest' }))
   }
 
   if ($script:InstallGrokClient) {
@@ -1183,7 +1225,7 @@ function Install-RequestedClients {
 
   if ($script:InstallGeminiClient) {
     Write-Info '正在安装或更新 Gemini CLI'
-    Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'
+    Install-NpmPackageWithFallback -PackageName ('@google/gemini-cli@' + $(if ($script:SetupClientVersion) { $script:SetupClientVersion } else { 'latest' }))
   }
 }
 
@@ -1477,11 +1519,20 @@ function Write-CodexModelCatalog {
       Authorization = "Bearer $script:CodexApiKey"
     } -Method GET
     $AuthorizedModels = @($Response.data | ForEach-Object { [string]$_.id })
+    if ($null -ne $script:SetupPlan) {
+      $Planned = @($script:SetupPlan.models | ForEach-Object { $_.id })
+      if (@($Planned | Where-Object { $_ -cnotin $AuthorizedModels }).Count) { throw '配置计划中存在已失效模型，请重新生成' }
+      $AuthorizedModels = $Planned
+    }
     Convert-CodexModelCatalog `
       -SourcePath $DownloadPath `
       -AuthorizedModels $AuthorizedModels `
       -OutputPath $DownloadPath `
       -PreferredModel $script:SelectedModel
+    if ($null -ne $script:SetupPlan) {
+      $Imported = (Get-Content -LiteralPath $DownloadPath -Raw | ConvertFrom-Json).models
+      if (@($Imported).Count -ne @($script:SetupPlan.models).Count) { throw '模型目录未覆盖配置计划，请重新生成' }
+    }
     Move-Item -LiteralPath $DownloadPath -Destination $CodexModelCatalogPath -Force
   } catch {
     Remove-Item -LiteralPath $DownloadPath -Force -ErrorAction SilentlyContinue
@@ -1551,6 +1602,8 @@ function ConvertTo-TomlString {
 function Write-GrokTomlConfig {
   Backup-IfNeeded $GrokConfigPath
   Ensure-Directory $GrokDir
+  $PlanOwned = $null -ne $script:SetupPlan
+  $DefaultAlias = if ($PlanOwned) { 'laoshirenai/' + $CatalogGrokDefaultModel } else { $CatalogGrokDefaultModel }
   $Lines = if (Test-Path -LiteralPath $GrokConfigPath) {
     [System.Collections.Generic.List[string]]@(Get-Content -LiteralPath $GrokConfigPath)
   } else {
@@ -1563,7 +1616,7 @@ function Write-GrokTomlConfig {
     $Trimmed = $Line.Trim()
     if ($Trimmed.StartsWith('[') -and $Trimmed -notmatch '^\[([^\]]+)\]$') { throw "拒绝覆盖损坏的 Grok TOML 表头: $Trimmed" }
     if ($Trimmed -match '^\[([^\]]+)\]$') {
-      $DroppingModel = $Matches[1] -in $CatalogGrokManagedModelSections
+      $DroppingModel = if ($PlanOwned) { $Matches[1].StartsWith('model."laoshirenai/') } else { $Matches[1] -in $CatalogGrokManagedModelSections }
     }
     if (-not $DroppingModel -and $Line.Trim() -ne '# Managed by laoshirenai one-click setup') {
       $Kept.Add($Line)
@@ -1578,7 +1631,7 @@ function Write-GrokTomlConfig {
   if ($ModelsHeader -lt 0) {
     $Lines.Add('')
     $Lines.Add('[models]')
-    $Lines.Add("default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)")
+    $Lines.Add("default = $(ConvertTo-TomlString $DefaultAlias)")
   } else {
     $End = $Lines.Count
     for ($i = $ModelsHeader + 1; $i -lt $Lines.Count; $i++) {
@@ -1587,12 +1640,12 @@ function Write-GrokTomlConfig {
     $Replaced = $false
     for ($i = $ModelsHeader + 1; $i -lt $End; $i++) {
       if ($Lines[$i] -match '^\s*default\s*=') {
-        $Lines[$i] = "default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)"
+        $Lines[$i] = "default = $(ConvertTo-TomlString $DefaultAlias)"
         $Replaced = $true
         break
       }
     }
-    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, "default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)") }
+    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, "default = $(ConvertTo-TomlString $DefaultAlias)") }
   }
 
   $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
@@ -1604,13 +1657,16 @@ function Write-GrokTomlConfig {
   $Lines.Add('')
   $Lines.Add('# Managed by laoshirenai one-click setup')
   foreach ($ModelProfile in $CatalogGrokManagedModels) {
-    $Lines.Add("[model.$(ConvertTo-TomlString $ModelProfile.Id)]")
+    $ModelProtocol = if ($ModelProfile.PSObject.Properties.Name -contains 'Protocol') { $ModelProfile.Protocol } else { $GrokProtocol }
+    $ModelBase = if ($ModelProtocol -eq 'messages') { $BaseV1 -replace '/v1$', '' } else { $BaseV1 }
+    $Alias = if ($PlanOwned) { 'laoshirenai/' + $ModelProfile.Id } else { $ModelProfile.Id }
+    $Lines.Add("[model.$(ConvertTo-TomlString $Alias)]")
     $Lines.Add("model = $(ConvertTo-TomlString $ModelProfile.Id)")
-    $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
+    $Lines.Add("base_url = $(ConvertTo-TomlString $ModelBase)")
     $Lines.Add("name = $(ConvertTo-TomlString $ModelProfile.DisplayName)")
     $Lines.Add("description = $(ConvertTo-TomlString $ModelProfile.DisplayName)")
     $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
-    $Lines.Add("api_backend = $(ConvertTo-TomlString $GrokProtocol)")
+    $Lines.Add("api_backend = $(ConvertTo-TomlString $ModelProtocol)")
     if ($null -ne $ModelProfile.ContextWindow -and [int64]$ModelProfile.ContextWindow -gt 0) {
       $Lines.Add("context_window = $($ModelProfile.ContextWindow)")
     }
@@ -1697,7 +1753,7 @@ function Write-GeminiConfig {
   if (-not $HasAuth -or $null -eq $Config.security.auth) {
     $Config.security | Add-Member -NotePropertyName auth -NotePropertyValue ([pscustomobject]@{}) -Force
   }
-  $Config.security.auth | Add-Member -NotePropertyName selectedType -NotePropertyValue 'gemini-api-key' -Force
+  $Config.security.auth | Add-Member -NotePropertyName selectedType -NotePropertyValue $(if ($null -ne $script:SetupPlan) { 'gateway' } else { 'gemini-api-key' }) -Force
 
   $HasModel = $Config.PSObject.Properties | Where-Object { $_.Name -eq 'model' }
   if (-not $HasModel -or $null -eq $Config.model) {
@@ -1973,23 +2029,23 @@ function Test-SelectedModelRequest {
     'responses' {
       $Uri = "$ApiBaseUrl/responses"
       $Headers.Authorization = "Bearer $ApiKey"
-      $Body = @{ model = $script:SelectedModel; input = '只回复 CONFIG_OK'; max_output_tokens = 32 }
+      $Body = @{ model = $script:SelectedModel; input = '只回复 CONFIG_OK'; max_output_tokens = 2048 }
     }
     'chat_completions' {
       $Uri = "$ApiBaseUrl/chat/completions"
       $Headers.Authorization = "Bearer $ApiKey"
-      $Body = @{ model = $script:SelectedModel; messages = @(@{ role = 'user'; content = '只回复 CONFIG_OK' }); max_tokens = 32 }
+      $Body = @{ model = $script:SelectedModel; messages = @(@{ role = 'user'; content = '只回复 CONFIG_OK' }); max_tokens = 2048 }
     }
     'messages' {
       $Uri = "$ApiBaseUrl/messages"
       $Headers['x-api-key'] = $ApiKey
       $Headers['anthropic-version'] = '2023-06-01'
-      $Body = @{ model = $script:SelectedModel; messages = @(@{ role = 'user'; content = '只回复 CONFIG_OK' }); max_tokens = 32 }
+      $Body = @{ model = $script:SelectedModel; messages = @(@{ role = 'user'; content = '只回复 CONFIG_OK' }); max_tokens = 2048 }
     }
     'generate_content' {
       $Uri = "$RootUrl/v1beta/models/$($script:SelectedModel):generateContent"
       $Headers['x-goog-api-key'] = $ApiKey
-      $Body = @{ contents = @(@{ role = 'user'; parts = @(@{ text = '只回复 CONFIG_OK' }) }); generationConfig = @{ maxOutputTokens = 32 } }
+      $Body = @{ contents = @(@{ role = 'user'; parts = @(@{ text = '只回复 CONFIG_OK' }) }); generationConfig = @{ maxOutputTokens = 2048 } }
     }
     default { Stop-Script "票据返回了不支持的协议: $($script:SelectedProtocol)" }
   }
@@ -1999,13 +2055,13 @@ function Test-SelectedModelRequest {
     Stop-Script "$($script:SelectedModel) 最小验证失败: $($script:SelectedProtocol) 请求失败"
   }
   $Complete = switch ($script:SelectedProtocol) {
-    'responses' { $Response.status -eq 'completed' -or -not [string]::IsNullOrWhiteSpace([string]$Response.output_text) -or @($Response.output | Where-Object { $_.type -eq 'message' -and @($_.content | Where-Object { $_.type -eq 'output_text' -and -not [string]::IsNullOrWhiteSpace([string]$_.text) }).Count -gt 0 }).Count -gt 0 }
+    'responses' { $Response.status -eq 'completed' -and @($Response.output | Where-Object { $_.type -eq 'message' -and @($_.content | Where-Object { $_.type -eq 'output_text' -and -not [string]::IsNullOrWhiteSpace([string]$_.text) }).Count -gt 0 }).Count -gt 0 }
     'chat_completions' { -not [string]::IsNullOrWhiteSpace([string]$Response.choices[0].message.content) -and -not [string]::IsNullOrWhiteSpace([string]$Response.choices[0].finish_reason) }
     'messages' { @($Response.content | Where-Object { $_.type -eq 'text' -and -not [string]::IsNullOrWhiteSpace([string]$_.text) }).Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$Response.stop_reason) }
     'generate_content' { @($Response.candidates[0].content.parts | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.text) }).Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$Response.candidates[0].finishReason) }
   }
   if (-not $Complete) { Stop-Script '最小验证响应缺少完整终态或文本' }
-  Write-Info "$($script:SelectedModel) · $($script:SelectedProtocol) 最小真实请求通过"
+  Write-Info "$($script:SelectedModel) · $($script:SelectedProtocol) 最小接口请求通过（不等于客户端工具调用验收）"
 }
 
 function Test-ClaudeApiKey {
@@ -2241,6 +2297,7 @@ function Main {
   } else {
     Apply-ManualSelection
   }
+  Test-SetupPlanModels
   Resolve-ClientInstallPlan
   Resolve-ClientUpdatePlan
   if ((Test-NeedsNpmClientInstall) -or ($script:GrokCcSwitchCompat -and (Test-UsesGrok))) {
@@ -2255,6 +2312,7 @@ function Main {
     Write-Info '检测到所选客户端已存在或已要求跳过安装；不下载 Node.js、不修改 PATH'
   }
   Install-RequestedClients
+  Test-SetupPlanClientVersion
   Remove-ManagedPowerShellShims
   Install-CodexAppIfRequested
   Configure-Claude

@@ -7,6 +7,7 @@ export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok' | 'gemini'
 export interface BuildClientAutoConfigCommandInput {
   target: ClientAutoConfigTarget
   ticket: string
+  installMissing?: boolean
   isWindows?: boolean
   installCodexApp?: boolean
   grokCcSwitchCompat?: boolean
@@ -67,6 +68,7 @@ export const getClientAutoConfigName = (target: ClientAutoConfigTarget): string 
 export const buildClientAutoConfigCommand = ({
   target,
   ticket,
+  installMissing = false,
   installCodexApp = false,
   grokCcSwitchCompat = false,
   isWindows = typeof navigator !== 'undefined' &&
@@ -76,7 +78,7 @@ export const buildClientAutoConfigCommand = ({
     const parts = [
       `$env:LAOSHIRENAI_SETUP_TOKEN=${powerShellSingleQuote(ticket)}`,
       `$env:LAOSHIRENAI_TOOLS='${target}'`,
-      "$env:LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'"
+      `$env:LAOSHIRENAI_SKIP_CLIENT_INSTALL='${installMissing ? 0 : 1}'`
     ]
     if (target === 'codex' && installCodexApp) {
       parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
@@ -99,7 +101,7 @@ export const buildClientAutoConfigCommand = ({
   const environment = [
     `LAOSHIRENAI_SETUP_TOKEN=${shellSingleQuote(ticket)}`,
     `LAOSHIRENAI_TOOLS=${shellSingleQuote(target)}`,
-    "LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'"
+    `LAOSHIRENAI_SKIP_CLIENT_INSTALL='${installMissing ? 0 : 1}'`
   ]
   if (target === 'codex' && installCodexApp) {
     environment.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
@@ -107,13 +109,14 @@ export const buildClientAutoConfigCommand = ({
   if (target === 'grok' && grokCcSwitchCompat) {
     environment.push("LAOSHIRENAI_GROK_CC_SWITCH_COMPAT='1'")
   }
-  return [
+  const shellCommand = [
     'f="$(mktemp)"',
     'trap \'rm -f "$f"\' EXIT',
     `curl -fsSL ${shellSingleQuote(SHELL_INSTALLER_URL)} -o "$f"`,
     `[ "$(shasum -a 256 "$f" | awk '{print $1}')" = '${shellInstallerSha256}' ] || { echo '安装器完整性校验失败' >&2; exit 1; }`,
     `${environment.join(' ')} bash "$f"`,
   ].join('; ')
+  return installMissing ? `( ${shellCommand} )` : shellCommand
 }
 
 /**

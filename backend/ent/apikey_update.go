@@ -135,6 +135,24 @@ func (_u *APIKeyUpdate) SetNillableName(v *string) *APIKeyUpdate {
 	return _u
 }
 
+// SetGroupIds sets the "group_ids" field.
+func (_u *APIKeyUpdate) SetGroupIds(v []int64) *APIKeyUpdate {
+	_u.mutation.SetGroupIds(v)
+	return _u
+}
+
+// AppendGroupIds appends value to the "group_ids" field.
+func (_u *APIKeyUpdate) AppendGroupIds(v []int64) *APIKeyUpdate {
+	_u.mutation.AppendGroupIds(v)
+	return _u
+}
+
+// ClearGroupIds clears the value of the "group_ids" field.
+func (_u *APIKeyUpdate) ClearGroupIds() *APIKeyUpdate {
+	_u.mutation.ClearGroupIds()
+	return _u
+}
+
 // SetGroupID sets the "group_id" field.
 func (_u *APIKeyUpdate) SetGroupID(v int64) *APIKeyUpdate {
 	_u.mutation.SetGroupID(v)
@@ -642,6 +660,17 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.GroupIds(); ok {
+		_spec.SetField(apikey.FieldGroupIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedGroupIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apikey.FieldGroupIds, value)
+		})
+	}
+	if _u.mutation.GroupIdsCleared() {
+		_spec.ClearField(apikey.FieldGroupIds, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)
 	}
@@ -996,6 +1025,24 @@ func (_u *APIKeyUpdateOne) SetNillableName(v *string) *APIKeyUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetGroupIds sets the "group_ids" field.
+func (_u *APIKeyUpdateOne) SetGroupIds(v []int64) *APIKeyUpdateOne {
+	_u.mutation.SetGroupIds(v)
+	return _u
+}
+
+// AppendGroupIds appends value to the "group_ids" field.
+func (_u *APIKeyUpdateOne) AppendGroupIds(v []int64) *APIKeyUpdateOne {
+	_u.mutation.AppendGroupIds(v)
+	return _u
+}
+
+// ClearGroupIds clears the value of the "group_ids" field.
+func (_u *APIKeyUpdateOne) ClearGroupIds() *APIKeyUpdateOne {
+	_u.mutation.ClearGroupIds()
 	return _u
 }
 
@@ -1535,6 +1582,17 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.GroupIds(); ok {
+		_spec.SetField(apikey.FieldGroupIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedGroupIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apikey.FieldGroupIds, value)
+		})
+	}
+	if _u.mutation.GroupIdsCleared() {
+		_spec.ClearField(apikey.FieldGroupIds, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)

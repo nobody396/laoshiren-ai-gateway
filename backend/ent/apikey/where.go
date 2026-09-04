@@ -490,6 +490,16 @@ func NameContainsFold(v string) predicate.APIKey {
 	return predicate.APIKey(sql.FieldContainsFold(FieldName, v))
 }
 
+// GroupIdsIsNil applies the IsNil predicate on the "group_ids" field.
+func GroupIdsIsNil() predicate.APIKey {
+	return predicate.APIKey(sql.FieldIsNull(FieldGroupIds))
+}
+
+// GroupIdsNotNil applies the NotNil predicate on the "group_ids" field.
+func GroupIdsNotNil() predicate.APIKey {
+	return predicate.APIKey(sql.FieldNotNull(FieldGroupIds))
+}
+
 // GroupIDEQ applies the EQ predicate on the "group_id" field.
 func GroupIDEQ(v int64) predicate.APIKey {
 	return predicate.APIKey(sql.FieldEQ(FieldGroupID, v))

@@ -13,7 +13,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 14 // v14: Team Key 由数据库实时解析，不复用个人 Key 快照
+const apiKeyAuthSnapshotVersion = 15 // v15: preserve ordered multi-group authorization in auth snapshots
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -261,6 +261,7 @@ func (s *APIKeyService) snapshotFromAPIKey(apiKey *APIKey) *APIKeyAuthSnapshot {
 		TeamID:            apiKey.TeamID,
 		TeamOwnerDisabled: apiKey.TeamOwnerDisabled,
 		GroupID:           apiKey.GroupID,
+		GroupIDs:          append([]int64(nil), apiKey.GroupIDs...),
 		Status:            apiKey.Status,
 		IPWhitelist:       apiKey.IPWhitelist,
 		IPBlacklist:       apiKey.IPBlacklist,
@@ -342,6 +343,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 		TeamID:            snapshot.TeamID,
 		TeamOwnerDisabled: snapshot.TeamOwnerDisabled,
 		GroupID:           snapshot.GroupID,
+		GroupIDs:          append([]int64(nil), snapshot.GroupIDs...),
 		Key:               key,
 		Status:            snapshot.Status,
 		IPWhitelist:       snapshot.IPWhitelist,

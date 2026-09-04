@@ -930,3 +930,19 @@ func idsOfAccounts(accounts []service.Account) []int64 {
 	}
 	return out
 }
+
+func (s *AccountRepoSuite) TestGroupModelInventoryIsDeclarationOnlyAndContainsNoCredentials() {
+	group := mustCreateGroup(s.T(), s.client, &service.Group{Name: "inventory-group"})
+	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "inventory", Platform: service.PlatformOpenAI, Status: service.StatusError, Schedulable: false, Credentials: map[string]any{"api_key": "not-a-real-provider-secret", "model_mapping": map[string]any{"configured-model": "provider-model"}}})
+	mustBindAccountToGroup(s.T(), s.client, account.ID, group.ID, 1)
+	rows, err := s.repo.ListGroupModelInventory(s.ctx, group.ID)
+	s.Require().NoError(err)
+	s.Require().Len(rows, 1)
+	s.Require().Equal(service.PlatformOpenAI, rows[0].Platform)
+	s.Require().Equal(map[string]any{"configured-model": "provider-model"}, rows[0].ModelMapping)
+	s.Require().NotContains(rows[0].ModelMapping, "api_key")
+	s.Require().NoError(s.repo.Delete(s.ctx, account.ID))
+	rows, err = s.repo.ListGroupModelInventory(s.ctx, group.ID)
+	s.Require().NoError(err)
+	s.Require().Empty(rows)
+}

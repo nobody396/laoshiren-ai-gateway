@@ -44,6 +44,8 @@ func (APIKey) Fields() []ent.Field {
 		field.String("name").
 			MaxLen(100).
 			NotEmpty(),
+		// Ordered, explicit authorization snapshot. NULL preserves legacy single-group keys.
+		field.JSON("group_ids", []int64{}).Optional(),
 		field.Int64("group_id").
 			Optional().
 			Nillable(),

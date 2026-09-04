@@ -72,3 +72,9 @@ deploy/sub2api-sudoers
 .claude/
 issues/
 CLAUDE.md
+
+# Local on-demand runtime volumes are not build inputs (and can contain secrets).
+/deploy/data/
+/deploy/postgres_data/
+/deploy/redis_data/
+**/*.tsbuildinfo

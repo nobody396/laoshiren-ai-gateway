@@ -33,6 +33,7 @@ func NewAPIKeyHandler(apiKeyService *service.APIKeyService) *APIKeyHandler {
 // CreateAPIKeyRequest represents the create API key request payload
 type CreateAPIKeyRequest struct {
 	Name          string   `json:"name" binding:"required"`
+	GroupIDs      []int64  `json:"group_ids"`
 	GroupID       *int64   `json:"group_id"`        // nullable
 	Scope         string   `json:"scope"`           // personal | team
 	CustomKey     *string  `json:"custom_key"`      // 可选的自定义key
@@ -50,6 +51,7 @@ type CreateAPIKeyRequest struct {
 // UpdateAPIKeyRequest represents the update API key request payload
 type UpdateAPIKeyRequest struct {
 	Name        string   `json:"name"`
+	GroupIDs    []int64  `json:"group_ids"`
 	GroupID     *int64   `json:"group_id"`
 	Status      string   `json:"status" binding:"omitempty,oneof=active inactive"`
 	IPWhitelist []string `json:"ip_whitelist"` // IP 白名单
@@ -184,6 +186,7 @@ func (h *APIKeyHandler) Create(c *gin.Context) {
 	svcReq := service.CreateAPIKeyRequest{
 		Name:          req.Name,
 		GroupID:       req.GroupID,
+		GroupIDs:      req.GroupIDs,
 		Scope:         req.Scope,
 		CustomKey:     req.CustomKey,
 		IPWhitelist:   req.IPWhitelist,
@@ -251,6 +254,7 @@ func (h *APIKeyHandler) Update(c *gin.Context) {
 		svcReq.Name = &req.Name
 	}
 	svcReq.GroupID = req.GroupID
+	svcReq.GroupIDs = req.GroupIDs
 	if req.Status != "" {
 		svcReq.Status = &req.Status
 	}

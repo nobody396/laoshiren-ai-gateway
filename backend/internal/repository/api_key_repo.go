@@ -12,6 +12,9 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/user"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
+	entsql "entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/predicate"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/lib/pq"
 )
@@ -58,6 +61,9 @@ func (r *apiKeyRepository) Create(ctx context.Context, key *service.APIKey) erro
 		builder.SetIPBlacklist(key.IPBlacklist)
 	}
 
+	if len(key.GroupIDs) > 0 {
+		builder.SetGroupIds(key.GroupIDs)
+	}
 	created, err := builder.Save(ctx)
 	if err == nil {
 		key.ID = created.ID
@@ -152,6 +158,7 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 			apikey.FieldTeamID,
 			apikey.FieldTeamOwnerDisabled,
 			apikey.FieldGroupID,
+			apikey.FieldGroupIds,
 			apikey.FieldStatus,
 			apikey.FieldIPWhitelist,
 			apikey.FieldIPBlacklist,
@@ -249,6 +256,11 @@ func (r *apiKeyRepository) Update(ctx context.Context, key *service.APIKey) erro
 		SetUsage1d(key.Usage1d).
 		SetUsage7d(key.Usage7d).
 		SetUpdatedAt(now)
+	if len(key.GroupIDs) > 0 {
+		builder.SetGroupIds(key.GroupIDs)
+	} else {
+		builder.ClearGroupIds()
+	}
 	if key.GroupID != nil {
 		builder.SetGroupID(*key.GroupID)
 	} else {
@@ -347,9 +359,9 @@ func (r *apiKeyRepository) ListByUserID(ctx context.Context, userID int64, param
 	}
 	if filters.GroupID != nil {
 		if *filters.GroupID == 0 {
-			q = q.Where(apikey.GroupIDIsNil())
+			q = q.Where(apikey.GroupIDIsNil(), apikey.GroupIdsIsNil())
 		} else {
-			q = q.Where(apikey.GroupIDEQ(*filters.GroupID))
+			q = q.Where(apiKeyGroupMembership(*filters.GroupID))
 		}
 	}
 	switch filters.Scope {
@@ -408,7 +420,7 @@ func (r *apiKeyRepository) ExistsByKey(ctx context.Context, key string) (bool, e
 }
 
 func (r *apiKeyRepository) ListByGroupID(ctx context.Context, groupID int64, params pagination.PaginationParams) ([]service.APIKey, *pagination.PaginationResult, error) {
-	q := r.activeQuery().Where(apikey.GroupIDEQ(groupID))
+	q := r.activeQuery().Where(apiKeyGroupMembership(groupID))
 
 	total, err := q.Count(ctx)
 	if err != nil {
@@ -476,7 +488,7 @@ func (r *apiKeyRepository) UpdateGroupIDByUserAndGroup(ctx context.Context, user
 
 // CountByGroupID 获取分组的 API Key 数量
 func (r *apiKeyRepository) CountByGroupID(ctx context.Context, groupID int64) (int64, error) {
-	count, err := r.activeQuery().Where(apikey.GroupIDEQ(groupID)).Count(ctx)
+	count, err := r.activeQuery().Where(apiKeyGroupMembership(groupID)).Count(ctx)
 	return int64(count), err
 }
 
@@ -493,7 +505,7 @@ func (r *apiKeyRepository) ListKeysByUserID(ctx context.Context, userID int64) (
 
 func (r *apiKeyRepository) ListKeysByGroupID(ctx context.Context, groupID int64) ([]string, error) {
 	keys, err := r.activeQuery().
-		Where(apikey.GroupIDEQ(groupID)).
+		Where(apiKeyGroupMembership(groupID)).
 		Select(apikey.FieldKey).
 		Strings(ctx)
 	if err != nil {
@@ -634,6 +646,7 @@ func apiKeyEntityToService(m *dbent.APIKey) *service.APIKey {
 		CreatedAt:         m.CreatedAt,
 		UpdatedAt:         m.UpdatedAt,
 		GroupID:           m.GroupID,
+		GroupIDs:          append([]int64(nil), m.GroupIds...),
 		Quota:             m.Quota,
 		QuotaUsed:         m.QuotaUsed,
 		ExpiresAt:         m.ExpiresAt,
@@ -782,4 +795,8 @@ func derefString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func apiKeyGroupMembership(id int64) predicate.APIKey {
+	return apikey.Or(apikey.GroupIDEQ(id), func(s *entsql.Selector) { s.Where(sqljson.ValueContains(apikey.FieldGroupIds, id)) })
 }

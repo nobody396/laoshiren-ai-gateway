@@ -157,7 +157,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 		skipBilling := c.Request.URL.Path == "/v1/usage"
 
 		var subscription *service.UserSubscription
-		deferUniversalGroupBilling := apiKey.Group != nil && apiKey.Group.IsUniversal()
+		deferUniversalGroupBilling := apiKey.IsMultiGroup() || (apiKey.Group != nil && apiKey.Group.IsUniversal())
 		isSubscriptionType := apiKey.Group != nil && apiKey.Group.IsSubscriptionType() && !deferUniversalGroupBilling
 
 		if isSubscriptionType && subscriptionService != nil {

@@ -68,16 +68,6 @@
         >
           <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
         </button>
-        <button
-          v-if="hasOpenAIGroup"
-          @click="copySaveOfficialProviderCommand"
-          data-tour="keys-save-official-provider"
-          class="btn btn-secondary"
-          :title="t('keys.saveOfficialProviderHint')"
-        >
-          <Icon name="terminal" size="md" class="mr-2" />
-          {{ t('keys.saveOfficialProvider') }}
-        </button>
         <button @click="showCreateModal = true" class="btn btn-primary" data-tour="keys-create-btn">
           <Icon name="plus" size="md" class="mr-2" />
           {{ t('keys.createKey') }}
@@ -127,7 +117,8 @@
           </template>
 
           <template #cell-group="{ row }">
-            <KeyGroupSelector
+            <button v-if="row.group_ids?.length" type="button" class="btn btn-secondary btn-sm" @click="editKey(row)">已授权 {{ row.group_ids.length }} 个分组 · 管理</button>
+            <KeyGroupSelector v-else
               :model-value="row.group_id"
               :options="baseGroupOptions"
               :fallback-option="getKeyGroupFallbackOption(row)"
@@ -440,8 +431,14 @@
         </div>
 
         <div>
-          <label class="input-label">{{ t('keys.groupLabel') }}</label>
-          <KeyGroupSelector
+          <label class="input-label">授权分组</label>
+          <div class="mb-3 flex gap-4 text-sm">
+            <label><input v-model="keyGroupMode" type="radio" value="multi" /> 多分组 Key</label>
+            <label><input v-model="keyGroupMode" type="radio" value="single" /> 单分组 Key（兼容模式）</label>
+          </div>
+          <div v-if="keyGroupMode === 'multi' && !groupsLoading && groupsLoadedScope !== activeScope" class="mb-3 text-sm" role="alert">分组加载失败，暂不能创建此 Key。<button type="button" class="btn btn-secondary btn-sm" @click="loadGroups">重新加载</button></div>
+          <KeyGroupMultiSelect v-if="keyGroupMode === 'multi'" v-model="selectedGroupIds" :groups="multiGroupOptions" :rates="activeScope === 'personal' ? userGroupRates : {}" :disabled="groupsLoading" />
+          <KeyGroupSelector v-else
             v-model="formData.group_id"
             :options="baseGroupOptions"
             :placeholder="t('keys.selectGroup')"
@@ -933,7 +930,16 @@
     />
 
     <!-- Use Key Modal -->
-    <UseKeyModal
+    <BaseDialog v-if="selectedKey?.group_ids?.length" :show="showUseKeyModal" title="使用多分组 Key" @close="closeUseKeyModal">
+      <div class="space-y-4 text-sm">
+        <p>同一把 Key 可用于各客户端，服务域名不变。客户端请求使用什么协议，网关就按该协议和模型名匹配已授权分组。</p>
+        <p class="break-all font-mono">{{ displayApiBaseUrl }}</p>
+        <p>Claude Code 使用根地址；OpenAI 兼容客户端通常使用带 /v1 的地址；Gemini 使用原生接口。请按客户端要求填写，不代表所有协议可以互换。</p>
+        <p>当前支持 Messages、Responses、Chat Completions 和 Gemini 文本 HTTP。图片、视频、实时连接仍使用单分组 Key。一键安装配置暂不适用于此类 Key。</p>
+        <button type="button" class="btn btn-primary" @click="clipboardCopy(selectedKey.key, 'Key 已复制')">复制这把 Key</button>
+      </div>
+    </BaseDialog>
+    <UseKeyModal v-if="!selectedKey?.group_ids?.length"
       :show="showUseKeyModal"
       :api-key="selectedKey?.key || ''"
       :base-url="publicSettings?.api_base_url || ''"
@@ -1168,7 +1174,7 @@
 </template>
 
 <script setup lang="ts">
-	import { ref, computed, onMounted, onUnmounted } from 'vue'
+	import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 	import { useRoute, useRouter } from 'vue-router'
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
@@ -1192,7 +1198,9 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import Icon from '@/components/icons/Icon.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
 	import CcsClientIcon from '@/components/keys/CcsClientIcon.vue'
-	import KeyGroupSelector from '@/components/keys/KeyGroupSelector.vue'
+	import KeyGroupMultiSelect from '@/components/keys/KeyGroupMultiSelect.vue'
+import { defaultKeyGroupIds } from '@/utils/keyGroupSelection'
+import KeyGroupSelector from '@/components/keys/KeyGroupSelector.vue'
 	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
 import type { GroupCacheStats } from '@/api/groups'
 import type { Column } from '@/components/common/types'
@@ -1279,6 +1287,11 @@ const columns = computed<Column[]>(() => [
 
 const apiKeys = ref<ApiKey[]>([])
 const groups = ref<Group[]>([])
+const groupsLoading = ref(true)
+const groupsLoadedScope = ref<string | null>(null)
+const keyGroupMode = ref<'single' | 'multi'>('multi')
+const selectedGroupIds = ref<number[]>([])
+const multiGroupOptions = computed(() => groups.value.filter(group => group.platform !== 'universal'))
 const loading = ref(false)
 const submitting = ref(false)
 const now = ref(new Date())
@@ -1302,6 +1315,9 @@ const filterGroupId = ref<string | number>('')
 const activeScope = ref<'personal' | 'team'>(route.query.scope === 'team' ? 'team' : 'personal')
 
 const showCreateModal = ref(false)
+watch(showCreateModal, (show) => {
+  if (show) { keyGroupMode.value = 'multi'; selectedGroupIds.value = defaultKeyGroupIds(groups.value) }
+})
 const showEditModal = ref(false)
 const showDeleteDialog = ref(false)
 const showResetQuotaDialog = ref(false)
@@ -1325,7 +1341,6 @@ let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
 let ccsLaunchObserved = false
 
 const groupCacheHitRateEnabled = computed(() => publicSettings.value?.group_cache_hit_rate_enabled === true)
-const hasOpenAIGroup = computed(() => groups.value.some((group) => group.platform === 'openai'))
 const displayApiBaseUrl = computed(() => {
   const configuredBaseUrl = publicSettings.value?.api_base_url?.trim()
   const fallbackBaseUrl = typeof window !== 'undefined' ? window.location.origin : ''
@@ -1579,14 +1594,6 @@ const copyApiBaseUrl = async () => {
   }
 }
 
-const copySaveOfficialProviderCommand = async () => {
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows')
-  const command = isWindows
-    ? "$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1?v=1.0.0 | iex"
-    : `curl -fsSL 'https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0' | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash`
-  await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
-}
-
 const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null => {
   return getClientAutoConfigTarget(row.group?.platform)
 }
@@ -1710,10 +1717,23 @@ const loadApiKeys = async () => {
 }
 
 const loadGroups = async () => {
+  groupsLoading.value = true
+  const requestedScope = activeScope.value
   try {
-    groups.value = await userGroupsAPI.getAvailable(activeScope.value)
+    const loaded = await userGroupsAPI.getAvailable(requestedScope)
+    if (requestedScope !== activeScope.value) return
+    groups.value = loaded
+    groupsLoadedScope.value = requestedScope
+    if (showCreateModal.value) selectedGroupIds.value = defaultKeyGroupIds(groups.value)
   } catch (error) {
+    if (requestedScope === activeScope.value) {
+      groups.value = []
+      selectedGroupIds.value = []
+      groupsLoadedScope.value = null
+    }
     console.error('Failed to load groups:', error)
+  } finally {
+    if (requestedScope === activeScope.value) groupsLoading.value = false
   }
 }
 
@@ -1771,6 +1791,8 @@ const handlePageSizeChange = (pageSize: number) => {
 }
 
 const editKey = (key: ApiKey) => {
+  keyGroupMode.value = key.group_ids?.length ? 'multi' : 'single'
+  selectedGroupIds.value = [...(key.group_ids || [])]
   selectedKey.value = key
   const hasIPRestriction = (key.ip_whitelist?.length > 0) || (key.ip_blacklist?.length > 0)
   const hasExpiration = !!key.expires_at
@@ -1827,8 +1849,12 @@ const confirmDelete = (key: ApiKey) => {
 }
 
 const handleSubmit = async () => {
-  // Validate group_id is required
-  if (formData.value.group_id === null) {
+  // Explicit empty selection must never mean unrestricted access.
+  if (keyGroupMode.value === 'multi' && (groupsLoading.value || groupsLoadedScope.value !== activeScope.value || selectedGroupIds.value.length === 0)) {
+    appStore.showError('请至少选择一个授权分组')
+    return
+  }
+  if (keyGroupMode.value === 'single' && formData.value.group_id === null) {
     appStore.showError(t('keys.groupRequired'))
     return
   }
@@ -1886,7 +1912,7 @@ const handleSubmit = async () => {
     if (showEditModal.value && selectedKey.value) {
       await keysAPI.update(selectedKey.value.id, {
         name: formData.value.name,
-        group_id: formData.value.group_id,
+        ...(keyGroupMode.value === 'multi' ? { group_ids: selectedGroupIds.value } : { group_id: formData.value.group_id }),
         status: formData.value.status,
         ip_whitelist: ipWhitelist,
         ip_blacklist: ipBlacklist,
@@ -1908,7 +1934,8 @@ const handleSubmit = async () => {
         quota,
         expiresInDays,
         rateLimitData,
-        activeScope.value
+        activeScope.value,
+        keyGroupMode.value === 'multi' ? selectedGroupIds.value : undefined
       )
       appStore.showSuccess(t('keys.keyCreatedSuccess'))
       // Only advance tour if active, on submit step, and creation succeeded
@@ -2041,6 +2068,7 @@ const resetRateLimitUsage = async () => {
 }
 
 const getCcsTargetsForKey = (row: ApiKey): CcsImportTarget[] => {
+  if (row.group_ids?.length) return [] // Old one-click profiles assume exactly one group.
   const platform = row.group?.platform || 'anthropic'
   return getCompatibleCcsTargets(platform, row.group?.allow_messages_dispatch === true)
 }
@@ -2219,6 +2247,10 @@ onMounted(() => {
 
 const setScope = async (scope: 'personal' | 'team') => {
   if (activeScope.value === scope) return
+  closeModals()
+  groups.value = []
+  selectedGroupIds.value = []
+  groupsLoadedScope.value = null
   activeScope.value = scope
   pagination.value.page = 1
   filterGroupId.value = ''

@@ -114,6 +114,12 @@ func (_c *APIKeyCreate) SetName(v string) *APIKeyCreate {
 	return _c
 }
 
+// SetGroupIds sets the "group_ids" field.
+func (_c *APIKeyCreate) SetGroupIds(v []int64) *APIKeyCreate {
+	_c.mutation.SetGroupIds(v)
+	return _c
+}
+
 // SetGroupID sets the "group_id" field.
 func (_c *APIKeyCreate) SetGroupID(v int64) *APIKeyCreate {
 	_c.mutation.SetGroupID(v)
@@ -576,6 +582,10 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.GroupIds(); ok {
+		_spec.SetField(apikey.FieldGroupIds, field.TypeJSON, value)
+		_node.GroupIds = value
+	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)
 		_node.Status = value
@@ -852,6 +862,24 @@ func (u *APIKeyUpsert) SetName(v string) *APIKeyUpsert {
 // UpdateName sets the "name" field to the value that was provided on create.
 func (u *APIKeyUpsert) UpdateName() *APIKeyUpsert {
 	u.SetExcluded(apikey.FieldName)
+	return u
+}
+
+// SetGroupIds sets the "group_ids" field.
+func (u *APIKeyUpsert) SetGroupIds(v []int64) *APIKeyUpsert {
+	u.Set(apikey.FieldGroupIds, v)
+	return u
+}
+
+// UpdateGroupIds sets the "group_ids" field to the value that was provided on create.
+func (u *APIKeyUpsert) UpdateGroupIds() *APIKeyUpsert {
+	u.SetExcluded(apikey.FieldGroupIds)
+	return u
+}
+
+// ClearGroupIds clears the value of the "group_ids" field.
+func (u *APIKeyUpsert) ClearGroupIds() *APIKeyUpsert {
+	u.SetNull(apikey.FieldGroupIds)
 	return u
 }
 
@@ -1309,6 +1337,27 @@ func (u *APIKeyUpsertOne) SetName(v string) *APIKeyUpsertOne {
 func (u *APIKeyUpsertOne) UpdateName() *APIKeyUpsertOne {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetGroupIds sets the "group_ids" field.
+func (u *APIKeyUpsertOne) SetGroupIds(v []int64) *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetGroupIds(v)
+	})
+}
+
+// UpdateGroupIds sets the "group_ids" field to the value that was provided on create.
+func (u *APIKeyUpsertOne) UpdateGroupIds() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdateGroupIds()
+	})
+}
+
+// ClearGroupIds clears the value of the "group_ids" field.
+func (u *APIKeyUpsertOne) ClearGroupIds() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.ClearGroupIds()
 	})
 }
 
@@ -1982,6 +2031,27 @@ func (u *APIKeyUpsertBulk) SetName(v string) *APIKeyUpsertBulk {
 func (u *APIKeyUpsertBulk) UpdateName() *APIKeyUpsertBulk {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetGroupIds sets the "group_ids" field.
+func (u *APIKeyUpsertBulk) SetGroupIds(v []int64) *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetGroupIds(v)
+	})
+}
+
+// UpdateGroupIds sets the "group_ids" field to the value that was provided on create.
+func (u *APIKeyUpsertBulk) UpdateGroupIds() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdateGroupIds()
+	})
+}
+
+// ClearGroupIds clears the value of the "group_ids" field.
+func (u *APIKeyUpsertBulk) ClearGroupIds() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.ClearGroupIds()
 	})
 }
 

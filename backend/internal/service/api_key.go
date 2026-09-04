@@ -35,6 +35,7 @@ type APIKey struct {
 	TeamOwnerDisabled bool
 	Key               string
 	Name              string
+	GroupIDs          []int64 // Ordered authorized groups; empty means legacy single-group behavior.
 	GroupID           *int64
 	Status            string
 	IPWhitelist       []string

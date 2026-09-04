@@ -542,3 +542,26 @@ func TestIncrementQuotaUsed_Concurrent(t *testing.T) {
 	require.Equal(t, float64(goroutines)*increment, got.QuotaUsed,
 		"并发递增后总和应为 %v，实际为 %v", float64(goroutines)*increment, got.QuotaUsed)
 }
+
+func (s *APIKeyRepoSuite) TestMultiGroupRoundtripFilteringAndLegacyConversion() {
+	user := s.mustCreateUser("multigroup@test.com")
+	key := &service.APIKey{UserID: user.ID, Key: "multi-group-fixture-key", Name: "multi", Status: service.StatusActive, GroupIDs: []int64{60001, 60002}}
+	s.Require().NoError(s.repo.Create(s.ctx, key))
+	auth, err := s.repo.GetByKeyForAuth(s.ctx, key.Key)
+	s.Require().NoError(err)
+	s.Require().Equal([]int64{60001, 60002}, auth.GroupIDs)
+	s.Require().Nil(auth.GroupID)
+	list, err := s.repo.ListKeysByGroupID(s.ctx, 60002)
+	s.Require().NoError(err)
+	s.Require().Contains(list, key.Key)
+	key.GroupIDs = []int64{60002}
+	s.Require().NoError(s.repo.Update(s.ctx, key))
+	list, err = s.repo.ListKeysByGroupID(s.ctx, 60001)
+	s.Require().NoError(err)
+	s.Require().NotContains(list, key.Key)
+	key.GroupIDs = nil
+	s.Require().NoError(s.repo.Update(s.ctx, key))
+	stored, err := s.repo.GetByID(s.ctx, key.ID)
+	s.Require().NoError(err)
+	s.Require().Empty(stored.GroupIDs)
+}

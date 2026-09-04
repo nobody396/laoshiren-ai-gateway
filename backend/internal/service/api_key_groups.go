@@ -77,15 +77,27 @@ func (s *APIKeyService) AuthorizeMultiGroupTarget(ctx context.Context, key *APIK
 // exceptions (e.g. family-* allowed but family-private denied).
 type GroupModelDeclaration struct {
 	Models  []string
-	matches func(string) bool
+	matches func(string, string) bool
 }
 
+// Matches reports whether any supported native protocol admits this name.
 func (d *GroupModelDeclaration) Matches(group *Group, model string) bool {
-	if d == nil || group == nil || IsDisabledPublicModelForGroup(model, group.ID) {
+	for _, protocol := range MultiGroupTextProtocols {
+		if d.MatchesProtocol(group, protocol, model) {
+			return true
+		}
+	}
+	return false
+}
+
+var MultiGroupTextProtocols = []string{"messages", "responses", "chat_completions", "generate_content"}
+
+func (d *GroupModelDeclaration) MatchesProtocol(group *Group, protocol, model string) bool {
+	if d == nil || group == nil || !MultiGroupProtocolSupported(group, protocol) || IsDisabledPublicModelForGroup(model, group.ID) {
 		return false
 	}
 	if d.matches != nil {
-		return d.matches(model)
+		return d.matches(protocol, model)
 	}
 	return MultiGroupRequestModelMatches(group, d.Models, model)
 }
@@ -185,7 +197,14 @@ func (catalog *GroupModelCatalog) Declaration(ctx context.Context, group *Group)
 		}
 	}
 	d := &GroupModelDeclaration{}
-	d.matches = func(model string) bool {
+	d.matches = func(protocol, model string) bool {
+		if protocol == "messages" && group.Platform == PlatformOpenAI {
+			requested := model
+			model = NormalizeOpenAICompatRequestedModel(requested)
+			if mapped := group.ResolveMessagesDispatchModel(requested); mapped != "" {
+				model = mapped
+			}
+		}
 		if IsDisabledPublicModelForGroup(model, group.ID) {
 			return false
 		}

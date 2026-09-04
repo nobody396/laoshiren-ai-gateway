@@ -96,7 +96,7 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				fail(503, "Model catalog is temporarily unavailable")
 				return
 			}
-			if !listing && !models.Matches(group, model) {
+			if !listing && !models.MatchesProtocol(group, protocol, model) {
 				continue
 			}
 			payer, authErr := access.AuthorizeMultiGroupTarget(c.Request.Context(), key, group)
@@ -105,7 +105,7 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				// A later group's concrete name may be owned by an earlier
 				// authorized wildcard. Resolve each name after all declarations
 				// are known, using the same first-match order as requests.
-				protocols := []string{"messages", "responses", "chat_completions", "generate_content"}
+				protocols := service.MultiGroupTextProtocols
 				if strings.Contains(path, "/v1beta/") {
 					protocols = []string{"generate_content"}
 				}
@@ -177,9 +177,9 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			google := strings.Contains(path, "/v1beta/")
 			for _, name := range discovered {
 				authorized := false
-				for _, declarations := range priorDeclarations {
+				for declarationProtocol, declarations := range priorDeclarations {
 					for _, declaration := range declarations {
-						if declaration.catalog.Matches(declaration.group, name) {
+						if declaration.catalog.MatchesProtocol(declaration.group, declarationProtocol, name) {
 							authorized = authorized || declaration.authorized
 							break
 						}

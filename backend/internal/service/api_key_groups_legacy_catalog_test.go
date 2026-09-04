@@ -167,3 +167,18 @@ func TestMultiGroupMappedPricingRetainsWildcardExclusionHoles(t *testing.T) {
 		})
 	}
 }
+
+func TestMultiGroupMatchesMessagesDispatchWithoutChangingResponses(t *testing.T) {
+	channels := &ChannelService{}
+	cache := newEmptyChannelCache()
+	cache.loadedAt = time.Now()
+	channels.cache.Store(cache)
+	accounts := &multiGroupInventoryStub{accounts: []Account{{Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Credentials: map[string]any{"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"}}}}}
+	group := &Group{ID: 6, Platform: PlatformOpenAI, AllowMessagesDispatch: true, MessagesDispatchModelConfig: OpenAIMessagesDispatchModelConfig{OpusMappedModel: "gpt-5.6-sol"}}
+	declaration, err := (&GatewayService{channelService: channels, accountRepo: accounts}).MultiGroupCatalog(context.Background(), group)
+	require.NoError(t, err)
+	for _, model := range []string{"gpt-5.6-sol-high", "claude-opus-4-6"} {
+		require.True(t, declaration.MatchesProtocol(group, "messages", model))
+		require.False(t, declaration.MatchesProtocol(group, "responses", model))
+	}
+}

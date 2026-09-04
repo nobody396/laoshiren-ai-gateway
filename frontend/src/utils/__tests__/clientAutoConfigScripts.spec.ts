@@ -89,7 +89,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('function Remove-ManagedPowerShellShims')
     expect(script).toContain("Get-ChildItem -LiteralPath $Dir -Filter '*.ps1'")
     expect(script).toContain("[IO.Path]::ChangeExtension($_.FullName, '.cmd')")
-    expect(script).toContain('Install-RequestedClients\n  Remove-ManagedPowerShellShims\n  Install-CodexAppIfRequested')
+    expect(script).toContain('Install-RequestedClients\n  Test-SetupPlanClientVersion\n  Remove-ManagedPowerShellShims\n  Install-CodexAppIfRequested')
     expect(script.indexOf('Exchange-SetupTicket\n')).toBeLessThan(script.indexOf('Resolve-ClientInstallPlan\n'))
   })
 
@@ -308,9 +308,9 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('all|claude|codex|grok|gemini')
     expect(script).toContain("curl -fsSL https://x.ai/cli/install.sh | bash")
     expect(script).toContain('for (const profile of managedModels)')
-    expect(script).toContain('`[model.${JSON.stringify(profile.id)}]`')
+    expect(script).toContain('`[model.${JSON.stringify((planOwned ? "laoshirenai/" : "") + profile.id)}]`')
     expect(script).toContain('`description = ${JSON.stringify(profile.display_name)}`')
-    expect(script).toContain('`api_backend = ${JSON.stringify(protocol)}`')
+    expect(script).toContain('`api_backend = ${JSON.stringify(profile.protocol || protocol)}`')
     expect(script).toContain('`context_window = ${Number(profile.context_window)}`')
     expect(script).toContain('fs.renameSync(temporaryPath, path)')
     expect(script).toContain('open_cc_switch_if_requested')
@@ -331,9 +331,9 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('Download-VerifiedAsset -Asset $Asset -OutputPath $TemporaryPath')
     expect(script).not.toContain("$Bases = @('https://x.ai/cli'")
     expect(script).toContain('foreach ($ModelProfile in $CatalogGrokManagedModels)')
-    expect(script).toContain('$Lines.Add("[model.$(ConvertTo-TomlString $ModelProfile.Id)]")')
+    expect(script).toContain('$Lines.Add("[model.$(ConvertTo-TomlString $Alias)]")')
     expect(script).toContain('$Lines.Add("description = $(ConvertTo-TomlString $ModelProfile.DisplayName)")')
-    expect(script).toContain('$Lines.Add("api_backend = $(ConvertTo-TomlString $GrokProtocol)")')
+    expect(script).toContain('$Lines.Add("api_backend = $(ConvertTo-TomlString $ModelProtocol)")')
     expect(script).toContain('$Lines.Add("context_window = $($ModelProfile.ContextWindow)")')
     expect(script).toContain('[System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $ReplacementBackupPath)')
     expect(script).toContain('Open-CcSwitchIfRequested')
@@ -608,7 +608,7 @@ describe('client auto-config scripts', () => {
   })
 
   it.each([
-    ['responses', { status: 'completed', output: [{ type: 'message' }] }],
+    ['responses', { status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: 'CONFIG_OK' }] }] }],
     ['chat_completions', { choices: [{ message: { content: 'CONFIG_OK' }, finish_reason: 'stop' }] }],
     ['messages', { content: [{ type: 'text', text: 'CONFIG_OK' }], stop_reason: 'end_turn' }],
     ['generate_content', { candidates: [{ content: { parts: [{ text: 'CONFIG_OK' }] }, finishReason: 'STOP' }] }],
@@ -632,6 +632,8 @@ describe('client auto-config scripts', () => {
   })
 
   it.each([
+    ['completed without text', { status: 'completed', output: [] }],
+    ['incomplete with partial text', { status: 'incomplete', output: [{ type: 'message', content: [{ type: 'output_text', text: 'partial' }] }] }],
     ['failed status with empty output array', { status: 'failed', output: [] }],
     ['failed status without output', { status: 'failed' }],
     ['error envelope over HTTP 200', { error: { message: 'upstream rejected' } }],
@@ -665,12 +667,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('GOOGLE_GEMINI_BASE_URL')
     expect(script).toContain("GOOGLE_GENAI_USE_VERTEXAI: 'false'")
     expect(script).toContain('GEMINI_MODEL')
-    expect(script).toContain("config.security.auth.selectedType = 'gemini-api-key'")
+    expect(script).toContain("config.security.auth.selectedType = process.env.SETUP_PLAN_JSON ? 'gateway' : 'gemini-api-key'")
     expect(script).toContain('config.model.name = model')
     expect(script).toContain('thinkingConfig: { thinkingLevel }')
     expect(script).toContain("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'")
     expect(script).toContain("CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high gemini-3.8-flash'")
-    expect(script).toContain('npm_install_with_fallback "@google/gemini-cli@latest"')
+    expect(script).toContain('npm_install_with_fallback "@google/gemini-cli@${SETUP_CLIENT_VERSION:-latest}"')
     expect(script).toContain('LAOSHIRENAI_GEMINI_API_KEY')
   })
 
@@ -685,11 +687,11 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('GOOGLE_GEMINI_BASE_URL')
     expect(script).toContain("GOOGLE_GENAI_USE_VERTEXAI = 'false'")
     expect(script).toContain("GEMINI_MODEL = $CatalogGeminiDefaultModel")
-    expect(script).toContain("-NotePropertyName selectedType -NotePropertyValue 'gemini-api-key' -Force")
+    expect(script).toContain("-NotePropertyName selectedType -NotePropertyValue $(if ($null -ne $script:SetupPlan) { 'gateway' } else { 'gemini-api-key' }) -Force")
     expect(script).toContain('thinkingConfig = [pscustomobject]@{ thinkingLevel = $ThinkingLevel }')
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
     expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')")
-    expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
+    expect(script).toContain("Install-NpmPackageWithFallback -PackageName ('@google/gemini-cli@' + $(if ($script:SetupClientVersion) { $script:SetupClientVersion } else { 'latest' }))")
     expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
   })

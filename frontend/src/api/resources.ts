@@ -80,6 +80,31 @@ export interface ClientSetupSelection {
   os: ClientSetupOS
 }
 
+export interface ClientSetupPlan {
+  client_id: string
+  client_version_key: string
+  os: ClientSetupOS
+  target: ClientSetupTarget | ''
+  base_url: string
+  group_ids: number[]
+  models: Array<{ id: string; protocol: ClientSetupProtocol }>
+  default_model: string
+  available: boolean
+  reason?: string
+  fingerprint: string
+}
+
+export async function getClientSetupPlans(apiKeyId: number, os: ClientSetupOS): Promise<ClientSetupPlan[]> {
+  const { data } = await apiClient.get<ClientSetupPlan[]>('/resources/setup-plans', { params: { api_key_id: apiKeyId, os } })
+  return data
+}
+export async function createClientSetupTicketForPlan(apiKeyId: number, plan: ClientSetupPlan): Promise<ClientSetupTicket> {
+  const { data } = await apiClient.post<ClientSetupTicket>('/resources/setup-ticket', {
+    api_key_id: apiKeyId, client_id: plan.client_id, os: plan.os, plan_fingerprint: plan.fingerprint,
+  })
+  return data
+}
+
 export async function getDownloads(tool: DownloadToolID): Promise<DownloadManifest> {
   const { data } = await apiClient.get<DownloadManifest>(`/resources/${tool}`)
   return data
@@ -133,6 +158,8 @@ export async function getVersionStatus(): Promise<DownloadVersionStatus[]> {
 }
 
 export const resourcesAPI = {
+  getClientSetupPlans,
+  createClientSetupTicketForPlan,
   getDownloads,
   createDownloadURL,
   buildResourceDownloadURL,

@@ -26,3 +26,21 @@ Scope: owner-requested concise text configuration guides for every client in the
 - Qoder: inspected the exact release's Custom URL wizard (URL → model name → display name → openai/anthropic style → api_key), conditional on `allow_byok >= 2`. Current isolated `--list-models` is login-gated. BYOK check sends URL/model/credential to Qoder's authenticated service. Docs give the conditional native route without claiming arbitrary-account availability or a direct credential-only client path. No login gate bypass, no real key sent to Qoder, no invented settings.json storage.
 - Neither client is newly production-E2E verified. MiniMax is mock configuration/transport verified on macOS; Qoder is source/help/login-gate verified. Windows/Linux runtime and every model combination remain unverified. Capability matrices and public visibility are unchanged.
 - UI: 11 focused tests, typecheck, targeted ESLint passed; desktop/mobile layouts have no page overflow and retain three sections and zero credential inputs. Screenshots and receipts remain under the local preview directory's `remaining-clients/` and adjacent image files.
+
+## Key-scoped one-click setup implementation (owner request)
+
+User acceptance: after creating a Key and choosing its groups, the existing key-row action opens a client icon picker; selecting client and macOS/Linux/Windows yields one command, installs missing clients, skips matching installed clients, configures and tests. The Key is reused, not rebound, and groups/models are not hard-coded.
+
+Implemented local slice:
+- `ClientSetupModal` reuses BaseDialog and DocsTerminalCommand; all 14 matrix client identities/icons are shown. Non-ready exact-version/OS adapters are explanation-only, never promoted by this UI.
+- Authenticated `GET /resources/setup-plans` derives each plan from fresh Key/payer permissions, ordered group declarations, model protocols and generated client contracts. A new setup-ticket purpose binds the plan fingerprint. Issuance and one-time redemption both re-evaluate authority/catalog; stale plans and expired/disabled/foreign keys fail closed.
+- Installer v0.7.16 consumes the metadata plan, verifies OS and exact client version, re-reads authenticated model discovery before writing, installs missing npm clients at the bound version, and does not auto-update an existing plan client. Existing legacy flows remain separate.
+- Codex catalog is restricted to all planned IDs (missing metadata fails closed); Grok writes per-model protocols into owned `laoshirenai/` aliases and removes retired owned aliases while preserving other models; fixed-slot tools receive a default and their existing tool-specific configuration. Gemini 0.57.0 plan flow uses gateway auth.
+- Automatic checks currently cover installed version, authorization/model discovery and a default-model API reply with terminal text. These are not a real client file-tool continuation loop. Never claim all client runtime flows passed based on these checks.
+
+Not complete / release blockers:
+- Only the four existing ready installer targets (Claude Code, Codex, Grok Build, Gemini CLI) are eligible from the generated matrix; the other ten require dedicated installers, safe credential handling and exact-version/native-OS acceptance. Kimi tutorial success does not promote installer status. Qoder login/Custom URL and MiniMax plaintext storage gates remain.
+- Need native Windows 5.1/7 and Linux fixture CI for this diff, then exact real-client fixtures and any missing model metadata closure before publishing. No live credentials used in local installer tests. No production deployment.
+- macOS/Linux shell tests and Windows fixture tests are isolated, ordinary-user oriented; no personal client config files are modified. The Windows tests exercise Restricted execution policy, safe shim choice, non-ASCII/space paths and idempotency.
+
+Preview: `/client-setup-preview` at the existing loopback Vite server. This is a clearly labelled mock Key/three-group interaction, not production authorization. Its commands are non-executable placeholders; real commands require authenticated backend tickets.

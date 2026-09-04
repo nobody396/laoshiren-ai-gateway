@@ -1,5 +1,7 @@
 ﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$script:SetupPlan = $null
+$script:SetupClientVersion = ''
 
 function Assert-True {
   param(
@@ -25,6 +27,9 @@ $Ast = [System.Management.Automation.Language.Parser]::ParseFile(
 Assert-True ($ParseErrors.Count -eq 0) "install.ps1 contains PowerShell parse errors: $ParseErrors"
 
 $RequiredFunctions = @(
+  'Apply-SetupPlan',
+  'Test-SetupPlanClientVersion',
+  'Get-ClientVersion',
   'Write-Info',
   'Write-WarnMessage',
   'Stop-Script',
@@ -421,6 +426,38 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
   }
   Assert-True $checksumRejected 'Node.js checksum mismatch did not fail closed'
   Assert-True (-not [System.IO.File]::Exists($verifiedDownload)) 'Checksum failure left a partial file behind'
+
+  # New multi-group plan: no real credentials or network are used here.
+  $script:Tools = 'grok'
+  $script:BaseUrl = 'https://api.laoshirenai.com'
+  $script:GrokApiKey = 'fixture-plan-key'
+  $script:CatalogGrokDefaultModel = 'gpt-5.4'
+  $script:GrokDir = Join-Path $FixtureDir 'plan-grok'
+  $script:GrokConfigPath = Join-Path $script:GrokDir 'config.toml'
+  Ensure-Directory $script:GrokDir
+  [IO.File]::WriteAllText($script:GrokConfigPath, "[model.`"user-model`"]`nmodel=`"keep`"`n[model.`"laoshirenai/retired`"]`nmodel=`"retired`"`n")
+  $Plan = [pscustomobject]@{ available = $true; target = 'grok'; os = 'windows'; client_version_key = 'cli:1.0.13'; default_model = 'gpt-5.4'; models = @([pscustomobject]@{ id = 'gpt-5.4'; protocol = 'responses' }, [pscustomobject]@{ id = 'claude-opus-5'; protocol = 'messages' }) }
+  Apply-SetupPlan -Plan $Plan
+  Write-GrokTomlConfig
+  $FirstPlanConfig = [IO.File]::ReadAllText($script:GrokConfigPath)
+  Assert-True ($FirstPlanConfig.Contains('[model."laoshirenai/gpt-5.4"]')) 'plan omitted Responses model'
+  Assert-True ($FirstPlanConfig.Contains('[model."laoshirenai/claude-opus-5"]')) 'plan omitted Messages model'
+  Assert-True ($FirstPlanConfig.Contains('api_backend = "messages"')) 'plan lost per-model protocol'
+  Assert-True ($FirstPlanConfig.Contains('model="keep"')) 'plan overwrote unrelated model'
+  Assert-True (-not $FirstPlanConfig.Contains('retired')) 'plan retained revoked managed model'
+  Write-GrokTomlConfig
+  Assert-True ([IO.File]::ReadAllText($script:GrokConfigPath) -ceq $FirstPlanConfig) 'plan rewrite is not idempotent'
+  $Plan.os = 'macos'
+  $RejectedOS = $false
+  try { Apply-SetupPlan -Plan $Plan } catch { $RejectedOS = $true }
+  Assert-True $RejectedOS 'Windows accepted a different OS plan'
+  $Plan.os = 'windows'
+  $Plan.models[0].id = '$(unsafe)'
+  $RejectedID = $false
+  try { Apply-SetupPlan -Plan $Plan } catch { $RejectedID = $true }
+  Assert-True $RejectedID 'plan accepted an unsafe model ID'
+  $script:SetupPlan = $null
+  $script:SetupClientVersion = ''
 
   $global:LASTEXITCODE = 0
   Write-Host "WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK runtime=$($PSVersionTable.PSVersion) edition=$($PSVersionTable.PSEdition) claude=bare-cmd codex=bare-cmd grok=same-site git=same-site node=sha256 npm_policy=Restricted"

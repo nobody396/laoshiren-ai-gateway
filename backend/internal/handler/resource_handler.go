@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ type ResourceHandler struct {
 }
 
 type clientSetupTicketRequest struct {
+	PlanFingerprint  string `json:"plan_fingerprint"`
 	Target           string `json:"target"`
 	APIKeyID         *int64 `json:"api_key_id"`
 	ClientID         string `json:"client_id"`
@@ -328,6 +330,20 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		ticket *service.ClientSetupTicket
 		err    error
 	)
+	if req.PlanFingerprint != "" {
+		if req.APIKeyID == nil || req.ClientID == "" || req.OS == "" {
+			response.ErrorFrom(c, service.ErrInvalidClientSetupSelection)
+			return
+		}
+		ticket, err = h.setup.IssueTicketForPlan(c.Request.Context(), subject.UserID, *req.APIKeyID, req.ClientID, req.OS, req.PlanFingerprint)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		c.Header("Cache-Control", "private, no-store")
+		response.Success(c, gin.H{"ticket": ticket.Ticket, "target": ticket.Target, "expires_in": ticket.ExpiresIn, "client_id": ticket.ClientID, "client_version_key": ticket.ClientVersionKey, "os": ticket.OS})
+		return
+	}
 	selection, explicit, selectionErr := setupSelectionFromRequest(req)
 	if selectionErr != nil {
 		response.ErrorFrom(c, selectionErr)
@@ -396,6 +412,9 @@ func (h *ResourceHandler) ExchangeSetupTicket(c *gin.Context) {
 		"target":   credential.Target,
 		"api_key":  credential.APIKey,
 		"base_url": credential.BaseURL,
+	}
+	if credential.Plan != nil {
+		payload["plan"] = credential.Plan
 	}
 	if credential.ClientID != "" {
 		payload["client_id"] = credential.ClientID
@@ -649,4 +668,24 @@ func handleCCSwitchPublicDownloadError(c *gin.Context, err error) {
 		return
 	}
 	response.InternalError(c, "读取 CC Switch 安装包失败")
+}
+
+func (h *ResourceHandler) GetSetupPlans(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	id, err := strconv.ParseInt(c.Query("api_key_id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.ErrorFrom(c, service.ErrInvalidClientSetupSelection)
+		return
+	}
+	plans, err := h.setup.SetupPlans(c.Request.Context(), subject.UserID, id, c.Query("os"))
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	c.Header("Cache-Control", "private, no-store")
+	response.Success(c, plans)
 }

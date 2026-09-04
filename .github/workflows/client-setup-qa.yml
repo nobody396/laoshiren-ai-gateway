@@ -1,0 +1,44 @@
+name: Client setup cross-platform QA
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/client-setup-qa.yml'
+      - 'frontend/public/auto-config/**'
+      - 'frontend/scripts/test-windows-auto-config.ps1'
+      - 'frontend/src/components/keys/**'
+      - 'frontend/src/utils/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unix:
+    name: Installer fixtures (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable && corepack prepare pnpm@10.33.0 --activate
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - run: pnpm --dir frontend exec vitest run src/utils/__tests__/clientSetupPlanScripts.spec.ts src/utils/__tests__/clientAutoConfig.spec.ts src/utils/__tests__/clientAutoConfigScripts.spec.ts src/components/keys/__tests__/ClientSetupModal.spec.ts
+  windows:
+    name: Installer fixtures (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: PowerShell 7
+        shell: pwsh
+        run: ./frontend/scripts/test-windows-auto-config.ps1
+      - name: Windows PowerShell 5.1
+        shell: powershell
+        run: ./frontend/scripts/test-windows-auto-config.ps1

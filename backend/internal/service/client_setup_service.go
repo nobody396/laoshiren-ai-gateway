@@ -65,6 +65,7 @@ type ClientSetupTicket struct {
 }
 
 type ClientSetupCredential struct {
+	Plan             *ClientSetupPlan
 	Target           string
 	APIKey           string
 	BaseURL          string
@@ -76,6 +77,7 @@ type ClientSetupCredential struct {
 }
 
 type ClientSetupSelection struct {
+	PlanFingerprint  string
 	ClientID         string
 	ClientVersionKey string
 	Protocol         string
@@ -195,6 +197,10 @@ func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID in
 	}
 	if selection != nil {
 		data.Purpose = clientSetupSelectionTicketPurpose
+		if selection.PlanFingerprint != "" {
+			data.Purpose = clientSetupPlanPurpose
+			data.SetupPlanFingerprint = selection.PlanFingerprint
+		}
 		data.ClientID = selection.ClientID
 		data.ClientVersionKey = selection.ClientVersionKey
 		data.Protocol = selection.Protocol
@@ -246,12 +252,23 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 		return nil, fmt.Errorf("consume client setup ticket: %w", err)
 	}
 	now := time.Now().UTC()
-	if (data.Purpose != clientSetupTicketPurpose && data.Purpose != clientSetupSelectionTicketPurpose) ||
+	if (data.Purpose != clientSetupTicketPurpose && data.Purpose != clientSetupSelectionTicketPurpose && data.Purpose != clientSetupPlanPurpose) ||
 		data.APIKeyID == nil ||
 		data.CreatedAt.IsZero() ||
 		data.CreatedAt.After(now.Add(5*time.Second)) ||
 		now.Sub(data.CreatedAt) > clientSetupTicketTTL {
 		return nil, ErrInvalidClientSetupTicket
+	}
+	if data.Purpose == clientSetupPlanPurpose {
+		plan, err := s.setupPlan(ctx, data.UserID, *data.APIKeyID, data.ClientID, data.OS, data.SetupPlanFingerprint)
+		if err != nil {
+			return nil, ErrInvalidClientSetupTicket
+		}
+		key, err := s.apiKeys.GetByID(ctx, *data.APIKeyID)
+		if err != nil || key == nil || key.UserID != data.UserID || !key.IsActive() || key.IsExpired() || key.IsQuotaExhausted() {
+			return nil, ErrInvalidClientSetupTicket
+		}
+		return &ClientSetupCredential{Target: plan.Target, APIKey: key.Key, BaseURL: plan.BaseURL, ClientID: plan.ClientID, ClientVersionKey: plan.ClientVersionKey, ModelID: plan.DefaultModel, Protocol: plan.Models[0].Protocol, OS: plan.OS, Plan: plan}, nil
 	}
 	apiKey, err := s.apiKeys.GetByID(ctx, *data.APIKeyID)
 	if err != nil {

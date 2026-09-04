@@ -318,16 +318,16 @@
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
               <div
-                v-if="getAutoConfigTargetForKey(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
+                v-if="(row.group_ids?.length || getAutoConfigTargetForKey(row)) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
                 class="flex items-center gap-1 rounded-lg"
                 data-tour="keys-setup-options"
               >
                 <!-- Client Auto Config Button -->
                 <button
-                  v-if="getAutoConfigTargetForKey(row)"
+                  v-if="row.group_ids?.length || getAutoConfigTargetForKey(row)"
                   @click="copyClientAutoConfigCommand(row)"
                   :disabled="configuringKeyId === row.id"
-                  :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
+                  title="选择客户端，一键安装配置"
                   class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-wait disabled:opacity-60 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
                 >
                   <Icon :name="configuringKeyId === row.id ? 'refresh' : 'terminal'" size="sm" :class="configuringKeyId === row.id ? 'animate-spin' : ''" />
@@ -929,13 +929,15 @@
       @cancel="showResetRateLimitDialog = false"
     />
 
+    <ClientSetupModal :show="showClientSetup" :api-key-id="setupKey?.id ?? 0" :key-name="setupKey?.name ?? ''" @close="showClientSetup = false" />
+
     <!-- Use Key Modal -->
     <BaseDialog v-if="selectedKey?.group_ids?.length" :show="showUseKeyModal" title="使用多分组 Key" @close="closeUseKeyModal">
       <div class="space-y-4 text-sm">
         <p>同一把 Key 可用于各客户端，服务域名不变。客户端请求使用什么协议，网关就按该协议和模型名匹配已授权分组。</p>
         <p class="break-all font-mono">{{ displayApiBaseUrl }}</p>
         <p>Claude Code 使用根地址；OpenAI 兼容客户端通常使用带 /v1 的地址；Gemini 使用原生接口。请按客户端要求填写，不代表所有协议可以互换。</p>
-        <p>当前支持 Messages、Responses、Chat Completions 和 Gemini 文本 HTTP。图片、视频、实时连接仍使用单分组 Key。一键安装配置暂不适用于此类 Key。</p>
+        <p>当前支持 Messages、Responses、Chat Completions 和 Gemini 文本 HTTP。图片、视频、实时连接仍使用单分组 Key。点击密钥操作中的「一键配置」，查看各客户端可用的配置计划。</p>
         <button type="button" class="btn btn-primary" @click="clipboardCopy(selectedKey.key, 'Key 已复制')">复制这把 Key</button>
       </div>
     </BaseDialog>
@@ -1196,6 +1198,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import Select from '@/components/common/Select.vue'
 	import SearchInput from '@/components/common/SearchInput.vue'
 	import Icon from '@/components/icons/Icon.vue'
+import ClientSetupModal from '@/components/keys/ClientSetupModal.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
 	import CcsClientIcon from '@/components/keys/CcsClientIcon.vue'
 	import KeyGroupMultiSelect from '@/components/keys/KeyGroupMultiSelect.vue'
@@ -1323,6 +1326,8 @@ const showDeleteDialog = ref(false)
 const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
+const showClientSetup = ref(false)
+const setupKey = ref<ApiKey | null>(null)
 const showCodexSetupChoice = ref(false)
 const pendingAutoConfigRow = ref<ApiKey | null>(null)
 const showCcsClientSelect = ref(false)
@@ -1598,11 +1603,6 @@ const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null =
   return getClientAutoConfigTarget(row.group?.platform)
 }
 
-const getAutoConfigClientName = (row: ApiKey): string => {
-  const target = getAutoConfigTargetForKey(row)
-  return target ? getClientAutoConfigName(target) : ''
-}
-
 const generateAndCopyClientAutoConfigCommand = async (
   row: ApiKey,
   installCodexApp = false,
@@ -1637,20 +1637,9 @@ const generateAndCopyClientAutoConfigCommand = async (
 }
 
 const copyClientAutoConfigCommand = async (row: ApiKey) => {
-  if (row.status !== 'active') {
-    appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
-    return
-  }
-
-  const target = getAutoConfigTargetForKey(row)
-  if (!target || !row.group) return
-  if (target === 'codex') {
-    pendingAutoConfigRow.value = row
-    showCodexSetupChoice.value = true
-    return
-  }
-
-  await generateAndCopyClientAutoConfigCommand(row)
+  if (row.status !== 'active') { appStore.showError(t('keys.keyMustBeActiveForAutoConfig')); return }
+  setupKey.value = row
+  showClientSetup.value = true
 }
 
 const closeCodexSetupChoice = () => {

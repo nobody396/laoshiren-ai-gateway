@@ -163,6 +163,11 @@ func (catalog *GroupModelCatalog) Declaration(ctx context.Context, group *Group)
 		account := Account{Platform: row.Platform, Type: row.Type, Credentials: map[string]any{"model_mapping": row.ModelMapping}}
 		accounts = append(accounts, account)
 		mapping := account.GetModelMapping()
+		// Bedrock retains its built-in fallback mapping even with custom keys;
+		// OAuth short-name aliases are existing selector capabilities too.
+		if account.Platform == PlatformAnthropic && account.Type != AccountTypeAPIKey {
+			wildcard = true
+		}
 		if len(mapping) == 0 {
 			candidates = append(candidates, "*")
 			wildcard = true
@@ -178,6 +183,9 @@ func (catalog *GroupModelCatalog) Declaration(ctx context.Context, group *Group)
 			candidates = append(candidates, openai.DefaultModelIDs()...)
 		case PlatformAnthropic:
 			candidates = append(candidates, claude.DefaultModelIDs()...)
+			for alias := range claude.ModelIDOverrides {
+				candidates = append(candidates, alias)
+			}
 		case PlatformGemini:
 			for _, m := range gemini.DefaultModels() {
 				candidates = append(candidates, strings.TrimPrefix(m.Name, "models/"))
@@ -211,7 +219,11 @@ func (catalog *GroupModelCatalog) Declaration(ctx context.Context, group *Group)
 		for _, account := range accounts {
 			// Match the same requested name the actual scheduler tests, not a channel
 			// alias target. Channel-only aliases do not add account capabilities.
-			if !account.IsModelSupported(model) {
+			supported := account.IsModelSupported(model)
+			if account.Platform != PlatformOpenAI && account.Platform != PlatformGrok {
+				supported = accountSupportsDeclaredModel(&account, model)
+			}
+			if !supported {
 				continue
 			}
 			if lookup == nil || !channel.RestrictModels {

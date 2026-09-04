@@ -274,3 +274,35 @@ func TestMultiGroupRealCatalogEmptyMappingPreservesBillingPriority(t *testing.T)
 	require.Equal(t, 200, w.Code)
 	require.NotContains(t, w.Body.String(), "future-model")
 }
+
+type legacyAnthropicInventory struct{ kind string }
+
+func (i *legacyAnthropicInventory) ListGroupModelInventory(_ context.Context, id int64) ([]service.AccountModelInventory, error) {
+	kind := i.kind
+	mapping := map[string]any{"claude-haiku-4-5-20251001": "claude-haiku-4-5-20251001"}
+	if kind == service.AccountTypeBedrock {
+		mapping = map[string]any{"custom": "claude-opus-4-6"}
+	}
+	if id == 6 {
+		kind = service.AccountTypeAPIKey
+		mapping = map[string]any{"claude-haiku-4-5": "claude-haiku-4-5"}
+	}
+	return []service.AccountModelInventory{{Platform: service.PlatformAnthropic, Type: kind, ModelMapping: mapping}}, nil
+}
+func TestMultiGroupLegacyAnthropicKindsCannotSkipPriorityPayer(t *testing.T) {
+	for _, kind := range []string{service.AccountTypeOAuth, service.AccountTypeSetupToken, service.AccountTypeBedrock} {
+		t.Run(kind, func(t *testing.T) {
+			f := &multiGroupsFixture{groups: map[int64]*service.Group{5: {ID: 5, Platform: service.PlatformAnthropic}, 6: {ID: 6, Platform: service.PlatformAnthropic}}, denied: map[int64]bool{5: true}}
+			key := &service.APIKey{GroupIDs: []int64{5, 6}, User: &service.User{ID: 2, Balance: 100}}
+			catalog := service.NewGroupModelCatalog(service.NewChannelService(&legacyCatalogChannels{}, nil), &legacyAnthropicInventory{kind: kind})
+			r := gin.New()
+			r.Use(func(c *gin.Context) { c.Set(string(ContextKeyAPIKey), key) })
+			r.Use(MultiGroupRouting(f, f, nil, catalog.Declaration, &config.Config{RunMode: config.RunModeSimple}))
+			r.Any("/*path", func(c *gin.Context) { t.Fatal("must not fall through to wallet") })
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/messages", strings.NewReader(`{"model":"claude-haiku-4-5"}`)))
+			require.Equal(t, 403, w.Code)
+			require.Equal(t, []int64{5}, f.checks)
+		})
+	}
+}

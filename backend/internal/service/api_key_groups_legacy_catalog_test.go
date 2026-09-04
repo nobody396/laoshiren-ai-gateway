@@ -182,3 +182,26 @@ func TestMultiGroupMatchesMessagesDispatchWithoutChangingResponses(t *testing.T)
 		require.False(t, declaration.MatchesProtocol(group, "responses", model))
 	}
 }
+
+func TestMultiGroupCatalogPreservesLegacyAnthropicAccountKinds(t *testing.T) {
+	for _, kind := range []string{AccountTypeOAuth, AccountTypeSetupToken, AccountTypeBedrock} {
+		t.Run(kind, func(t *testing.T) {
+			channels := &ChannelService{}
+			cache := newEmptyChannelCache()
+			cache.loadedAt = time.Now()
+			channels.cache.Store(cache)
+			mapping := map[string]any{"claude-haiku-4-5-20251001": "claude-haiku-4-5-20251001"}
+			if kind == AccountTypeBedrock {
+				mapping = map[string]any{"custom": "claude-opus-4-6"}
+			}
+			account := Account{Platform: PlatformAnthropic, Type: kind, Credentials: map[string]any{"model_mapping": mapping}}
+			accounts := &multiGroupInventoryStub{accounts: []Account{account}}
+			group := &Group{ID: 5, Platform: PlatformAnthropic}
+			declaration, err := (&GatewayService{channelService: channels, accountRepo: accounts}).MultiGroupCatalog(context.Background(), group)
+			require.NoError(t, err)
+			require.True(t, (&GatewayService{}).isModelSupportedByAccount(&account, "claude-haiku-4-5"))
+			require.True(t, declaration.MatchesProtocol(group, "messages", "claude-haiku-4-5"))
+			require.Contains(t, declaration.Models, "claude-haiku-4-5")
+		})
+	}
+}

@@ -4,12 +4,9 @@ on:
 permissions:
   contents: read
 jobs:
-  windows:
+  windows-pwsh:
     runs-on: windows-latest
     timeout-minutes: 10
-    strategy:
-      matrix:
-        shell: [pwsh, powershell]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
@@ -19,7 +16,34 @@ jobs:
         shell: pwsh
         run: npm.cmd install --prefix tools/gemini-repair-qa/runtime --ignore-scripts --no-audit --no-fund @google/gemini-cli@0.58.0
       - name: Test exact customer command under Restricted policy
-        shell: ${{ matrix.shell }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-ExecutionPolicy -Scope Process Restricted -Force
+          $root = Join-Path $env:RUNNER_TEMP 'gemini repair spaces'
+          $env:GEMINI_CLI_HOME = $root
+          $command = Get-Content tools/gemini-repair-qa/customer-command.ps1 -Raw
+          Invoke-Expression $command
+          if (!(Test-Path (Join-Path $env:GEMINI_CLI_HOME '.gemini/settings.json'))) { throw 'missing config' }
+          Invoke-Expression $command
+          & ./tools/gemini-repair-qa/runtime/node_modules/.bin/gemini.cmd --version
+          if ($LASTEXITCODE -ne 0) { throw 'cmd shim failed' }
+          Remove-Item Env:GEMINI_CLI_HOME
+          node tools/gemini-repair-qa/test.mjs tools/gemini-repair-qa/runtime/node_modules/@google/gemini-cli/bundle/gemini.js
+          if ($LASTEXITCODE -ne 0) { throw 'acceptance failed' }
+  windows-powershell:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install exact client in fixture only
+        shell: pwsh
+        run: npm.cmd install --prefix tools/gemini-repair-qa/runtime --ignore-scripts --no-audit --no-fund @google/gemini-cli@0.58.0
+      - name: Test exact customer command under Restricted policy
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           Set-ExecutionPolicy -Scope Process Restricted -Force

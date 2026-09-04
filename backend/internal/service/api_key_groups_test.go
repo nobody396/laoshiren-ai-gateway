@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/stretchr/testify/require"
 	"testing"
-	"time"
 )
 
 func TestAPIKeyGroupIDsExplicitSnapshot(t *testing.T) {
@@ -128,10 +127,16 @@ func TestMultiGroupCreateUpdateAndRevocationUsePayerAuthorization(t *testing.T) 
 
 func TestMultiGroupCatalogUpdatesWithoutReissuingKey(t *testing.T) {
 	channelService := &ChannelService{}
-	gateway := &GatewayService{channelService: channelService}
+	accounts := &multiGroupInventoryStub{}
+	gateway := &GatewayService{channelService: channelService, accountRepo: accounts}
 	group := &Group{ID: 6, Platform: PlatformOpenAI, Status: StatusActive}
 	key := &APIKey{ID: 10, GroupIDs: []int64{6}}
 	update := func(status string, models []string) {
+		mapping := map[string]any{}
+		for _, model := range models {
+			mapping[model] = model
+		}
+		accounts.accounts = []Account{{Platform: PlatformOpenAI, Credentials: map[string]any{"model_mapping": mapping}}}
 		channelService.cache.Store(populateChannelCache([]Channel{{ID: 1, Status: status, GroupIDs: []int64{6}, ModelPricing: []ChannelModelPricing{{Platform: PlatformOpenAI, Models: models}}}}, map[int64]string{6: PlatformOpenAI}))
 	}
 	update(StatusActive, []string{"model-old"})
@@ -143,17 +148,17 @@ func TestMultiGroupCatalogUpdatesWithoutReissuingKey(t *testing.T) {
 	require.NoError(t, err)
 	require.NotContains(t, models, "model-old")
 	require.Contains(t, models, "model-new")
-	require.True(t, MultiGroupModelMatches(models, "future-family-unreleased-name"))
-	require.False(t, MultiGroupModelMatches(models, "another-family-model"))
+	declaration, err := gateway.MultiGroupCatalog(context.Background(), group)
+	require.NoError(t, err)
+	require.True(t, declaration.Matches(group, "future-family-unreleased-name"))
+	require.False(t, declaration.Matches(group, "another-family-model"))
 	require.Equal(t, []int64{6}, key.GroupIDs)
 	update("disabled", []string{"model-new"})
 	_, err = gateway.MultiGroupModels(context.Background(), group)
 	require.Error(t, err, "disabled catalog must not look like no matching model and trigger another funding group")
 	channelService.cache.Store(newEmptyChannelCache())
-	// Missing/error-cached configuration is also fail closed.
-	empty := newEmptyChannelCache()
-	empty.loadedAt = time.Now()
-	channelService.cache.Store(empty)
+	// A cached database failure is not the same as a valid default-price group.
+	channelService.storeErrorCache()
 	_, err = gateway.MultiGroupModels(context.Background(), group)
 	require.Error(t, err)
 }

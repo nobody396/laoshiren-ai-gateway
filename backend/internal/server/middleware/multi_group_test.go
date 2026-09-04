@@ -31,11 +31,14 @@ func (f *multiGroupsFixture) AuthorizeMultiGroupTarget(_ context.Context, k *ser
 	}
 	return k.User, nil
 }
-func multiRouter(f *multiGroupsFixture, key *service.APIKey, catalog MultiGroupModelCatalog) *gin.Engine {
+func multiRouter(f *multiGroupsFixture, key *service.APIKey, catalog func(context.Context, *service.Group) ([]string, error)) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.Use(func(c *gin.Context) { c.Set(string(ContextKeyAPIKey), key) })
-	r.Use(MultiGroupRouting(f, f, nil, catalog, &config.Config{RunMode: config.RunModeSimple}))
+	r.Use(MultiGroupRouting(f, f, nil, func(ctx context.Context, g *service.Group) (*service.GroupModelDeclaration, error) {
+		names, err := catalog(ctx, g)
+		return &service.GroupModelDeclaration{Models: names}, err
+	}, &config.Config{RunMode: config.RunModeSimple}))
 	r.Any("/*path", func(c *gin.Context) {
 		k, _ := GetAPIKeyFromContext(c)
 		if k.GroupID != nil {
@@ -126,7 +129,9 @@ func TestMultiGroupSubscriptionFailureDoesNotChargeWalletGroup(t *testing.T) {
 	subscriptions := service.NewSubscriptionService(nil, subRepo, nil, nil, cfg)
 	r := gin.New()
 	r.Use(func(c *gin.Context) { c.Set(string(ContextKeyAPIKey), key) })
-	r.Use(MultiGroupRouting(f, f, subscriptions, func(context.Context, *service.Group) ([]string, error) { return []string{"gpt-test"}, nil }, cfg))
+	r.Use(MultiGroupRouting(f, f, subscriptions, func(context.Context, *service.Group) (*service.GroupModelDeclaration, error) {
+		return &service.GroupModelDeclaration{Models: []string{"gpt-test"}}, nil
+	}, cfg))
 	r.POST("/v1/responses", func(c *gin.Context) { t.Fatal("must not execute wallet route") })
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"gpt-test"}`)))
@@ -225,7 +230,9 @@ func TestMultiGroupWalletRouteDoesNotExposeTypedNilSubscription(t *testing.T) {
 	key := &service.APIKey{GroupIDs: []int64{6}, User: &service.User{ID: 2, Balance: 10}}
 	r := gin.New()
 	r.Use(func(c *gin.Context) { c.Set(string(ContextKeyAPIKey), key) })
-	r.Use(MultiGroupRouting(f, f, nil, func(context.Context, *service.Group) ([]string, error) { return []string{"model-test"}, nil }, &config.Config{RunMode: config.RunModeStandard}))
+	r.Use(MultiGroupRouting(f, f, nil, func(context.Context, *service.Group) (*service.GroupModelDeclaration, error) {
+		return &service.GroupModelDeclaration{Models: []string{"model-test"}}, nil
+	}, &config.Config{RunMode: config.RunModeStandard}))
 	r.POST("/v1/responses", func(c *gin.Context) {
 		subscription, ok := GetSubscriptionFromContext(c)
 		require.False(t, ok)
@@ -235,4 +242,35 @@ func TestMultiGroupWalletRouteDoesNotExposeTypedNilSubscription(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"model-test"}`)))
 	require.Equal(t, 204, w.Code)
+}
+
+type legacyCatalogChannels struct{ service.ChannelRepository }
+
+func (*legacyCatalogChannels) ListAll(context.Context) ([]service.Channel, error) { return nil, nil }
+
+type legacyCatalogInventory struct{}
+
+func (*legacyCatalogInventory) ListGroupModelInventory(_ context.Context, id int64) ([]service.AccountModelInventory, error) {
+	mapping := map[string]any{}
+	if id == 6 {
+		mapping["future-model"] = "future-model"
+	}
+	return []service.AccountModelInventory{{Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey, ModelMapping: mapping}}, nil
+}
+func TestMultiGroupRealCatalogEmptyMappingPreservesBillingPriority(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{5: {ID: 5, Platform: service.PlatformOpenAI}, 6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{5: true}}
+	key := &service.APIKey{GroupIDs: []int64{5, 6}, User: &service.User{ID: 2, Balance: 100}}
+	catalog := service.NewGroupModelCatalog(service.NewChannelService(&legacyCatalogChannels{}, nil), &legacyCatalogInventory{})
+	r := gin.New()
+	r.Use(func(c *gin.Context) { c.Set(string(ContextKeyAPIKey), key) })
+	r.Use(MultiGroupRouting(f, f, nil, catalog.Declaration, &config.Config{RunMode: config.RunModeSimple}))
+	r.Any("/*path", func(c *gin.Context) { t.Fatal("must not run wallet route") })
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"future-model"}`)))
+	require.Equal(t, 403, w.Code)
+	require.Equal(t, []int64{5}, f.checks)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("GET", "/v1/models", nil))
+	require.Equal(t, 200, w.Code)
+	require.NotContains(t, w.Body.String(), "future-model")
 }

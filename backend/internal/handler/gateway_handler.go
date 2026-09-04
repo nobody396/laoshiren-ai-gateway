@@ -1990,6 +1990,6 @@ func (h *GatewayHandler) getUserMsgQueueMode(account *service.Account, parsed *s
 }
 
 // MultiGroupModels exposes the declared catalog without exposing provider credentials.
-func (h *GatewayHandler) MultiGroupModels(ctx context.Context, group *service.Group) ([]string, error) {
-	return h.gatewayService.MultiGroupModels(ctx, group)
+func (h *GatewayHandler) MultiGroupModels(ctx context.Context, group *service.Group) (*service.GroupModelDeclaration, error) {
+	return h.gatewayService.MultiGroupCatalog(ctx, group)
 }

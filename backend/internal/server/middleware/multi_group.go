@@ -19,10 +19,11 @@ import (
 type MultiGroupAuthorizer interface {
 	AuthorizeMultiGroupTarget(context.Context, *service.APIKey, *service.Group) (*service.User, error)
 }
-type MultiGroupModelCatalog func(context.Context, *service.Group) ([]string, error)
+type MultiGroupModelCatalog func(context.Context, *service.Group) (*service.GroupModelDeclaration, error)
 
 type multiGroupDeclaration struct {
-	patterns   []string
+	group      *service.Group
+	catalog    *service.GroupModelDeclaration
 	authorized bool
 }
 
@@ -91,11 +92,11 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				continue
 			}
 			models, catalogErr := catalog(c.Request.Context(), group)
-			if catalogErr != nil {
+			if catalogErr != nil || models == nil {
 				fail(503, "Model catalog is temporarily unavailable")
 				return
 			}
-			if !listing && !service.MultiGroupModelMatches(models, model) {
+			if !listing && !models.Matches(group, model) {
 				continue
 			}
 			payer, authErr := access.AuthorizeMultiGroupTarget(c.Request.Context(), key, group)
@@ -110,11 +111,11 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				}
 				for _, p := range protocols {
 					if service.MultiGroupProtocolSupported(group, p) {
-						priorDeclarations[p] = append(priorDeclarations[p], multiGroupDeclaration{patterns: models, authorized: authErr == nil})
+						priorDeclarations[p] = append(priorDeclarations[p], multiGroupDeclaration{group: group, catalog: models, authorized: authErr == nil})
 					}
 				}
-				for _, candidate := range models {
-					if !strings.Contains(candidate, "*") {
+				for _, candidate := range models.Models {
+					if !strings.Contains(candidate, "*") && !service.IsInternalOnlyModel(candidate) && !strings.EqualFold(candidate, service.OpenAIFixedImageRendererModel) {
 						discovered = append(discovered, candidate)
 					}
 				}
@@ -178,7 +179,7 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 				authorized := false
 				for _, declarations := range priorDeclarations {
 					for _, declaration := range declarations {
-						if service.MultiGroupModelMatches(declaration.patterns, name) {
+						if declaration.catalog.Matches(declaration.group, name) {
 							authorized = authorized || declaration.authorized
 							break
 						}

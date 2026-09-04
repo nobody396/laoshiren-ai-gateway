@@ -68,16 +68,6 @@
         >
           <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
         </button>
-        <button
-          v-if="hasOpenAIGroup"
-          @click="copySaveOfficialProviderCommand"
-          data-tour="keys-save-official-provider"
-          class="btn btn-secondary"
-          :title="t('keys.saveOfficialProviderHint')"
-        >
-          <Icon name="terminal" size="md" class="mr-2" />
-          {{ t('keys.saveOfficialProvider') }}
-        </button>
         <button @click="showCreateModal = true" class="btn btn-primary" data-tour="keys-create-btn">
           <Icon name="plus" size="md" class="mr-2" />
           {{ t('keys.createKey') }}
@@ -1351,7 +1341,6 @@ let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
 let ccsLaunchObserved = false
 
 const groupCacheHitRateEnabled = computed(() => publicSettings.value?.group_cache_hit_rate_enabled === true)
-const hasOpenAIGroup = computed(() => groups.value.some((group) => group.platform === 'openai'))
 const displayApiBaseUrl = computed(() => {
   const configuredBaseUrl = publicSettings.value?.api_base_url?.trim()
   const fallbackBaseUrl = typeof window !== 'undefined' ? window.location.origin : ''
@@ -1603,14 +1592,6 @@ const copyApiBaseUrl = async () => {
       copiedBaseUrl.value = false
     }, 1200)
   }
-}
-
-const copySaveOfficialProviderCommand = async () => {
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows')
-  const command = isWindows
-    ? "$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1?v=1.0.0 | iex"
-    : `curl -fsSL 'https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0' | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash`
-  await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 
 const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null => {

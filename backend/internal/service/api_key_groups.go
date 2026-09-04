@@ -6,7 +6,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/claude"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/gemini"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
 )
 
 const MaxAPIKeyGroups = 100
@@ -69,46 +72,155 @@ func (s *APIKeyService) AuthorizeMultiGroupTarget(ctx context.Context, key *APIK
 	return user, nil
 }
 
-// MultiGroupModels uses declared rate cards, not transient account health. A
-// failing first route must not silently move a request to a differently-priced
-// group. Groups without a declared model catalog are deliberately not guessed.
-func (s *GatewayService) MultiGroupModels(ctx context.Context, group *Group) ([]string, error) {
-	if s.channelService == nil || group == nil {
-		return nil, infraerrors.ServiceUnavailable("MULTI_GROUP_CATALOG_UNAVAILABLE", "Multi-group model catalog is unavailable")
+// GroupModelDeclaration keeps discovery candidates and exact request admission
+// in one immutable snapshot. Prefix arrays alone cannot represent mapped-price
+// exceptions (e.g. family-* allowed but family-private denied).
+type GroupModelDeclaration struct {
+	Models  []string
+	matches func(string) bool
+}
+
+func (d *GroupModelDeclaration) Matches(group *Group, model string) bool {
+	if d == nil || group == nil || IsDisabledPublicModelForGroup(model, group.ID) {
+		return false
 	}
-	cache, err := s.channelService.loadCache(ctx)
+	if d.matches != nil {
+		return d.matches(model)
+	}
+	return MultiGroupRequestModelMatches(group, d.Models, model)
+}
+
+func (s *GatewayService) MultiGroupCatalog(ctx context.Context, group *Group) (*GroupModelDeclaration, error) {
+	reader, _ := s.accountRepo.(GroupModelInventoryReader)
+	return NewGroupModelCatalog(s.channelService, reader).Declaration(ctx, group)
+}
+
+func (s *GatewayService) MultiGroupModels(ctx context.Context, group *Group) ([]string, error) {
+	d, err := s.MultiGroupCatalog(ctx, group)
 	if err != nil {
 		return nil, err
 	}
-	channel := cache.channelByGroupID[group.ID]
-	if channel == nil || !channel.IsActive() {
-		// A missing/disabled catalog is unknown, not proof the first group does
-		// not serve this model. Never skip it and silently switch funding sources.
-		return nil, infraerrors.ServiceUnavailable("MULTI_GROUP_CATALOG_UNAVAILABLE", "An authorized group has no active declared model catalog")
+	return d.Models, nil
+}
+
+type GroupModelCatalog struct {
+	channelService *ChannelService
+	reader         GroupModelInventoryReader
+}
+
+func NewGroupModelCatalog(channels *ChannelService, reader GroupModelInventoryReader) *GroupModelCatalog {
+	return &GroupModelCatalog{channelService: channels, reader: reader}
+}
+func (catalog *GroupModelCatalog) Models(ctx context.Context, group *Group) ([]string, error) {
+	d, err := catalog.Declaration(ctx, group)
+	if err != nil {
+		return nil, err
 	}
-	var models []string
-	for _, pricing := range channel.ModelPricing {
-		if !slices.Contains(matchingPlatforms(group.Platform), pricing.Platform) {
+	return d.Models, nil
+}
+
+func (catalog *GroupModelCatalog) Declaration(ctx context.Context, group *Group) (*GroupModelDeclaration, error) {
+	unavailable := func() error {
+		return infraerrors.ServiceUnavailable("MULTI_GROUP_CATALOG_UNAVAILABLE", "Multi-group model catalog is unavailable")
+	}
+	if group == nil || catalog.channelService == nil || catalog.reader == nil {
+		return nil, unavailable()
+	}
+	cache, err := catalog.channelService.loadCache(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if cache.failed {
+		return nil, unavailable()
+	}
+	channel := cache.channelByGroupID[group.ID]
+	if channel != nil && !channel.IsActive() {
+		return nil, unavailable()
+	}
+	inventory, err := catalog.reader.ListGroupModelInventory(ctx, group.ID)
+	if err != nil {
+		return nil, err
+	}
+	var accounts []Account
+	var candidates []string
+	wildcard := false
+	for _, row := range inventory {
+		if row.Platform != group.Platform {
 			continue
 		}
-		for _, model := range pricing.Models {
-			if model != "" {
-				models = append(models, model)
+		account := Account{Platform: row.Platform, Type: row.Type, Credentials: map[string]any{"model_mapping": row.ModelMapping}}
+		accounts = append(accounts, account)
+		mapping := account.GetModelMapping()
+		if len(mapping) == 0 {
+			candidates = append(candidates, "*")
+			wildcard = true
+		}
+		for name := range mapping {
+			candidates = append(candidates, name)
+			wildcard = wildcard || strings.Contains(name, "*")
+		}
+	}
+	if wildcard {
+		switch group.Platform {
+		case PlatformOpenAI:
+			candidates = append(candidates, openai.DefaultModelIDs()...)
+		case PlatformAnthropic:
+			candidates = append(candidates, claude.DefaultModelIDs()...)
+		case PlatformGemini:
+			for _, m := range gemini.DefaultModels() {
+				candidates = append(candidates, strings.TrimPrefix(m.Name, "models/"))
 			}
 		}
 	}
-	// Keep wildcard declarations for request admission; expand only discovery
-	// names from current account mappings, never from a hard-coded model list.
-	if slices.ContainsFunc(models, func(m string) bool { return strings.HasSuffix(m, "*") }) && s.accountRepo != nil {
-		declared := append([]string(nil), models...)
-		for _, model := range s.GetAvailableModels(ctx, &group.ID, group.Platform) {
-			if MultiGroupModelMatches(declared, model) {
-				models = append(models, model)
+	var lookup *channelLookup
+	if channel != nil {
+		lookup = &channelLookup{cache: cache, channel: channel, platform: group.Platform}
+		for name := range channel.ModelMapping[group.Platform] {
+			candidates = append(candidates, name)
+		}
+		for _, price := range channel.ModelPricing {
+			if price.Platform == group.Platform {
+				candidates = append(candidates, price.Models...)
 			}
 		}
 	}
-	slices.Sort(models)
-	return slices.Compact(models), nil
+	d := &GroupModelDeclaration{}
+	d.matches = func(model string) bool {
+		if IsDisabledPublicModelForGroup(model, group.ID) {
+			return false
+		}
+		for _, account := range accounts {
+			// Match the same requested name the actual scheduler tests, not a channel
+			// alias target. Channel-only aliases do not add account capabilities.
+			if !account.IsModelSupported(model) {
+				continue
+			}
+			if lookup == nil || !channel.RestrictModels {
+				return true
+			}
+			mapped := resolveMapping(lookup, group.ID, model)
+			billingModel := billingModelForRestriction(mapped.BillingModelSource, model, mapped.MappedModel)
+			if billingModel == "" {
+				billingModel = account.GetMappedModel(model)
+				if account.Platform == PlatformOpenAI {
+					billingModel = resolveOpenAIAccountUpstreamModelForRequest(&account, model, false)
+				}
+			}
+			if !checkRestricted(lookup, group.ID, billingModel) {
+				return true
+			}
+		}
+		return false
+	}
+	slices.Sort(candidates)
+	for _, name := range slices.Compact(candidates) {
+		// Only concrete, currently admitted candidates are exposed. Wildcard
+		// admission remains in the predicate, including exact exclusion holes.
+		if !strings.Contains(name, "*") && d.Matches(group, name) {
+			d.Models = append(d.Models, name)
+		}
+	}
+	return d, nil
 }
 
 // MultiGroupProtocolSupported preserves existing explicit protocol admission;
@@ -141,6 +253,26 @@ func MultiGroupModelMatches(patterns []string, model string) bool {
 			return true
 		}
 		if strings.HasSuffix(pattern, "*") && strings.HasPrefix(strings.ToLower(model), strings.ToLower(strings.TrimSuffix(pattern, "*"))) {
+			return true
+		}
+	}
+	return false
+}
+
+// MultiGroupRequestModelMatches reuses existing provider alias normalization;
+// it does not invent a new model or protocol bridge.
+func MultiGroupRequestModelMatches(group *Group, patterns []string, model string) bool {
+	if group == nil || IsDisabledPublicModelForGroup(model, group.ID) {
+		return false
+	}
+	candidates := modelLookupCandidatesForMapping(group.Platform, strings.ToLower(model))
+	if group.Platform == PlatformOpenAI {
+		if normalized, ok := normalizeKnownCodexModel(model); ok {
+			candidates = append(candidates, normalized)
+		}
+	}
+	for _, candidate := range candidates {
+		if MultiGroupModelMatches(patterns, candidate) {
 			return true
 		}
 	}

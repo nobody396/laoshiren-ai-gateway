@@ -5,94 +5,38 @@
       "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API",
       "owner": "nobody396",
       "kind": "canonical",
-      "allowed_actions": ["develop", "test", "release"]
+      "allowed_actions": [
+        "develop",
+        "test",
+        "release"
+      ]
     },
     {
       "path": "/Users/fujunhao/laoshirenai/local/release-worktree",
       "owner": "production-release-controller",
       "kind": "release-only",
-      "allowed_actions": ["release"],
+      "allowed_actions": [
+        "release"
+      ],
       "ttl": null
     },
     {
       "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API-monthly-only",
       "owner": "monthly-card-automation",
       "kind": "report-only",
-      "allowed_actions": ["report"],
+      "allowed_actions": [
+        "report"
+      ],
       "ttl": null
     },
     {
       "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API-seo-bot",
       "owner": "seo-geo-automation",
       "kind": "report-only",
-      "allowed_actions": ["report"],
-      "ttl": null
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/fix-public-compensation-dynamic-stats",
-      "owner": "codex-public-compensation-fix",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-03T00:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-affiliate-wallet-monthly-purchase-20260831",
-      "owner": "codex-affiliate-wallet-monthly-purchase",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-03T00:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-monthly-wallet-midnight-20260831",
-      "owner": "codex-monthly-wallet-midnight",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-02T12:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/fix-affiliate-purchase-refund-20260901",
-      "owner": "codex-affiliate-purchase-refund",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-03T12:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/fix-error-contract-request-id-20260901",
-      "owner": "codex-customer-error-contract",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-03T12:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-ops-alert-caller-details-20260901",
-      "owner": "codex-ops-alert-caller-details",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-03T12:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/fix-session-policy-immediate-failover-20260901",
-      "owner": "codex-session-policy-immediate-failover",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-03T12:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-gemini-3-8-flash-20260903",
-      "owner": "codex-gemini38-contract-gates",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-09-07T23:59:59+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/local/worktrees/feat-multi-group-api-keys-20260904",
-      "owner": "codex-multi-group-api-keys",
-      "kind": "temporary",
       "allowed_actions": [
-        "develop",
-        "test"
+        "report"
       ],
-      "ttl": "2026-09-11T23:59:59+08:00"
+      "ttl": null
     }
   ]
 }

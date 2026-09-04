@@ -55,7 +55,7 @@
           <div class="breadcrumb"><button @click="select('start')">快速开始</button><span>/</span><span>{{ selected.client.name }}</span></div>
           <div class="client-title"><img :src="selected.client.icon" alt="" @error="hideIcon" /><div><div class="eyebrow">CLIENT SETUP</div><h1>{{ selected.client.name }}</h1></div></div>
           <p class="client-description">{{ guide.scope }}</p>
-          <div class="reference-meta"><span>本文参考 {{ referenceVersionLabel }}</span><span>{{ modeLabel }}</span><span>初稿 · 待按实际版本验收</span></div>
+          <div class="reference-meta"><span>本文参考 {{ referenceVersionLabel }}</span><span>{{ modeLabel }}</span><span>{{ guide.verification?.[os] ?? '初稿 · 待按实际版本验收' }}</span></div>
           <div class="os-switch" role="group" aria-label="文档操作系统">
             <button v-for="item in operatingSystems" :key="item.id" type="button" :aria-pressed="os === item.id" :class="{ selected: os === item.id }" @click="changeOS(item.id)">{{ item.label }}</button>
           </div>
@@ -65,7 +65,7 @@
             <section id="step-key" class="guide-step">
               <div class="section-title"><span>01</span><h2>准备 Key 和模型 ID</h2></div>
               <p>在 <a href="https://laoshirenai.com/keys" target="_blank" rel="noreferrer">API 密钥页面</a>创建 Key，确认勾选了目标模型所在分组。</p>
-              <template v-if="guide.mode === 'file'">
+              <template v-if="usesTerminalCredentials">
                 <p>在你准备启动工具的终端执行下面这行，再粘贴 Key。输入不显示，Key 只保留在这个终端会话里。</p>
                 <DocsTerminalCommand class="guide-terminal credential-window" :label="`${shellName} · 设置本次会话的 Key`" :command="credentialCommand" />
                 <details class="more-detail"><summary>不知道模型 ID？读取这把 Key 的模型列表</summary><p>执行后复制返回的 <code>id</code>，不是模型的展示名称。列表反映 Key 授权，不代表 {{ selected.client.name }} 支持列表里的所有模型。</p><DocsTerminalCommand class="guide-terminal" :label="`${shellName} · 读取模型 ID`" :command="modelsCommand(commandOS)" /></details>
@@ -74,22 +74,22 @@
               <div class="inline-note">下文的 <code>YOUR_MODEL_ID</code> 是占位符，不是模型名。请将文件和启动命令中的占位符一起替换。</div>
             </section>
             <section id="step-config" class="guide-step">
-              <div class="section-title"><span>02</span><h2>{{ guide.mode === 'native' ? '在工具自己的设置里填写' : guide.mode === 'pending' ? '先看当前接入限制' : '修改这个配置文件' }}</h2></div>
+              <div class="section-title"><span>02</span><h2>{{ guide.mode === 'native' ? '在工具自己的设置里填写' : guide.mode === 'pending' ? '先看当前接入限制' : guide.mode === 'environment' ? '在当前终端设置地址和模型' : '修改这个配置文件' }}</h2></div>
               <div class="connection-facts">
                 <div><span>Base URL</span><code>{{ guide.baseUrl }}</code></div>
                 <div><span>本篇接口</span><strong>{{ guide.protocol }}</strong></div>
-                <div><span>{{ guide.mode === 'native' ? '配置保存位置' : '文件位置' }}</span><div><code v-for="file in files" :key="file">{{ file }}</code><span v-if="!files.length">不提供手动编辑路径</span></div></div>
+                <div><span>{{ guide.mode === 'native' ? '配置保存位置' : guide.mode === 'environment' ? '原配置保留' : '文件位置' }}</span><div><code v-for="file in files" :key="file">{{ file }}</code><span v-if="!files.length">不提供手动编辑路径</span></div></div>
               </div>
               <div v-if="guide.mode === 'pending'" class="reading-note warning"><strong>这篇配置模板还在核对</strong><p>入口保留，但不会用猜测的路径和命令充当完成的教程。请先选择已有配置示例的工具。</p></div>
               <ol class="instruction-list"><li v-for="line in guide.instructions" :key="line">{{ line }}</li></ol>
-              <p v-if="guide.blocks.length" class="secondary">文件不存在时先创建对应文件夹。已有文件请先备份，只合并下面的字段，不要覆盖其他供应商、MCP 或权限设置。</p>
-              <DocsTerminalCommand v-for="block in guide.blocks" :key="block.label" class="guide-terminal config-example" :label="block.label" :command="block.candidate ? '' : block.content" :display-command="block.content" />
+              <p v-if="guide.mode === 'file' && visibleBlocks.length" class="secondary">文件不存在时先创建对应文件夹。已有文件请先备份，只合并下面的字段，不要覆盖其他供应商、MCP 或权限设置。</p>
+              <DocsTerminalCommand v-for="block in visibleBlocks" :key="block.label" class="guide-terminal config-example" :label="block.label" :command="block.candidate ? '' : block.content" :display-command="block.content" />
               <details class="more-detail" open><summary>这几个地方别填错</summary><ul><li v-for="note in guide.notes" :key="note">{{ note }}</li></ul></details>
             </section>
             <section id="step-verify" class="guide-step">
               <div class="section-title"><span>03</span><h2>启动并确认能用</h2></div>
               <template v-if="guide.mode !== 'pending'">
-                <p v-if="guide.launch">保存后，从刚才设置 Key 的同一个终端启动。先确认版本，再开始新会话。</p>
+                <p v-if="guide.launch">配置完成后，从刚才设置 Key 的同一个终端启动。先确认版本，再开始新会话。</p>
                 <p v-else>保存设置后重新打开工具，创建新会话，并选择刚添加的模型。</p>
                 <DocsTerminalCommand v-if="guide.launch" class="guide-terminal" :label="`${shellName} · 先替换命令中的模型 ID`" :command="guide.launch" />
                 <div class="success-check"><span aria-hidden="true">✓</span><div><strong>先发一句「你好」</strong><p>收到正常回复、使用记录里出现对应调用，说明基础接入成功。需要编码时，再试一次读取测试文件；不要直接拿重要项目做第一次测试。</p></div></div>
@@ -125,7 +125,9 @@ const usesWSL = computed(() => selected.value?.client.id === 'hermes-agent' && o
 const commandOS = computed<GuideOS>(() => usesWSL.value ? 'linux' : os.value)
 const shellName = computed(() => usesWSL.value ? 'WSL · Bash / Zsh' : os.value === 'windows' ? 'PowerShell 5.1 / 7' : 'Bash / Zsh')
 const referenceVersionLabel = computed(() => guide.value.referenceVersion.replace(/^cli:/, '').replace(/^app:|^desktop:/, '桌面 ').replace('+cli:', ' / CLI ').replace('+builtin-copilot:', ' / Copilot '))
-const modeLabel = computed(() => guide.value.mode === 'file' ? '文件配置' : guide.value.mode === 'native' ? '工具自带设置' : '配置待补充')
+const modeLabel = computed(() => guide.value.mode === 'file' ? '文件配置' : guide.value.mode === 'native' ? '工具自带设置' : guide.value.mode === 'environment' ? '环境变量配置 · 不改文件' : '配置待补充')
+const usesTerminalCredentials = computed(() => ['file', 'environment'].includes(guide.value.mode))
+const visibleBlocks = computed(() => guide.value.blocks.filter(block => !block.operatingSystems || block.operatingSystems.includes(commandOS.value)))
 const credentialCommand = computed(() => keySetupCommand(commandOS.value, guide.value.keyEnv, guide.value.environment))
 const toc = computed(() => selected.value ? [
   { id: 'step-key', text: '准备 Key 和模型 ID', level: 2 },

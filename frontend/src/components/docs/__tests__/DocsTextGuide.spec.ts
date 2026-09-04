@@ -60,7 +60,7 @@ describe('text-only client guide preview', () => {
   })
   it('does not fabricate commands for pending clients and does not offer WorkBuddy Linux setup', async () => {
     const w = open()
-    for (const id of ['qoder', 'minimax-code', 'kimi-code']) {
+    for (const id of ['qoder', 'minimax-code']) {
       await w.get(`[data-client-id="${id}"]`).trigger('click')
       expect(w.text()).toContain('这篇配置模板还在核对')
       expect(w.find('.docs-terminal-command').exists()).toBe(false)
@@ -69,6 +69,28 @@ describe('text-only client guide preview', () => {
     await w.findAll('.os-switch button').find(b => b.text() === 'Linux')!.trigger('click')
     expect(w.text()).toContain('此工具暂不提供 Linux 配置')
     expect(w.find('#step-config').exists()).toBe(false)
+  })
+  it('provides Kimi environment-only setup and copies only the selected OS syntax', async () => {
+    const w = open()
+    await w.get('[data-client-id="kimi-code"]').trigger('click')
+    expect(w.text()).toContain('本文参考 0.40.1')
+    expect(w.text()).not.toContain('这篇配置模板还在核对')
+    expect(w.get('#step-key code').text()).toContain('KIMI_MODEL_API_KEY="$LAOSHIRENAI_API_KEY"')
+    expect(w.findAll('.config-example')).toHaveLength(1)
+    expect(w.get('.config-example code').text()).toContain("export KIMI_MODEL_PROVIDER_TYPE='openai_responses'")
+    expect(w.get('#step-config').text()).not.toContain('文件不存在时先创建')
+    await w.get('.config-example .terminal-actions button').trigger('click')
+    expect(writeText).toHaveBeenLastCalledWith(textClientGuides.find(g => g.id === 'kimi-code')!.blocks[0].content)
+    await w.findAll('.os-switch button').find(b => b.text() === 'Windows')!.trigger('click')
+    expect(w.findAll('.config-example')).toHaveLength(1)
+    expect(w.get('.config-example code').text()).toContain("$env:KIMI_MODEL_NAME = 'YOUR_MODEL_ID'")
+    expect(w.get('.config-example code').text()).not.toContain('export ')
+    await w.get('.config-example .terminal-actions button').trigger('click')
+    expect(writeText).toHaveBeenLastCalledWith(textClientGuides.find(g => g.id === 'kimi-code')!.blocks[1].content)
+    await w.findAll('.os-switch button').find(b => b.text() === 'Linux')!.trigger('click')
+    expect(w.get('.config-example code').text()).toContain('export KIMI_MODEL_NAME=')
+    expect(w.find('input').exists()).toBe(false)
+    expect(w.text()).toContain('本教程不修改')
   })
   it('keeps Hermes WSL commands separate from PowerShell', async () => {
     const w = open()

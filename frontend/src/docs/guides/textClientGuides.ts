@@ -1,12 +1,13 @@
 import { clientMatrix } from '@/generated/clientMatrix'
 
 export type GuideOS = 'macos' | 'windows' | 'linux'
-export type GuideMode = 'file' | 'native' | 'pending'
-export interface GuideBlock { label: string; content: string; candidate?: boolean }
+export type GuideMode = 'file' | 'environment' | 'native' | 'pending'
+export interface GuideBlock { label: string; content: string; candidate?: boolean; operatingSystems?: GuideOS[] }
 export interface TextClientGuide {
   id: string
   scope: string
   referenceVersion: string
+  verification?: Partial<Record<GuideOS, string>>
   mode: GuideMode
   baseUrl: string
   protocol: string
@@ -54,11 +55,16 @@ export const textClientGuides: readonly TextClientGuide[] = [
     sources: [{ label: 'Grok Build 官方设置', url: 'https://docs.x.ai/build/settings' }],
   },
   {
-    id: 'kimi-code', referenceVersion: 'cli:0.38.0', scope: '新 Kimi Code CLI，不是旧 Kimi CLI', mode: 'pending', baseUrl: v1, protocol: '配置版本待核验',
-    files: filePaths(['~/.kimi-code/config.toml'], ['%USERPROFILE%\\.kimi-code\\config.toml']),
-    blocks: [], instructions: ['已确认新产品使用 .kimi-code；旧产品 .kimi 的配置不能混用。', '这一版先不提供可直接执行的配置：参考版本的安全凭证入口还需确认。'],
-    notes: ['不能把 ${LAOSHIRENAI_API_KEY} 或 {env:LAOSHIRENAI_API_KEY} 随便写进普通 TOML，假装它会读取环境变量。', '保留此工具入口，不用一份未经验证的命令代替教程。'],
-    sources: [{ label: 'Kimi Code 官方配置', url: 'https://moonshotai.github.io/kimi-code/en/configuration/config-files.html' }],
+    id: 'kimi-code', referenceVersion: 'cli:0.40.1', verification: { macos: 'macOS · gpt-5.4 文件读取实测通过' }, scope: 'Kimi Code CLI · 本次会话接入，不改原配置', mode: 'environment', baseUrl: v1, protocol: 'Responses',
+    files: filePaths(['~/.kimi-code/config.toml（本教程不修改）'], ['%USERPROFILE%\\.kimi-code\\config.toml（本教程不修改）']), keyEnv: 'KIMI_MODEL_API_KEY',
+    blocks: [
+      { label: 'Bash / Zsh · 替换模型 ID 后执行', operatingSystems: ['macos', 'linux'], content: `export KIMI_MODEL_PROVIDER_TYPE='openai_responses'\nexport KIMI_MODEL_BASE_URL='${v1}'\nexport KIMI_MODEL_NAME='YOUR_MODEL_ID'` },
+      { label: 'PowerShell · 替换模型 ID 后执行', operatingSystems: ['windows'], content: `$env:KIMI_MODEL_PROVIDER_TYPE = 'openai_responses'\n$env:KIMI_MODEL_BASE_URL = '${v1}'\n$env:KIMI_MODEL_NAME = 'YOUR_MODEL_ID'` },
+    ],
+    instructions: ['不用编辑文件。在第一步输入 Key 的同一个终端中执行下面三行。', '将 YOUR_MODEL_ID 换成这把 Key 有权调用、支持 Responses 和工具调用的模型 ID；不是模型的中文名称。'],
+    notes: ['Key 由第一步放入 KIMI_MODEL_API_KEY；只设置 KIMI_API_KEY 或 OPENAI_API_KEY 不会生效。', 'Base URL 带 /v1，不加 /responses。不要运行 kimi login 来填写本站 Key，那是官方账号登录。', '环境配置优先于 config.toml 的默认模型；启动时不要再加 -m，否则会覆盖本教程的模型选择。', '关闭终端后本次设置失效；下次重新执行这三步。原 config.toml、官方登录和其他供应商配置都保留。', '本次实测为 macOS 的 0.40.1；Windows 与 Linux 提供对应环境变量语法，尚未做原生客户端实测。不是列表中的所有模型都已逐一验收。'],
+    launch: 'kimi --version\nkimi',
+    sources: [{ label: 'Kimi Code 官方环境变量配置', url: 'https://moonshotai.github.io/kimi-code/en/configuration/env-vars.html' }],
   },
   {
     id: 'opencode', referenceVersion: 'cli:1.18.15', scope: 'OpenCode V1 · 1.18.15 配置结构', mode: 'file', baseUrl: v1, protocol: 'Chat Completions 示例',

@@ -5,7 +5,16 @@ Scope: owner-requested concise text configuration guides for every client in the
 - Three steps: obtain a Key/model ID, configure the selected tool, start and verify.
 - Show client-specific Base URL, file locations, OS notes and concrete reference syntax, without promising that every model/protocol/OS combination was tested.
 - Reuse DocsTerminalCommand for macOS-style windows and clipboard, and DocsToc for document navigation. OS/tool tabs navigate text; no Key inputs, API execution or configuration generators.
-- All 14 tools stay represented. Kimi, Qoder and MiniMax retain explicit pending notices instead of fabricated executable templates. Native third-party settings steps are distinct from our unpublished graphical generator.
+- All 14 tools stay represented. Qoder and MiniMax retain explicit pending notices instead of fabricated executable templates. Native third-party settings steps are distinct from our unpublished graphical generator.
 - Keep production routes, public feature flags, capability matrices, installer code and the old graphical components byte-identical.
 - The local-only Vite entry lives outside the repository at local/customer-guides/drafts/text-docs-preview-20260904. It binds loopback and rejects /api/ requests. Review URL: http://127.0.0.1:8910/text-docs-preview.
 - Configuration snippets are reference drafts, not newly completed real-client evidence. Never enter real credentials into the preview or execute snippets against personal client files during UI QA.
+
+## Kimi Code follow-up
+
+- Replaced the Kimi placeholder with the official environment-only recipe: `KIMI_MODEL_API_KEY`, `KIMI_MODEL_PROVIDER_TYPE=openai_responses`, `KIMI_MODEL_BASE_URL` ending in `/v1`, and `KIMI_MODEL_NAME`.
+- Current executable 0.40.1, macOS arm64. Isolated fake-upstream check verified authentication, Responses path and unchanged config; dummy credential was absent from output and the temporary file tree.
+- Owned user 2 / key 128 / group 6 remained unchanged. Two real runs on `gpt-5.4` read a fixture and returned its exact contents; the final stream includes a `Read` tool call, tool-result message, and assistant final reply. Initial attempt exited without the marker; its cause was not retained, so this is not a reliability or all-model acceptance claim.
+- No plaintext credential in captured output or isolated client files; original client configuration was never touched. Windows/Linux snippets are supplied but not claimed as native-runtime verified.
+- Shared terminal renders OS-specific blocks; preview stays local and the graphical generator, routes and capability matrix stay unchanged.
+- Secret-free receipts and screenshots: `local/customer-guides/drafts/text-docs-preview-20260904/kimi-verification/` and adjacent `kimi-*.png` (workspace-local, not published).

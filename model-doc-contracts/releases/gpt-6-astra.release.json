@@ -1,0 +1,227 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "gpt-6-astra",
+    "upstream_id": "gpt-6-astra",
+    "display_name": "GPT-6 Astra",
+    "platform": "openai",
+    "context_window": 1050000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "responses",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": true,
+    "reasoning_efforts": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 10.0,
+    "cached_input_per_mtok_usd": 1.0,
+    "output_per_mtok_usd": 50.0,
+    "evidence_url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+    "long_context": {
+      "input_threshold": 272000,
+      "input_multiplier": 2,
+      "output_multiplier": 1.5
+    },
+    "cache_write_5m_per_mtok_usd": 12.5
+  },
+  "lifecycle": {
+    "public_status": "public",
+    "introduced_at": "2026-09-03",
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "responses",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Native Responses transport matches the existing GPT gateway adapter; four independent upstream account classes returned complete non-empty responses.",
+      "evidence_ids": [
+        "upstream-admission",
+        "official-model-spec"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "responses",
+      "features": {
+        "basic_request": "pass",
+        "billing": "pass",
+        "context_window": "pass",
+        "disconnect": "pass",
+        "error_passthrough": "pass",
+        "image_input": "pass",
+        "prompt_cache": "pass",
+        "reasoning": "pass",
+        "retry": "pass",
+        "streaming": "pass",
+        "structured_output": "pass",
+        "terminal_event": "pass",
+        "timeout": "pass",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "usage": "pass",
+        "web_search": "fail"
+      },
+      "evidence_ids": [
+        "upstream-admission",
+        "official-model-spec",
+        "upstream-inventory",
+        "adapter-regression"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "responses",
+      "effort": "low",
+      "support": "supported",
+      "wire_value": "low",
+      "evidence_ids": [
+        "official-model-spec"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "medium",
+      "support": "supported",
+      "wire_value": "medium",
+      "evidence_ids": [
+        "official-model-spec"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "high",
+      "support": "supported",
+      "wire_value": "high",
+      "evidence_ids": [
+        "official-model-spec"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "xhigh",
+      "support": "supported",
+      "wire_value": "xhigh",
+      "evidence_ids": [
+        "official-model-spec"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "max",
+      "support": "supported",
+      "wire_value": "max",
+      "evidence_ids": [
+        "official-model-spec"
+      ]
+    }
+  ],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 10.0,
+      "output": 50.0,
+      "cached_input": 1.0,
+      "cache_write": 12.5,
+      "long_context": {
+        "input_threshold": 272000,
+        "input_multiplier": 2,
+        "output_multiplier": 1.5
+      },
+      "effective_from": "2026-09-03",
+      "evidence_ids": [
+        "official-price"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "official-model-spec",
+      "kind": "official_docs",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "observed_at": "2026-09-05T01:38:18+00:00",
+      "subject_version": "gpt-6-astra official model page observed 2026-09-05",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "official-price",
+      "kind": "official_docs",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "observed_at": "2026-09-05T01:38:18+00:00",
+      "subject_version": "gpt-6-astra public API pricing observed 2026-09-05",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "upstream-inventory",
+      "kind": "provider_api",
+      "url": null,
+      "observed_at": "2026-09-05T01:35:32+00:00",
+      "subject_version": "gpt-6-astra across active customer GPT account pool",
+      "result": "pass",
+      "artifact_sha256": "f7de1c35448b64fcfbb07009bccce45ad7ef1974338b75fbedd5bd50e913b2a4",
+      "artifact_path": "evidence/gpt-6-astra/upstream-inventory.json"
+    },
+    {
+      "id": "upstream-admission",
+      "kind": "provider_api",
+      "url": null,
+      "observed_at": "2026-09-05T01:36:51+00:00",
+      "subject_version": "gpt-6-astra direct upstream account admission across four independent account classes",
+      "result": "pass",
+      "artifact_sha256": "dacab37637f7cad58144e339f2dadc99d46673fe1d43a41e63e7f927e1470fb1",
+      "artifact_path": "evidence/gpt-6-astra/upstream-admission.json"
+    },
+    {
+      "id": "adapter-regression",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-09-05T01:44:52+00:00",
+      "subject_version": "c496171aca30c0b143ad103af65b3b930a8b293c/existing OpenAI Responses adapter",
+      "result": "pass",
+      "artifact_sha256": "e92b1c5aef8e3924a09964992ca2ce2ea3b1284feecea345f196ed5f6a959edf",
+      "artifact_path": "evidence/gpt-6-astra/adapter-regression.json"
+    }
+  ],
+  "production": {
+    "account_id": 23,
+    "group_id": 6,
+    "group_name": "GPT 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "release_notes": {
+    "classification": "catalog-only",
+    "scope": "Existing OpenAI Responses adapter and usage schema; exact model addition plus official pricing and limits.",
+    "availability_boundary": "Seven of eleven active GPT account routes list the model; only supporting accounts will receive the mapping.",
+    "web_search_boundary": "Officially advertised, but not yet accepted as a gateway feature claim; matrix remains fail until an owned server-tool probe passes.",
+    "post_deploy_required": "Map only supporting accounts, verify each customer GPT group catalog, run complete owned response with usage/accounting/balance reconciliation, then publish changelog."
+  }
+}

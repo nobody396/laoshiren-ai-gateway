@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "direct_upstream_model_admission",
+  "model_id": "gpt-6-astra",
+  "observed_at": "2026-09-05T01:36:51+00:00",
+  "source": "production admin account test endpoint; credentials remained server-side",
+  "probe_account_ids": [
+    79,
+    53,
+    50,
+    23
+  ],
+  "results": [
+    {
+      "account_id": 79,
+      "model_id": "gpt-6-astra",
+      "admin_http_status": 200,
+      "test_started": true,
+      "completed": true,
+      "content_event_count": 11,
+      "error_event_count": 0
+    },
+    {
+      "account_id": 53,
+      "model_id": "gpt-6-astra",
+      "admin_http_status": 200,
+      "test_started": true,
+      "completed": true,
+      "content_event_count": 9,
+      "error_event_count": 0
+    },
+    {
+      "account_id": 50,
+      "model_id": "gpt-6-astra",
+      "admin_http_status": 200,
+      "test_started": true,
+      "completed": true,
+      "content_event_count": 9,
+      "error_event_count": 0
+    },
+    {
+      "account_id": 23,
+      "model_id": "gpt-6-astra",
+      "admin_http_status": 200,
+      "test_started": true,
+      "completed": true,
+      "content_event_count": 9,
+      "error_event_count": 0
+    }
+  ],
+  "all_completed": true
+}

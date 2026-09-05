@@ -173,7 +173,11 @@ def catalog_row_from_manifest(manifest: dict[str, Any], previous: dict[str, Any]
                 "cached_input": (
                     "verified" if pricing.get("cached_input_per_mtok_usd", 0) is not None else "unknown"
                 ),
-                "cache_write": "not_applicable",
+                "cache_write": (
+                    "verified"
+                    if pricing.get("cache_write_5m_per_mtok_usd") is not None
+                    else "not_applicable"
+                ),
                 "long_context": "verified" if long_context else "not_applicable",
             },
             "long_context_input_threshold": long_context.get("input_threshold") if long_context else None,

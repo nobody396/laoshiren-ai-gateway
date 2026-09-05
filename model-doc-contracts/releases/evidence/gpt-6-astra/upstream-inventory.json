@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "upstream_model_inventory",
+  "model_id": "gpt-6-astra",
+  "observed_at": "2026-09-05T01:35:32+00:00",
+  "source": "production admin upstream-drift read-only endpoint",
+  "customer_gpt_group_ids": [
+    6,
+    40,
+    42,
+    44,
+    58,
+    59
+  ],
+  "accounts": [
+    {
+      "account_id": 76,
+      "model_listed": false,
+      "upstream_model_count": 40,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 79,
+      "model_listed": true,
+      "upstream_model_count": 22,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 33,
+      "model_listed": false,
+      "upstream_model_count": 29,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 53,
+      "model_listed": true,
+      "upstream_model_count": 16,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 54,
+      "model_listed": true,
+      "upstream_model_count": 16,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 50,
+      "model_listed": true,
+      "upstream_model_count": 9,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 62,
+      "model_listed": true,
+      "upstream_model_count": 9,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 23,
+      "model_listed": true,
+      "upstream_model_count": 10,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 55,
+      "model_listed": true,
+      "upstream_model_count": 10,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 80,
+      "model_listed": false,
+      "upstream_model_count": 8,
+      "inspection_status": "review_required"
+    },
+    {
+      "account_id": 78,
+      "model_listed": false,
+      "upstream_model_count": 10,
+      "inspection_status": "review_required"
+    }
+  ],
+  "supporting_account_ids": [
+    79,
+    53,
+    54,
+    50,
+    62,
+    23,
+    55
+  ],
+  "listed_count": 7,
+  "checked_count": 11
+}

@@ -1,0 +1,287 @@
+{
+  "cases": [
+    {
+      "capability": "request",
+      "expectation": {
+        "expected_text": "OK",
+        "http_status": 200,
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ]
+      },
+      "id": "responses.request",
+      "protocol": "responses"
+    },
+    {
+      "capability": "usage",
+      "expectation": {
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ],
+        "token_counts": "non_negative_and_total_consistent"
+      },
+      "id": "responses.usage",
+      "protocol": "responses"
+    },
+    {
+      "capability": "billing_receipt",
+      "expectation": {
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ],
+        "prices": "manifest_pricing",
+        "tolerance_usd": 1e-09
+      },
+      "id": "responses.billing_receipt",
+      "protocol": "responses"
+    },
+    {
+      "capability": "error_passthrough",
+      "expectation": {
+        "http_status": "4xx_or_5xx",
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ],
+        "provider_error": true
+      },
+      "id": "responses.error_passthrough",
+      "protocol": "responses"
+    },
+    {
+      "capability": "interrupted_stream",
+      "expectation": {
+        "classified": true,
+        "complete": false,
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ]
+      },
+      "id": "responses.interrupted_stream",
+      "protocol": "responses"
+    },
+    {
+      "capability": "timeout",
+      "expectation": {
+        "classified": true,
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ],
+        "timed_out": true
+      },
+      "id": "responses.timeout",
+      "protocol": "responses"
+    },
+    {
+      "capability": "retry",
+      "expectation": {
+        "attempts": ">=2",
+        "final_status": 200,
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ]
+      },
+      "id": "responses.retry",
+      "protocol": "responses"
+    },
+    {
+      "capability": "streaming_terminal",
+      "expectation": {
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ],
+        "terminal": "response.completed"
+      },
+      "id": "responses.streaming_terminal",
+      "protocol": "responses"
+    },
+    {
+      "capability": "tool_call",
+      "expectation": {
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ],
+        "name_and_arguments": true
+      },
+      "id": "responses.tool_call",
+      "protocol": "responses"
+    },
+    {
+      "capability": "tool_result_continuation",
+      "expectation": {
+        "correlated": true,
+        "final_text": true,
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ]
+      },
+      "id": "responses.tool_result_continuation",
+      "protocol": "responses"
+    },
+    {
+      "capability": "prompt_cache",
+      "expectation": {
+        "cached_input_tokens": ">0",
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ]
+      },
+      "id": "responses.prompt_cache",
+      "protocol": "responses"
+    },
+    {
+      "capability": "image_input",
+      "expectation": {
+        "accepted": true,
+        "final_text": true,
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ]
+      },
+      "id": "responses.image_input",
+      "protocol": "responses"
+    },
+    {
+      "capability": "reasoning.low",
+      "expectation": {
+        "effort": "low",
+        "manifest_evidence_ids": [
+          "official-model-spec"
+        ],
+        "reasoning_observed": true
+      },
+      "id": "responses.reasoning.low",
+      "protocol": "responses"
+    },
+    {
+      "capability": "reasoning.medium",
+      "expectation": {
+        "effort": "medium",
+        "manifest_evidence_ids": [
+          "official-model-spec"
+        ],
+        "reasoning_observed": true
+      },
+      "id": "responses.reasoning.medium",
+      "protocol": "responses"
+    },
+    {
+      "capability": "reasoning.high",
+      "expectation": {
+        "effort": "high",
+        "manifest_evidence_ids": [
+          "official-model-spec"
+        ],
+        "reasoning_observed": true
+      },
+      "id": "responses.reasoning.high",
+      "protocol": "responses"
+    },
+    {
+      "capability": "reasoning.xhigh",
+      "expectation": {
+        "effort": "xhigh",
+        "manifest_evidence_ids": [
+          "official-model-spec"
+        ],
+        "reasoning_observed": true
+      },
+      "id": "responses.reasoning.xhigh",
+      "protocol": "responses"
+    },
+    {
+      "capability": "reasoning.max",
+      "expectation": {
+        "effort": "max",
+        "manifest_evidence_ids": [
+          "official-model-spec"
+        ],
+        "reasoning_observed": true
+      },
+      "id": "responses.reasoning.max",
+      "protocol": "responses"
+    },
+    {
+      "capability": "structured_output",
+      "expectation": {
+        "manifest_evidence_ids": [
+          "upstream-admission",
+          "official-model-spec",
+          "upstream-inventory",
+          "adapter-regression"
+        ],
+        "schema_valid": true
+      },
+      "id": "responses.structured_output",
+      "protocol": "responses"
+    },
+    {
+      "capability": "context_window",
+      "expectation": {
+        "declared": 1050000,
+        "source": "official_or_live"
+      },
+      "id": "model.context_window",
+      "protocol": null
+    },
+    {
+      "capability": "max_output_tokens",
+      "expectation": {
+        "declared": 128000,
+        "source": "official_or_live"
+      },
+      "id": "model.max_output_tokens",
+      "protocol": null
+    }
+  ],
+  "manifest_evidence_ids": [
+    "adapter-regression",
+    "official-model-spec",
+    "official-price",
+    "upstream-admission",
+    "upstream-inventory"
+  ],
+  "manifest_schema_version": 2,
+  "manifest_sha256": "3275270db19ad9ed881aa35b4766862c98ba2198bb46c9583ff0fd7626293869",
+  "mode": "controlled_probe_plan",
+  "model_id": "gpt-6-astra",
+  "network_execution": "disabled",
+  "pending_cases": [],
+  "receipt_schema_version": 1,
+  "release_authorization": false
+}

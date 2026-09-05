@@ -113,6 +113,38 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertEqual(row["public_group"]["preferred_name"], "Grok")
         self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.6", "Grok 4.5", "Grok"])
 
+    def test_manifest_preserves_verified_cache_write_price(self) -> None:
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        manifest = {
+            "model": {
+                "id": "gpt-cache-write",
+                "upstream_id": "gpt-cache-write",
+                "display_name": "GPT Cache Write",
+                "platform": "openai",
+                "context_window": 1050000,
+                "max_output_tokens": 128000,
+            },
+            "pricing": {
+                "input_per_mtok_usd": 10,
+                "cached_input_per_mtok_usd": 1,
+                "cache_write_5m_per_mtok_usd": 12.5,
+                "output_per_mtok_usd": 50,
+                "evidence_url": "https://example.com/pricing",
+                "long_context": None,
+            },
+            "production": {
+                "group_name": "GPT 标准线路",
+                "client_default": False,
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            merged = MODULE.merge_manifest(catalog, path)
+        row = next(item for item in merged["models"] if item["id"] == "gpt-cache-write")
+        self.assertEqual(row["pricing"]["cache_write_5m_per_mtok_usd"], 12.5)
+        self.assertEqual(row["pricing"]["component_status"]["cache_write"], "verified")
+
     def test_new_default_replaces_prior_platform_default(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
         manifest = {

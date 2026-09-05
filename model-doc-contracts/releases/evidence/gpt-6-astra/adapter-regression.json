@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "release_adapter_regression",
+  "model_id": "gpt-6-astra",
+  "observed_at": "2026-09-05T01:44:52+00:00",
+  "base_commit": "c496171aca30c0b143ad103af65b3b930a8b293c",
+  "classification": "catalog-only",
+  "checks": [
+    {
+      "command": "python3 -m unittest scripts/test_model_catalog.py tests/test_model_release.py tests/test_provider_contract_runner.py",
+      "status": "pass",
+      "tests": 40
+    },
+    {
+      "command": "go test -tags unit ./internal/service -run 'GPT6Astra|GeneratedCatalogAndRuntime' -count=1 -v",
+      "status": "pass"
+    },
+    {
+      "command": "go test ./internal/service ./internal/handler/...",
+      "status": "pass"
+    },
+    {
+      "command": "pnpm --dir frontend run typecheck",
+      "status": "pass"
+    },
+    {
+      "command": "pnpm --dir frontend exec vitest run src/views/__tests__/PublicModelPricingView.spec.ts",
+      "status": "pass",
+      "tests": 12
+    },
+    {
+      "command": "pnpm --dir frontend run build",
+      "status": "pass"
+    },
+    {
+      "command": "go test -tags unit ./internal/service",
+      "status": "pass"
+    },
+    {
+      "command": "go build -o /tmp/sub2api-server-gpt6-astra ./cmd/server",
+      "status": "pass"
+    }
+  ],
+  "boundaries": "Existing OpenAI Responses transport; no adapter or event-shape change."
+}

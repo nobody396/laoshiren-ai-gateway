@@ -13,7 +13,7 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export const clientAutoConfigVersion = "0.7.15"
+export const clientAutoConfigVersion = "0.7.16"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",
@@ -484,6 +484,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     "preset": {
       "from": "gpt-5.6-terra",
       "to": "gpt-5.6-terra",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-6-astra",
+    "upstreamId": "gpt-6-astra",
+    "displayName": "GPT-6 Astra",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-6-astra",
+      "to": "gpt-6-astra",
       "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
     }
   },

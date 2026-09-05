@@ -21,6 +21,7 @@ const (
 	ClientCodeRequestBodyTooLarge      = "request_body_too_large"
 	ClientCodeContextWindowExceeded    = "context_length_exceeded"
 	ClientCodeModelNotSupported        = "model_not_supported"
+	ClientCodeEndpointNotSupported     = "endpoint_not_supported"
 	ClientCodeAuthenticationFailed     = "authentication_failed"
 	ClientCodePermissionDenied         = "permission_denied"
 	ClientCodeInsufficientBalance      = "insufficient_balance"
@@ -50,16 +51,34 @@ func ClientMessageModelNotSupported(model string) string {
 	)
 }
 
-// ClientMessageModelNotSupportedOnEndpoint 生成分组在当前端点上结构性不可服务时
-// 的用户侧错误文案（分组平台与该端点不匹配，例如 gemini 分组误调
-// /v1/chat/completions）。动态带上请求的模型名与支持模型查看入口。
-func ClientMessageModelNotSupportedOnEndpoint(model string) string {
+// ClientMessageEndpointNotSupported 生成分组协议与请求端点结构性不匹配时
+// 的用户侧错误文案。端点不匹配与模型未上架是两个不同错误，不能复用
+// model_not_supported，否则会把已开放的模型误报为未开放。
+func ClientMessageEndpointNotSupported(model, requestedEndpoint, groupProtocol, expectedEndpoint string) string {
 	model = strings.TrimSpace(model)
 	if model == "" {
 		model = "the requested model"
 	}
+	requestedEndpoint = strings.TrimSpace(requestedEndpoint)
+	if requestedEndpoint == "" {
+		requestedEndpoint = "the requested endpoint"
+	}
+	groupProtocol = strings.TrimSpace(groupProtocol)
+	expectedEndpoint = strings.TrimSpace(expectedEndpoint)
+	if groupProtocol == "" || expectedEndpoint == "" {
+		return fmt.Sprintf(
+			"The endpoint %q is not supported for this group. Use the endpoint documented for this group with model %q. You can view all supported models at %s",
+			requestedEndpoint,
+			model,
+			ModelPricingPageURL,
+		)
+	}
 	return fmt.Sprintf(
-		"The model %q is not supported on this endpoint for this group. Please switch to a supported model or use the endpoint that matches your group. You can view all supported models at %s",
+		"The endpoint %q is not supported for this %s group. Use the %s endpoint %q with model %q. You can view all supported models at %s",
+		requestedEndpoint,
+		groupProtocol,
+		groupProtocol,
+		expectedEndpoint,
 		model,
 		ModelPricingPageURL,
 	)

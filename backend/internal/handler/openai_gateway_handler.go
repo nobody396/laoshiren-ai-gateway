@@ -1139,16 +1139,49 @@ func (h *OpenAIGatewayHandler) handleOpenAIModelNotSupportedError(c *gin.Context
 	h.errorResponseWithCode(c, http.StatusBadRequest, "invalid_request_error", service.ClientCodeModelNotSupported, message)
 }
 
+func endpointMismatchGuidance(c *gin.Context, model string) (message, code string) {
+	requestedEndpoint := ""
+	if c != nil && c.Request != nil && c.Request.URL != nil {
+		requestedEndpoint = NormalizeInboundEndpoint(c.Request.URL.Path)
+	}
+
+	groupProtocol := ""
+	expectedEndpoint := ""
+	if apiKey, ok := middleware2.GetAPIKeyFromContext(c); ok && apiKey != nil && apiKey.Group != nil {
+		switch apiKey.Group.Platform {
+		case service.PlatformAnthropic:
+			groupProtocol = "Anthropic Messages"
+			expectedEndpoint = EndpointMessages
+		case service.PlatformOpenAI:
+			groupProtocol = "OpenAI Responses"
+			expectedEndpoint = EndpointResponses
+		case service.PlatformGemini:
+			groupProtocol = "Gemini GenerateContent"
+			expectedEndpoint = EndpointGeminiModels + "/{model}:generateContent"
+		case service.PlatformGrok:
+			groupProtocol = "Grok Responses"
+			expectedEndpoint = EndpointResponses
+		}
+	}
+
+	return service.ClientMessageEndpointNotSupported(
+		model,
+		requestedEndpoint,
+		groupProtocol,
+		expectedEndpoint,
+	), service.ClientCodeEndpointNotSupported
+}
+
 // handleOpenAINoServableAccountsError 处理“分组在该端点上没有任何可服务账号”的
 // 结构性失败（例如 gemini 分组误调 /v1/chat/completions）。返回 400
 // invalid_request_error，ops 错误日志按 request 阶段归类为客户端误用
 // （error_owner=client），不再计入平台成功率告警。
 func (h *OpenAIGatewayHandler) handleOpenAINoServableAccountsError(c *gin.Context, model string, streamStarted bool) {
-	message := service.ClientMessageModelNotSupportedOnEndpoint(model)
+	message, code := endpointMismatchGuidance(c, model)
 	if streamStarted {
 		flusher, ok := c.Writer.(http.Flusher)
 		if ok {
-			errPayload, _ := json.Marshal(service.OpenAIClientErrorEnvelopeWithCode(c, "invalid_request_error", service.ClientCodeModelNotSupported, message))
+			errPayload, _ := json.Marshal(service.OpenAIClientErrorEnvelopeWithCode(c, "invalid_request_error", code, message))
 			if _, err := fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload); err != nil {
 				_ = c.Error(err)
 			}
@@ -1156,7 +1189,7 @@ func (h *OpenAIGatewayHandler) handleOpenAINoServableAccountsError(c *gin.Contex
 		}
 		return
 	}
-	h.errorResponseWithCode(c, http.StatusBadRequest, "invalid_request_error", service.ClientCodeModelNotSupported, message)
+	h.errorResponseWithCode(c, http.StatusBadRequest, "invalid_request_error", code, message)
 }
 
 // handleAnthropicModelNotSupportedError 与 handleOpenAIModelNotSupportedError 同义，
@@ -1179,7 +1212,7 @@ func (h *OpenAIGatewayHandler) handleAnthropicModelNotSupportedError(c *gin.Cont
 // 同义（分组在该端点上没有任何可服务账号，归类为客户端误用 400），但使用
 // Anthropic Messages API 错误格式。
 func (h *OpenAIGatewayHandler) handleAnthropicNoServableAccountsError(c *gin.Context, model string, streamStarted bool) {
-	message := service.ClientMessageModelNotSupportedOnEndpoint(model)
+	message, _ := endpointMismatchGuidance(c, model)
 	if streamStarted {
 		flusher, ok := c.Writer.(http.Flusher)
 		if ok {

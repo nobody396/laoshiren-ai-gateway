@@ -427,6 +427,9 @@ func attributeUsageBillingMonthlyConsumption(
 		cycleID           int64
 		acquiredAt        time.Time
 	)
+	// Raising a cycle's credit limit must not lower value that was already
+	// confirmed. If it did, later usage would earn the same affiliate value a
+	// second time while the cycle climbs back to its previous confirmation.
 	err := tx.QueryRowContext(ctx, `
 		WITH candidate AS (
 			SELECT
@@ -450,7 +453,9 @@ func attributeUsageBillingMonthlyConsumption(
 			UPDATE monthly_entitlement_cycles c
 			SET
 				used_credit_micros = LEAST(c.credit_limit_micros, c.used_credit_micros + $3),
-				confirmed_consumption_micros = CASE
+				confirmed_consumption_micros = GREATEST(
+					c.confirmed_consumption_micros,
+					CASE
 					WHEN candidate.qualification_eligible THEN LEAST(
 						c.sale_price_micros,
 						FLOOR(
@@ -460,7 +465,8 @@ func attributeUsageBillingMonthlyConsumption(
 						)::bigint
 					)
 					ELSE 0
-				END,
+					END
+				),
 				updated_at = NOW()
 			FROM candidate
 			WHERE c.id = candidate.id

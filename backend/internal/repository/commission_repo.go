@@ -667,8 +667,7 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 				u.id,
 				COALESCE(u.email, '') AS email,
 				COALESCE(u.username, '') AS username,
-				u.created_at,
-				COALESCE(u.total_recharged, 0)::double precision AS user_total_recharged
+				u.created_at
 			FROM users u
 			LEFT JOIN affiliate_bindings ab
 				ON ab.customer_user_id = u.id
@@ -686,29 +685,30 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 
 	query := directUsersCTE + `
 		, recharge_totals AS (
+			-- Period totals come from immutable paid entitlement sources. The
+			-- users.total_recharged cache is neither period-scoped nor complete
+			-- for redeemed balance cards and monthly plans.
 			SELECT user_id, SUM(amount)::double precision AS total
 			FROM (
 				SELECT
 					user_id,
-					(amount_cny_fen::numeric / 100)::double precision AS amount
-				FROM topup_orders
-				WHERE status = 'completed'
+					(original_amount_micros::numeric / 1000000)::double precision AS amount
+				FROM balance_lots
+				WHERE source_type IN ('paid_redeem', 'paid_topup')
 				  AND user_id IN (SELECT id FROM direct_users)
-				  AND ($2::timestamptz IS NULL OR COALESCE(completed_at, updated_at, created_at) >= $2::timestamptz)
-				  AND ($3::timestamptz IS NULL OR COALESCE(completed_at, updated_at, created_at) <= $3::timestamptz)
+				  AND ($2::timestamptz IS NULL OR occurred_at >= $2::timestamptz)
+				  AND ($3::timestamptz IS NULL OR occurred_at <= $3::timestamptz)
 
 				UNION ALL
 
 				SELECT
-					used_by AS user_id,
-					value::double precision AS amount
-				FROM redeem_codes
-				WHERE status = 'used'
-				  AND used_by IS NOT NULL
-				  AND used_by IN (SELECT id FROM direct_users)
-				  AND COALESCE(purpose, 'sale_recharge') = 'sale_recharge'
-				  AND ($2::timestamptz IS NULL OR used_at >= $2::timestamptz)
-				  AND ($3::timestamptz IS NULL OR used_at <= $3::timestamptz)
+					user_id,
+					(sale_price_micros::numeric / 1000000)::double precision AS amount
+				FROM monthly_entitlement_cycles
+				WHERE source_type IN ('paid_redeem', 'paid_topup')
+				  AND user_id IN (SELECT id FROM direct_users)
+				  AND ($2::timestamptz IS NULL OR starts_at >= $2::timestamptz)
+				  AND ($3::timestamptz IS NULL OR starts_at <= $3::timestamptz)
 			) paid
 			GROUP BY user_id
 		),
@@ -748,11 +748,15 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 			GROUP BY claim.user_id
 		),
 		performance_totals AS (
-			SELECT user_id, SUM(amount_micros)::bigint AS total_micros
+			SELECT user_id,
+				SUM(CASE event_type
+					WHEN 'confirmed_consumption' THEN amount_micros
+					ELSE -amount_micros
+				END)::bigint AS total_micros
 			FROM affiliate_performance_events
 			WHERE direct_agent_id = $1
 			  AND user_id IN (SELECT id FROM direct_users)
-			  AND event_type = 'confirmed_consumption'
+			  AND event_type IN ('confirmed_consumption', 'consumption_reversal')
 			  AND ($2::timestamptz IS NULL OR occurred_at >= $2::timestamptz)
 			  AND ($3::timestamptz IS NULL OR occurred_at <= $3::timestamptz)
 			GROUP BY user_id
@@ -784,7 +788,7 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 			d.username,
 			d.created_at,
 			(
-				COALESCE(NULLIF(d.user_total_recharged, 0), recharge_totals.total, 0)
+				COALESCE(recharge_totals.total, 0)
 				+ COALESCE(newcomer_recharge_totals.total, 0)
 			)::double precision AS recharged_amount,
 			(CASE

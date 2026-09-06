@@ -174,6 +174,13 @@ func TestAffiliateAgentRepository_OperationsSummaryAndPartnerPerformance(t *test
 			30000000, FALSE, NOW(), NOW() + INTERVAL '30 days')
 	`, direct.ID, key+":monthly")
 	require.NoError(t, err)
+	// The legacy aggregate is intentionally stale. The agent-facing list must
+	// derive the period total from canonical paid sources instead of letting a
+	// non-zero users.total_recharged hide redeemed balance and monthly rights.
+	_, err = integrationDB.ExecContext(ctx, `
+		UPDATE users SET total_recharged = 5 WHERE id = $1
+	`, direct.ID)
+	require.NoError(t, err)
 	_, err = integrationDB.ExecContext(ctx, `
 		INSERT INTO affiliate_performance_events (
 			user_id, direct_agent_id, event_type, amount_micros,
@@ -244,6 +251,19 @@ func TestAffiliateAgentRepository_OperationsSummaryAndPartnerPerformance(t *test
 	require.Equal(t, int32(500), earned.AgentCommissionRateBPS)
 	require.Equal(t, "integration", earned.SourceType)
 	require.Len(t, detail.Withdrawals, 1)
+
+	commissionRepo := NewCommissionRepository(nil, integrationDB)
+	users, _, err := commissionRepo.ListInvitedUsersWithStats(
+		ctx,
+		agent.ID,
+		pagination.PaginationParams{Page: 1, PageSize: 20},
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+	require.Len(t, users, 1)
+	require.InDelta(t, 50.0, users[0].RechargedAmount, 0.000001)
+	require.InDelta(t, 5.0, users[0].ConsumedAmount, 0.000001)
 
 	summary, err := repo.GetOperationsSummary(ctx)
 	require.NoError(t, err)

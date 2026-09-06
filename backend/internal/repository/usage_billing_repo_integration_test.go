@@ -222,6 +222,105 @@ func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *test
 	require.Equal(t, service.AffiliateSourcePolicyNone, eventPolicy)
 }
 
+func TestUsageBillingRepositoryApply_DoesNotReconfirmAfterMonthlyLimitIncrease(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-monthly-limit-upgrade-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	limit := 200.0
+	group := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-billing-monthly-limit-upgrade-" + uuid.NewString(),
+		Platform:         service.PlatformOpenAI,
+		SubscriptionType: service.SubscriptionTypeCredit,
+		DailyLimitUSD:    &limit,
+		WeeklyLimitUSD:   &limit,
+		MonthlyLimitUSD:  &limit,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  user.ID,
+		GroupID: &group.ID,
+		Key:     "sk-usage-billing-monthly-limit-upgrade-" + uuid.NewString(),
+		Name:    "monthly-limit-upgrade",
+	})
+	subscription := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:  user.ID,
+		GroupID: group.ID,
+	})
+	var cycleID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		INSERT INTO monthly_entitlement_cycles (
+			user_id, source_type, source_key, product_code,
+			sale_price_micros, credit_limit_micros,
+			used_credit_micros, confirmed_consumption_micros,
+			affiliate_eligible, affiliate_policy, starts_at, ends_at
+		)
+		VALUES ($1, 'paid_topup', $2, 'test-monthly-upgrade',
+			100000000, 200000000, 50000000, 50000000,
+			FALSE, 'NONE', NOW() - INTERVAL '1 minute', NOW() + INTERVAL '31 days')
+		RETURNING id
+	`, user.ID, "test-monthly-upgrade:"+uuid.NewString()).Scan(&cycleID))
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO monthly_entitlement_cycle_subscriptions (
+			cycle_id, user_subscription_id, group_id
+		)
+		VALUES ($1, $2, $3)
+	`, cycleID, subscription.ID, group.ID)
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	firstUsageLogID := time.Now().UnixNano()
+	first, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UsageLogID:       firstUsageLogID,
+		UserID:           user.ID,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 20,
+	})
+	require.NoError(t, err)
+	require.True(t, first.Applied)
+	require.Zero(t, first.MonthlyConfirmedMicros)
+	require.Zero(t, first.ConfirmedConsumptionMicros)
+
+	secondUsageLogID := firstUsageLogID + 1
+	second, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UsageLogID:       secondUsageLogID,
+		UserID:           user.ID,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 80,
+	})
+	require.NoError(t, err)
+	require.True(t, second.Applied)
+	require.Equal(t, int64(25_000_000), second.MonthlyConfirmedMicros)
+	require.Equal(t, int64(25_000_000), second.ConfirmedConsumptionMicros)
+
+	var usedCredit, confirmed int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT used_credit_micros, confirmed_consumption_micros
+		FROM monthly_entitlement_cycles WHERE id = $1
+	`, cycleID).Scan(&usedCredit, &confirmed))
+	require.Equal(t, int64(150_000_000), usedCredit)
+	require.Equal(t, int64(75_000_000), confirmed)
+
+	var firstEventCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_performance_events WHERE event_key = $1
+	`, fmt.Sprintf("confirmed:usage:%d:monthly", firstUsageLogID)).Scan(&firstEventCount))
+	require.Zero(t, firstEventCount)
+
+	var secondEventAmount int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT amount_micros FROM affiliate_performance_events WHERE event_key = $1
+	`, fmt.Sprintf("confirmed:usage:%d:monthly", secondUsageLogID)).Scan(&secondEventAmount))
+	require.Equal(t, int64(25_000_000), secondEventAmount)
+}
+
 func TestUsageBillingRepositoryApply_SettlesFixedAgentPoolOnConfirmedConsumption(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

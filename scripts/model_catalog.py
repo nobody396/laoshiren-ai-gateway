@@ -212,7 +212,16 @@ def merge_manifest(catalog: dict[str, Any], manifest_path: Path) -> dict[str, An
                 candidate["client_default"] = False
     merged["models"].append(row)
     merged["models"].sort(key=lambda candidate: (candidate["platform"], candidate["id"]))
-    if installer_model_values(catalog) != installer_model_values(merged):
+    previous_codex_entry = (
+        previous.get("client_config", {}).get("codex_catalog_entry")
+        if isinstance(previous, dict)
+        else None
+    )
+    next_codex_entry = row.get("client_config", {}).get("codex_catalog_entry")
+    if (
+        installer_model_values(catalog) != installer_model_values(merged)
+        or previous_codex_entry != next_codex_entry
+    ):
         merged["client_auto_config_version"] = bump_patch(catalog["client_auto_config_version"])
     validate_catalog(merged)
     return merged

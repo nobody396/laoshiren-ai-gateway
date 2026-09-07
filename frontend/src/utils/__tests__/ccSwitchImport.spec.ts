@@ -163,6 +163,26 @@ describe('CC Switch provider deeplinks', () => {
     expect(config.config).toContain('model = "gpt-5.6-sol"')
   })
 
+  it('imports every GPT standard model including GPT-6 Astra', () => {
+    const standardModels = [
+      'gpt-6-astra',
+      'gpt-5.6-sol',
+      'gpt-5.6-terra',
+      'gpt-5.5',
+      'gpt-5.4',
+      'gpt-5.3-codex-spark'
+    ]
+    const url = parseDeepLink('codex', false, standardModels)
+    const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
+    const importedModels = config.modelCatalog.models.map((model: { model: string }) => model.model)
+
+    expect(importedModels).toEqual(standardModels)
+    const astra = config.modelCatalog.models.find((model: { model: string }) => model.model === 'gpt-6-astra')
+    expect(astra.displayName).toBe('GPT-6 Astra')
+    expect(astra.contextWindow).toBe(1050000)
+    expect(astra.visibility).toBe('list')
+  })
+
   it('imports the full 8-model catalog for the CodeX enterprise group', () => {
     const enterpriseModels = [
       'gpt-5.4',

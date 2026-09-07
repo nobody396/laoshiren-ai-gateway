@@ -41,6 +41,7 @@ class ModelCatalogTest(unittest.TestCase):
         # one-click Codex import intentionally covers every group model.
         self.assertIn("gpt-5.6-luna", codex_models)
         self.assertIn("gpt-5.4-mini", codex_models)
+        self.assertIn("gpt-6-astra", codex_models)
         self.assertIn("$CatalogGrokDefaultModel = 'grok-4.6'", MODULE.render_powershell_block(catalog))
         self.assertIn("CATALOG_GROK_DEFAULT_MODEL='grok-4.6'", MODULE.render_shell_block(catalog))
         self.assertEqual(
@@ -264,6 +265,56 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertEqual(MODULE.installer_model_values(merged)["openai"]["id"], "gpt-next")
         codex_catalog = json.loads(MODULE.render_codex_client_catalog(merged))
         self.assertEqual(codex_catalog["models"][0]["slug"], "gpt-next")
+
+    def test_non_default_codex_catalog_change_bumps_installer_version(self) -> None:
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        current = next(row for row in catalog["models"] if row["id"] == "gpt-6-astra")
+        manifest = {
+            "model": {
+                "id": current["id"],
+                "upstream_id": current["upstream_id"],
+                "display_name": current["display_name"],
+                "platform": current["platform"],
+                "context_window": current["context_window"],
+                "max_output_tokens": current["max_output_tokens"],
+                "codex_catalog_entry": {
+                    "slug": "gpt-6-astra",
+                    "display_name": "GPT-6 Astra",
+                    "base_instructions": "You are Codex.",
+                    "supports_reasoning_summaries": False,
+                    "visibility": "list",
+                    "context_window": 1050000,
+                    "max_context_window": 1050000,
+                    "auto_compact_token_limit": 997500,
+                },
+            },
+            "pricing": {
+                "input_per_mtok_usd": current["pricing"]["input_per_mtok_usd"],
+                "cached_input_per_mtok_usd": current["pricing"]["cached_input_per_mtok_usd"],
+                "cache_write_5m_per_mtok_usd": current["pricing"]["cache_write_5m_per_mtok_usd"],
+                "output_per_mtok_usd": current["pricing"]["output_per_mtok_usd"],
+                "evidence_url": current["pricing"]["evidence_url"],
+                "long_context": {
+                    "input_threshold": current["pricing"]["long_context_input_threshold"],
+                    "input_multiplier": current["pricing"]["long_context_input_multiplier"],
+                    "output_multiplier": current["pricing"]["long_context_output_multiplier"],
+                },
+            },
+            "production": {
+                "group_name": current["public_group"]["preferred_name"],
+                "client_default": False,
+            },
+        }
+        before = catalog["client_auto_config_version"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            merged = MODULE.merge_manifest(catalog, path)
+        self.assertEqual(merged["client_auto_config_version"], MODULE.bump_patch(before))
+        self.assertIn(
+            "gpt-6-astra",
+            [model["slug"] for model in json.loads(MODULE.render_codex_client_catalog(merged))["models"]],
+        )
 
     def test_anthropic_manifest_drives_installer_default(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)

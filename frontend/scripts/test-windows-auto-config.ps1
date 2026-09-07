@@ -106,6 +106,20 @@ try {
   Assert-True ($DaybreakModel.visibility -eq 'list') 'Daybreak is not visible in the Codex model selector'
   Assert-True ([int]$DaybreakModel.context_window -eq 1050000) 'Daybreak context window is incorrect'
 
+  $StandardCatalogOutput = Join-Path $FixtureDir 'standard-codex-model-catalog.json'
+  $StandardModels = @('gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4', 'gpt-5.3-codex-spark')
+  Convert-CodexModelCatalog `
+    -SourcePath $CodexCatalogSource `
+    -AuthorizedModels $StandardModels `
+    -OutputPath $StandardCatalogOutput
+  $StandardCatalog = Get-Content -LiteralPath $StandardCatalogOutput -Raw | ConvertFrom-Json
+  $StandardModelIds = @($StandardCatalog.models | ForEach-Object { [string]$_.slug })
+  Assert-True (($StandardModelIds -join ',') -eq ($StandardModels -join ',')) "GPT standard Codex model catalog mismatch: $($StandardModelIds -join ',')"
+  $AstraModel = @($StandardCatalog.models | Where-Object { $_.slug -eq 'gpt-6-astra' })[0]
+  Assert-True ($AstraModel.visibility -eq 'list') 'GPT-6 Astra is not visible in the Codex selector'
+  Assert-True ([int]$AstraModel.context_window -eq 1050000) 'GPT-6 Astra context window is incorrect'
+  Assert-True (@($AstraModel.supported_reasoning_levels | ForEach-Object { $_.effort }) -contains 'max') 'GPT-6 Astra max reasoning is missing'
+
   foreach ($Client in @('claude', 'codex')) {
     $CmdPath = Join-Path $FixtureDir "$Client.cmd"
     $Ps1Path = Join-Path $FixtureDir "$Client.ps1"

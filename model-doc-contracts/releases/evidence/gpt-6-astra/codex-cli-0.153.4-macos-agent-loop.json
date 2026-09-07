@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "owned_client_loop",
+  "secret_free": true,
+  "client_id": "codex",
+  "client_version": "cli:0.153.4",
+  "os": "macos",
+  "architecture": "arm64",
+  "model_id": "gpt-6-astra",
+  "protocol": "responses",
+  "base_url": "https://api.laoshirenai.com",
+  "group_id": 6,
+  "owned_test_identity": {
+    "user_id": 2,
+    "key_id": 128,
+    "name": "一键安装 · Codex"
+  },
+  "observed_at": "2026-09-07T09:21:00+00:00",
+  "duration_ms": 24213,
+  "exit_code": 0,
+  "timed_out": false,
+  "event_types": {
+    "thread.started": 1,
+    "turn.started": 1,
+    "item.started": 1,
+    "item.completed": 2,
+    "turn.completed": 1
+  },
+  "tool_use_observed": true,
+  "tool_result_observed": true,
+  "file_marker_verified": true,
+  "final_marker_verified": true,
+  "stdout_sha256": "79cf6add636a5d37c621745a7793bff1a18bf1fe25926ef3536c6d5480d9f571",
+  "stderr_sha256": "4529219697f23156dc65641e424b62c04ce16986a2cfe2bd2b5fcbe5770d3a85",
+  "passed": true,
+  "pre_acceptance_observation": {
+    "status": "transient_failure",
+    "observed_at": "2026-09-07T08:57:45+00:00",
+    "message": "No healthy service route is currently available; a later fresh owned run completed successfully."
+  },
+  "network_execution": "explicit_live",
+  "subject": {
+    "model_id": "gpt-6-astra",
+    "protocol": "responses",
+    "client_id": "codex",
+    "client_version": "cli:0.153.4",
+    "os": "macos",
+    "architecture": "arm64",
+    "group_id": 6,
+    "base_url": "https://api.laoshirenai.com"
+  },
+  "local_tool_executed": true,
+  "tool_result_submitted": true,
+  "final_answer_received": true,
+  "catalog_contract": {
+    "source": "frontend/public/auto-config/codex-model-catalog.json",
+    "filtered_models": [
+      "gpt-6-astra",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-5.5",
+      "gpt-5.4",
+      "gpt-5.3-codex-spark"
+    ],
+    "filtered_catalog_sha256": "8072b517001f34d505cb06bc56c702a4bfa5aae4f06bee1eee906e8116fccd77",
+    "gpt_6_astra_visible": true
+  }
+}

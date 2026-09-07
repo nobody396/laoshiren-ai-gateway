@@ -15,7 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const resourceDownloadTokenTTL = 5 * time.Minute
+const (
+	resourceDownloadTokenTTL   = 5 * time.Minute
+	clientSetupCommandsEnabled = false
+)
 
 const (
 	codexWindowsPublicBase = "https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64"
@@ -319,6 +322,11 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		response.Unauthorized(c, "User not authenticated")
 		return
 	}
+	if !clientSetupCommandsEnabled {
+		response.ErrorWithDetails(c, http.StatusServiceUnavailable, "一键配置正在调整，请先查看接入文档手动配置", "CLIENT_SETUP_PAUSED", nil)
+		return
+	}
+
 	var req clientSetupTicketRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "请选择 API 密钥或一键安装目标")
@@ -381,6 +389,11 @@ func setupSelectionFromRequest(req clientSetupTicketRequest) (service.ClientSetu
 }
 
 func (h *ResourceHandler) ExchangeSetupTicket(c *gin.Context) {
+	if !clientSetupCommandsEnabled {
+		response.ErrorWithDetails(c, http.StatusServiceUnavailable, "一键配置正在调整，请先查看接入文档手动配置", "CLIENT_SETUP_PAUSED", nil)
+		return
+	}
+
 	var req clientSetupExchangeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "一键安装凭证不能为空")

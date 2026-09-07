@@ -865,6 +865,8 @@ export default {
     importToCcSwitchHint: 'Open CC Switch and import compatible app settings for this API key',
     configureClient: 'One-click Setup',
     configureClientHint: 'Generate a single-use command valid for 10 minutes; detect, install or update {client}, configure it, and verify readiness',
+    configureClientPaused: 'Setup Paused',
+    configureClientPausedHint: 'One-click setup is temporarily unavailable while it is being updated. Please use the integration docs for manual setup.',
     codexSetupChoice: {
       title: 'Choose Codex setup scope',
       description: 'Only Codex is affected. Claude Code will not be installed.',
@@ -6455,7 +6457,7 @@ export default {
     user: {
       welcome: {
         title: '👋 Welcome to 老实人 AI',
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Get started in 3 minutes: learn top-ups and pricing, create an API key, then configure Codex or Claude Code.</p><p style="color: #10b981; font-weight: 600;">Follow each highlighted action.</p></div>',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Get started in 3 minutes: learn top-ups and pricing, create an API key, then follow the integration docs for Codex or Claude Code.</p><p style="color: #10b981; font-weight: 600;">Follow each highlighted action.</p></div>',
         nextBtn: 'Start 🚀',
         prevBtn: 'Skip'
       },
@@ -6499,11 +6501,11 @@ export default {
       },
       useOptions: {
         title: 'Choose a setup method',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Both methods use the same API key; only configuration management differs:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>One-click Setup (recommended):</b> creates a single-use command valid for 10 minutes. It detects the client and writes the Codex or Claude Code configuration without putting the raw API key in the command.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Import to CC Switch:</b> centrally manage this key when you use multiple tools, keys, or configurations.</p></div><p style="margin-top: 12px; color: #10b981; font-weight: 600;">For the fastest start, choose One-click Setup.</p></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">One-click setup is being updated and does not generate installation commands right now.</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Current method:</b> open the integration docs and manually enter the Base URL and API key for your client.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Import to CC Switch:</b> remains available for centrally managing multiple tools, keys, or configurations.</p></div><p style="margin-top: 12px; color: #d97706; font-weight: 600;">Please use the manual setup docs for now.</p></div>'
       },
       docs: {
         title: '📚 Tutorials and download guide',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Docs include CC Switch download instructions and setup guides for Claude Code, Codex, Gemini CLI, and more.</p><p style="font-size: 13px; color: #6b7280;">Download CC Switch only when you want automatic configuration. Manual setup remains available.</p></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Docs include manual setup guides for Claude Code, Codex, Gemini CLI, and more.</p><p style="font-size: 13px; color: #6b7280;">One-click setup is temporarily unavailable, so please follow the docs for now.</p></div>'
       }
     }
   },

@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import KeysView from '../KeysView.vue'
 
 const m = vi.hoisted(() => ({
-  list: vi.fn(), create: vi.fn(), update: vi.fn(), groups: vi.fn(), error: vi.fn(), replace: vi.fn(),
+  list: vi.fn(), create: vi.fn(), update: vi.fn(), groups: vi.fn(), error: vi.fn(), warning: vi.fn(), replace: vi.fn(), setupTicket: vi.fn(),
 }))
 vi.mock('vue-router', () => ({ useRoute: () => ({ query: {} }), useRouter: () => ({ replace: m.replace }) }))
 vi.mock('vue-i18n', async (original) => ({ ...await original<typeof import('vue-i18n')>(), useI18n: () => ({ t: (key: string) => key }) }))
-vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showError: m.error, showSuccess: vi.fn(), cachedPublicSettings: { team_enabled: true } }) }))
+vi.mock('@/stores/app', () => ({ useAppStore: () => ({ showError: m.error, showWarning: m.warning, showSuccess: vi.fn(), cachedPublicSettings: { team_enabled: true } }) }))
 vi.mock('@/stores/onboarding', () => ({ useOnboardingStore: () => ({ isCurrentStep: () => false, nextStep: vi.fn() }) }))
 vi.mock('@/stores/subscriptions', () => ({ useSubscriptionStore: () => ({ hasActiveSubscriptions: true }) }))
 vi.mock('@/composables/useClipboard', () => ({ useClipboard: () => ({ copyToClipboard: vi.fn() }) }))
@@ -16,7 +16,7 @@ vi.mock('@/api', () => ({
   keysAPI: { list: m.list, create: m.create, update: m.update },
   userGroupsAPI: { getAvailable: m.groups, getUserGroupRates: vi.fn().mockResolvedValue({}) },
   usageAPI: { getDashboardApiKeysUsage: vi.fn().mockResolvedValue({ stats: {} }) },
-  authAPI: { getPublicSettings: vi.fn().mockResolvedValue({}) }, resourcesAPI: {},
+  authAPI: { getPublicSettings: vi.fn().mockResolvedValue({}) }, resourcesAPI: { createClientSetupTicketForAPIKey: m.setupTicket },
 }))
 const personal = [
   { id: 6, name: 'GPT', platform: 'openai', subscription_type: 'standard', rate_multiplier: 1 },
@@ -35,6 +35,7 @@ async function page() {
     groupsLoadedScope: string | null;
     handleSubmit(): Promise<void>; editKey(key: unknown): void;
     setScope(scope: 'personal' | 'team'): Promise<void>; loadGroups(): Promise<void>;
+    copyClientAutoConfigCommand(key: unknown): Promise<void>;
   }
 }
 beforeEach(() => {
@@ -101,5 +102,11 @@ describe('KeysView group authorization integration', () => {
     await first
     expect(vm.groups.map(group => group.id)).toEqual([6, 5])
     expect(vm.groupsLoadedScope).toBe('personal')
+  })
+  it('keeps every one-click setup command paused', async () => {
+    const vm = await page()
+    await vm.copyClientAutoConfigCommand({ id: 1, status: 'active', group: personal[0] })
+    expect(m.warning).toHaveBeenCalledWith('keys.configureClientPausedHint', 6000)
+    expect(m.setupTicket).not.toHaveBeenCalled()
   })
 })

@@ -17,6 +17,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestExchangeSetupTicketReturnsPausedWithoutExposingCredentials(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewResourceHandler(nil, nil)
+	router := gin.New()
+	router.POST("/setup/exchange", handler.ExchangeSetupTicket)
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/setup/exchange", strings.NewReader(`{"ticket":"existing-ticket"}`)))
+
+	require.Equal(t, http.StatusServiceUnavailable, recorder.Code)
+	require.Contains(t, recorder.Body.String(), `"reason":"CLIENT_SETUP_PAUSED"`)
+	require.NotContains(t, recorder.Body.String(), `"api_key"`)
+}
+
 func TestClaudeDesktopWindowsDownloadIsContentAddressedImmutableAndRangeCapable(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cacheDir := t.TempDir()

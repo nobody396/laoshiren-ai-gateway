@@ -326,12 +326,11 @@
                 <button
                   v-if="getAutoConfigTargetForKey(row)"
                   @click="copyClientAutoConfigCommand(row)"
-                  :disabled="configuringKeyId === row.id"
-                  :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
-                  class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-wait disabled:opacity-60 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                  :title="t('keys.configureClientPausedHint')"
+                  class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-amber-600 transition-colors hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300"
                 >
-                  <Icon :name="configuringKeyId === row.id ? 'refresh' : 'terminal'" size="sm" :class="configuringKeyId === row.id ? 'animate-spin' : ''" />
-                  <span class="text-xs">{{ t('keys.configureClient') }}</span>
+                  <Icon name="terminal" size="sm" />
+                  <span class="text-xs">{{ t('keys.configureClientPaused') }}</span>
                 </button>
                 <!-- Import to CC Switch Button -->
                 <button
@@ -1300,6 +1299,7 @@ const usageStats = ref<Record<string, BatchApiKeyUsageStats>>({})
 const userGroupRates = ref<Record<number, number>>({})
 const groupCacheStats = ref<Record<number, GroupCacheStats>>({})
 const groupCacheWindowDays = ref(7)
+const clientAutoConfigEnabled = false
 
 const pagination = ref({
   page: 1,
@@ -1598,9 +1598,8 @@ const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null =
   return getClientAutoConfigTarget(row.group?.platform)
 }
 
-const getAutoConfigClientName = (row: ApiKey): string => {
-  const target = getAutoConfigTargetForKey(row)
-  return target ? getClientAutoConfigName(target) : ''
+const showAutoConfigPausedNotice = () => {
+  appStore.showWarning(t('keys.configureClientPausedHint'), 6000)
 }
 
 const generateAndCopyClientAutoConfigCommand = async (
@@ -1608,6 +1607,11 @@ const generateAndCopyClientAutoConfigCommand = async (
   installCodexApp = false,
   grokCcSwitchCompat = false
 ) => {
+  if (!clientAutoConfigEnabled) {
+    showAutoConfigPausedNotice()
+    return
+  }
+
   if (row.status !== 'active') {
     appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
     return
@@ -1637,6 +1641,10 @@ const generateAndCopyClientAutoConfigCommand = async (
 }
 
 const copyClientAutoConfigCommand = async (row: ApiKey) => {
+  if (!clientAutoConfigEnabled) {
+    showAutoConfigPausedNotice()
+    return
+  }
   if (row.status !== 'active') {
     appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
     return

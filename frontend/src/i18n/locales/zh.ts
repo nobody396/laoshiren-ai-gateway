@@ -864,6 +864,8 @@ export default {
     importToCcSwitchHint: '打开 CC Switch，并导入当前 API Key 的兼容工具配置',
     configureClient: '一键配置',
     configureClientHint: '生成 10 分钟有效的一次性命令：自动检测、安装或更新 {client}，写入配置并测试可用性',
+    configureClientPaused: '配置暂停',
+    configureClientPausedHint: '一键配置正在调整，暂时不可用。请先查看接入文档手动配置。',
     codexSetupChoice: {
       title: '选择 Codex 安装范围',
       description: '只处理 Codex，不会安装 Claude Code。',
@@ -6630,7 +6632,7 @@ export default {
       welcome: {
         title: '👋 欢迎使用 老实人 AI',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">3 分钟完成首次使用：了解充值和价格，创建 API 密钥，再一键配置 Codex 或 Claude Code。</p><p style="color: #10b981; font-weight: 600;">跟着高亮位置操作即可。</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">3 分钟完成首次使用：了解充值和价格，创建 API 密钥，再按接入文档配置 Codex 或 Claude Code。</p><p style="color: #10b981; font-weight: 600;">跟着高亮位置操作即可。</p></div>',
         nextBtn: '开始 🚀',
         prevBtn: '跳过'
       },
@@ -6684,12 +6686,12 @@ export default {
       useOptions: {
         title: '选择配置方式',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">两种方式调用同一把密钥，区别只在配置如何管理：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>一键配置（推荐）：</b>生成一条 10 分钟有效、仅可使用一次的命令。运行后自动检测客户端，并把接口配置写入 Codex 或 Claude Code；命令中不包含明文 API Key。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>导入 CC Switch：</b>把当前密钥交给 CC Switch 集中管理，适合多个工具、多个 Key 或经常切换配置。</p></div><p style="margin-top: 12px; color: #10b981; font-weight: 600;">新手直接点「一键配置」即可。</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">一键配置正在调整，暂时不生成安装命令。</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>当前方式：</b>打开接入文档，按对应客户端的步骤手动填写 Base URL 和 API Key。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>导入 CC Switch：</b>仍可用于集中管理多个工具、多个 Key 或经常切换的配置。</p></div><p style="margin-top: 12px; color: #d97706; font-weight: 600;">请先使用文档手动配置。</p></div>'
       },
       docs: {
         title: '📚 教程和下载说明',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">文档里有 CC Switch 下载说明、Claude Code、Codex、Gemini CLI 等工具的接入教程。</p><p style="font-size: 13px; color: #6b7280;">你想用自动配置时再下载 CC Switch；不想用也可以直接手动配置。</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">文档里有 Claude Code、Codex、Gemini CLI 等工具的手动接入教程。</p><p style="font-size: 13px; color: #6b7280;">一键配置暂时不可用，请先按文档完成配置。</p></div>'
       }
     }
   },

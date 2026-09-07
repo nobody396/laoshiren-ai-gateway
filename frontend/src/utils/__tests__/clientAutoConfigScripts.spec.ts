@@ -194,7 +194,14 @@ describe('client auto-config scripts', () => {
     expect(catalog.template).toBeUndefined()
     for (const model of catalog.models) {
       expect(model.base_instructions).toBeTruthy()
-      expect(model.supports_reasoning_summaries).toBe(true)
+      // Keep unsupported/untested optional capabilities conservative instead
+      // of copying them from another model's catalog entry.
+      expect(typeof model.supports_reasoning_summaries).toBe('boolean')
+      if (model.slug === 'gpt-6-astra') {
+        expect(model.supports_reasoning_summaries).toBe(false)
+      } else {
+        expect(model.supports_reasoning_summaries).toBe(true)
+      }
       expect(model.visibility).toBe('list')
       expect(model.context_window).toBeGreaterThan(0)
       expect(model.max_context_window).toBe(model.context_window)

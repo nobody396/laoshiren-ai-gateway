@@ -149,6 +149,19 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "defaultReasoningLevel": "high"
   },
   {
+    "model": "gpt-6-astra",
+    "displayName": "GPT-6 Astra",
+    "contextWindow": 1050000,
+    "reasoningLevels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "defaultReasoningLevel": "high"
+  },
+  {
     "model": "gpt-daybreak-blue-latest",
     "displayName": "GPT Daybreak Blue Latest",
     "contextWindow": 1050000,

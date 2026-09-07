@@ -1,6 +1,6 @@
 # Codex
 
-Codex 使用 **OpenAI Responses** 协议。本文已在 Codex CLI `0.151.0` 上完成 GPT、Qwen 与 DeepSeek 的真实 Shell 读文件 Agent 闭环，并复核 Chat Completions 配置边界。
+Codex 使用 **OpenAI Responses** 协议。本文已在 Codex CLI `0.151.0` 上完成 GPT、Qwen 与 DeepSeek 的真实 Shell 读文件 Agent 闭环，并在 `0.153.4` 上补充完成 GPT-6 Astra 的分组模型目录、Shell 工具续轮和最终回复验收；同时复核 Chat Completions 配置边界。
 
 ## 客户端原生协议
 
@@ -10,8 +10,8 @@ Codex 使用 **OpenAI Responses** 协议。本文已在 Codex CLI `0.151.0` 上�
 
 ## 模型兼容范围
 
-- 当前 GPT / Codex 分组可选择：`gpt-5.3-codex-spark`、`gpt-5.4`、`gpt-5.5`、`gpt-5.6-sol`、`gpt-5.6-terra`；最终以当前 Key 的模型列表为准。
-- 已完成真实 Codex Agent 闭环：`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`、`qwen3.6-flash`、`qwen3.6-plus`、`qwen3.7-flash`、`qwen3.7-max`、`qwen3.7-plus`、`qwen3.8-max`、`deepseek-v4-flash-0731`、`deepseek-v4-pro-0813`。
+- 当前 GPT 标准线路可选择：`gpt-6-astra`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.5`、`gpt-5.4`、`gpt-5.3-codex-spark`；最终以当前 Key 的模型列表为准。
+- 已完成真实 Codex Agent 闭环：`gpt-6-astra`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`、`qwen3.6-flash`、`qwen3.6-plus`、`qwen3.7-flash`、`qwen3.7-max`、`qwen3.7-plus`、`qwen3.8-max`、`deepseek-v4-flash-0731`、`deepseek-v4-pro-0813`。
 - Qwen 与 DeepSeek 会显示“未知模型，使用 fallback model metadata”警告，但实测可以完成 Responses 流式续轮、Shell 调用和最终回复。
 - `glm-5.2` 虽能调用 Responses API，但真实 Codex 工具续轮反复断流并最终失败，因此不列为 Codex 可用模型。
 - `kimi-k3` 虽然可以调用 Responses API，但在 Codex 中缺少兼容模型元数据，真实客户端测试失败，因此不列为 Codex 支持模型。

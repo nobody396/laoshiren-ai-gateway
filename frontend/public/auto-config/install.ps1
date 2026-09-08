@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.19'
+$ScriptVersion = '0.7.20'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -54,6 +54,8 @@ $GrokCommandPath = Join-Path $GrokBinDir 'grok.exe'
 $GeminiDir = Join-Path $HOME '.gemini'
 $GeminiEnvPath = Join-Path $GeminiDir '.env'
 $GeminiSettingsPath = Join-Path $GeminiDir 'settings.json'
+$KimiDir = Join-Path $HOME '.kimi-code'
+$KimiConfigPath = Join-Path $KimiDir 'config.toml'
 
 # 支持通过环境变量传参，解决 `irm | iex` 管道模式下无法传命令行参数的问题
 $BaseUrl = if ($env:LAOSHIRENAI_BASE_URL) { $env:LAOSHIRENAI_BASE_URL } else { $DefaultBaseUrl }
@@ -62,6 +64,7 @@ $ClaudeApiKey = $env:LAOSHIRENAI_CLAUDE_API_KEY
 $CodexApiKey = $env:LAOSHIRENAI_CODEX_API_KEY
 $GrokApiKey = $env:LAOSHIRENAI_GROK_API_KEY
 $GeminiApiKey = $env:LAOSHIRENAI_GEMINI_API_KEY
+$KimiApiKey = $env:LAOSHIRENAI_KIMI_API_KEY
 $UnifiedApiKey = $env:LAOSHIRENAI_API_KEY
 if ([string]::IsNullOrWhiteSpace($ClaudeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $ClaudeApiKey = $UnifiedApiKey
@@ -74,6 +77,9 @@ if ([string]::IsNullOrWhiteSpace($GrokApiKey) -and -not [string]::IsNullOrWhiteS
 }
 if ([string]::IsNullOrWhiteSpace($GeminiApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $GeminiApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($KimiApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $KimiApiKey = $UnifiedApiKey
 }
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
@@ -179,6 +185,11 @@ function Parse-Arguments {
         if ($i -ge $ArgsList.Count) { Stop-Script '--gemini-api-key 需要一个值' }
         $script:GeminiApiKey = $ArgsList[$i]
       }
+      '--kimi-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--kimi-api-key 需要一个值' }
+        $script:KimiApiKey = $ArgsList[$i]
+      }
       '--base-url' {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--base-url 需要一个值' }
@@ -188,8 +199,8 @@ function Parse-Arguments {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--tools 需要一个值' }
         $Value = $ArgsList[$i].ToLowerInvariant()
-        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini')) {
-          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini'
+        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini', 'kimi')) {
+          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini / kimi'
         }
         $script:Tools = $Value
       }
@@ -216,10 +227,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.19 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.20 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.19 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.20 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -291,6 +302,10 @@ function Prompt-ApiKeys {
       Stop-Script 'Gemini CLI API Key 不能为空'
     }
   }
+  if ($script:Tools -eq 'kimi' -and [string]::IsNullOrWhiteSpace($script:KimiApiKey)) {
+    $script:KimiApiKey = Read-SecureInput -Prompt '请输入 Kimi Code API Key'
+    if ([string]::IsNullOrWhiteSpace($script:KimiApiKey)) { Stop-Script 'Kimi Code API Key 不能为空' }
+  }
 }
 
 # 用一次性凭证领取当前目标的专用 API Key。凭证和 Key 均不会打印到终端。
@@ -311,7 +326,7 @@ function Exchange-SetupTicket {
 
   $Data = $Response.data
   if ($null -eq $Data -or
-      $Data.target -notin @('claude', 'codex', 'grok', 'gemini') -or
+      $Data.target -notin @('claude', 'codex', 'grok', 'gemini', 'kimi') -or
       [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
       [string]::IsNullOrWhiteSpace([string]$Data.base_url) -or
       (-not [string]::IsNullOrWhiteSpace([string]$Data.client_id) -and ([string]::IsNullOrWhiteSpace([string]$Data.model_id) -or [string]::IsNullOrWhiteSpace([string]$Data.protocol)))) {
@@ -335,6 +350,8 @@ function Exchange-SetupTicket {
       $script:CatalogGeminiDefaultModel = $script:SelectedModel
       $script:CatalogGeminiManagedModels = @($script:SelectedModel)
     }
+  } elseif ($Data.target -eq 'kimi') {
+    $script:KimiApiKey = [string]$Data.api_key
   } else {
     $script:GrokApiKey = [string]$Data.api_key
     if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
@@ -454,6 +471,7 @@ function Resolve-ClientInstallPlan {
   $script:InstallCodexClient = $false
   $script:InstallGrokClient = $false
   $script:InstallGeminiClient = $false
+  $script:InstallKimiClient = $false
 
   if ($script:Tools -in @('all', 'claude')) {
     $script:ExistingClaudeCommand = Get-UsableClientCommand -CommandName 'claude'
@@ -518,6 +536,18 @@ function Resolve-ClientInstallPlan {
       $script:InstallGeminiClient = $true
     }
   }
+  if ($script:Tools -eq 'kimi') {
+    $script:ExistingKimiCommand = Get-UsableClientCommand -CommandName 'kimi'
+    if ($script:ForceClientInstall) {
+      $script:InstallKimiClient = $true
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingKimiCommand)) {
+      Write-Info "检测到现有 Kimi Code，跳过重复安装: $($script:ExistingKimiCommand)"
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到可用的 Kimi Code，但已按要求跳过安装'
+    } else {
+      $script:InstallKimiClient = $true
+    }
+  }
 }
 
 function Get-ClientVersion {
@@ -556,7 +586,8 @@ function Resolve-ClientUpdatePlan {
   $Checks = @(
     @{ Label = 'Claude Code CLI'; Command = $script:ExistingClaudeCommand; Package = '@anthropic-ai%2Fclaude-code'; Flag = 'InstallClaudeClient' },
     @{ Label = 'Codex CLI'; Command = $script:ExistingCodexCommand; Package = '@openai%2Fcodex'; Flag = 'InstallCodexClient' },
-    @{ Label = 'Gemini CLI'; Command = $script:ExistingGeminiCommand; Package = '@google%2Fgemini-cli'; Flag = 'InstallGeminiClient' }
+    @{ Label = 'Gemini CLI'; Command = $script:ExistingGeminiCommand; Package = '@google%2Fgemini-cli'; Flag = 'InstallGeminiClient' },
+    @{ Label = 'Kimi Code CLI'; Command = $script:ExistingKimiCommand; Package = '@moonshot-ai%2Fkimi-code'; Flag = 'InstallKimiClient' }
   )
   foreach ($Check in $Checks) {
     if ([string]::IsNullOrWhiteSpace([string]$Check.Command) -or (Get-Variable -Scope Script -Name $Check.Flag).Value) { continue }
@@ -574,11 +605,11 @@ function Resolve-ClientUpdatePlan {
 }
 
 function Test-NeedsClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient -or $script:InstallGeminiClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient -or $script:InstallGeminiClient -or $script:InstallKimiClient)
 }
 
 function Test-NeedsNpmClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGeminiClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGeminiClient -or $script:InstallKimiClient)
 }
 
 # 只解析 npm.cmd，避免 PowerShell 在 Restricted 执行策略下优先命中 npm.ps1。
@@ -1184,6 +1215,10 @@ function Install-RequestedClients {
   if ($script:InstallGeminiClient) {
     Write-Info '正在安装或更新 Gemini CLI'
     Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'
+  }
+  if ($script:InstallKimiClient) {
+    Write-Info '正在安装或更新 Kimi Code'
+    Install-NpmPackageWithFallback -PackageName '@moonshot-ai/kimi-code@latest'
   }
 }
 
@@ -1926,6 +1961,10 @@ function Test-UsesGemini {
   return $script:Tools -eq 'gemini'
 }
 
+function Test-UsesKimi {
+  return $script:Tools -eq 'kimi'
+}
+
 function Get-OpenAIV1BaseUrl {
   param([string]$Value)
 
@@ -1998,6 +2037,7 @@ function Test-SelectedModelRequest {
     'codex' { $script:CodexApiKey }
     'grok' { $script:GrokApiKey }
     'gemini' { $script:GeminiApiKey }
+    'kimi' { $script:KimiApiKey }
     default { return }
   }
   $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
@@ -2067,6 +2107,70 @@ function Test-GeminiApiKey {
   }
 }
 
+function Test-KimiApiKey {
+  if (Test-UsesKimi) { Test-ApiKeyReadiness -Label 'Kimi Code' -ApiKey $script:KimiApiKey }
+}
+
+function Write-KimiConfig {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{ Authorization = "Bearer $script:KimiApiKey" } -Method GET
+  } catch {
+    Stop-Script "Kimi Code 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data | ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } | Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'Kimi Code 分组模型目录为空' }
+  if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel) -and $script:SelectedModel -notin $Ids) {
+    Stop-Script '票据选择的模型已不在当前 Key 的模型列表中'
+  }
+  $Selected = if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) { $script:SelectedModel } elseif ($Ids -contains 'kimi-k3') { 'kimi-k3' } else { $Ids[0] }
+  Backup-IfNeeded $KimiConfigPath
+  Ensure-Directory $KimiDir
+  $Text = if (Test-Path -LiteralPath $KimiConfigPath) { [IO.File]::ReadAllText($KimiConfigPath) } else { '' }
+  if ($Text.Contains([char]0)) { Stop-Script '拒绝覆盖损坏的 Kimi Code config.toml' }
+  $Kept = New-Object System.Collections.Generic.List[string]
+  $Section = ''
+  $Managed = $false
+  foreach ($Line in ($Text -split "`r?`n")) {
+    $Trimmed = $Line.Trim()
+    if ($Trimmed -eq '# BEGIN LSRAI KIMI CODE') { $Managed = $true; continue }
+    if ($Trimmed -eq '# END LSRAI KIMI CODE') { $Managed = $false; continue }
+    if ($Managed) { continue }
+    if ($Trimmed.StartsWith('[')) {
+      if ($Trimmed -notmatch '^\[([^\]]+)\](?:\s*#.*)?$') { Stop-Script "拒绝覆盖无法解析的 Kimi Code TOML 表头: $Trimmed" }
+      $Section = $Matches[1]
+    }
+    if ($Section -eq '' -and $Trimmed -match '^default_model\s*=') { continue }
+    $Kept.Add($Line)
+  }
+  while ($Kept.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Kept[0])) { $Kept.RemoveAt(0) }
+  while ($Kept.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Kept[$Kept.Count - 1])) { $Kept.RemoveAt($Kept.Count - 1) }
+  $Lines = New-Object System.Collections.Generic.List[string]
+  $Lines.Add("default_model = `"lsrai/$Selected`"")
+  $Lines.Add('')
+  $Lines.Add('# BEGIN LSRAI KIMI CODE')
+  $Lines.Add('[providers.lsrai]')
+  $Lines.Add('type = "openai"')
+  $Lines.Add("base_url = $(ConvertTo-TomlString $ApiBaseUrl)")
+  $Lines.Add("api_key = $(ConvertTo-TomlString $script:KimiApiKey)")
+  $Lines.Add('')
+  foreach ($Id in $Ids) {
+    $Lines.Add("[models.`"lsrai/$Id`"]")
+    $Lines.Add('provider = "lsrai"')
+    $Lines.Add("model = $(ConvertTo-TomlString $Id)")
+    $Lines.Add('max_context_size = 262144')
+    $Lines.Add('')
+  }
+  $Lines.Add('# END LSRAI KIMI CODE')
+  if ($Kept.Count -gt 0) { $Lines.Add(''); foreach ($Line in $Kept) { $Lines.Add($Line) } }
+  $TemporaryPath = "$KimiConfigPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [IO.File]::WriteAllText($TemporaryPath, (($Lines -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $KimiConfigPath -Force
+  } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
+}
+
 # 根据用户选择写入 Claude Code 配置。
 function Configure-Claude {
   if ($script:Tools -in @('all', 'claude')) {
@@ -2097,6 +2201,13 @@ function Configure-Gemini {
   if (Test-UsesGemini) {
     Write-Info '正在写入 Gemini CLI 配置'
     Write-GeminiConfig
+  }
+}
+
+function Configure-Kimi {
+  if ($script:Tools -eq 'kimi') {
+    Write-Info '正在写入 Kimi Code 配置'
+    Write-KimiConfig
   }
 }
 
@@ -2171,6 +2282,13 @@ function Verify-ClientCommands {
       Stop-Script "Gemini CLI 安装验证失败：未找到 $GeminiCmd"
     }
   }
+  if (Test-UsesKimi) {
+    $KimiCmd = if ($script:InstallKimiClient) { Join-Path $NpmPrefix 'kimi.cmd' } else { $script:ExistingKimiCommand }
+    if (-not [string]::IsNullOrWhiteSpace($KimiCmd) -and (Test-Path -LiteralPath $KimiCmd)) {
+      & $KimiCmd --version | Out-Null
+      Write-Info 'Kimi Code 验证通过'
+    } elseif ($script:InstallKimiClient) { Stop-Script "Kimi Code 安装验证失败：未找到 $KimiCmd" }
+  }
 }
 
 # 输出最终结果和下一步指引，帮助用户立即开始使用。
@@ -2190,6 +2308,7 @@ function Print-Summary {
     Write-Host "  - Gemini CLI 设置: $GeminiSettingsPath"
     Write-Host "  - Gemini CLI 默认模型: $CatalogGeminiDefaultModel"
   }
+  if (Test-UsesKimi) { Write-Host "  - Kimi Code 配置: $KimiConfigPath" }
   if (Test-UsesClaude) {
     Write-Host '  - Claude Code 专用 Key: 已配置'
     if ($script:InstallClaudeClient) {
@@ -2224,9 +2343,10 @@ function Print-Summary {
       Write-Host "  - Gemini CLI: 已保留现有安装 ($($script:ExistingGeminiCommand))"
     }
   }
+  if (Test-UsesKimi) { Write-Host '  - Kimi Code 专用 Key: 已配置' }
   Write-Host ''
   Write-Host '回滚方法（仅显示本次存在的备份）:'
-  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath)) {
+  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath, $KimiConfigPath)) {
     if (Test-Path -LiteralPath "$RollbackPath.bak") {
       Write-Host "  Copy-Item -LiteralPath '$RollbackPath.bak' -Destination '$RollbackPath' -Force"
     }
@@ -2259,6 +2379,7 @@ function Print-Summary {
   if (Test-UsesGemini) {
     Write-Host '  - 重新打开 PowerShell 后执行 gemini --version'
   }
+  if (Test-UsesKimi) { Write-Host '  - 重新打开 PowerShell 后执行 kimi --version' }
 }
 
 # 组织整个安装流程，确保安装、配置、校验按固定顺序执行。
@@ -2297,10 +2418,12 @@ function Main {
   Configure-Codex
   Configure-Grok
   Configure-Gemini
+  Configure-Kimi
   Test-ClaudeApiKey
   Test-CodexApiKey
   Test-GrokApiKey
   Test-GeminiApiKey
+  Test-KimiApiKey
   Test-SelectedModelRequest
   Verify-ClientCommands
   Open-CcSwitchIfRequested

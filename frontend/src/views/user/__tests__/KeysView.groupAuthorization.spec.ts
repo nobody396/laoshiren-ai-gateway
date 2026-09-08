@@ -107,7 +107,7 @@ describe('KeysView group authorization integration', () => {
   it('opens one-click setup only for the three released single-group Codex routes', async () => {
     const vm = await page()
     const standard = { id: 1, status: 'active', group: personal[0] }
-    for (const id of [5, 15, 65, 6, 58, 59]) {
+    for (const id of [5, 15, 65, 6, 58, 59, 62]) {
       expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id } })).toBe(true)
     }
     expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id: 40 } })).toBe(false)

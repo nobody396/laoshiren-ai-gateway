@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.19'
+SCRIPT_VERSION='0.7.20'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -51,6 +51,8 @@ GROK_BIN_PATH="${GROK_DIR}/bin/grok"
 GEMINI_DIR="${HOME}/.gemini"
 GEMINI_ENV_PATH="${GEMINI_DIR}/.env"
 GEMINI_SETTINGS_PATH="${GEMINI_DIR}/settings.json"
+KIMI_DIR="${HOME}/.kimi-code"
+KIMI_CONFIG_PATH="${KIMI_DIR}/config.toml"
 
 BASE_URL="${DEFAULT_BASE_URL}"
 TOOLS="${DEFAULT_TOOLS}"
@@ -58,6 +60,7 @@ CLAUDE_API_KEY="${LAOSHIRENAI_CLAUDE_API_KEY:-}"
 CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
 GROK_API_KEY="${LAOSHIRENAI_GROK_API_KEY:-}"
 GEMINI_API_KEY="${LAOSHIRENAI_GEMINI_API_KEY:-}"
+KIMI_API_KEY="${LAOSHIRENAI_KIMI_API_KEY:-}"
 GROK_CC_SWITCH_COMPAT=0
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
@@ -230,6 +233,15 @@ exec "${NPM_PREFIX}/bin/gemini" "\$@"
 EOF
     chmod +x "${LOCAL_BIN_DIR}/gemini"
   fi
+
+  if [ "$INSTALL_KIMI_CLIENT" -eq 1 ]; then
+    cat >"${LOCAL_BIN_DIR}/kimi" <<EOF
+#!/usr/bin/env bash
+export PATH="${NODE_CURRENT_DIR}/bin:${NPM_PREFIX}/bin:\$PATH"
+exec "${NPM_PREFIX}/bin/kimi" "\$@"
+EOF
+    chmod +x "${LOCAL_BIN_DIR}/kimi"
+  fi
 }
 
 # 判断当前代理变量是否指向本地代理，避免用户残留的失效代理把 npm 请求全部带偏。
@@ -295,11 +307,11 @@ normalize_tools() {
   normalized_value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
 
   case "$normalized_value" in
-    all|claude|codex|grok|gemini)
+    all|claude|codex|grok|gemini|kimi)
       printf '%s' "$normalized_value"
       ;;
     *)
-      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok / gemini"
+      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok / gemini / kimi"
       ;;
   esac
 }
@@ -326,6 +338,11 @@ parse_args() {
       --gemini-api-key)
         [ $# -ge 2 ] || log_error "--gemini-api-key 需要一个值"
         GEMINI_API_KEY="$2"
+        shift 2
+        ;;
+      --kimi-api-key)
+        [ $# -ge 2 ] || log_error "--kimi-api-key 需要一个值"
+        KIMI_API_KEY="$2"
         shift 2
         ;;
       --base-url)
@@ -429,6 +446,9 @@ prompt_for_api_keys() {
   if [ "$TOOLS" = "gemini" ] && [ -z "$GEMINI_API_KEY" ]; then
     prompt_for_named_api_key "Gemini CLI API Key" "请输入 Gemini CLI API Key" "GEMINI_API_KEY" "--gemini-api-key" "LAOSHIRENAI_GEMINI_API_KEY"
   fi
+  if [ "$TOOLS" = "kimi" ] && [ -z "$KIMI_API_KEY" ]; then
+    prompt_for_named_api_key "Kimi Code API Key" "请输入 Kimi Code API Key" "KIMI_API_KEY" "--kimi-api-key" "LAOSHIRENAI_KIMI_API_KEY"
+  fi
 }
 
 # 返回一个真正可运行的现有 CLI；PATH 残留但无法执行的命令不算已安装。
@@ -457,6 +477,7 @@ resolve_client_install_plan() {
   INSTALL_CLAUDE_CLIENT=0
   INSTALL_CODEX_CLIENT=0
   INSTALL_GROK_CLIENT=0
+  INSTALL_KIMI_CLIENT=0
 
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
     EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"
@@ -511,6 +532,18 @@ resolve_client_install_plan() {
       log_warn "未检测到可用的 Gemini CLI，但已按要求跳过安装"
     else
       INSTALL_GEMINI_CLIENT=1
+    fi
+  fi
+  if [ "$TOOLS" = "kimi" ]; then
+    EXISTING_KIMI_COMMAND="$(get_usable_client_command kimi || true)"
+    if [ "$FORCE_CLIENT_INSTALL" -eq 1 ]; then
+      INSTALL_KIMI_CLIENT=1
+    elif [ -n "$EXISTING_KIMI_COMMAND" ]; then
+      log_info "检测到现有 Kimi Code，跳过重复安装: ${EXISTING_KIMI_COMMAND}"
+    elif [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
+      log_warn "未检测到可用的 Kimi Code，但已按要求跳过安装"
+    else
+      INSTALL_KIMI_CLIENT=1
     fi
   fi
 }
@@ -572,14 +605,15 @@ resolve_client_update_plan() {
   [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || check_client_update "Claude Code CLI" "$EXISTING_CLAUDE_COMMAND" '@anthropic-ai%2Fclaude-code' INSTALL_CLAUDE_CLIENT
   [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || check_client_update "Codex CLI" "$EXISTING_CODEX_COMMAND" '@openai%2Fcodex' INSTALL_CODEX_CLIENT
   [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || check_client_update "Gemini CLI" "$EXISTING_GEMINI_COMMAND" '@google%2Fgemini-cli' INSTALL_GEMINI_CLIENT
+  [ "$INSTALL_KIMI_CLIENT" -eq 1 ] || check_client_update "Kimi Code CLI" "$EXISTING_KIMI_COMMAND" '@moonshot-ai%2Fkimi-code' INSTALL_KIMI_CLIENT
 }
 
 needs_client_install() {
-  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GROK_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GROK_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || [ "$INSTALL_KIMI_CLIENT" -eq 1 ]
 }
 
 needs_npm_client_install() {
-  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || [ "$INSTALL_KIMI_CLIENT" -eq 1 ]
 }
 
 # 判断系统自带 node 是否可直接复用，避免重复下载安装。
@@ -769,7 +803,7 @@ EOF
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.env.SETUP_RESPONSE_PATH, 'utf8'))
 const data = body && body.data
-if (!data || !['claude', 'codex', 'grok', 'gemini'].includes(data.target) || !data.api_key || !data.base_url || (data.client_id && (!data.model_id || !data.protocol))) {
+if (!data || !['claude', 'codex', 'grok', 'gemini', 'kimi'].includes(data.target) || !data.api_key || !data.base_url || (data.client_id && (!data.model_id || !data.protocol))) {
   process.exit(2)
 }
 process.stdout.write([
@@ -808,6 +842,8 @@ EOF
       CATALOG_GEMINI_DEFAULT_MODEL="$SELECTED_MODEL"
       CATALOG_GEMINI_MANAGED_MODELS="$SELECTED_MODEL"
     fi
+  elif [ "$target" = "kimi" ]; then
+    KIMI_API_KEY="$received_key"
   else
     GROK_API_KEY="$received_key"
     if [ -n "$SELECTED_MODEL" ]; then
@@ -907,6 +943,10 @@ install_requested_clients() {
   if [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]; then
     log_info "正在安装或更新 Gemini CLI"
     npm_install_with_fallback "@google/gemini-cli@latest"
+  fi
+  if [ "$INSTALL_KIMI_CLIENT" -eq 1 ]; then
+    log_info "正在安装或更新 Kimi Code"
+    npm_install_with_fallback "@moonshot-ai/kimi-code@latest"
   fi
 }
 
@@ -1420,6 +1460,83 @@ EOF
   CATALOG_GROK_MANAGED_MODELS_JSON="${parsed#*$'\n'}"
 }
 
+write_kimi_config() {
+  local response_path
+  local api_base_url
+  local status_code
+  response_path="$(mktemp)"
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  status_code="$(curl -sS -o "$response_path" -w '%{http_code}' \
+    -H "Authorization: Bearer ${KIMI_API_KEY}" "${api_base_url}/models" || true)"
+  [ "$status_code" = "200" ] || { rm -f "$response_path"; log_error "Kimi Code 分组模型读取失败: HTTP ${status_code}"; }
+
+  create_backup_if_needed "$KIMI_CONFIG_PATH"
+  ensure_dir "$KIMI_DIR"
+  CONFIG_PATH="$KIMI_CONFIG_PATH" MODELS_PATH="$response_path" CONFIG_BASE_URL="$api_base_url" CONFIG_API_KEY="$KIMI_API_KEY" PREFERRED_MODEL="$SELECTED_MODEL" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const path = process.env.CONFIG_PATH
+const response = JSON.parse(fs.readFileSync(process.env.MODELS_PATH, 'utf8'))
+const preferred = (process.env.PREFERRED_MODEL || '').trim()
+const ids = []
+const seen = new Set()
+for (const row of Array.isArray(response.data) ? response.data : []) {
+  const id = typeof row?.id === 'string' ? row.id.trim() : ''
+  if (!id || id === 'codex-auto-review' || seen.has(id) || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(id)) continue
+  seen.add(id)
+  ids.push(id)
+}
+if (!ids.length) throw new Error('empty Kimi Code model list')
+if (preferred && !seen.has(preferred)) throw new Error('ticket model is no longer available')
+const selected = preferred || (seen.has('kimi-k3') ? 'kimi-k3' : ids[0])
+const text = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : ''
+if (text.includes('\u0000')) throw new Error('refusing malformed Kimi Code TOML')
+const kept = []
+let section = ''
+let managed = false
+for (const line of text.split(/\r?\n/)) {
+  const trimmed = line.trim()
+  if (trimmed === '# BEGIN LSRAI KIMI CODE') { managed = true; continue }
+  if (trimmed === '# END LSRAI KIMI CODE') { managed = false; continue }
+  if (managed) continue
+  if (trimmed.startsWith('[')) {
+    const header = trimmed.match(/^\[([^\]]+)\](?:\s*#.*)?$/)
+    if (!header) throw new Error(`refusing malformed TOML header: ${trimmed}`)
+    section = header[1]
+  }
+  if (section === '' && /^default_model\s*=/.test(trimmed)) continue
+  kept.push(line)
+}
+while (kept.length && !kept[0].trim()) kept.shift()
+while (kept.length && !kept[kept.length - 1].trim()) kept.pop()
+const block = [
+  `default_model = ${JSON.stringify(`lsrai/${selected}`)}`,
+  '',
+  '# BEGIN LSRAI KIMI CODE',
+  '[providers.lsrai]',
+  'type = "openai"',
+  `base_url = ${JSON.stringify(process.env.CONFIG_BASE_URL)}`,
+  `api_key = ${JSON.stringify(process.env.CONFIG_API_KEY)}`,
+  '',
+]
+for (const id of ids) {
+  block.push(`[models.${JSON.stringify(`lsrai/${id}`)}]`)
+  block.push('provider = "lsrai"')
+  block.push(`model = ${JSON.stringify(id)}`)
+  block.push('max_context_size = 262144')
+  block.push('')
+}
+block.push('# END LSRAI KIMI CODE', '')
+const output = [...block, ...(kept.length ? kept.concat('') : [])].join('\n')
+const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporaryPath, output, {encoding:'utf8', mode:0o600})
+  fs.renameSync(temporaryPath, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally { try { fs.unlinkSync(temporaryPath) } catch {} }
+EOF
+  rm -f "$response_path"
+}
+
 # 合并写入 Gemini CLI 的 ~/.gemini/.env 与 settings.json：.env 只更新本站管理的
 # 四个键并保留其他行，settings.json 只更新鉴权方式、默认模型和本站管理的
 # thinkingConfig 覆盖项，其余字段与 overrides 原样保留。
@@ -1608,6 +1725,10 @@ uses_gemini() {
   [ "$TOOLS" = "gemini" ]
 }
 
+uses_kimi() {
+  [ "$TOOLS" = "kimi" ]
+}
+
 normalize_openai_v1_base_url() {
   local normalized_url
 
@@ -1691,6 +1812,7 @@ verify_selected_model_request() {
     codex) api_key="$CODEX_API_KEY" ;;
     grok) api_key="$GROK_API_KEY" ;;
     gemini) api_key="$GEMINI_API_KEY" ;;
+    kimi) api_key="$KIMI_API_KEY" ;;
     *) return 0 ;;
   esac
   api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
@@ -1764,6 +1886,11 @@ verify_gemini_api_key() {
   verify_api_key_readiness "Gemini CLI" "$GEMINI_API_KEY"
 }
 
+verify_kimi_api_key() {
+  uses_kimi || return 0
+  verify_api_key_readiness "Kimi Code" "$KIMI_API_KEY"
+}
+
 # 根据用户选择写入 Claude Code 配置。
 configure_claude() {
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
@@ -1794,6 +1921,13 @@ configure_gemini() {
   if uses_gemini; then
     log_info "正在写入 Gemini CLI 配置"
     write_gemini_config
+  fi
+}
+
+configure_kimi() {
+  if uses_kimi; then
+    log_info "正在写入 Kimi Code 配置"
+    write_kimi_config
   fi
 }
 
@@ -1830,6 +1964,13 @@ verify_client_commands() {
       "$EXISTING_GEMINI_COMMAND" --version >/dev/null 2>&1 || log_error "现有 Gemini CLI 验证失败"
     fi
   fi
+  if uses_kimi; then
+    if [ "$INSTALL_KIMI_CLIENT" -eq 1 ]; then
+      "${NPM_PREFIX}/bin/kimi" --version >/dev/null 2>&1 || log_error "Kimi Code 安装验证失败"
+    elif [ -n "$EXISTING_KIMI_COMMAND" ]; then
+      "$EXISTING_KIMI_COMMAND" --version >/dev/null 2>&1 || log_error "现有 Kimi Code 验证失败"
+    fi
+  fi
 }
 
 # 输出最终结果和下一步指引，帮助用户在新终端中直接使用命令。
@@ -1848,6 +1989,9 @@ print_summary() {
     printf '  - Gemini CLI 环境配置: %s\n' "$GEMINI_ENV_PATH"
     printf '  - Gemini CLI 设置: %s\n' "$GEMINI_SETTINGS_PATH"
     printf '  - Gemini CLI 默认模型: %s\n' "$CATALOG_GEMINI_DEFAULT_MODEL"
+  fi
+  if uses_kimi; then
+    printf '  - Kimi Code 配置: %s\n' "$KIMI_CONFIG_PATH"
   fi
   if uses_claude; then
     printf '  - Claude Code 专用 Key: 已配置\n'
@@ -1881,12 +2025,15 @@ print_summary() {
       printf '  - Gemini CLI: 已保留现有安装 (%s)\n' "$EXISTING_GEMINI_COMMAND"
     fi
   fi
+  if uses_kimi; then
+    printf '  - Kimi Code 专用 Key: 已配置\n'
+  fi
   if [ -n "$PROFILE_FILE" ]; then
     printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
   fi
   printf '\n回滚方法（仅显示本次存在的备份）:\n'
   local rollback_path
-  for rollback_path in "$CLAUDE_SETTINGS_PATH" "$CODEX_AUTH_PATH" "$CODEX_CONFIG_PATH" "$CODEX_MODEL_CATALOG_PATH" "$GROK_CONFIG_PATH" "$GEMINI_ENV_PATH" "$GEMINI_SETTINGS_PATH"; do
+  for rollback_path in "$CLAUDE_SETTINGS_PATH" "$CODEX_AUTH_PATH" "$CODEX_CONFIG_PATH" "$CODEX_MODEL_CATALOG_PATH" "$GROK_CONFIG_PATH" "$GEMINI_ENV_PATH" "$GEMINI_SETTINGS_PATH" "$KIMI_CONFIG_PATH"; do
     [ -f "${rollback_path}.bak" ] && printf '  cp %q %q\n' "${rollback_path}.bak" "$rollback_path"
   done
   printf '\n'
@@ -1912,6 +2059,9 @@ print_summary() {
   fi
   if uses_gemini; then
     printf '  gemini --version\n'
+  fi
+  if uses_kimi; then
+    printf '  kimi --version\n'
   fi
 }
 
@@ -1944,10 +2094,12 @@ main() {
   configure_codex
   configure_grok
   configure_gemini
+  configure_kimi
   verify_claude_api_key
   verify_codex_api_key
   verify_grok_api_key
   verify_gemini_api_key
+  verify_kimi_api_key
   verify_selected_model_request
   verify_client_commands
   open_cc_switch_if_requested

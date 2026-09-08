@@ -36,6 +36,7 @@ describe('client auto-config target selection', () => {
     expect(getClientAutoConfigName('codex')).toBe('Codex')
     expect(getClientAutoConfigName('grok')).toBe('Grok Build')
     expect(getClientAutoConfigName('gemini')).toBe('Gemini CLI')
+    expect(getClientAutoConfigName('kimi')).toBe('Kimi Code')
   })
 })
 

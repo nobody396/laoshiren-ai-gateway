@@ -25,6 +25,7 @@ var releasedSetupGroups = map[int64][]releasedSetupGroup{
 		{clientID: "grok-build", clientName: "Grok Build", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
 	},
 	59: {{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"}},
+	62: {{clientID: "kimi-code", clientName: "Kimi Code", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "kimi-k3"}},
 }
 
 type ClientSetupOption struct {

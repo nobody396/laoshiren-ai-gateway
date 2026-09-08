@@ -34,6 +34,7 @@ $RequiredFunctions = @(
   'Get-OpenAIV1BaseUrl',
   'Write-GrokTomlConfig',
   'Set-GrokModelsFromKey',
+  'Write-KimiConfig',
   'Write-GeminiConfig',
   'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
@@ -137,6 +138,28 @@ try {
   Set-GrokModelsFromKey
   Assert-True ($script:CatalogGrokManagedModels.Count -eq 6) 'Grok Build did not import every key-visible model'
   Assert-True ($script:CatalogGrokDefaultModel -eq 'gpt-5.6-sol') 'Grok Build did not preserve the ticket default model'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
+
+  $KimiDir = Join-Path $FixtureDir 'kimi-home'
+  $KimiConfigPath = Join-Path $KimiDir 'config.toml'
+  New-Item -ItemType Directory -Path $KimiDir -Force | Out-Null
+  $OriginalKimi = "theme = `"dark`"`n`n[providers.keep]`ntype = `"openai`"`napi_key = `"keep`"`n"
+  [IO.File]::WriteAllText($KimiConfigPath, $OriginalKimi, [Text.UTF8Encoding]::new($false))
+  function Invoke-RestMethod {
+    return [pscustomobject]@{ data = @([pscustomobject]@{ id = 'kimi-k2.7-code' }, [pscustomobject]@{ id = 'kimi-k3' }) }
+  }
+  $script:BaseUrl = 'https://api.example.com'
+  $script:KimiApiKey = 'owned-fixture-key'
+  $script:SelectedModel = 'kimi-k3'
+  Write-KimiConfig
+  $FirstKimi = [IO.File]::ReadAllText($KimiConfigPath)
+  Assert-True ($FirstKimi.Contains('default_model = "lsrai/kimi-k3"')) 'Kimi default model is missing'
+  Assert-True ($FirstKimi.Contains('[models."lsrai/kimi-k2.7-code"]')) 'Kimi K2.7 model is missing'
+  Assert-True ($FirstKimi.Contains('[models."lsrai/kimi-k3"]')) 'Kimi K3 model is missing'
+  Assert-True ($FirstKimi.Contains('[providers.keep]')) 'Kimi unrelated provider was overwritten'
+  Assert-True ([IO.File]::ReadAllText("$KimiConfigPath.bak") -eq $OriginalKimi) 'Kimi original backup was not preserved'
+  Write-KimiConfig
+  Assert-True ([IO.File]::ReadAllText($KimiConfigPath) -eq $FirstKimi) 'Kimi config write is not idempotent'
   Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
 
   $ReleasedGroups = @(

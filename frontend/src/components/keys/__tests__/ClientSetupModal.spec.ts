@@ -93,4 +93,20 @@ describe('ClientSetupModal', () => {
     expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
     expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
   })
+
+  it('copies a Kimi Code command without unrelated client flags', async () => {
+    mocks.options.mockResolvedValue([{ client_id: 'kimi-code', name: 'Kimi Code' }])
+    mocks.ticket.mockResolvedValueOnce({ ticket: 'kimi-ticket', expires_in: 600, target: 'kimi' })
+    const wrapper = mount(ClientSetupModal, {
+      props: { show: true, apiKeyId: 62, keyName: 'kimi key', groupName: 'Kimi 企业高速线路' },
+      global: { stubs: { BaseDialog: BaseDialogStub, Icon: true } },
+    })
+    await flushPromises()
+    await wrapper.get('[data-client="kimi-code"]').trigger('click')
+    await flushPromises()
+    const command = mocks.copy.mock.calls[0][0] as string
+    expect(command).toContain("LAOSHIRENAI_TOOLS='kimi'")
+    expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
+    expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+  })
 })

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "kimi_code_setup_group_acceptance",
+  "started_at": "2026-09-08T19:22:35.350024+00:00",
+  "test_identity": "owner-controlled dedicated fixture",
+  "client": {
+    "name": "Kimi Code",
+    "version": "0.41.0",
+    "os": "macos",
+    "arch": "arm64"
+  },
+  "group_id": 62,
+  "group_name": "Kimi 企业高速线路",
+  "models": [
+    "kimi-k2.7-code",
+    "kimi-k3"
+  ],
+  "results": [
+    {
+      "model_id": "kimi-k2.7-code",
+      "protocol": "chat_completions",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 16.03,
+      "stdout_sha256": "598650ea4478f62b17d955e35be39def75e4444f2fc172785449cae6ebfcf137",
+      "stderr_sha256": "7610fea3edfd21b25d582acacc1212200cc02a550a656091598e87fd66c53258",
+      "passed": true
+    },
+    {
+      "model_id": "kimi-k3",
+      "protocol": "chat_completions",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 30.13,
+      "stdout_sha256": "598650ea4478f62b17d955e35be39def75e4444f2fc172785449cae6ebfcf137",
+      "stderr_sha256": "9c1a412fad5cdd9845ee1619736fccaf8465dcad88521038ff227b75b9667e8c",
+      "passed": true
+    }
+  ],
+  "restored_group_id": 6,
+  "passed": true,
+  "completed_at": "2026-09-08T19:23:26.991068+00:00",
+  "artifact_sha256": "976dc448734b22b70648453b9754d0061c67302051f3cdd4e3c60e4d956d1121"
+}

@@ -378,12 +378,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain('verify_selected_model_request')
     expect(script).toContain('${SELECTED_MODEL}:generateContent')
-    expect(script).toContain("['claude', 'codex', 'grok', 'gemini'].includes(data.target)")
+    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi'].includes(data.target)")
   })
 
   it('installs and configures Grok Build with the native Responses model on Windows', () => {
     const script = readPublicScript('install.ps1')
-    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini')")
+    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi')")
     expect(script).toContain("$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'")
     expect(script).toContain("$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'")
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
@@ -749,7 +749,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
     expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')")
     expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
-    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\')')
+    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
   })
 
@@ -826,6 +826,34 @@ describe('client auto-config scripts', () => {
       expect(readFileSync(`${envPath}.bak`, 'utf8')).toBe(originalEnv)
       expect(readFileSync(`${settingsPath}.bak`, 'utf8')).toBe(originalSettings)
       expect(readdirSync(geminiDir).some(name => name.includes('.tmp.'))).toBe(false)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every Kimi Code model while preserving unrelated TOML', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-kimi-config-'))
+    const kimiDir = join(fixture, '.kimi-code')
+    const configPath = join(kimiDir, 'config.toml')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = 'theme = "dark"\n\n[providers.keep]\ntype = "openai"\napi_key = "keep"\n'
+    try {
+      mkdirSync(kimiDir, { recursive: true })
+      writeFileSync(configPath, original)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; KIMI_API_KEY="fixture"; SELECTED_MODEL="kimi-k3"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"kimi-k2.7-code"},{"id":"kimi-k3"}]}' > "$out"; printf '200'; }; write_kimi_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const first = readFileSync(configPath, 'utf8')
+      expect(first).toContain('default_model = "lsrai/kimi-k3"')
+      expect(first).toContain('[models."lsrai/kimi-k2.7-code"]')
+      expect(first).toContain('[models."lsrai/kimi-k3"]')
+      expect(first).toContain('[providers.keep]')
+      expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+      runWriter()
+      expect(readFileSync(configPath, 'utf8')).toBe(first)
     } finally {
       rmSync(fixture, { recursive: true, force: true })
     }

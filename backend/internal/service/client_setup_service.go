@@ -19,6 +19,7 @@ const (
 	ClientSetupTargetCodex  = "codex"
 	ClientSetupTargetGrok   = "grok"
 	ClientSetupTargetGemini = "gemini"
+	ClientSetupTargetKimi   = "kimi"
 
 	clientSetupTicketPurpose          = "client_setup"
 	clientSetupSelectionTicketPurpose = "client_setup_selection_v1"
@@ -325,6 +326,8 @@ func clientSetupInstallerTarget(clientID string) string {
 		return ClientSetupTargetCodex
 	case "grok-build":
 		return ClientSetupTargetGrok
+	case "kimi-code":
+		return ClientSetupTargetKimi
 	case "gemini-cli":
 		return ClientSetupTargetGemini
 	default:

@@ -137,12 +137,14 @@ async function copy(option: ClientSetupOption) {
 function clientIcon(option: ClientSetupOption): string {
   if (option.client_id === 'claude-code') return '/brand/client-tools/claude.svg'
   if (option.client_id === 'grok-build') return '/brand/client-tools/grok.svg'
+  if (option.client_id === 'kimi-code') return '/brand/client-tools/kimi.svg'
   return '/brand/client-tools/codex-light.png'
 }
 
 function clientTarget(option: ClientSetupOption): ClientAutoConfigTarget {
   if (option.client_id === 'claude-code') return 'claude'
   if (option.client_id === 'grok-build') return 'grok'
+  if (option.client_id === 'kimi-code') return 'kimi'
   return 'codex'
 }
 

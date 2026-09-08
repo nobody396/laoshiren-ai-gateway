@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.19",
+  "client_auto_config_version": "0.7.20",
   "pricing_contract": {
     "default_scope": "provider_public",
     "provider_public_source": "provider_pricing when present, otherwise pricing",

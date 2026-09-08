@@ -1152,7 +1152,7 @@ import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 	import { useClipboard } from '@/composables/useClipboard'
 
 const { t } = useI18n()
-import { keysAPI, authAPI, usageAPI, userGroupsAPI, resourcesAPI } from '@/api'
+import { keysAPI, authAPI, usageAPI, userGroupsAPI } from '@/api'
 import { getGatewayModels } from '@/api/gatewayModels'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
@@ -1186,12 +1186,6 @@ import {
   detectCcsDiagnosticPlatform,
   type CcsDiagnosticPlatform
 } from '@/utils/ccSwitchDiagnostics'
-import {
-  buildClientAutoConfigCommand,
-  getClientAutoConfigName,
-  getClientAutoConfigTarget,
-  type ClientAutoConfigTarget
-} from '@/utils/clientAutoConfig'
 import {
   classifyGroupOptionFamily,
   type GroupOptionFamilyId,
@@ -1269,7 +1263,6 @@ const usageStats = ref<Record<string, BatchApiKeyUsageStats>>({})
 const userGroupRates = ref<Record<number, number>>({})
 const groupCacheStats = ref<Record<number, GroupCacheStats>>({})
 const groupCacheWindowDays = ref(7)
-const clientAutoConfigEnabled = false
 
 const pagination = ref({
   page: 1,
@@ -1304,7 +1297,6 @@ const ccsDiagnosticsAutoPrompt = ref(false)
 const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const copiedBaseUrl = ref(false)
-const configuringKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
 let abortController: AbortController | null = null
 let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
@@ -1564,10 +1556,6 @@ const copyApiBaseUrl = async () => {
   }
 }
 
-const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null => {
-  return getClientAutoConfigTarget(row.group?.platform)
-}
-
 const codexSetupGroupIds = new Set([6, 58, 59])
 const canOpenCodexSetup = (row: ApiKey): boolean => (
   row.status === 'active' &&
@@ -1583,48 +1571,6 @@ const openClientSetup = (row: ApiKey) => {
 const closeClientSetup = () => {
   showClientSetup.value = false
   clientSetupRow.value = null
-}
-
-const showAutoConfigPausedNotice = () => {
-  appStore.showWarning(t('keys.configureClientPausedHint'), 6000)
-}
-
-const generateAndCopyClientAutoConfigCommand = async (
-  row: ApiKey,
-  installCodexApp = false,
-  grokCcSwitchCompat = false
-) => {
-  if (!clientAutoConfigEnabled) {
-    showAutoConfigPausedNotice()
-    return
-  }
-
-  if (row.status !== 'active') {
-    appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
-    return
-  }
-
-  const target = getAutoConfigTargetForKey(row)
-  if (!target || !row.group) {
-    return
-  }
-
-  configuringKeyId.value = row.id
-  try {
-    const setup = await resourcesAPI.createClientSetupTicketForAPIKey(row.id)
-    const clientName = getClientAutoConfigName(setup.target)
-    const command = buildClientAutoConfigCommand({
-      target: setup.target,
-      ticket: setup.ticket,
-      installCodexApp,
-      grokCcSwitchCompat
-    })
-    await clipboardCopy(command, t('keys.autoConfigCommandCopied', { client: clientName }))
-  } catch (error: any) {
-    appStore.showError(error?.message || t('keys.autoConfigTicketFailed'))
-  } finally {
-    configuringKeyId.value = null
-  }
 }
 
 const isAbortError = (error: unknown) => {
@@ -2177,7 +2123,7 @@ const handleCcsClientSelect = async (
   // compatibility flow writes the dual-model config, atomically upserts one
   // neutral Grok Provider in CC Switch's native store, then reopens the app.
   if (clientType === 'grokbuild') {
-    await generateAndCopyClientAutoConfigCommand(row, false, true)
+    appStore.showWarning(t('keys.configureClientPausedHint'), 6000)
     return
   }
   await executeCcsImport(row, clientType, codexContextProfile)

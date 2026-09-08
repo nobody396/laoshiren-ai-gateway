@@ -105,15 +105,15 @@ describe('DocsSimpleClientGuide', () => {
     expect(text).not.toContain('responses_websockets_v2')
   })
 
-  it('renders the ZCode Anthropic custom provider setup without WebSocket flags', () => {
+  it('renders the ZCode Responses Qwen setup without WebSocket flags', () => {
     const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById.zcode }, global: { plugins: [createPinia()] } })
     const text = wrapper.text()
     expect(text).toContain('ZCode App')
     expect(text).toContain('3.11.2')
     expect(text).toContain('供应商名称')
     expect(text).toContain('lsrai')
-    expect(text).toContain('Anthropic')
-    expect(text).toContain('https://api.laoshirenai.com')
+    expect(text).toContain('OpenAI Responses')
+    expect(text).toContain('https://api.laoshirenai.com/v1')
     expect(text).toContain('~/.zcode/v2/config.json')
     expect(text).toContain("curl -sS 'https://api.laoshirenai.com/v1/models'")
     expect(text).not.toContain('responses_websockets_v2 = true')

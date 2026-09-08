@@ -6,7 +6,7 @@
 https://api.laoshirenai.com/v1/chat/completions
 ```
 
-> WorkBuddy 官方当前版本为 5.5.3。本机 WorkBuddy 5.5.1 已验证能够从 `~/.workbuddy/models.json` 读取老实人AI自定义模型并完成应用内回复；Windows 请优先使用本文的图形界面配置，不要使用旧版一键导入命令。
+> 已按 WorkBuddy `5.5.3` 与内置 CodeBuddy CLI `2.137.1` 验证。Grok 标准线路的 `grok-4.6`、`grok-4.5` 均完成了真实文件读取、Shell、写入和复读闭环。
 
 ## 准备工作
 
@@ -17,6 +17,12 @@ https://api.laoshirenai.com/v1/chat/completions
 3. 当前 Key 有可用额度。
 
 WorkBuddy 桌面版支持 macOS 和 Windows。Linux 目前仅提供部分国产系统应用商店版本，本教程不对其配置路径作保证。
+
+## 推荐：密钥页面一键配置
+
+使用 **Grok 标准线路** Key 时，在密钥页面点击 **一键配置 → WorkBuddy**，选择 macOS 或 Windows 后执行复制的命令。命令会把当前 Key 可见的全部模型安全合并到 `models.json`，保留其他模型并创建备份。
+
+命令只负责配置已经安装的 WorkBuddy，不会静默安装桌面应用。执行完成后必须完全退出并重新打开 WorkBuddy。Linux 和未完成全模型验证的分组不会显示 WorkBuddy 选项。
 
 ## 第一步：查询可用模型
 
@@ -46,7 +52,7 @@ $env:LSRAI_API_KEY = "YOUR_API_KEY"
 
 | 配置项 | 填写内容 |
 | --- | --- |
-| 模型名称 | `lsrai/YOUR_MODEL_ID` |
+| 模型名称 | `YOUR_MODEL_ID` |
 | 模型 ID | `YOUR_MODEL_ID` |
 | URL | `https://api.laoshirenai.com/v1/chat/completions` |
 | API Key | 老实人AI API Key |
@@ -57,14 +63,14 @@ $env:LSRAI_API_KEY = "YOUR_API_KEY"
 
 | 配置项 | 建议值 |
 | --- | --- |
-| 自定义协议 | 开启 |
+| 自定义协议 | 关闭，使用标准 OpenAI 兼容 Chat Completions |
 | 工具调用 | 开启 |
-| 图片输入 | 首次配置先关闭 |
-| 推理模式 | 首次配置先关闭 |
-| 最大输入 Token | `128000` |
-| 最大输出 Token | `8192` |
+| 图片输入 | 关闭 |
+| 推理模式 | 开启，默认 `medium` |
+| 最大输入 Token | `500000` |
+| 最大输出 Token | `128000` |
 
-开启 **自定义协议** 后，WorkBuddy 会直接请求上面填写的完整 URL，不再自动追加路径。不要把 URL 改成只有 `/v1` 的 Base URL。
+使用完整 URL `https://api.laoshirenai.com/v1/chat/completions`。不要只填写 `/v1`，也不要添加 WebSocket 配置。
 
 本教程只使用 Chat Completions，不支持 Responses、Anthropic Messages 或 Gemini GenerateContent，也不需要添加任何 WebSocket 配置。
 
@@ -74,7 +80,7 @@ $env:LSRAI_API_KEY = "YOUR_API_KEY"
 
 1. 保存自定义模型；
 2. 回到对话页面的模型选择器；
-3. 在自定义模型分组中选择 `lsrai/YOUR_MODEL_ID`；
+3. 在自定义模型分组中选择 `YOUR_MODEL_ID`；
 4. 新建一个会话。
 
 输入：
@@ -123,4 +129,4 @@ WorkBuddy 桌面版会把自定义模型保存到：
 - 不要把 `.workbuddy/models.json` 提交到 Git；
 - Key 泄露后立即在老实人AI停用并重新创建。
 
-配置步骤依据：[WorkBuddy 官方下载页面](https://copilot.tencent.com/work/)、[WorkBuddy 官方模型配置文档](https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Model)。
+配置步骤依据：[WorkBuddy 官方下载页面](https://www.workbuddy.cn/work/)、[WorkBuddy 官方模型配置文档](https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Model)。

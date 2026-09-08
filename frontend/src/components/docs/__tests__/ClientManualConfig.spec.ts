@@ -34,13 +34,14 @@ describe('ClientManualConfig ready clients', () => {
   })
 })
 
-describe('ClientManualConfig prototype clients', () => {
-  it('shows all verified intersections for a multi-protocol client without fabricating a write command', async () => {
+describe('ClientManualConfig one-click-only clients', () => {
+  it('shows verified protocol intersections and points to the key page without fabricating a manual write command', async () => {
     const wrapper = mount(ClientManualConfig, { props: { client: clientMatrixBySlug['integration-opencode'] } })
     await wrapper.get('.model-field input').setValue('qwen3.7-max')
     expect(wrapper.findAll('.protocol-options button').map(button => button.text())).toEqual(['Responses', 'Chat Completions'])
     expect(wrapper.findAllComponents(DocsTerminalCommand).some(item => String(item.props('label')).includes('写入配置'))).toBe(false)
-    expect(wrapper.text()).toContain('不要执行占位命令')
+    expect(wrapper.text()).toContain('一键配置入口位于 API 密钥页面')
+    expect(wrapper.text()).not.toContain('不要执行占位命令')
   })
 
   it('fails closed when a client has no public protocol', async () => {

@@ -29,7 +29,7 @@ describe('DocsClientMatrix', () => {
     expect(workbuddyCells[1].text()).toBe('✗')
     expect(workbuddyCells[2].text()).toBe('✓')
     expect(workbuddyCells[2].find('span').attributes('aria-label')).toContain('已验证')
-    expect(workbuddy!.text()).toContain('手动配置')
+    expect(workbuddy!.text()).toContain('可用')
 
     expect(wrapper.text()).not.toContain('Visual Studio Code Local Agent')
     expect(wrapper.text()).not.toContain('Gemini CLI')

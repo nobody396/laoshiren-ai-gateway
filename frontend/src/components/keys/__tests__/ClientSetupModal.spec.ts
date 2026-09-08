@@ -125,4 +125,20 @@ describe('ClientSetupModal', () => {
     expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
     expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
   })
+
+  it('copies a ZCode configuration command without pretending to install the desktop app', async () => {
+    mocks.options.mockResolvedValue([{ client_id: 'zcode', name: 'ZCode' }])
+    mocks.ticket.mockResolvedValueOnce({ ticket: 'zcode-ticket', expires_in: 600, target: 'zcode' })
+    const wrapper = mount(ClientSetupModal, {
+      props: { show: true, apiKeyId: 64, keyName: 'qwen key', groupName: 'Qwen 企业高速线路' },
+      global: { stubs: { BaseDialog: BaseDialogStub, Icon: true } },
+    })
+    await flushPromises()
+    await wrapper.get('[data-client="zcode"]').trigger('click')
+    await flushPromises()
+    const command = mocks.copy.mock.calls[0][0] as string
+    expect(command).toContain("LAOSHIRENAI_TOOLS='zcode'")
+    expect(command).toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+    expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
+  })
 })

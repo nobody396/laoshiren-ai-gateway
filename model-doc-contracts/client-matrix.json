@@ -1350,7 +1350,7 @@
       "name": "ZCode",
       "slug": "integration-zcode",
       "icon": "/tool-icons/zcode.png",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
@@ -1366,9 +1366,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/zcode-client-protocol-loops-20260901/zcode-loop-qwen3.7-max-responses-group64-20260901.json#evidence-4d49055fe0fa328644cb7558",
-              "artifact_sha256": "7f4c33a55bc1d8d094747f9b53772ce53af0f5ff774eba2cade270dec319f2db"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-group64-3.11.2-20260909.json",
+              "artifact_sha256": "fd89f5a11263008733336f2ad5026625f10df88c1a24f72983b807b5e794415d"
             }
           },
           {
@@ -1457,12 +1457,12 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "app:3.10.1+cli:0.16.5",
-          "display": "3.10.1 / CLI 0.16.5",
+          "version_key": "app:3.11.2+cli:0.16.5",
+          "display": "3.11.2 / CLI 0.16.5",
           "components": [
             {
               "component": "app",
-              "version": "3.10.1"
+              "version": "3.11.2"
             },
             {
               "component": "cli",
@@ -1472,15 +1472,15 @@
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/zcode-group64-3.11.2-20260909.json",
+            "artifact_sha256": "fd89f5a11263008733336f2ad5026625f10df88c1a24f72983b807b5e794415d"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.zcode/v2/config.json",
@@ -1495,14 +1495,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "a3d94d604e33191389b2ebf8cd7358bcebc69dbef9ece21031ebc7b46107f99e"
             }
           },
           {
             "os": "linux",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.zcode/v2/config.json",
@@ -1517,14 +1517,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "a3d94d604e33191389b2ebf8cd7358bcebc69dbef9ece21031ebc7b46107f99e"
             }
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.zcode\\v2\\config.json",
@@ -1539,9 +1539,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "a3d94d604e33191389b2ebf8cd7358bcebc69dbef9ece21031ebc7b46107f99e"
             }
           }
         ],

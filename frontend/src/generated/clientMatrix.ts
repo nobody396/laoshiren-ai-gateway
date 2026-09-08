@@ -511,8 +511,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "zcode",
     "name": "ZCode",
-    "version": "3.10.1 / CLI 0.16.5",
-    "version_key": "app:3.10.1+cli:0.16.5",
+    "version": "3.11.2 / CLI 0.16.5",
+    "version_key": "app:3.11.2+cli:0.16.5",
     "slug": "integration-zcode",
     "icon": "/tool-icons/zcode.png",
     "protocols": [
@@ -557,7 +557,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.zcode\\cli\\config.json"
       ]
     },
-    "one_click_status": "prototype",
+    "one_click_status": "ready",
     "verification_os": [
       "macos"
     ],

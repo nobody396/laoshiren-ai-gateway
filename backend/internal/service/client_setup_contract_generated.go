@@ -89,10 +89,10 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"zcode": {
-		VersionKey:     "app:3.10.1+cli:0.16.5",
-		OneClickStatus: "prototype",
+		VersionKey:     "app:3.11.2+cli:0.16.5",
+		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"responses": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 }
 

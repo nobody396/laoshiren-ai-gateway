@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.20'
+$ScriptVersion = '0.7.21'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -110,10 +110,12 @@ $script:InstallClaudeClient = $false
 $script:InstallCodexClient = $false
 $script:InstallGrokClient = $false
 $script:InstallGeminiClient = $false
+$script:InstallKimiClient = $false
 $script:ExistingClaudeCommand = ''
 $script:ExistingCodexCommand = ''
 $script:ExistingGrokCommand = ''
 $script:ExistingGeminiCommand = ''
+$script:ExistingKimiCommand = ''
 $script:ExistingCodexApp = ''
 
 # 输出信息日志，方便用户了解当前执行到了哪一步。
@@ -227,10 +229,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.20 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.21 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.20 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.21 | iex
 
 参数:
   --api-key              Claude Code API Key

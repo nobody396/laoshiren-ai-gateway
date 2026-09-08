@@ -453,6 +453,7 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
   Assert-True $FailureObserved 'A non-zero npm.cmd exit code was not converted into a retryable PowerShell error'
 
   $script:InstallGeminiClient = $false
+  $script:InstallKimiClient = $false
   $script:InstallClaudeClient = $true
   $script:InstallCodexClient = $false
   Assert-True (Test-NeedsNpmClientInstall) 'Claude Code must use the npm installation path'
@@ -463,6 +464,9 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
   $script:InstallGeminiClient = $true
   Assert-True (Test-NeedsNpmClientInstall) 'Gemini CLI must use the npm installation path'
   $script:InstallGeminiClient = $false
+  $script:InstallKimiClient = $true
+  Assert-True (Test-NeedsNpmClientInstall) 'Kimi Code must use the npm installation path'
+  $script:InstallKimiClient = $false
   $script:InstallGrokClient = $true
   Assert-True (-not (Test-NeedsNpmClientInstall)) 'Grok Build must remain isolated from the npm installation path'
   $script:InstallGrokClient = $false

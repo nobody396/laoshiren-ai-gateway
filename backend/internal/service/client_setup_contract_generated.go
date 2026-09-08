@@ -11,7 +11,7 @@ type generatedClientSetupContract struct {
 
 var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 	"antigravity": {
-		VersionKey:     "cli:1.1.22",
+		VersionKey:     "cli:1.1.27",
 		OneClickStatus: "prototype",
 		Protocols:      map[string]bool{"generate_content": true},
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
@@ -83,10 +83,10 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"workbuddy": {
-		VersionKey:     "app:5.5.1+cli:2.137.1",
-		OneClickStatus: "prototype",
+		VersionKey:     "app:5.5.3+cli:2.137.1",
+		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"chat_completions": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		OSReady:        map[string]bool{"linux": false, "macos": true, "windows": true},
 	},
 	"zcode": {
 		VersionKey:     "app:3.11.2+cli:0.16.5",

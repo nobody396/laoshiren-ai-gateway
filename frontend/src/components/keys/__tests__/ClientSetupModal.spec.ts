@@ -141,4 +141,20 @@ describe('ClientSetupModal', () => {
     expect(command).toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
     expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
   })
+
+  it('copies a WorkBuddy configuration command without pretending to install the desktop app', async () => {
+    mocks.options.mockResolvedValue([{ client_id: 'workbuddy', name: 'WorkBuddy' }])
+    mocks.ticket.mockResolvedValueOnce({ ticket: 'workbuddy-ticket', expires_in: 600, target: 'workbuddy' })
+    const wrapper = mount(ClientSetupModal, {
+      props: { show: true, apiKeyId: 34, keyName: 'grok key', groupName: 'Grok 标准线路' },
+      global: { stubs: { BaseDialog: BaseDialogStub, Icon: true } },
+    })
+    await flushPromises()
+    await wrapper.get('[data-client="workbuddy"]').trigger('click')
+    await flushPromises()
+    const command = mocks.copy.mock.calls[0][0] as string
+    expect(command).toContain("LAOSHIRENAI_TOOLS='workbuddy'")
+    expect(command).toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+    expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
+  })
 })

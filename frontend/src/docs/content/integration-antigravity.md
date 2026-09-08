@@ -1,6 +1,6 @@
 # Antigravity
 
-Antigravity CLI 使用 **Gemini GenerateContent** 协议。本文使用 Antigravity CLI `1.1.22`、Gemini 分组和 `gemini-3.7-flash` 完成了真实 Agent 文件读取、`pwd`、文件修改和修改后复读测试。
+Antigravity CLI 使用 **Gemini GenerateContent** 协议。本文使用 Antigravity CLI `1.1.27`、Gemini 分组和 `gemini-3.8-flash`、`gemini-3.7-flash` 完成了真实 Agent 文件读取、Shell、文件修改和修改后复读测试。
 
 ## 客户端原生协议
 
@@ -10,9 +10,10 @@ Antigravity CLI 使用 **Gemini GenerateContent** 协议。本文使用 Antigrav
 
 ## 模型兼容范围
 
-- 已完成真实 Antigravity Agent 闭环：`gemini-3.7-flash`，`--effort=low` 与 `--effort=high` 均通过。
+- 已完成真实 Antigravity Agent 闭环：`gemini-3.8-flash`、`gemini-3.7-flash`。
 - Antigravity 使用 `gemini-3.7-flash`，并通过 `--effort=low` 或 `--effort=high` 控制当前会话的推理档位；不再依赖单独的 High 模型别名。
-- 当前不要选择 `gemini-3.1-pro`：Antigravity `1.1.22` 会将它转换为 `gemini-3.1-pro-preview`，而当前 Gemini Key 没有开放该 Preview ID。
+- 当前不要选择 `gemini-3.1-pro`：Antigravity `1.1.27` 仍会将它转换为 `gemini-3.1-pro-preview`，而当前 Gemini Key 没有开放该 Preview ID。
+- 因为 Gemini 分组当前同时公开以上三个模型，而 `gemini-3.1-pro` 不能通过，所以密钥页面不会显示 Antigravity 一键配置，避免只导入部分模型后误报成功。
 
 ## 1. 创建 Key
 
@@ -42,7 +43,7 @@ irm https://antigravity.google/cli/install.ps1 | iex
 agy --version
 ```
 
-本文命令以 `1.1.22` 为验证版本。旧版 `1.0.1` 没有 `--model` 参数，请先更新。
+本文命令以 `1.1.27` 为验证版本。旧版 `1.0.1` 没有 `--model` 参数，请先更新。
 
 ## 3. 手动配置
 
@@ -98,15 +99,15 @@ agy --print "只回复 ANTIGRAVITY_OK" \
 
 ## 当前可用范围
 
-- Antigravity CLI `1.1.22`；
+- Antigravity CLI `1.1.27`；
 - Gemini API Key 模式；
 - Gemini 兼容 Base URL；
-- `gemini-3.7-flash`，`low` effort；
+- `gemini-3.8-flash` 或 `gemini-3.7-flash`，`low` effort；
 - 读取文件、运行 Shell、修改文件和多步 Agent 任务。
 
 ## 常见错误
 
-- `flags provided but not defined: -model`：CLI 版本过旧，请更新到 `1.1.22` 或更高版本。
+- `flags provided but not defined: -model`：CLI 版本过旧，请更新到 `1.1.27` 或更高版本。
 - `--model ... requires --effort`：同时传入 `--effort=low`。
 - `GEMINI_API_KEY is not set`：当前终端没有设置 Key，或启动 CLI 后才设置。
 - CLI 打开 Google 登录而不是 Key 模式：检查 `settings.json` 中的 `modelProvider` 是否严格等于 `gemini`。

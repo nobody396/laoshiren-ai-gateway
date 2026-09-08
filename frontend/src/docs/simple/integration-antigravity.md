@@ -10,6 +10,8 @@ https://api.laoshirenai.com
 
 > 官方安装脚本已在隔离目录中安装验证，当前得到的版本为 `1.1.27`。
 
+> 当前 Gemini 分组的 `gemini-3.8-flash`、`gemini-3.7-flash` 已通过真实 Agent 工具闭环，但 `gemini-3.1-pro` 会被客户端改写成未开放的 Preview ID。为避免部分导入，密钥页面暂不提供 Antigravity 一键配置。
+
 ## 准备工作
 
 开始前确认：
@@ -108,7 +110,7 @@ macOS / Linux 命令返回 JSON，请从 `data` 数组复制准确的 Gemini 模
 从刚才设置环境变量的同一个终端运行：
 
 ```bash
-agy --model "YOUR_MODEL_ID"
+agy --model "YOUR_MODEL_ID" --effort low
 ```
 
 把 `YOUR_MODEL_ID` 替换成上一步查到的准确模型 ID。进入界面后，标题栏应显示使用 Gemini API Key，而不是 Google 账号邮箱。
@@ -118,7 +120,7 @@ agy --model "YOUR_MODEL_ID"
 完全退出当前会话，然后使用新的模型 ID 启动：
 
 ```bash
-agy --model "NEW_MODEL_ID"
+agy --model "NEW_MODEL_ID" --effort low
 ```
 
 也可以查看当前客户端能够列出的模型：
@@ -150,7 +152,7 @@ agy models
 | 提示 `GEMINI_API_KEY` 未设置 | Key 没有进入当前进程 | 在同一终端重新设置 Key 并启动 |
 | `.env` 里的 Key 没生效 | Antigravity CLI 不读取 `.env` | 直接设置终端环境变量 |
 | 返回 `401` | Key 错误、停用或没有传入 | 重新复制当前有效 Key |
-| 提示模型不可用 | 模型 ID 不属于当前 Key | 查询 `/v1/models` 后重新选择 |
+| 提示模型不可用 | 模型 ID 不属于当前 Key，或选择了会被客户端改写的 `gemini-3.1-pro` | 查询 `/v1/models`，改用 `gemini-3.8-flash` 或 `gemini-3.7-flash` |
 | 返回 `404` | Base URL 多写了路径 | 使用根地址，不添加 `/v1` 或 `/v1beta` |
 
 ## 恢复 Google 官方登录

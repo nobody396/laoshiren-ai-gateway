@@ -1939,9 +1939,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/antigravity-tool-loop-key205-gemini37-final3-20260901.json#evidence-1e28786409e20a397ab2fcc6",
-              "artifact_sha256": "7bbdbb3d62dd878b9d87e5ad7360a850ddbba2cf979bf047dc3bdf3e5be8a695"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/antigravity-group57-1.1.27-20260909.json",
+              "artifact_sha256": "2fbea187c27a7d2a2d7122a10c6f72362fc33ae83953439e7cadf5715729405c"
             }
           }
         ],
@@ -1982,20 +1982,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:1.1.22",
-          "display": "1.1.22",
+          "version_key": "cli:1.1.27",
+          "display": "1.1.27",
           "components": [
             {
               "component": "cli",
-              "version": "1.1.22"
+              "version": "1.1.27"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/antigravity-group57-1.1.27-20260909.json",
+            "artifact_sha256": "2fbea187c27a7d2a2d7122a10c6f72362fc33ae83953439e7cadf5715729405c"
           }
         },
         "os_support": [
@@ -2985,7 +2985,7 @@
       "name": "WorkBuddy",
       "slug": "integration-workbuddy",
       "icon": "/tool-icons/workbuddy.svg",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
@@ -3019,9 +3019,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-02",
-              "source_ref": "artifacts/workbuddy-chat-completions-loop-20260902/workbuddy-chat-completions-invalid-request-20260902.json#evidence-dd2b5ba61bf8456c87a61c10",
-              "artifact_sha256": "274ab95d4b5933404ecb2d3c711397ebb332656060fec338db6ebee33647f14d"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/workbuddy-group34-5.5.3-20260909.json",
+              "artifact_sha256": "d210273739d5804e3172a37bca941993677f8de87d433890a6463497e7e3ab92"
             }
           },
           {
@@ -3118,12 +3118,12 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "app:5.5.1+cli:2.137.1",
-          "display": "WorkBuddy 5.5.1",
+          "version_key": "app:5.5.3+cli:2.137.1",
+          "display": "WorkBuddy 5.5.3",
           "components": [
             {
               "component": "app",
-              "version": "5.5.1"
+              "version": "5.5.3"
             },
             {
               "component": "cli",
@@ -3133,15 +3133,15 @@
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-02",
-            "source_ref": "model-doc-contracts/evidence/workbuddy-installed-refresh-20260902.json",
-            "artifact_sha256": "59ee32671d57c15970fd30f0c674a5cd431f4867a3335d94bd3628bc58aa66d5"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/workbuddy-group34-5.5.3-20260909.json",
+            "artifact_sha256": "d210273739d5804e3172a37bca941993677f8de87d433890a6463497e7e3ab92"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.workbuddy/models.json",
@@ -3169,9 +3169,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-02",
-              "source_ref": "WorkBuddy 5.3.14 local UI screenshot plus /Applications/WorkBuddy.app/Contents/Resources/app.asar#packages/workbuddy-core/src/domains/models/node/desktop-models-repo.ts",
-              "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/workbuddy-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "862339eeef6aeec136f48f3e9aad2484aed5037aff8d465fb0965f9e37296e53"
             }
           },
           {
@@ -3187,7 +3187,7 @@
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.workbuddy\\models.json",
@@ -3215,9 +3215,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-02",
-              "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar#packages/workbuddy-core/src/domains/models/node/desktop-models-repo.ts cross-platform homedir resolution",
-              "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/workbuddy-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "862339eeef6aeec136f48f3e9aad2484aed5037aff8d465fb0965f9e37296e53"
             }
           }
         ],
@@ -3277,7 +3277,9 @@
         ],
         "verification_contract": "Exact app/CLI versions plus the login-free env config path (CODEBUDDY_BASE_URL + CODEBUDDY_API_KEY) verified on 2026-09-02. Chat Completions minimal/stream/tool/continuation/usage/error cells and a clean real Agent loop verified by receipts under artifacts/workbuddy-chat-completions-loop-20260902. Reasoning-level mapping to GUI modes remains unverified."
       },
-      "verification_os": []
+      "verification_os": [
+        "macos"
+      ]
     },
     {
       "id": "deepseek-harness",

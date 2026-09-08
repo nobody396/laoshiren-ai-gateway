@@ -701,8 +701,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "antigravity",
     "name": "Antigravity",
-    "version": "1.1.22",
-    "version_key": "cli:1.1.22",
+    "version": "1.1.27",
+    "version_key": "cli:1.1.27",
     "slug": "integration-antigravity",
     "icon": "/tool-icons/antigravity.png",
     "protocols": [
@@ -1134,8 +1134,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "workbuddy",
     "name": "WorkBuddy",
-    "version": "WorkBuddy 5.5.1",
-    "version_key": "app:5.5.1+cli:2.137.1",
+    "version": "WorkBuddy 5.5.3",
+    "version_key": "app:5.5.3+cli:2.137.1",
     "slug": "integration-workbuddy",
     "icon": "/tool-icons/workbuddy.svg",
     "protocols": [
@@ -1195,8 +1195,10 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.workbuddy\\settings.json"
       ]
     },
-    "one_click_status": "prototype",
-    "verification_os": [],
+    "one_click_status": "ready",
+    "verification_os": [
+      "macos"
+    ],
     "config_contract": {
       "base_url_rule": "Default custom-protocol mode: use https://api.laoshirenai.com/v1 and WorkBuddy validates/appends /chat/completions. Exact-URL mode: use https://api.laoshirenai.com/v1/chat/completions and WorkBuddy sends to that URL without path completion.",
       "credential": "WorkBuddy desktop stores each custom model credential in user ~/.workbuddy/models.json (Windows: %USERPROFILE%\\.workbuddy\\models.json). The separate .codebuddy/models.json paths belong to the bundled CodeBuddy CLI / legacy compatibility layer.",

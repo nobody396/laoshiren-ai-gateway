@@ -145,6 +145,17 @@ func TestOpenCodeSetupOptionsCoverEveryReleasedGroupModelOnAllOSes(t *testing.T)
 			require.NoError(t, err)
 			require.Equal(t, ClientSetupTargetOpenCode, ticket.Target)
 			require.Equal(t, tc.protocol, ticket.Protocol)
+			if tc.groupID == 34 {
+				if osName == "linux" {
+					require.NotContains(t, options, ClientSetupOption{ClientID: "workbuddy", Name: "WorkBuddy"})
+				} else {
+					require.Contains(t, options, ClientSetupOption{ClientID: "workbuddy", Name: "WorkBuddy"})
+					workBuddyTicket, workBuddyErr := svc.IssueTicketForOption(context.Background(), key.UserID, key.ID, "workbuddy", osName)
+					require.NoError(t, workBuddyErr)
+					require.Equal(t, ClientSetupTargetWorkBuddy, workBuddyTicket.Target)
+					require.Equal(t, "chat_completions", workBuddyTicket.Protocol)
+				}
+			}
 			if tc.groupID == 64 {
 				require.Contains(t, options, ClientSetupOption{ClientID: "zcode", Name: "ZCode"})
 				zcodeTicket, zcodeErr := svc.IssueTicketForOption(context.Background(), key.UserID, key.ID, "zcode", osName)

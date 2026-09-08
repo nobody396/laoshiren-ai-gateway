@@ -1,0 +1,51 @@
+{
+  "artifact_sha256": "d7468b96a1e4e810e75480a1e3b1723c3debdcdafed7821238f94c665d327f0a",
+  "client_id": "workbuddy",
+  "client_version": "app:5.5.3+cli:2.137.1",
+  "excluded_group": {
+    "group_id": 58,
+    "reason": "gpt-5.4 returned the production pre-deploy account-pool 404 capability miss; no partial import is published"
+  },
+  "kind": "workbuddy_public_group_coverage",
+  "models": [
+    "grok-4.5",
+    "grok-4.6"
+  ],
+  "observed_at": "2026-09-09",
+  "os": "macos",
+  "passed": true,
+  "released_group_id": 34,
+  "restored_group_id": 6,
+  "results": [
+    {
+      "duration_seconds": 82.09,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "group_id": 34,
+      "model_id": "grok-4.5",
+      "passed": true,
+      "protocol": "chat_completions",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "2a6e45594c88b49715c2461d812263d0360a6cddbc97f3de0d4119c48116f643",
+      "timed_out": false
+    },
+    {
+      "duration_seconds": 22.94,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "group_id": 34,
+      "model_id": "grok-4.6",
+      "passed": true,
+      "protocol": "chat_completions",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "eb6e6679258312185ab801056cc92e5b2893d56d07421f703ac471e09853ddcb",
+      "timed_out": false
+    }
+  ],
+  "schema_version": 1,
+  "secret_free": true
+}

@@ -66,6 +66,7 @@ import { resourcesAPI } from '@/api'
 import type { ClientSetupOption, ClientSetupOS } from '@/api/resources'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildClientAutoConfigCommand } from '@/utils/clientAutoConfig'
+import type { ClientAutoConfigTarget } from '@/utils/clientAutoConfig'
 
 const props = defineProps<{
   show: boolean
@@ -117,7 +118,7 @@ async function copy(option: ClientSetupOption) {
   error.value = ''
   try {
     const ticket = await resourcesAPI.createClientSetupTicketForOption(props.apiKeyId, option.client_id, selectedOS)
-    const target = option.client_id === 'claude-code' ? 'claude' : 'codex'
+    const target = clientTarget(option)
     const command = buildClientAutoConfigCommand({
       target,
       ticket: ticket.ticket,
@@ -134,9 +135,15 @@ async function copy(option: ClientSetupOption) {
 }
 
 function clientIcon(option: ClientSetupOption): string {
-  return option.client_id === 'claude-code'
-    ? '/brand/client-tools/claude.svg'
-    : '/brand/client-tools/codex-light.png'
+  if (option.client_id === 'claude-code') return '/brand/client-tools/claude.svg'
+  if (option.client_id === 'grok-build') return '/brand/client-tools/grok.svg'
+  return '/brand/client-tools/codex-light.png'
+}
+
+function clientTarget(option: ClientSetupOption): ClientAutoConfigTarget {
+  if (option.client_id === 'claude-code') return 'claude'
+  if (option.client_id === 'grok-build') return 'grok'
+  return 'codex'
 }
 
 watch([() => props.show, () => props.apiKeyId, os], load, { immediate: true })

@@ -282,7 +282,7 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 			return nil, ErrInvalidClientSetupTicket
 		}
 		if data.Purpose == clientSetupOptionTicketPurpose {
-			expected, _, ok := s.setupSelection(ctx, apiKey, selection.OS)
+			expected, _, ok := s.setupSelection(ctx, apiKey, selection.OS, selection.ClientID)
 			if !ok || expected != selection {
 				return nil, ErrInvalidClientSetupTicket
 			}

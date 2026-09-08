@@ -30,10 +30,30 @@ func TestCodexSetupOptionsCoverAllModelsForThreeReleasedGroupsAndOSes(t *testing
 				svc, key, _ := setupOptionTestService(groupID, PlatformOpenAI, models)
 				options, err := svc.SetupOptions(context.Background(), key.UserID, key.ID, osName)
 				require.NoError(t, err)
-				require.Equal(t, []ClientSetupOption{{ClientID: "codex", Name: "Codex"}}, options)
+				expected := []ClientSetupOption{{ClientID: "codex", Name: "Codex"}}
+				if groupID == 58 {
+					expected = append(expected, ClientSetupOption{ClientID: "grok-build", Name: "Grok Build"})
+				}
+				require.Equal(t, expected, options)
 			})
 		}
 	}
+}
+
+func TestGrokBuildSetupOptionImportsAllEconomicGroupModels(t *testing.T) {
+	models := []string{"gpt-6-astra", "gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5", "gpt-5.4"}
+	svc, key, cache := setupOptionTestService(58, PlatformOpenAI, models)
+	ticket, err := svc.IssueTicketForOption(context.Background(), key.UserID, key.ID, "grok-build", "windows")
+	require.NoError(t, err)
+	require.Equal(t, clientSetupOptionTicketPurpose, cache.data[ticket.Ticket].Purpose)
+	require.Equal(t, ClientSetupTargetGrok, ticket.Target)
+	require.Equal(t, "responses", ticket.Protocol)
+	require.Equal(t, "gpt-5.6-sol", ticket.ModelID)
+
+	credential, err := svc.ExchangeTicket(context.Background(), ticket.Ticket)
+	require.NoError(t, err)
+	require.Equal(t, "grok-build", credential.ClientID)
+	require.Equal(t, ClientSetupTargetGrok, credential.Target)
 }
 
 func TestCodexSetupOptionsFailClosedForOtherGroupUnknownModelAndMultiGroup(t *testing.T) {

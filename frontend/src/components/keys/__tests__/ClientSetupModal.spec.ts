@@ -72,4 +72,25 @@ describe('ClientSetupModal', () => {
     expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
     expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
   })
+
+  it('copies a Grok Build command from a server-approved second tool', async () => {
+    mocks.options.mockResolvedValue([
+      { client_id: 'codex', name: 'Codex' },
+      { client_id: 'grok-build', name: 'Grok Build' },
+    ])
+    mocks.ticket.mockResolvedValueOnce({ ticket: 'grok-ticket', expires_in: 600, target: 'grok' })
+    const wrapper = mount(ClientSetupModal, {
+      props: { show: true, apiKeyId: 58, keyName: 'economy key', groupName: 'GPT 经济线路' },
+      global: { stubs: { BaseDialog: BaseDialogStub, Icon: true } },
+    })
+    await flushPromises()
+    expect(wrapper.findAll('[data-client]')).toHaveLength(2)
+    await wrapper.get('[data-client="grok-build"]').trigger('click')
+    await flushPromises()
+
+    const command = mocks.copy.mock.calls[0][0] as string
+    expect(command).toContain("LAOSHIRENAI_TOOLS='grok'")
+    expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
+    expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+  })
 })

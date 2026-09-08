@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.18'
+SCRIPT_VERSION='0.7.19'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -1330,6 +1330,7 @@ for (const line of lines) {
   if (header) droppingModel = managedSections.has(header[1])
   if (!droppingModel && line.trim() !== '# Managed by laoshirenai one-click setup') kept.push(line)
 }
+
 lines = kept
 
 // Set the default model without duplicating an existing [models] table.
@@ -1380,6 +1381,43 @@ try {
   try { fs.unlinkSync(temporaryPath) } catch {}
 }
 EOF
+}
+
+# Read the selected Key's complete model list immediately before writing Grok
+# Build. Refuse partial imports when the ticket default disappears.
+discover_grok_models() {
+  local response_path
+  local api_base_url
+  local status_code
+  local parsed
+  response_path="$(mktemp)"
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  status_code="$(curl -sS -o "$response_path" -w '%{http_code}' \
+    -H "Authorization: Bearer ${GROK_API_KEY}" \
+    "${api_base_url}/models" || true)"
+  [ "$status_code" = "200" ] || { rm -f "$response_path"; log_error "Grok Build 分组模型读取失败: HTTP ${status_code}"; }
+  parsed="$(MODELS_PATH="$response_path" PREFERRED_MODEL="$SELECTED_MODEL" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const body = JSON.parse(fs.readFileSync(process.env.MODELS_PATH, 'utf8'))
+const preferred = (process.env.PREFERRED_MODEL || '').trim()
+const ids = []
+const seen = new Set()
+for (const row of Array.isArray(body.data) ? body.data : []) {
+  const id = typeof row?.id === 'string' ? row.id.trim() : ''
+  if (!id || id === 'codex-auto-review' || seen.has(id) || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(id)) continue
+  seen.add(id)
+  ids.push(id)
+}
+if (!ids.length) throw new Error('empty model list')
+if (preferred && !seen.has(preferred)) throw new Error('ticket model is no longer available')
+const selected = preferred || (seen.has('gpt-5.6-sol') ? 'gpt-5.6-sol' : ids[0])
+process.stdout.write(`${selected}\n${JSON.stringify(ids.map(id => ({id, display_name:id, context_window:null})))}`)
+EOF
+  )" || { rm -f "$response_path"; log_error "Grok Build 分组模型目录无效"; }
+  rm -f "$response_path"
+  CATALOG_GROK_DEFAULT_MODEL="${parsed%%$'\n'*}"
+  CATALOG_GROK_DEFAULT_DISPLAY_NAME="$CATALOG_GROK_DEFAULT_MODEL"
+  CATALOG_GROK_MANAGED_MODELS_JSON="${parsed#*$'\n'}"
 }
 
 # 合并写入 Gemini CLI 的 ~/.gemini/.env 与 settings.json：.env 只更新本站管理的
@@ -1747,6 +1785,7 @@ configure_codex() {
 configure_grok() {
   if uses_grok; then
     log_info "正在写入 Grok Build 原生模型配置"
+    discover_grok_models
     write_grok_config
   fi
 }

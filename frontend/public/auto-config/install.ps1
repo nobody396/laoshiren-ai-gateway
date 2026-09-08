@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.18'
+$ScriptVersion = '0.7.19'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -216,10 +216,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.18 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.19 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.18 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.19 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -1636,6 +1636,37 @@ function Write-GrokTomlConfig {
   }
 }
 
+function Set-GrokModelsFromKey {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{
+      Authorization = "Bearer $script:GrokApiKey"
+    } -Method GET
+  } catch {
+    Stop-Script "Grok Build 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data |
+    ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } |
+    Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'Grok Build 分组模型目录为空' }
+  if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel) -and $script:SelectedModel -notin $Ids) {
+    Stop-Script '票据选择的模型已不在当前 Key 的模型列表中'
+  }
+  $script:CatalogGrokDefaultModel = if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
+    $script:SelectedModel
+  } elseif ($Ids -contains 'gpt-5.6-sol') {
+    'gpt-5.6-sol'
+  } else {
+    $Ids[0]
+  }
+  $script:CatalogGrokDefaultDisplayName = $script:CatalogGrokDefaultModel
+  $script:CatalogGrokManagedModels = @($Ids | ForEach-Object {
+    @{ Id = $_; DisplayName = $_; ContextWindow = 0 }
+  })
+  $script:CatalogGrokManagedModelSections = @($Ids | ForEach-Object { "model.$_"; "model.`"$_`"" })
+}
+
 # 合并写入 Gemini CLI 的 .env 与 settings.json：.env 只更新本站管理的四个键并保留其他行，
 # settings.json 只更新鉴权方式、默认模型和本站管理的 thinkingConfig 覆盖项，其余字段原样保留。
 function Write-GeminiConfig {
@@ -2057,6 +2088,7 @@ function Configure-Codex {
 function Configure-Grok {
   if (Test-UsesGrok) {
     Write-Info '正在写入 Grok Build 原生模型配置'
+    Set-GrokModelsFromKey
     Write-GrokTomlConfig
   }
 }

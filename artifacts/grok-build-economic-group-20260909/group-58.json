@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "grok_build_setup_group_acceptance",
+  "started_at": "2026-09-08T18:37:57.196752+00:00",
+  "test_identity": "owner-controlled dedicated fixture",
+  "client": {
+    "name": "Grok Build",
+    "version": "grok 1.0.13 (5e9a58528b76)",
+    "os": "macos",
+    "arch": "arm64"
+  },
+  "group_id": 58,
+  "models": [
+    "gpt-5.4",
+    "gpt-5.5",
+    "gpt-5.6",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-6-astra"
+  ],
+  "results": [
+    {
+      "model_id": "gpt-5.4",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 26.86,
+      "stdout_sha256": "58a6c0e43818f04070c84a7eb4cc58c24db8811556ba2955ce24b2f41f89f64e",
+      "stderr_sha256": "5eff4fec2ea907015e5f64cc3107c03c17291ee46823bcdc62891dbc7f61c85f",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.5",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 30.85,
+      "stdout_sha256": "58a6c0e43818f04070c84a7eb4cc58c24db8811556ba2955ce24b2f41f89f64e",
+      "stderr_sha256": "1092586a108815b25978f352bd3d609511c21ea41f6ec3348491be4b688ec601",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 44.13,
+      "stdout_sha256": "58a6c0e43818f04070c84a7eb4cc58c24db8811556ba2955ce24b2f41f89f64e",
+      "stderr_sha256": "c49d36792b0bc8c97dd5c034e9c579e4bd3ef95adc357e123f86d205d9f60cec",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 90.39,
+      "stdout_sha256": "58a6c0e43818f04070c84a7eb4cc58c24db8811556ba2955ce24b2f41f89f64e",
+      "stderr_sha256": "a29b58cb5715ab6c299b29bb92ea438839b921136afae96494ef453fc29a3bac",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6-terra",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 44.28,
+      "stdout_sha256": "58a6c0e43818f04070c84a7eb4cc58c24db8811556ba2955ce24b2f41f89f64e",
+      "stderr_sha256": "76180fff696a806bb66b40b7432b984d1d1da976d5d498edf862ae2f204277f5",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-6-astra",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 29.53,
+      "stdout_sha256": "58a6c0e43818f04070c84a7eb4cc58c24db8811556ba2955ce24b2f41f89f64e",
+      "stderr_sha256": "f4203068d7f95c52282ff31a61e0b713a5d10c3b0bcf2af939b47438a57cea02",
+      "passed": true
+    }
+  ],
+  "restored_group_id": 6,
+  "passed": true,
+  "group_name": "GPT 经济线路",
+  "completed_at": "2026-09-08T18:42:31.736860+00:00",
+  "artifact_sha256": "46ad4cdd4fd7dab409334cabf2f50def8eacf84cc738f30807b637fa9e3bdfce"
+}

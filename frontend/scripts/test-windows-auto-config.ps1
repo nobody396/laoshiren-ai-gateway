@@ -33,6 +33,7 @@ $RequiredFunctions = @(
   'ConvertTo-TomlString',
   'Get-OpenAIV1BaseUrl',
   'Write-GrokTomlConfig',
+  'Set-GrokModelsFromKey',
   'Write-GeminiConfig',
   'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
@@ -119,6 +120,24 @@ try {
   Assert-True ($AstraModel.visibility -eq 'list') 'GPT-6 Astra is not visible in the Codex selector'
   Assert-True ([int]$AstraModel.context_window -eq 1050000) 'GPT-6 Astra context window is incorrect'
   Assert-True (@($AstraModel.supported_reasoning_levels | ForEach-Object { $_.effort }) -contains 'max') 'GPT-6 Astra max reasoning is missing'
+
+  function Invoke-RestMethod {
+    return [pscustomobject]@{ data = @(
+      [pscustomobject]@{ id = 'gpt-5.4' },
+      [pscustomobject]@{ id = 'gpt-5.5' },
+      [pscustomobject]@{ id = 'gpt-5.6' },
+      [pscustomobject]@{ id = 'gpt-5.6-sol' },
+      [pscustomobject]@{ id = 'gpt-5.6-terra' },
+      [pscustomobject]@{ id = 'gpt-6-astra' }
+    ) }
+  }
+  $script:BaseUrl = 'https://api.example.com'
+  $script:GrokApiKey = 'owned-fixture-key'
+  $script:SelectedModel = 'gpt-5.6-sol'
+  Set-GrokModelsFromKey
+  Assert-True ($script:CatalogGrokManagedModels.Count -eq 6) 'Grok Build did not import every key-visible model'
+  Assert-True ($script:CatalogGrokDefaultModel -eq 'gpt-5.6-sol') 'Grok Build did not preserve the ticket default model'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
 
   $ReleasedGroups = @(
     @{ Name = 'economic'; Models = @('gpt-6-astra', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4') },

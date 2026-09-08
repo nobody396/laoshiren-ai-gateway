@@ -15,13 +15,16 @@ type releasedSetupGroup struct {
 	preferredModel string
 }
 
-var releasedSetupGroups = map[int64]releasedSetupGroup{
-	5:  {clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
-	15: {clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
-	65: {clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
-	6:  {clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
-	58: {clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
-	59: {clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+var releasedSetupGroups = map[int64][]releasedSetupGroup{
+	5:  {{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"}},
+	15: {{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"}},
+	65: {{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"}},
+	6:  {{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"}},
+	58: {
+		{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+		{clientID: "grok-build", clientName: "Grok Build", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+	},
+	59: {{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"}},
 }
 
 type ClientSetupOption struct {
@@ -36,11 +39,13 @@ func (s *ClientSetupService) SetupOptions(ctx context.Context, userID, apiKeyID 
 	if err != nil {
 		return nil, err
 	}
-	selection, config, ok := s.setupSelection(ctx, key, osName)
-	if !ok || selection.ClientID == "" {
-		return []ClientSetupOption{}, nil
+	options := make([]ClientSetupOption, 0, len(releasedSetupGroups[key.Group.ID]))
+	for _, config := range releasedSetupGroups[key.Group.ID] {
+		if _, _, ok := s.setupSelection(ctx, key, osName, config.clientID); ok {
+			options = append(options, ClientSetupOption{ClientID: config.clientID, Name: config.clientName})
+		}
 	}
-	return []ClientSetupOption{{ClientID: config.clientID, Name: config.clientName}}, nil
+	return options, nil
 }
 
 func (s *ClientSetupService) IssueTicketForOption(ctx context.Context, userID, apiKeyID int64, clientID, osName string) (*ClientSetupTicket, error) {
@@ -48,8 +53,9 @@ func (s *ClientSetupService) IssueTicketForOption(ctx context.Context, userID, a
 	if err != nil {
 		return nil, err
 	}
-	selection, config, ok := s.setupSelection(ctx, key, osName)
-	if !ok || strings.ToLower(strings.TrimSpace(clientID)) != config.clientID {
+	clientID = strings.ToLower(strings.TrimSpace(clientID))
+	selection, _, ok := s.setupSelection(ctx, key, osName, clientID)
+	if !ok {
 		return nil, ErrClientSetupSelectionUnavailable
 	}
 	target := clientSetupInstallerTarget(selection.ClientID)
@@ -80,12 +86,18 @@ func (s *ClientSetupService) setupAPIKey(ctx context.Context, userID, apiKeyID i
 	return key, nil
 }
 
-func (s *ClientSetupService) setupSelection(ctx context.Context, key *APIKey, osName string) (ClientSetupSelection, releasedSetupGroup, bool) {
+func (s *ClientSetupService) setupSelection(ctx context.Context, key *APIKey, osName, clientID string) (ClientSetupSelection, releasedSetupGroup, bool) {
 	if key == nil || key.Group == nil {
 		return ClientSetupSelection{}, releasedSetupGroup{}, false
 	}
-	config, ok := releasedSetupGroups[key.Group.ID]
-	if !ok || key.Group.Platform != config.platform {
+	var config releasedSetupGroup
+	for _, candidate := range releasedSetupGroups[key.Group.ID] {
+		if candidate.clientID == clientID {
+			config = candidate
+			break
+		}
+	}
+	if config.clientID == "" || key.Group.Platform != config.platform {
 		return ClientSetupSelection{}, releasedSetupGroup{}, false
 	}
 	osName = strings.ToLower(strings.TrimSpace(osName))
@@ -132,7 +144,7 @@ func (s *ClientSetupService) setupSelection(ctx context.Context, key *APIKey, os
 }
 
 func setupClientSupportsModel(clientID, protocol, model string) bool {
-	if clientID == "codex" {
+	if clientID == "codex" || clientID == "grok-build" {
 		return protocol == "responses" && generatedCodexSetupModels[model]
 	}
 	return generatedClientSetupModelProtocols[model][protocol]

@@ -53,10 +53,10 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"kimi-code": {
-		VersionKey:     "cli:0.39.1",
-		OneClickStatus: "prototype",
-		Protocols:      map[string]bool{"chat_completions": true, "generate_content": true, "messages": true, "responses": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		VersionKey:     "cli:0.41.0",
+		OneClickStatus: "ready",
+		Protocols:      map[string]bool{"chat_completions": true},
+		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 	"minimax-code": {
 		VersionKey:     "cli:0.2.7",

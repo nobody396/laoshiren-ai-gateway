@@ -320,21 +320,18 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "kimi-code",
     "name": "Kimi Code",
-    "version": "0.39.1",
-    "version_key": "cli:0.39.1",
+    "version": "0.41.0",
+    "version_key": "cli:0.41.0",
     "slug": "integration-kimi-code",
     "icon": "/tool-icons/kimi.png",
     "protocols": [
-      "responses",
-      "chat_completions",
-      "messages",
-      "generate_content"
+      "chat_completions"
     ],
     "protocol_details": [
       {
         "protocol": "responses",
-        "support": "supported",
-        "evidence_status": "verified"
+        "support": "unknown",
+        "evidence_status": "unverified"
       },
       {
         "protocol": "chat_completions",
@@ -343,13 +340,13 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
       },
       {
         "protocol": "messages",
-        "support": "supported",
-        "evidence_status": "verified"
+        "support": "unknown",
+        "evidence_status": "unverified"
       },
       {
         "protocol": "generate_content",
-        "support": "supported",
-        "evidence_status": "verified"
+        "support": "unknown",
+        "evidence_status": "unverified"
       }
     ],
     "reasoning": {
@@ -373,7 +370,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.kimi-code\\config.toml"
       ]
     },
-    "one_click_status": "prototype",
+    "one_click_status": "ready",
     "verification_os": [
       "macos"
     ],

@@ -1,0 +1,52 @@
+{
+  "artifact_sha256": "1695ba4a6500bf15daebf8698280ba216795e5dabbc47347392fe3ff54429c0a",
+  "assertions": [
+    "strict_parse",
+    "recoverable_backup",
+    "preserve_unrelated",
+    "atomic_write",
+    "idempotent",
+    "all_key_visible_models"
+  ],
+  "client_id": "kimi-code",
+  "client_version": "cli:0.41.0",
+  "head_sha": "b1a2c0903e1093378e247601d57d6503201927fa",
+  "installers": {
+    "posix": {
+      "path": "frontend/public/auto-config/install.sh",
+      "sha256": "775960853ba6af3967db7481f0640efbbb6c09fc97af5e9b949a4849a9d415cb"
+    },
+    "windows": {
+      "path": "frontend/public/auto-config/install.ps1",
+      "sha256": "8c099848d51658013982083feb8d3f2fb9df4375c57b2086994f4967c9c0fc21"
+    }
+  },
+  "kind": "client_setup_cross_platform_qa",
+  "observed_at": "2026-09-08T20:22:12Z",
+  "passed": true,
+  "results": [
+    {
+      "os": "linux",
+      "result": "passed",
+      "runner": "ubuntu-latest"
+    },
+    {
+      "os": "macos",
+      "result": "passed",
+      "runner": "macos-latest"
+    },
+    {
+      "os": "windows",
+      "result": "passed",
+      "runner": "windows-latest",
+      "shells": [
+        "PowerShell 7",
+        "Windows PowerShell 5.1"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "secret_free": true,
+  "workflow_run_id": 34274293484,
+  "workflow_url": "https://github.com/nobody396/laoshiren-ai-gateway/actions/runs/34274293484"
+}

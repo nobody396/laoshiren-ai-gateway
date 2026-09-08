@@ -863,22 +863,22 @@
       "name": "Kimi Code",
       "slug": "integration-kimi-code",
       "icon": "/tool-icons/kimi.png",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
             "protocol": "responses",
-            "support": "supported",
+            "support": "unknown",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-03",
               "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-c9c2c56bd0d940febfa6a232",
               "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
@@ -897,24 +897,24 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-03",
-              "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-492c761099ea4f5393f9a4ab",
-              "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-group62-20260909.json",
+              "artifact_sha256": "7807b4a3ac50aedd2cecd638f01e2feda236c526bc6e139cddf43ead2709e74e"
             }
           },
           {
             "protocol": "messages",
-            "support": "supported",
+            "support": "unknown",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-03",
               "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-loop-claude-sonnet-5-messages-group15-usage.json#evidence-fa00de04741c4acaa387900c",
               "artifact_sha256": "316898c6a6293430a3a25fa801b32e49d11a689cbfc97f6c09b5c32c1b1a7c6d"
@@ -922,17 +922,17 @@
           },
           {
             "protocol": "generate_content",
-            "support": "supported",
+            "support": "unknown",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-03",
               "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-4e08457d24bb420d97cecc8b",
               "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
@@ -979,27 +979,26 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:0.39.1",
-          "display": "0.39.1",
+          "version_key": "cli:0.41.0",
+          "display": "0.41.0",
           "components": [
             {
               "component": "cli",
-              "version": "0.39.1",
-              "supported_range": ">=0.38.0"
+              "version": "0.41.0"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-03",
-            "source_ref": "model-doc-contracts/evidence/kimi-code-installed-refresh-20260903.json",
-            "artifact_sha256": "23babd9b31ac709e99f621d6dbe97409e39d22267b54e1249b3002f363db0dc2"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/kimi-code-group62-20260909.json",
+            "artifact_sha256": "7807b4a3ac50aedd2cecd638f01e2feda236c526bc6e139cddf43ead2709e74e"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.kimi-code/config.toml",
@@ -1009,14 +1008,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "6ad4579c070637ffd9a0036c19c97647dc97ea7d1f7130a5c2f5fe23364b2dd5"
             }
           },
           {
             "os": "linux",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.kimi-code/config.toml",
@@ -1026,14 +1025,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "6ad4579c070637ffd9a0036c19c97647dc97ea7d1f7130a5c2f5fe23364b2dd5"
             }
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.kimi-code\\config.toml",
@@ -1043,9 +1042,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "6ad4579c070637ffd9a0036c19c97647dc97ea7d1f7130a5c2f5fe23364b2dd5"
             }
           }
         ],

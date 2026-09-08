@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.23'
+SCRIPT_VERSION='0.7.24'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -58,6 +58,8 @@ OPENCODE_CONFIG_PATH="${OPENCODE_DIR}/opencode.json"
 ZCODE_DIR="${HOME}/.zcode"
 ZCODE_APP_CONFIG_PATH="${ZCODE_DIR}/v2/config.json"
 ZCODE_CLI_CONFIG_PATH="${ZCODE_DIR}/cli/config.json"
+WORKBUDDY_DIR="${HOME}/.workbuddy"
+WORKBUDDY_MODELS_PATH="${WORKBUDDY_DIR}/models.json"
 
 BASE_URL="${DEFAULT_BASE_URL}"
 TOOLS="${DEFAULT_TOOLS}"
@@ -68,6 +70,7 @@ GEMINI_API_KEY="${LAOSHIRENAI_GEMINI_API_KEY:-}"
 KIMI_API_KEY="${LAOSHIRENAI_KIMI_API_KEY:-}"
 OPENCODE_API_KEY="${LAOSHIRENAI_OPENCODE_API_KEY:-}"
 ZCODE_API_KEY="${LAOSHIRENAI_ZCODE_API_KEY:-}"
+WORKBUDDY_API_KEY="${LAOSHIRENAI_WORKBUDDY_API_KEY:-}"
 GROK_CC_SWITCH_COMPAT=0
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
@@ -94,6 +97,7 @@ if [ -n "$UNIFIED_API_KEY" ]; then
   [ -n "$KIMI_API_KEY" ] || KIMI_API_KEY="$UNIFIED_API_KEY"
   [ -n "$OPENCODE_API_KEY" ] || OPENCODE_API_KEY="$UNIFIED_API_KEY"
   [ -n "$ZCODE_API_KEY" ] || ZCODE_API_KEY="$UNIFIED_API_KEY"
+  [ -n "$WORKBUDDY_API_KEY" ] || WORKBUDDY_API_KEY="$UNIFIED_API_KEY"
 fi
 
 # 支持通过环境变量覆盖基础参数，兼容管道执行或预置 shell 环境。
@@ -330,11 +334,11 @@ normalize_tools() {
   normalized_value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
 
   case "$normalized_value" in
-    all|claude|codex|grok|gemini|kimi|opencode|zcode)
+    all|claude|codex|grok|gemini|kimi|opencode|zcode|workbuddy)
       printf '%s' "$normalized_value"
       ;;
     *)
-      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok / gemini / kimi / opencode / zcode"
+      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok / gemini / kimi / opencode / zcode / workbuddy"
       ;;
   esac
 }
@@ -378,6 +382,11 @@ parse_args() {
         ZCODE_API_KEY="$2"
         shift 2
         ;;
+      --workbuddy-api-key)
+        [ $# -ge 2 ] || log_error "--workbuddy-api-key 需要一个值"
+        WORKBUDDY_API_KEY="$2"
+        shift 2
+        ;;
       --base-url)
         [ $# -ge 2 ] || log_error "--base-url 需要一个值"
         BASE_URL="$2"
@@ -410,7 +419,7 @@ parse_args() {
 老实人 AI 一键安装与自动配置脚本
 
 用法:
-  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--tools all|claude|codex|grok|gemini|kimi|opencode|zcode] [--base-url https://api.laoshirenai.com]
+  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--tools all|claude|codex|grok|gemini|kimi|opencode|zcode|workbuddy] [--base-url https://api.laoshirenai.com]
 
 参数:
   --api-key             Claude Code API Key
@@ -420,6 +429,7 @@ parse_args() {
   --kimi-api-key        Kimi Code API Key
   --opencode-api-key    OpenCode API Key
   --zcode-api-key       ZCode API Key
+  --workbuddy-api-key   WorkBuddy API Key
   --tools               需要配置的工具，默认 all
   --base-url            API 基础地址，默认 https://api.laoshirenai.com
   --node-version        指定 Node.js 版本，例如 v24.11.0
@@ -490,6 +500,9 @@ prompt_for_api_keys() {
   fi
   if [ "$TOOLS" = "zcode" ] && [ -z "$ZCODE_API_KEY" ]; then
     prompt_for_named_api_key "ZCode API Key" "请输入 ZCode API Key" "ZCODE_API_KEY" "--zcode-api-key" "LAOSHIRENAI_ZCODE_API_KEY"
+  fi
+  if [ "$TOOLS" = "workbuddy" ] && [ -z "$WORKBUDDY_API_KEY" ]; then
+    prompt_for_named_api_key "WorkBuddy API Key" "请输入 WorkBuddy API Key" "WORKBUDDY_API_KEY" "--workbuddy-api-key" "LAOSHIRENAI_WORKBUDDY_API_KEY"
   fi
 }
 
@@ -860,7 +873,7 @@ EOF
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.env.SETUP_RESPONSE_PATH, 'utf8'))
 const data = body && body.data
-if (!data || !['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode'].includes(data.target) || !data.api_key || !data.base_url || (data.client_id && (!data.model_id || !data.protocol))) {
+if (!data || !['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy'].includes(data.target) || !data.api_key || !data.base_url || (data.client_id && (!data.model_id || !data.protocol))) {
   process.exit(2)
 }
 process.stdout.write([
@@ -905,6 +918,8 @@ EOF
     OPENCODE_API_KEY="$received_key"
   elif [ "$target" = "zcode" ]; then
     ZCODE_API_KEY="$received_key"
+  elif [ "$target" = "workbuddy" ]; then
+    WORKBUDDY_API_KEY="$received_key"
   else
     GROK_API_KEY="$received_key"
     if [ -n "$SELECTED_MODEL" ]; then
@@ -1729,6 +1744,73 @@ EOF
   rm -f "$response_path"
 }
 
+write_workbuddy_config() {
+  local response_path api_base_url status_code
+  response_path="$(mktemp)"
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  status_code="$(curl -sS -o "$response_path" -w '%{http_code}' \
+    -H "Authorization: Bearer ${WORKBUDDY_API_KEY}" "${api_base_url}/models" || true)"
+  [ "$status_code" = "200" ] || { rm -f "$response_path"; log_error "WorkBuddy 分组模型读取失败: HTTP ${status_code}"; }
+  [ "$SELECTED_PROTOCOL" = "chat_completions" ] || { rm -f "$response_path"; log_error "WorkBuddy 一键配置只接受已验证的 Chat Completions 协议"; }
+
+  create_backup_if_needed "$WORKBUDDY_MODELS_PATH"
+  ensure_dir "$WORKBUDDY_DIR"
+  CONFIG_PATH="$WORKBUDDY_MODELS_PATH" MODELS_PATH="$response_path" CONFIG_BASE_URL="$api_base_url" CONFIG_API_KEY="$WORKBUDDY_API_KEY" REASONING_JSON="$CATALOG_MODEL_REASONING_JSON" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const path = process.env.CONFIG_PATH
+const response = JSON.parse(fs.readFileSync(process.env.MODELS_PATH, 'utf8'))
+const ids = []
+const seen = new Set()
+for (const row of Array.isArray(response.data) ? response.data : []) {
+  const id = typeof row?.id === 'string' ? row.id.trim() : ''
+  if (!id || id === 'codex-auto-review' || seen.has(id) || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(id)) continue
+  seen.add(id); ids.push(id)
+}
+if (!ids.length) throw new Error('empty WorkBuddy model list')
+let root = []
+let shape = 'array'
+if (fs.existsSync(path)) {
+  const text = fs.readFileSync(path, 'utf8')
+  if (text.trim()) root = JSON.parse(text)
+  if (!Array.isArray(root)) {
+    if (!root || typeof root !== 'object') throw new Error('WorkBuddy config root must be an array or object')
+    shape = 'object'
+    if (root.models !== undefined && !Array.isArray(root.models)) throw new Error('WorkBuddy models must be an array')
+  }
+}
+const existing = shape === 'array' ? root : (root.models || [])
+const reasoning = JSON.parse(process.env.REASONING_JSON || '{}')
+const managed = ids.map(id => {
+  let efforts = Array.isArray(reasoning[id]) ? reasoning[id].filter(x => ['minimal','low','medium','high','xhigh','max'].includes(x)) : []
+  if (!efforts.length && id === 'gpt-5.6') efforts = reasoning['gpt-5.6-sol'] || []
+  if (!efforts.length) efforts = ['low','medium','high']
+  return {
+    id, name:id, vendor:'OpenAI', apiKey:process.env.CONFIG_API_KEY,
+    url:`${process.env.CONFIG_BASE_URL}/chat/completions`,
+    supportsToolCall:true, supportsImages:false, supportsReasoning:true,
+    onlyReasoning:false, useCustomProtocol:false,
+    maxInputTokens:id.startsWith('grok-') ? 500000 : 1050000,
+    maxOutputTokens:128000,
+    reasoning:{
+      defaultEffort:efforts.includes('medium') ? 'medium' : efforts[0],
+      supportedEfforts:efforts,
+      canDisableThinking:false,
+    },
+  }
+})
+const kept = existing.filter(row => !row || typeof row !== 'object' || !seen.has(String(row.id || '')))
+const models = [...kept, ...managed]
+const output = JSON.stringify(shape === 'array' ? models : {...root, models}, null, 2) + '\n'
+const temporary = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporary, output, {encoding:'utf8', mode:0o600})
+  fs.renameSync(temporary, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally { try { fs.unlinkSync(temporary) } catch {} }
+EOF
+  rm -f "$response_path"
+}
+
 # 合并写入 Gemini CLI 的 ~/.gemini/.env 与 settings.json：.env 只更新本站管理的
 # 四个键并保留其他行，settings.json 只更新鉴权方式、默认模型和本站管理的
 # thinkingConfig 覆盖项，其余字段与 overrides 原样保留。
@@ -1929,6 +2011,10 @@ uses_zcode() {
   [ "$TOOLS" = "zcode" ]
 }
 
+uses_workbuddy() {
+  [ "$TOOLS" = "workbuddy" ]
+}
+
 normalize_openai_v1_base_url() {
   local normalized_url
 
@@ -2015,6 +2101,7 @@ verify_selected_model_request() {
     kimi) api_key="$KIMI_API_KEY" ;;
     opencode) api_key="$OPENCODE_API_KEY" ;;
     zcode) api_key="$ZCODE_API_KEY" ;;
+    workbuddy) api_key="$WORKBUDDY_API_KEY" ;;
     *) return 0 ;;
   esac
   api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
@@ -2103,6 +2190,11 @@ verify_zcode_api_key() {
   verify_api_key_readiness "ZCode" "$ZCODE_API_KEY"
 }
 
+verify_workbuddy_api_key() {
+  uses_workbuddy || return 0
+  verify_api_key_readiness "WorkBuddy" "$WORKBUDDY_API_KEY"
+}
+
 # 根据用户选择写入 Claude Code 配置。
 configure_claude() {
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
@@ -2154,6 +2246,13 @@ configure_zcode() {
   if uses_zcode; then
     log_info "正在写入 ZCode App 与 CLI 配置"
     write_zcode_config
+  fi
+}
+
+configure_workbuddy() {
+  if uses_workbuddy; then
+    log_info "正在写入 WorkBuddy 模型配置"
+    write_workbuddy_config
   fi
 }
 
@@ -2233,6 +2332,9 @@ print_summary() {
     printf '  - ZCode App 配置: %s\n' "$ZCODE_APP_CONFIG_PATH"
     printf '  - ZCode CLI 配置: %s\n' "$ZCODE_CLI_CONFIG_PATH"
   fi
+  if uses_workbuddy; then
+    printf '  - WorkBuddy 模型配置: %s\n' "$WORKBUDDY_MODELS_PATH"
+  fi
   if uses_claude; then
     printf '  - Claude Code 专用 Key: 已配置\n'
     if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
@@ -2274,12 +2376,15 @@ print_summary() {
   if uses_zcode; then
     printf '  - ZCode 专用 Key: 已配置\n'
   fi
+  if uses_workbuddy; then
+    printf '  - WorkBuddy 专用 Key: 已配置\n'
+  fi
   if [ -n "$PROFILE_FILE" ]; then
     printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
   fi
   printf '\n回滚方法（仅显示本次存在的备份）:\n'
   local rollback_path
-  for rollback_path in "$CLAUDE_SETTINGS_PATH" "$CODEX_AUTH_PATH" "$CODEX_CONFIG_PATH" "$CODEX_MODEL_CATALOG_PATH" "$GROK_CONFIG_PATH" "$GEMINI_ENV_PATH" "$GEMINI_SETTINGS_PATH" "$KIMI_CONFIG_PATH" "$OPENCODE_CONFIG_PATH" "$ZCODE_APP_CONFIG_PATH" "$ZCODE_CLI_CONFIG_PATH"; do
+  for rollback_path in "$CLAUDE_SETTINGS_PATH" "$CODEX_AUTH_PATH" "$CODEX_CONFIG_PATH" "$CODEX_MODEL_CATALOG_PATH" "$GROK_CONFIG_PATH" "$GEMINI_ENV_PATH" "$GEMINI_SETTINGS_PATH" "$KIMI_CONFIG_PATH" "$OPENCODE_CONFIG_PATH" "$ZCODE_APP_CONFIG_PATH" "$ZCODE_CLI_CONFIG_PATH" "$WORKBUDDY_MODELS_PATH"; do
     [ -f "${rollback_path}.bak" ] && printf '  cp %q %q\n' "${rollback_path}.bak" "$rollback_path"
   done
   printf '\n'
@@ -2315,6 +2420,9 @@ print_summary() {
   if uses_zcode; then
     printf '  完全退出并重新打开 ZCode\n'
   fi
+  if uses_workbuddy; then
+    printf '  完全退出并重新打开 WorkBuddy\n'
+  fi
 }
 
 # 组织整个安装流程，确保步骤顺序稳定且可复用。
@@ -2349,6 +2457,7 @@ main() {
   configure_kimi
   configure_opencode
   configure_zcode
+  configure_workbuddy
   verify_claude_api_key
   verify_codex_api_key
   verify_grok_api_key
@@ -2356,6 +2465,7 @@ main() {
   verify_kimi_api_key
   verify_opencode_api_key
   verify_zcode_api_key
+  verify_workbuddy_api_key
   verify_selected_model_request
   verify_client_commands
   open_cc_switch_if_requested

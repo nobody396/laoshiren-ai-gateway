@@ -39,6 +39,7 @@ describe('client auto-config target selection', () => {
     expect(getClientAutoConfigName('kimi')).toBe('Kimi Code')
     expect(getClientAutoConfigName('opencode')).toBe('OpenCode')
     expect(getClientAutoConfigName('zcode')).toBe('ZCode')
+    expect(getClientAutoConfigName('workbuddy')).toBe('WorkBuddy')
   })
 })
 

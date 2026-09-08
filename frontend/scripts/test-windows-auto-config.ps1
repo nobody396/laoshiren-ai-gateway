@@ -37,6 +37,7 @@ $RequiredFunctions = @(
   'Write-KimiConfig',
   'Write-OpenCodeConfig',
   'Write-ZCodeConfig',
+  'Write-WorkBuddyConfig',
   'Write-GeminiConfig',
   'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
@@ -213,6 +214,30 @@ try {
   Write-ZCodeConfig
   Assert-True ([IO.File]::ReadAllText($ZCodeAppConfigPath) -eq $FirstZCodeApp) 'ZCode App config is not idempotent'
   Assert-True ([IO.File]::ReadAllText($ZCodeCliConfigPath) -eq $FirstZCodeCli) 'ZCode CLI config is not idempotent'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
+
+  $WorkBuddyDir = Join-Path $FixtureDir 'workbuddy-home'
+  $WorkBuddyModelsPath = Join-Path $WorkBuddyDir 'models.json'
+  New-Item -ItemType Directory -Path $WorkBuddyDir -Force | Out-Null
+  $OriginalWorkBuddy = '{"keep":true,"models":[{"id":"unrelated","name":"unrelated","apiKey":"keep"}]}'
+  [IO.File]::WriteAllText($WorkBuddyModelsPath, $OriginalWorkBuddy, [Text.UTF8Encoding]::new($false))
+  function Invoke-RestMethod { return [pscustomobject]@{ data = @([pscustomobject]@{ id = 'grok-4.5' }, [pscustomobject]@{ id = 'grok-4.6' }) } }
+  $script:WorkBuddyApiKey = 'owned-fixture-key'
+  $script:SelectedProtocol = 'chat_completions'
+  $CatalogModelReasoningJson = '{"grok-4.5":["low","medium","high","xhigh"],"grok-4.6":["low","medium","high","xhigh"]}'
+  Write-WorkBuddyConfig
+  $FirstWorkBuddy = [IO.File]::ReadAllText($WorkBuddyModelsPath)
+  $ParsedWorkBuddy = $FirstWorkBuddy | ConvertFrom-Json
+  Assert-True ($ParsedWorkBuddy.keep -eq $true) 'WorkBuddy unrelated root field was overwritten'
+  Assert-True ($ParsedWorkBuddy.models.Count -eq 3) 'WorkBuddy did not preserve one unrelated model and import two models'
+  Assert-True ($ParsedWorkBuddy.models[0].id -eq 'unrelated') 'WorkBuddy unrelated model was overwritten'
+  Assert-True ($ParsedWorkBuddy.models[1].url -eq 'https://api.example.com/v1/chat/completions') 'WorkBuddy endpoint is wrong'
+  Assert-True ($ParsedWorkBuddy.models[1].maxInputTokens -eq 500000) 'WorkBuddy context size is wrong'
+  Assert-True ($ParsedWorkBuddy.models[1].reasoning.defaultEffort -eq 'medium') 'WorkBuddy default reasoning effort is wrong'
+  Assert-True ($ParsedWorkBuddy.models[1].reasoning.canDisableThinking -eq $false) 'WorkBuddy unreliable Off control was exposed'
+  Assert-True ([IO.File]::ReadAllText("$WorkBuddyModelsPath.bak") -eq $OriginalWorkBuddy) 'WorkBuddy backup was not preserved'
+  Write-WorkBuddyConfig
+  Assert-True ([IO.File]::ReadAllText($WorkBuddyModelsPath) -eq $FirstWorkBuddy) 'WorkBuddy config is not idempotent'
   Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
 
   $ReleasedGroups = @(

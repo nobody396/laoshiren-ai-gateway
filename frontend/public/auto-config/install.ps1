@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.23'
+$ScriptVersion = '0.7.24'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -62,6 +62,8 @@ $OpenCodeConfigPath = Join-Path $OpenCodeDir 'opencode.json'
 $ZCodeDir = Join-Path $HOME '.zcode'
 $ZCodeAppConfigPath = Join-Path $ZCodeDir 'v2\config.json'
 $ZCodeCliConfigPath = Join-Path $ZCodeDir 'cli\config.json'
+$WorkBuddyDir = Join-Path $HOME '.workbuddy'
+$WorkBuddyModelsPath = Join-Path $WorkBuddyDir 'models.json'
 
 # 支持通过环境变量传参，解决 `irm | iex` 管道模式下无法传命令行参数的问题
 $BaseUrl = if ($env:LAOSHIRENAI_BASE_URL) { $env:LAOSHIRENAI_BASE_URL } else { $DefaultBaseUrl }
@@ -73,6 +75,7 @@ $GeminiApiKey = $env:LAOSHIRENAI_GEMINI_API_KEY
 $KimiApiKey = $env:LAOSHIRENAI_KIMI_API_KEY
 $OpenCodeApiKey = $env:LAOSHIRENAI_OPENCODE_API_KEY
 $ZCodeApiKey = $env:LAOSHIRENAI_ZCODE_API_KEY
+$WorkBuddyApiKey = $env:LAOSHIRENAI_WORKBUDDY_API_KEY
 $UnifiedApiKey = $env:LAOSHIRENAI_API_KEY
 if ([string]::IsNullOrWhiteSpace($ClaudeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $ClaudeApiKey = $UnifiedApiKey
@@ -94,6 +97,9 @@ if ([string]::IsNullOrWhiteSpace($OpenCodeApiKey) -and -not [string]::IsNullOrWh
 }
 if ([string]::IsNullOrWhiteSpace($ZCodeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $ZCodeApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($WorkBuddyApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $WorkBuddyApiKey = $UnifiedApiKey
 }
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
@@ -218,6 +224,11 @@ function Parse-Arguments {
         if ($i -ge $ArgsList.Count) { Stop-Script '--zcode-api-key 需要一个值' }
         $script:ZCodeApiKey = $ArgsList[$i]
       }
+      '--workbuddy-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--workbuddy-api-key 需要一个值' }
+        $script:WorkBuddyApiKey = $ArgsList[$i]
+      }
       '--base-url' {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--base-url 需要一个值' }
@@ -227,8 +238,8 @@ function Parse-Arguments {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--tools 需要一个值' }
         $Value = $ArgsList[$i].ToLowerInvariant()
-        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode')) {
-          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini / kimi / opencode / zcode'
+        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy')) {
+          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini / kimi / opencode / zcode / workbuddy'
         }
         $script:Tools = $Value
       }
@@ -255,10 +266,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.23 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.24 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.23 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.24 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -268,6 +279,7 @@ function Parse-Arguments {
   --kimi-api-key         Kimi Code API Key
   --opencode-api-key     OpenCode API Key
   --zcode-api-key        ZCode API Key
+  --workbuddy-api-key    WorkBuddy API Key
   --tools                需要配置的工具，默认 all
   --base-url             API 基础地址，默认 https://api.laoshirenai.com
   --node-version         指定 Node.js 版本，例如 v24.11.0
@@ -345,6 +357,10 @@ function Prompt-ApiKeys {
     $script:ZCodeApiKey = Read-SecureInput -Prompt '请输入 ZCode API Key'
     if ([string]::IsNullOrWhiteSpace($script:ZCodeApiKey)) { Stop-Script 'ZCode API Key 不能为空' }
   }
+  if ($script:Tools -eq 'workbuddy' -and [string]::IsNullOrWhiteSpace($script:WorkBuddyApiKey)) {
+    $script:WorkBuddyApiKey = Read-SecureInput -Prompt '请输入 WorkBuddy API Key'
+    if ([string]::IsNullOrWhiteSpace($script:WorkBuddyApiKey)) { Stop-Script 'WorkBuddy API Key 不能为空' }
+  }
 }
 
 # 用一次性凭证领取当前目标的专用 API Key。凭证和 Key 均不会打印到终端。
@@ -365,7 +381,7 @@ function Exchange-SetupTicket {
 
   $Data = $Response.data
   if ($null -eq $Data -or
-      $Data.target -notin @('claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode') -or
+      $Data.target -notin @('claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy') -or
       [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
       [string]::IsNullOrWhiteSpace([string]$Data.base_url) -or
       (-not [string]::IsNullOrWhiteSpace([string]$Data.client_id) -and ([string]::IsNullOrWhiteSpace([string]$Data.model_id) -or [string]::IsNullOrWhiteSpace([string]$Data.protocol)))) {
@@ -395,6 +411,8 @@ function Exchange-SetupTicket {
     $script:OpenCodeApiKey = [string]$Data.api_key
   } elseif ($Data.target -eq 'zcode') {
     $script:ZCodeApiKey = [string]$Data.api_key
+  } elseif ($Data.target -eq 'workbuddy') {
+    $script:WorkBuddyApiKey = [string]$Data.api_key
   } else {
     $script:GrokApiKey = [string]$Data.api_key
     if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
@@ -2034,6 +2052,10 @@ function Test-UsesZCode {
   return $script:Tools -eq 'zcode'
 }
 
+function Test-UsesWorkBuddy {
+  return $script:Tools -eq 'workbuddy'
+}
+
 function Get-OpenAIV1BaseUrl {
   param([string]$Value)
 
@@ -2109,6 +2131,7 @@ function Test-SelectedModelRequest {
     'kimi' { $script:KimiApiKey }
     'opencode' { $script:OpenCodeApiKey }
     'zcode' { $script:ZCodeApiKey }
+    'workbuddy' { $script:WorkBuddyApiKey }
     default { return }
   }
   $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
@@ -2188,6 +2211,10 @@ function Test-OpenCodeApiKey {
 
 function Test-ZCodeApiKey {
   if (Test-UsesZCode) { Test-ApiKeyReadiness -Label 'ZCode' -ApiKey $script:ZCodeApiKey }
+}
+
+function Test-WorkBuddyApiKey {
+  if (Test-UsesWorkBuddy) { Test-ApiKeyReadiness -Label 'WorkBuddy' -ApiKey $script:WorkBuddyApiKey }
 }
 
 function Write-KimiConfig {
@@ -2377,6 +2404,65 @@ function Write-ZCodeConfig {
   }
 }
 
+function Write-WorkBuddyConfig {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{ Authorization = "Bearer $script:WorkBuddyApiKey" } -Method GET
+  } catch {
+    Stop-Script "WorkBuddy 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data | ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } | Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'WorkBuddy 分组模型目录为空' }
+  if ($script:SelectedProtocol -ne 'chat_completions') { Stop-Script 'WorkBuddy 一键配置只接受已验证的 Chat Completions 协议' }
+  Backup-IfNeeded $WorkBuddyModelsPath
+  Ensure-Directory $WorkBuddyDir
+  $Root = @()
+  $Shape = 'array'
+  if (Test-Path -LiteralPath $WorkBuddyModelsPath) {
+    $Raw = Get-Content -LiteralPath $WorkBuddyModelsPath -Raw
+    if (-not [string]::IsNullOrWhiteSpace($Raw)) {
+      try { $Root = $Raw | ConvertFrom-Json } catch { Stop-Script "拒绝覆盖无法解析的 WorkBuddy 配置: $_" }
+      if ($Raw.TrimStart().StartsWith('{')) {
+        if ($null -eq $Root -or $Root -is [string] -or $Root -is [ValueType]) { Stop-Script 'WorkBuddy 配置根节点必须是数组或对象' }
+        $Shape = 'object'
+        $ModelsProperty = $Root.PSObject.Properties['models']
+        if ($null -ne $ModelsProperty -and $null -ne $ModelsProperty.Value -and $ModelsProperty.Value -isnot [System.Array]) { Stop-Script 'WorkBuddy models 必须是数组' }
+      } elseif (-not $Raw.TrimStart().StartsWith('[')) {
+        Stop-Script 'WorkBuddy 配置根节点必须是数组或对象'
+      }
+    }
+  }
+  $Existing = if ($Shape -eq 'array') { @($Root) } elseif ($null -eq $Root.PSObject.Properties['models']) { @() } else { @($Root.models) }
+  $ReasoningCatalog = $CatalogModelReasoningJson | ConvertFrom-Json
+  $Managed = @()
+  foreach ($Id in $Ids) {
+    $Property = $ReasoningCatalog.PSObject.Properties[$Id]
+    $Efforts = if ($null -ne $Property) { @($Property.Value | Where-Object { $_ -in @('minimal','low','medium','high','xhigh','max') }) } else { @() }
+    if ($Efforts.Count -eq 0 -and $Id -eq 'gpt-5.6') { $Efforts = @($ReasoningCatalog.'gpt-5.6-sol') }
+    if ($Efforts.Count -eq 0) { $Efforts = @('low','medium','high') }
+    $DefaultEffort = if ($Efforts -contains 'medium') { 'medium' } else { [string]$Efforts[0] }
+    $Managed += [ordered]@{
+      id = $Id; name = $Id; vendor = 'OpenAI'; apiKey = $script:WorkBuddyApiKey
+      url = "$ApiBaseUrl/chat/completions"
+      supportsToolCall = $true; supportsImages = $false; supportsReasoning = $true
+      onlyReasoning = $false; useCustomProtocol = $false
+      maxInputTokens = if ($Id.StartsWith('grok-')) { 500000 } else { 1050000 }
+      maxOutputTokens = 128000
+      reasoning = [ordered]@{ defaultEffort = $DefaultEffort; supportedEfforts = $Efforts; canDisableThinking = $false }
+    }
+  }
+  $Kept = @($Existing | Where-Object { $null -eq $_ -or [string]::IsNullOrWhiteSpace([string]$_.id) -or [string]$_.id -notin $Ids })
+  $Models = @($Kept) + @($Managed)
+  $Output = if ($Shape -eq 'array') { $Models } else { $Root | Add-Member -NotePropertyName models -NotePropertyValue $Models -Force; $Root }
+  $Json = $Output | ConvertTo-Json -Depth 100
+  $TemporaryPath = "$WorkBuddyModelsPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [IO.File]::WriteAllText($TemporaryPath, ($Json + "`n"), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $WorkBuddyModelsPath -Force
+  } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
+}
+
 # 根据用户选择写入 Claude Code 配置。
 function Configure-Claude {
   if ($script:Tools -in @('all', 'claude')) {
@@ -2428,6 +2514,13 @@ function Configure-ZCode {
   if (Test-UsesZCode) {
     Write-Info '正在写入 ZCode App 与 CLI 配置'
     Write-ZCodeConfig
+  }
+}
+
+function Configure-WorkBuddy {
+  if (Test-UsesWorkBuddy) {
+    Write-Info '正在写入 WorkBuddy 模型配置'
+    Write-WorkBuddyConfig
   }
 }
 
@@ -2541,6 +2634,7 @@ function Print-Summary {
     Write-Host "  - ZCode App 配置: $ZCodeAppConfigPath"
     Write-Host "  - ZCode CLI 配置: $ZCodeCliConfigPath"
   }
+  if (Test-UsesWorkBuddy) { Write-Host "  - WorkBuddy 模型配置: $WorkBuddyModelsPath" }
   if (Test-UsesClaude) {
     Write-Host '  - Claude Code 专用 Key: 已配置'
     if ($script:InstallClaudeClient) {
@@ -2578,9 +2672,10 @@ function Print-Summary {
   if (Test-UsesKimi) { Write-Host '  - Kimi Code 专用 Key: 已配置' }
   if (Test-UsesOpenCode) { Write-Host '  - OpenCode 专用 Key: 已配置' }
   if (Test-UsesZCode) { Write-Host '  - ZCode 专用 Key: 已配置' }
+  if (Test-UsesWorkBuddy) { Write-Host '  - WorkBuddy 专用 Key: 已配置' }
   Write-Host ''
   Write-Host '回滚方法（仅显示本次存在的备份）:'
-  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath, $KimiConfigPath, $OpenCodeConfigPath, $ZCodeAppConfigPath, $ZCodeCliConfigPath)) {
+  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath, $KimiConfigPath, $OpenCodeConfigPath, $ZCodeAppConfigPath, $ZCodeCliConfigPath, $WorkBuddyModelsPath)) {
     if (Test-Path -LiteralPath "$RollbackPath.bak") {
       Write-Host "  Copy-Item -LiteralPath '$RollbackPath.bak' -Destination '$RollbackPath' -Force"
     }
@@ -2616,6 +2711,7 @@ function Print-Summary {
   if (Test-UsesKimi) { Write-Host '  - 重新打开 PowerShell 后执行 kimi --version' }
   if (Test-UsesOpenCode) { Write-Host '  - 重新打开 PowerShell 后执行 opencode --version' }
   if (Test-UsesZCode) { Write-Host '  - 完全退出并重新打开 ZCode' }
+  if (Test-UsesWorkBuddy) { Write-Host '  - 完全退出并重新打开 WorkBuddy' }
 }
 
 # 组织整个安装流程，确保安装、配置、校验按固定顺序执行。
@@ -2657,6 +2753,7 @@ function Main {
   Configure-Kimi
   Configure-OpenCode
   Configure-ZCode
+  Configure-WorkBuddy
   Test-ClaudeApiKey
   Test-CodexApiKey
   Test-GrokApiKey
@@ -2664,6 +2761,7 @@ function Main {
   Test-KimiApiKey
   Test-OpenCodeApiKey
   Test-ZCodeApiKey
+  Test-WorkBuddyApiKey
   Test-SelectedModelRequest
   Verify-ClientCommands
   Open-CcSwitchIfRequested

@@ -378,12 +378,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain('verify_selected_model_request')
     expect(script).toContain('${SELECTED_MODEL}:generateContent')
-    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode'].includes(data.target)")
+    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy'].includes(data.target)")
   })
 
   it('installs and configures Grok Build with the native Responses model on Windows', () => {
     const script = readPublicScript('install.ps1')
-    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode')")
+    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy')")
     expect(script).toContain("$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'")
     expect(script).toContain("$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'")
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
@@ -749,7 +749,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
     expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')")
     expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
-    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\', \'opencode\', \'zcode\')')
+    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\', \'opencode\', \'zcode\', \'workbuddy\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
   })
 
@@ -927,6 +927,43 @@ describe('client auto-config scripts', () => {
       runWriter()
       expect(readFileSync(appPath, 'utf8')).toBe(firstApp)
       expect(readFileSync(cliPath, 'utf8')).toBe(firstCli)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every WorkBuddy model while preserving the existing object shape', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-workbuddy-config-'))
+    const modelsPath = join(fixture, '.workbuddy', 'models.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = JSON.stringify({ keep: true, models: [{ id: 'unrelated', name: 'unrelated', apiKey: 'keep' }] })
+    try {
+      mkdirSync(resolve(modelsPath, '..'), { recursive: true })
+      writeFileSync(modelsPath, original)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; WORKBUDDY_API_KEY="fixture"; SELECTED_PROTOCOL="chat_completions"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"grok-4.5"},{"id":"grok-4.6"}]}' > "$out"; printf '200'; }; write_workbuddy_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const first = readFileSync(modelsPath, 'utf8')
+      const parsed = JSON.parse(first)
+      expect(parsed.keep).toBe(true)
+      expect(parsed.models[0].id).toBe('unrelated')
+      expect(parsed.models.slice(1).map((row: { id: string }) => row.id)).toEqual(['grok-4.5', 'grok-4.6'])
+      for (const row of parsed.models.slice(1)) {
+        expect(row.name).toBe(row.id)
+        expect(row.url).toBe('https://api.example.com/v1/chat/completions')
+        expect(row.supportsToolCall).toBe(true)
+        expect(row.maxInputTokens).toBe(500000)
+        expect(row.maxOutputTokens).toBe(128000)
+        expect(row.reasoning.defaultEffort).toBe('medium')
+        expect(row.reasoning.canDisableThinking).toBe(false)
+      }
+      expect(readFileSync(`${modelsPath}.bak`, 'utf8')).toBe(original)
+      expect(statSync(modelsPath).mode & 0o777).toBe(0o600)
+      runWriter()
+      expect(readFileSync(modelsPath, 'utf8')).toBe(first)
     } finally {
       rmSync(fixture, { recursive: true, force: true })
     }

@@ -131,9 +131,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/claude-code-missing-loops-retry3-20260901/claude-code-loop-claude-sonnet-5-group15-20260901.json#evidence-273bfe42c9dc2d35c0a5f622",
-              "artifact_sha256": "e024b0a61143b7d0ad836abf09afc374c6eb6c6074cf1de297aed08b564d8a74"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/claude-code-public-coverage-20260909.json",
+              "artifact_sha256": "e5ebe854907185d62d94802fbd25a6e7a3f00c1267cbb737898fea7e814feed3"
             }
           },
           {
@@ -206,20 +206,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:2.1.258",
-          "display": "2.1.258",
+          "version_key": "cli:2.1.263",
+          "display": "2.1.263",
           "components": [
             {
               "component": "cli",
-              "version": "2.1.258"
+              "version": "2.1.263"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-03",
-            "source_ref": "model-doc-contracts/evidence/claude-code-installed-refresh-20260903.json",
-            "artifact_sha256": "ed93eaad2fcdd7917c5762ae45a98eea015284228550f9d7b1667fe25562b39a"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/claude-code-public-coverage-20260909.json",
+            "artifact_sha256": "e5ebe854907185d62d94802fbd25a6e7a3f00c1267cbb737898fea7e814feed3"
           }
         },
         "os_support": [
@@ -362,9 +362,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/codex-missing-loops-batch2-20260901/codex-loop-gpt-5.6-terra-group6-20260901.json#evidence-59d38a78e8e4a2811847f4ae",
-              "artifact_sha256": "ac51f1a311c8aff2f6be4a03d8d79f9b333d08b658ce9bc8207bb78f816e79a1"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/codex-public-coverage-20260909.json",
+              "artifact_sha256": "c55f5364c078d8bbc77b8dd9b581b116f5f2e18b939adc39438b8850b7a64d4e"
             }
           },
           {
@@ -457,20 +457,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:0.151.0",
-          "display": "0.151.0",
+          "version_key": "cli:0.153.4",
+          "display": "0.153.4",
           "components": [
             {
               "component": "cli",
-              "version": "0.151.0"
+              "version": "0.153.4"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/codex-public-coverage-20260909.json",
+            "artifact_sha256": "c55f5364c078d8bbc77b8dd9b581b116f5f2e18b939adc39438b8850b7a64d4e"
           }
         },
         "os_support": [

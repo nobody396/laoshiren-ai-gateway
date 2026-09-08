@@ -1,0 +1,33 @@
+{
+  "artifact_sha256": "ded694eb40b0cbeb6fc2fa9fb11563ecb655b68149d29d7b29849e34e14cc4ea",
+  "client_id": "claude-code",
+  "client_version": "cli:2.1.263",
+  "groups": [
+    {
+      "artifact_path": "artifacts/claude-code-three-groups-20260909/group-15.json",
+      "artifact_sha256": "b01b862ff28e33dd532874187ac9ded4aaafe5ad7831c8664f7de49708d78346",
+      "group_id": 15,
+      "model_count": 9,
+      "passed": true
+    },
+    {
+      "artifact_path": "artifacts/claude-code-three-groups-20260909/group-5.json",
+      "artifact_sha256": "9e0ab4d61a0f70d03d8cd463e4e411a4d735ceb446d15b9ac52af9581352a5f4",
+      "group_id": 5,
+      "model_count": 9,
+      "passed": true
+    },
+    {
+      "artifact_path": "artifacts/claude-code-three-groups-20260909/group-65.json",
+      "artifact_sha256": "5d52db7576475d375b3e10cc4f02764b8a053535139ef59dc7624244ce6a4a0c",
+      "group_id": 65,
+      "model_count": 8,
+      "passed": true
+    }
+  ],
+  "kind": "claude-code_public_group_coverage",
+  "observed_at": "2026-09-09",
+  "passed": true,
+  "schema_version": 1,
+  "secret_free": true
+}

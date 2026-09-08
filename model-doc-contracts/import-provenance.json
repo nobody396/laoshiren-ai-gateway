@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "observed_at": "2026-09-08T23:15:12Z",
+ "observed_at": "2026-09-08T23:37:00Z",
  "source_branch": "feat/newcomer-public-preview-20260829",
  "source_commit": "64049bca0",
  "source_state": "merged snapshot plus 2026-09-09 verified one-click client receipts",
@@ -47,7 +47,7 @@
   },
   {
    "path": "model-doc-contracts/client-matrix.json",
-   "source_sha256": "3dc3a17a87bae9d5a81dc38cad72677e5451194e893f1f2ae5b99172b547d25b"
+   "source_sha256": "fead4f23ce170aee159b47629264aa9acb3e6d6cf4789861a832f517766531a3"
   },
   {
    "path": "scripts/model_release.py",

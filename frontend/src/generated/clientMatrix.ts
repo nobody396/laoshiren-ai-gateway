@@ -20,8 +20,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "claude-code",
     "name": "Claude Code",
-    "version": "2.1.258",
-    "version_key": "cli:2.1.258",
+    "version": "2.1.263",
+    "version_key": "cli:2.1.263",
     "slug": "integration-claude-code",
     "icon": "/brand/client-tools/claude.svg",
     "protocols": [
@@ -128,8 +128,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "codex",
     "name": "Codex",
-    "version": "0.151.0",
-    "version_key": "cli:0.151.0",
+    "version": "0.153.4",
+    "version_key": "cli:0.153.4",
     "slug": "integration-codex",
     "icon": "/brand/client-tools/codex-light.png",
     "protocols": [

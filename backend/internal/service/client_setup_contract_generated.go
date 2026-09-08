@@ -17,13 +17,13 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"claude-code": {
-		VersionKey:     "cli:2.1.258",
+		VersionKey:     "cli:2.1.263",
 		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"messages": true},
 		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 	"codex": {
-		VersionKey:     "cli:0.151.0",
+		VersionKey:     "cli:0.153.4",
 		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"responses": true},
 		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},

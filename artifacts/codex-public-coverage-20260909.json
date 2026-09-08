@@ -1,0 +1,33 @@
+{
+  "artifact_sha256": "61613304d0d5696743c225239c6944d8f81e8c0946a71eff89a9eafe39830f70",
+  "client_id": "codex",
+  "client_version": "cli:0.153.4",
+  "groups": [
+    {
+      "artifact_path": "artifacts/codex-client-setup-three-groups-20260908/group-58.json",
+      "artifact_sha256": "b70b1939f81c695120e1cb3cc3a24174887a7988392bb06e712f323a6c240ca8",
+      "group_id": 58,
+      "model_count": 6,
+      "passed": true
+    },
+    {
+      "artifact_path": "artifacts/codex-client-setup-three-groups-20260908/group-59.json",
+      "artifact_sha256": "1bbe4bb8b216c03ad6f59ff348a00776bdf0c1d27d56efed2710259b877b859a",
+      "group_id": 59,
+      "model_count": 8,
+      "passed": true
+    },
+    {
+      "artifact_path": "artifacts/codex-client-setup-three-groups-20260908/group-6.json",
+      "artifact_sha256": "a80fbaf5dad5565267e4c4c0d2d248d5eb8b3d34b546cbfbe4ecdf2bfc1c3c8f",
+      "group_id": 6,
+      "model_count": 7,
+      "passed": true
+    }
+  ],
+  "kind": "codex_public_group_coverage",
+  "observed_at": "2026-09-09",
+  "passed": true,
+  "schema_version": 1,
+  "secret_free": true
+}

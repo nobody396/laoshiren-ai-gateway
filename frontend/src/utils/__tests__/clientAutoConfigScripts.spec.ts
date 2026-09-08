@@ -158,7 +158,7 @@ describe('client auto-config scripts', () => {
         '-c',
         'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CLAUDE_API_KEY="test-key"; CATALOG_ANTHROPIC_DEFAULT_MODEL="$2"; write_claude_config',
         '_', installerPath, model,
-      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      ], { env: { ...process.env, HOME: fixture, XDG_CONFIG_HOME: '', LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
       writeModel('claude-opus-5')
       let settings = JSON.parse(readFileSync(settingsPath, 'utf8'))
       expect(settings.model).toBe('claude-opus-5')
@@ -872,7 +872,7 @@ describe('client auto-config scripts', () => {
         '-c',
         `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; OPENCODE_API_KEY="fixture"; SELECTED_MODEL="kimi-k3"; SELECTED_PROTOCOL="chat_completions"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"kimi-k2.7-code"},{"id":"kimi-k3"}]}' > "$out"; printf '200'; }; write_opencode_config`,
         '_', installerPath,
-      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      ], { env: { ...process.env, HOME: fixture, XDG_CONFIG_HOME: '', LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
       runWriter()
       const first = readFileSync(configPath, 'utf8')
       const parsed = JSON.parse(first)

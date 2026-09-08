@@ -36,18 +36,17 @@ jobs:
       - run: pnpm -C frontend exec vitest run src/utils/__tests__/clientAutoConfig.spec.ts src/utils/__tests__/clientAutoConfigScripts.spec.ts src/components/keys/__tests__/ClientSetupModal.spec.ts
 
   windows:
-    name: Installer fixtures (Windows ${{ matrix.shell }})
+    name: Installer fixtures (Windows)
     runs-on: windows-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        shell: [pwsh, powershell]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Windows installer acceptance
-        shell: ${{ matrix.shell }}
+      - name: Windows installer acceptance (PowerShell 7)
+        shell: pwsh
+        run: ./frontend/scripts/test-windows-auto-config.ps1
+      - name: Windows installer acceptance (Windows PowerShell 5.1)
+        shell: powershell
         run: ./frontend/scripts/test-windows-auto-config.ps1

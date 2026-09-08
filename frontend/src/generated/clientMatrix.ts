@@ -330,7 +330,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
     "protocol_details": [
       {
         "protocol": "responses",
-        "support": "unknown",
+        "support": "unverified",
         "evidence_status": "unverified"
       },
       {
@@ -340,12 +340,12 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
       },
       {
         "protocol": "messages",
-        "support": "unknown",
+        "support": "unverified",
         "evidence_status": "unverified"
       },
       {
         "protocol": "generate_content",
-        "support": "unknown",
+        "support": "unverified",
         "evidence_status": "unverified"
       }
     ],

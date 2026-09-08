@@ -15,11 +15,12 @@ import (
 )
 
 const (
-	ClientSetupTargetClaude = "claude"
-	ClientSetupTargetCodex  = "codex"
-	ClientSetupTargetGrok   = "grok"
-	ClientSetupTargetGemini = "gemini"
-	ClientSetupTargetKimi   = "kimi"
+	ClientSetupTargetClaude   = "claude"
+	ClientSetupTargetCodex    = "codex"
+	ClientSetupTargetGrok     = "grok"
+	ClientSetupTargetGemini   = "gemini"
+	ClientSetupTargetKimi     = "kimi"
+	ClientSetupTargetOpenCode = "opencode"
 
 	clientSetupTicketPurpose          = "client_setup"
 	clientSetupSelectionTicketPurpose = "client_setup_selection_v1"
@@ -328,6 +329,8 @@ func clientSetupInstallerTarget(clientID string) string {
 		return ClientSetupTargetGrok
 	case "kimi-code":
 		return ClientSetupTargetKimi
+	case "opencode":
+		return ClientSetupTargetOpenCode
 	case "gemini-cli":
 		return ClientSetupTargetGemini
 	default:

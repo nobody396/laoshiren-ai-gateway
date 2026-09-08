@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.21'
+SCRIPT_VERSION='0.7.22'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -53,6 +53,8 @@ GEMINI_ENV_PATH="${GEMINI_DIR}/.env"
 GEMINI_SETTINGS_PATH="${GEMINI_DIR}/settings.json"
 KIMI_DIR="${HOME}/.kimi-code"
 KIMI_CONFIG_PATH="${KIMI_DIR}/config.toml"
+OPENCODE_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/opencode"
+OPENCODE_CONFIG_PATH="${OPENCODE_DIR}/opencode.json"
 
 BASE_URL="${DEFAULT_BASE_URL}"
 TOOLS="${DEFAULT_TOOLS}"
@@ -61,6 +63,7 @@ CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
 GROK_API_KEY="${LAOSHIRENAI_GROK_API_KEY:-}"
 GEMINI_API_KEY="${LAOSHIRENAI_GEMINI_API_KEY:-}"
 KIMI_API_KEY="${LAOSHIRENAI_KIMI_API_KEY:-}"
+OPENCODE_API_KEY="${LAOSHIRENAI_OPENCODE_API_KEY:-}"
 GROK_CC_SWITCH_COMPAT=0
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
@@ -84,6 +87,8 @@ if [ -n "$UNIFIED_API_KEY" ]; then
   [ -n "$CODEX_API_KEY" ] || CODEX_API_KEY="$UNIFIED_API_KEY"
   [ -n "$GROK_API_KEY" ] || GROK_API_KEY="$UNIFIED_API_KEY"
   [ -n "$GEMINI_API_KEY" ] || GEMINI_API_KEY="$UNIFIED_API_KEY"
+  [ -n "$KIMI_API_KEY" ] || KIMI_API_KEY="$UNIFIED_API_KEY"
+  [ -n "$OPENCODE_API_KEY" ] || OPENCODE_API_KEY="$UNIFIED_API_KEY"
 fi
 
 # 支持通过环境变量覆盖基础参数，兼容管道执行或预置 shell 环境。
@@ -107,10 +112,14 @@ INSTALL_CLAUDE_CLIENT=0
 INSTALL_CODEX_CLIENT=0
 INSTALL_GROK_CLIENT=0
 INSTALL_GEMINI_CLIENT=0
+INSTALL_KIMI_CLIENT=0
+INSTALL_OPENCODE_CLIENT=0
 EXISTING_CLAUDE_COMMAND=""
 EXISTING_CODEX_COMMAND=""
 EXISTING_GROK_COMMAND=""
 EXISTING_GEMINI_COMMAND=""
+EXISTING_KIMI_COMMAND=""
+EXISTING_OPENCODE_COMMAND=""
 
 # 输出信息日志，便于用户识别当前执行步骤。
 log_info() {
@@ -242,6 +251,15 @@ exec "${NPM_PREFIX}/bin/kimi" "\$@"
 EOF
     chmod +x "${LOCAL_BIN_DIR}/kimi"
   fi
+
+  if [ "$INSTALL_OPENCODE_CLIENT" -eq 1 ]; then
+    cat >"${LOCAL_BIN_DIR}/opencode" <<EOF
+#!/usr/bin/env bash
+export PATH="${NODE_CURRENT_DIR}/bin:${NPM_PREFIX}/bin:\$PATH"
+exec "${NPM_PREFIX}/bin/opencode" "\$@"
+EOF
+    chmod +x "${LOCAL_BIN_DIR}/opencode"
+  fi
 }
 
 # 判断当前代理变量是否指向本地代理，避免用户残留的失效代理把 npm 请求全部带偏。
@@ -307,11 +325,11 @@ normalize_tools() {
   normalized_value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
 
   case "$normalized_value" in
-    all|claude|codex|grok|gemini|kimi)
+    all|claude|codex|grok|gemini|kimi|opencode)
       printf '%s' "$normalized_value"
       ;;
     *)
-      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok / gemini / kimi"
+      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok / gemini / kimi / opencode"
       ;;
   esac
 }
@@ -343,6 +361,11 @@ parse_args() {
       --kimi-api-key)
         [ $# -ge 2 ] || log_error "--kimi-api-key 需要一个值"
         KIMI_API_KEY="$2"
+        shift 2
+        ;;
+      --opencode-api-key)
+        [ $# -ge 2 ] || log_error "--opencode-api-key 需要一个值"
+        OPENCODE_API_KEY="$2"
         shift 2
         ;;
       --base-url)
@@ -377,13 +400,15 @@ parse_args() {
 老实人 AI 一键安装与自动配置脚本
 
 用法:
-  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--grok-api-key <Grok_API_Key>] [--gemini-api-key <Gemini_API_Key>] [--tools all|claude|codex|grok|gemini] [--base-url https://api.laoshirenai.com]
+  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--tools all|claude|codex|grok|gemini|kimi|opencode] [--base-url https://api.laoshirenai.com]
 
 参数:
   --api-key             Claude Code API Key
   --codex-api-key       Codex API Key
   --grok-api-key        Grok Build API Key
   --gemini-api-key      Gemini CLI API Key
+  --kimi-api-key        Kimi Code API Key
+  --opencode-api-key    OpenCode API Key
   --tools               需要配置的工具，默认 all
   --base-url            API 基础地址，默认 https://api.laoshirenai.com
   --node-version        指定 Node.js 版本，例如 v24.11.0
@@ -449,6 +474,9 @@ prompt_for_api_keys() {
   if [ "$TOOLS" = "kimi" ] && [ -z "$KIMI_API_KEY" ]; then
     prompt_for_named_api_key "Kimi Code API Key" "请输入 Kimi Code API Key" "KIMI_API_KEY" "--kimi-api-key" "LAOSHIRENAI_KIMI_API_KEY"
   fi
+  if [ "$TOOLS" = "opencode" ] && [ -z "$OPENCODE_API_KEY" ]; then
+    prompt_for_named_api_key "OpenCode API Key" "请输入 OpenCode API Key" "OPENCODE_API_KEY" "--opencode-api-key" "LAOSHIRENAI_OPENCODE_API_KEY"
+  fi
 }
 
 # 返回一个真正可运行的现有 CLI；PATH 残留但无法执行的命令不算已安装。
@@ -477,7 +505,9 @@ resolve_client_install_plan() {
   INSTALL_CLAUDE_CLIENT=0
   INSTALL_CODEX_CLIENT=0
   INSTALL_GROK_CLIENT=0
+  INSTALL_GEMINI_CLIENT=0
   INSTALL_KIMI_CLIENT=0
+  INSTALL_OPENCODE_CLIENT=0
 
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
     EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"
@@ -546,6 +576,18 @@ resolve_client_install_plan() {
       INSTALL_KIMI_CLIENT=1
     fi
   fi
+  if [ "$TOOLS" = "opencode" ]; then
+    EXISTING_OPENCODE_COMMAND="$(get_usable_client_command opencode || true)"
+    if [ "$FORCE_CLIENT_INSTALL" -eq 1 ]; then
+      INSTALL_OPENCODE_CLIENT=1
+    elif [ -n "$EXISTING_OPENCODE_COMMAND" ]; then
+      log_info "检测到现有 OpenCode，跳过重复安装: ${EXISTING_OPENCODE_COMMAND}"
+    elif [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
+      log_warn "未检测到可用的 OpenCode，但已按要求跳过安装"
+    else
+      INSTALL_OPENCODE_CLIENT=1
+    fi
+  fi
 }
 
 # 从 npm registry 读取最新稳定版本；国内镜像失败时回退官方源。
@@ -606,14 +648,15 @@ resolve_client_update_plan() {
   [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || check_client_update "Codex CLI" "$EXISTING_CODEX_COMMAND" '@openai%2Fcodex' INSTALL_CODEX_CLIENT
   [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || check_client_update "Gemini CLI" "$EXISTING_GEMINI_COMMAND" '@google%2Fgemini-cli' INSTALL_GEMINI_CLIENT
   [ "$INSTALL_KIMI_CLIENT" -eq 1 ] || check_client_update "Kimi Code CLI" "$EXISTING_KIMI_COMMAND" '@moonshot-ai%2Fkimi-code' INSTALL_KIMI_CLIENT
+  [ "$INSTALL_OPENCODE_CLIENT" -eq 1 ] || check_client_update "OpenCode CLI" "$EXISTING_OPENCODE_COMMAND" 'opencode-ai' INSTALL_OPENCODE_CLIENT
 }
 
 needs_client_install() {
-  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GROK_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || [ "$INSTALL_KIMI_CLIENT" -eq 1 ]
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GROK_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || [ "$INSTALL_KIMI_CLIENT" -eq 1 ] || [ "$INSTALL_OPENCODE_CLIENT" -eq 1 ]
 }
 
 needs_npm_client_install() {
-  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || [ "$INSTALL_KIMI_CLIENT" -eq 1 ]
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || [ "$INSTALL_KIMI_CLIENT" -eq 1 ] || [ "$INSTALL_OPENCODE_CLIENT" -eq 1 ]
 }
 
 # 判断系统自带 node 是否可直接复用，避免重复下载安装。
@@ -803,7 +846,7 @@ EOF
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.env.SETUP_RESPONSE_PATH, 'utf8'))
 const data = body && body.data
-if (!data || !['claude', 'codex', 'grok', 'gemini', 'kimi'].includes(data.target) || !data.api_key || !data.base_url || (data.client_id && (!data.model_id || !data.protocol))) {
+if (!data || !['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode'].includes(data.target) || !data.api_key || !data.base_url || (data.client_id && (!data.model_id || !data.protocol))) {
   process.exit(2)
 }
 process.stdout.write([
@@ -844,6 +887,8 @@ EOF
     fi
   elif [ "$target" = "kimi" ]; then
     KIMI_API_KEY="$received_key"
+  elif [ "$target" = "opencode" ]; then
+    OPENCODE_API_KEY="$received_key"
   else
     GROK_API_KEY="$received_key"
     if [ -n "$SELECTED_MODEL" ]; then
@@ -947,6 +992,10 @@ install_requested_clients() {
   if [ "$INSTALL_KIMI_CLIENT" -eq 1 ]; then
     log_info "正在安装或更新 Kimi Code"
     npm_install_with_fallback "@moonshot-ai/kimi-code@latest"
+  fi
+  if [ "$INSTALL_OPENCODE_CLIENT" -eq 1 ]; then
+    log_info "正在安装或更新 OpenCode"
+    npm_install_with_fallback "opencode-ai@latest"
   fi
 }
 
@@ -1537,6 +1586,71 @@ EOF
   rm -f "$response_path"
 }
 
+write_opencode_config() {
+  local response_path api_base_url status_code
+  response_path="$(mktemp)"
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  status_code="$(curl -sS -o "$response_path" -w '%{http_code}' \
+    -H "Authorization: Bearer ${OPENCODE_API_KEY}" "${api_base_url}/models" || true)"
+  [ "$status_code" = "200" ] || { rm -f "$response_path"; log_error "OpenCode 分组模型读取失败: HTTP ${status_code}"; }
+  [ -n "$SELECTED_PROTOCOL" ] || { rm -f "$response_path"; log_error "OpenCode 缺少协议选择"; }
+
+  create_backup_if_needed "$OPENCODE_CONFIG_PATH"
+  ensure_dir "$OPENCODE_DIR"
+  CONFIG_PATH="$OPENCODE_CONFIG_PATH" MODELS_PATH="$response_path" CONFIG_BASE_URL="$api_base_url" CONFIG_API_KEY="$OPENCODE_API_KEY" PREFERRED_MODEL="$SELECTED_MODEL" CONFIG_PROTOCOL="$SELECTED_PROTOCOL" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const path = process.env.CONFIG_PATH
+const response = JSON.parse(fs.readFileSync(process.env.MODELS_PATH, 'utf8'))
+const protocol = process.env.CONFIG_PROTOCOL
+const packages = {
+  responses: '@ai-sdk/openai',
+  chat_completions: '@ai-sdk/openai-compatible',
+  messages: '@ai-sdk/anthropic',
+  generate_content: '@ai-sdk/google',
+}
+if (!packages[protocol]) throw new Error(`unsupported OpenCode protocol: ${protocol}`)
+const ids = []
+const seen = new Set()
+for (const row of Array.isArray(response.data) ? response.data : []) {
+  const id = typeof row?.id === 'string' ? row.id.trim() : ''
+  if (!id || id === 'codex-auto-review' || seen.has(id) || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(id)) continue
+  seen.add(id)
+  ids.push(id)
+}
+if (!ids.length) throw new Error('empty OpenCode model list')
+const preferred = (process.env.PREFERRED_MODEL || '').trim()
+if (preferred && !seen.has(preferred)) throw new Error('ticket model is no longer available')
+const selected = preferred || ids[0]
+let config = {}
+if (fs.existsSync(path)) {
+  config = JSON.parse(fs.readFileSync(path, 'utf8'))
+  if (!config || Array.isArray(config) || typeof config !== 'object') throw new Error('OpenCode config root must be an object')
+}
+if (config.provider !== undefined && (!config.provider || Array.isArray(config.provider) || typeof config.provider !== 'object')) {
+  throw new Error('OpenCode provider must be an object')
+}
+const root = process.env.CONFIG_BASE_URL.replace(/\/v1\/?$/, '')
+const baseURL = protocol === 'generate_content' ? `${root}/v1beta` : `${root}/v1`
+const models = Object.fromEntries(ids.map(id => [id, {name:id}]))
+config.$schema = config.$schema || 'https://opencode.ai/config.json'
+config.provider = {...(config.provider || {}), lsrai: {
+  npm: packages[protocol],
+  name: 'lsrai',
+  options: {baseURL, apiKey: process.env.CONFIG_API_KEY},
+  models,
+}}
+config.model = `lsrai/${selected}`
+const output = JSON.stringify(config, null, 2) + '\n'
+const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporaryPath, output, {encoding:'utf8', mode:0o600})
+  fs.renameSync(temporaryPath, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally { try { fs.unlinkSync(temporaryPath) } catch {} }
+EOF
+  rm -f "$response_path"
+}
+
 # 合并写入 Gemini CLI 的 ~/.gemini/.env 与 settings.json：.env 只更新本站管理的
 # 四个键并保留其他行，settings.json 只更新鉴权方式、默认模型和本站管理的
 # thinkingConfig 覆盖项，其余字段与 overrides 原样保留。
@@ -1729,6 +1843,10 @@ uses_kimi() {
   [ "$TOOLS" = "kimi" ]
 }
 
+uses_opencode() {
+  [ "$TOOLS" = "opencode" ]
+}
+
 normalize_openai_v1_base_url() {
   local normalized_url
 
@@ -1813,6 +1931,7 @@ verify_selected_model_request() {
     grok) api_key="$GROK_API_KEY" ;;
     gemini) api_key="$GEMINI_API_KEY" ;;
     kimi) api_key="$KIMI_API_KEY" ;;
+    opencode) api_key="$OPENCODE_API_KEY" ;;
     *) return 0 ;;
   esac
   api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
@@ -1891,6 +2010,11 @@ verify_kimi_api_key() {
   verify_api_key_readiness "Kimi Code" "$KIMI_API_KEY"
 }
 
+verify_opencode_api_key() {
+  uses_opencode || return 0
+  verify_api_key_readiness "OpenCode" "$OPENCODE_API_KEY"
+}
+
 # 根据用户选择写入 Claude Code 配置。
 configure_claude() {
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
@@ -1928,6 +2052,13 @@ configure_kimi() {
   if uses_kimi; then
     log_info "正在写入 Kimi Code 配置"
     write_kimi_config
+  fi
+}
+
+configure_opencode() {
+  if uses_opencode; then
+    log_info "正在写入 OpenCode 配置"
+    write_opencode_config
   fi
 }
 
@@ -1971,6 +2102,13 @@ verify_client_commands() {
       "$EXISTING_KIMI_COMMAND" --version >/dev/null 2>&1 || log_error "现有 Kimi Code 验证失败"
     fi
   fi
+  if uses_opencode; then
+    if [ "$INSTALL_OPENCODE_CLIENT" -eq 1 ]; then
+      "${NPM_PREFIX}/bin/opencode" --version >/dev/null 2>&1 || log_error "OpenCode 安装验证失败"
+    elif [ -n "$EXISTING_OPENCODE_COMMAND" ]; then
+      "$EXISTING_OPENCODE_COMMAND" --version >/dev/null 2>&1 || log_error "现有 OpenCode 验证失败"
+    fi
+  fi
 }
 
 # 输出最终结果和下一步指引，帮助用户在新终端中直接使用命令。
@@ -1992,6 +2130,9 @@ print_summary() {
   fi
   if uses_kimi; then
     printf '  - Kimi Code 配置: %s\n' "$KIMI_CONFIG_PATH"
+  fi
+  if uses_opencode; then
+    printf '  - OpenCode 配置: %s\n' "$OPENCODE_CONFIG_PATH"
   fi
   if uses_claude; then
     printf '  - Claude Code 专用 Key: 已配置\n'
@@ -2028,12 +2169,15 @@ print_summary() {
   if uses_kimi; then
     printf '  - Kimi Code 专用 Key: 已配置\n'
   fi
+  if uses_opencode; then
+    printf '  - OpenCode 专用 Key: 已配置\n'
+  fi
   if [ -n "$PROFILE_FILE" ]; then
     printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
   fi
   printf '\n回滚方法（仅显示本次存在的备份）:\n'
   local rollback_path
-  for rollback_path in "$CLAUDE_SETTINGS_PATH" "$CODEX_AUTH_PATH" "$CODEX_CONFIG_PATH" "$CODEX_MODEL_CATALOG_PATH" "$GROK_CONFIG_PATH" "$GEMINI_ENV_PATH" "$GEMINI_SETTINGS_PATH" "$KIMI_CONFIG_PATH"; do
+  for rollback_path in "$CLAUDE_SETTINGS_PATH" "$CODEX_AUTH_PATH" "$CODEX_CONFIG_PATH" "$CODEX_MODEL_CATALOG_PATH" "$GROK_CONFIG_PATH" "$GEMINI_ENV_PATH" "$GEMINI_SETTINGS_PATH" "$KIMI_CONFIG_PATH" "$OPENCODE_CONFIG_PATH"; do
     [ -f "${rollback_path}.bak" ] && printf '  cp %q %q\n' "${rollback_path}.bak" "$rollback_path"
   done
   printf '\n'
@@ -2062,6 +2206,9 @@ print_summary() {
   fi
   if uses_kimi; then
     printf '  kimi --version\n'
+  fi
+  if uses_opencode; then
+    printf '  opencode --version\n'
   fi
 }
 
@@ -2095,11 +2242,13 @@ main() {
   configure_grok
   configure_gemini
   configure_kimi
+  configure_opencode
   verify_claude_api_key
   verify_codex_api_key
   verify_grok_api_key
   verify_gemini_api_key
   verify_kimi_api_key
+  verify_opencode_api_key
   verify_selected_model_request
   verify_client_commands
   open_cc_switch_if_requested

@@ -35,6 +35,7 @@ $RequiredFunctions = @(
   'Write-GrokTomlConfig',
   'Set-GrokModelsFromKey',
   'Write-KimiConfig',
+  'Write-OpenCodeConfig',
   'Write-GeminiConfig',
   'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
@@ -160,6 +161,26 @@ try {
   Assert-True ([IO.File]::ReadAllText("$KimiConfigPath.bak") -eq $OriginalKimi) 'Kimi original backup was not preserved'
   Write-KimiConfig
   Assert-True ([IO.File]::ReadAllText($KimiConfigPath) -eq $FirstKimi) 'Kimi config write is not idempotent'
+
+  $OpenCodeDir = Join-Path $FixtureDir 'opencode-home'
+  $OpenCodeConfigPath = Join-Path $OpenCodeDir 'opencode.json'
+  New-Item -ItemType Directory -Path $OpenCodeDir -Force | Out-Null
+  $OriginalOpenCode = '{"theme":"dark","provider":{"keep":{"npm":"keep-package"}}}'
+  [IO.File]::WriteAllText($OpenCodeConfigPath, $OriginalOpenCode, [Text.UTF8Encoding]::new($false))
+  $script:OpenCodeApiKey = 'owned-fixture-key'
+  $script:SelectedProtocol = 'chat_completions'
+  Write-OpenCodeConfig
+  $FirstOpenCode = [IO.File]::ReadAllText($OpenCodeConfigPath)
+  $ParsedOpenCode = $FirstOpenCode | ConvertFrom-Json
+  Assert-True ($ParsedOpenCode.theme -eq 'dark') 'OpenCode unrelated setting was overwritten'
+  Assert-True ($ParsedOpenCode.provider.keep.npm -eq 'keep-package') 'OpenCode unrelated provider was overwritten'
+  Assert-True ($ParsedOpenCode.provider.lsrai.npm -eq '@ai-sdk/openai-compatible') 'OpenCode provider package is wrong'
+  Assert-True ($ParsedOpenCode.provider.lsrai.options.baseURL -eq 'https://api.example.com/v1') 'OpenCode base URL is wrong'
+  Assert-True (@($ParsedOpenCode.provider.lsrai.models.PSObject.Properties.Name).Count -eq 2) 'OpenCode did not import all models'
+  Assert-True ($ParsedOpenCode.model -eq 'lsrai/kimi-k3') 'OpenCode default model is wrong'
+  Assert-True ([IO.File]::ReadAllText("$OpenCodeConfigPath.bak") -eq $OriginalOpenCode) 'OpenCode original backup was not preserved'
+  Write-OpenCodeConfig
+  Assert-True ([IO.File]::ReadAllText($OpenCodeConfigPath) -eq $FirstOpenCode) 'OpenCode config write is not idempotent'
   Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
 
   $ReleasedGroups = @(
@@ -454,6 +475,7 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
 
   $script:InstallGeminiClient = $false
   $script:InstallKimiClient = $false
+  $script:InstallOpenCodeClient = $false
   $script:InstallClaudeClient = $true
   $script:InstallCodexClient = $false
   Assert-True (Test-NeedsNpmClientInstall) 'Claude Code must use the npm installation path'
@@ -467,6 +489,9 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
   $script:InstallKimiClient = $true
   Assert-True (Test-NeedsNpmClientInstall) 'Kimi Code must use the npm installation path'
   $script:InstallKimiClient = $false
+  $script:InstallOpenCodeClient = $true
+  Assert-True (Test-NeedsNpmClientInstall) 'OpenCode must use the npm installation path'
+  $script:InstallOpenCodeClient = $false
   $script:InstallGrokClient = $true
   Assert-True (-not (Test-NeedsNpmClientInstall)) 'Grok Build must remain isolated from the npm installation path'
   $script:InstallGrokClient = $false

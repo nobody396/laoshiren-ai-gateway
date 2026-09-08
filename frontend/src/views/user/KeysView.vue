@@ -1556,7 +1556,7 @@ const copyApiBaseUrl = async () => {
   }
 }
 
-const releasedSetupGroupIds = new Set([5, 15, 65, 6, 58, 59, 62])
+const releasedSetupGroupIds = new Set([5, 6, 15, 34, 57, 58, 59, 60, 61, 62, 63, 64, 65])
 const canOpenClientSetup = (row: ApiKey): boolean => (
   row.status === 'active' &&
   !row.group_ids?.length &&

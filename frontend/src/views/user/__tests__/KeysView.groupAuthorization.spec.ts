@@ -104,10 +104,10 @@ describe('KeysView group authorization integration', () => {
     expect(vm.groups.map(group => group.id)).toEqual([6, 5])
     expect(vm.groupsLoadedScope).toBe('personal')
   })
-  it('opens one-click setup only for the three released single-group Codex routes', async () => {
+  it('opens one-click setup only for released single-group routes', async () => {
     const vm = await page()
     const standard = { id: 1, status: 'active', group: personal[0] }
-    for (const id of [5, 15, 65, 6, 58, 59, 62]) {
+    for (const id of [5, 6, 15, 34, 57, 58, 59, 60, 61, 62, 63, 64, 65]) {
       expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id } })).toBe(true)
     }
     expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id: 40 } })).toBe(false)

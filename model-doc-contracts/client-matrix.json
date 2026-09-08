@@ -868,7 +868,7 @@
         "protocols": [
           {
             "protocol": "responses",
-            "support": "unknown",
+            "support": "unverified",
             "client_transport_features": {
               "minimal_text": "unverified",
               "streaming_terminal": "unverified",
@@ -904,7 +904,7 @@
           },
           {
             "protocol": "messages",
-            "support": "unknown",
+            "support": "unverified",
             "client_transport_features": {
               "minimal_text": "unverified",
               "streaming_terminal": "unverified",
@@ -922,7 +922,7 @@
           },
           {
             "protocol": "generate_content",
-            "support": "unknown",
+            "support": "unverified",
             "client_transport_features": {
               "minimal_text": "unverified",
               "streaming_terminal": "unverified",

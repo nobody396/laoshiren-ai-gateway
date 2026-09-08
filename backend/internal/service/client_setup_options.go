@@ -16,16 +16,41 @@ type releasedSetupGroup struct {
 }
 
 var releasedSetupGroups = map[int64][]releasedSetupGroup{
-	5:  {{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"}},
-	15: {{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"}},
-	65: {{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"}},
-	6:  {{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"}},
+	5: {
+		{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-sonnet-5"},
+	},
+	15: {
+		{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-sonnet-5"},
+	},
+	65: {
+		{clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-sonnet-5"},
+	},
+	6: {
+		{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+	},
 	58: {
 		{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
 		{clientID: "grok-build", clientName: "Grok Build", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
 	},
-	59: {{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"}},
-	62: {{clientID: "kimi-code", clientName: "Kimi Code", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "kimi-k3"}},
+	59: {
+		{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+	},
+	34: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformGrok, protocol: "chat_completions", preferredModel: "grok-4.6"}},
+	57: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformGemini, protocol: "generate_content", preferredModel: "gemini-3.7-flash"}},
+	60: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "glm-5.3"}},
+	61: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "deepseek-v4-pro-0813"}},
+	62: {
+		{clientID: "kimi-code", clientName: "Kimi Code", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "kimi-k3"},
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "kimi-k3"},
+	},
+	63: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "minimax-m3"}},
+	64: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "qwen3.8-max"}},
 }
 
 type ClientSetupOption struct {
@@ -144,9 +169,9 @@ func (s *ClientSetupService) setupSelection(ctx context.Context, key *APIKey, os
 	}, config, true
 }
 
-func setupClientSupportsModel(clientID, protocol, model string) bool {
-	if clientID == "codex" || clientID == "grok-build" {
-		return protocol == "responses" && generatedCodexSetupModels[model]
+func setupClientSupportsModel(_ string, protocol, model string) bool {
+	if protocol == "responses" {
+		return generatedCodexSetupModels[model]
 	}
 	return generatedClientSetupModelProtocols[model][protocol]
 }

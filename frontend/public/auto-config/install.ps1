@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.21'
+$ScriptVersion = '0.7.22'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -56,6 +56,9 @@ $GeminiEnvPath = Join-Path $GeminiDir '.env'
 $GeminiSettingsPath = Join-Path $GeminiDir 'settings.json'
 $KimiDir = Join-Path $HOME '.kimi-code'
 $KimiConfigPath = Join-Path $KimiDir 'config.toml'
+$OpenCodeConfigRoot = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { Join-Path $HOME '.config' }
+$OpenCodeDir = Join-Path $OpenCodeConfigRoot 'opencode'
+$OpenCodeConfigPath = Join-Path $OpenCodeDir 'opencode.json'
 
 # 支持通过环境变量传参，解决 `irm | iex` 管道模式下无法传命令行参数的问题
 $BaseUrl = if ($env:LAOSHIRENAI_BASE_URL) { $env:LAOSHIRENAI_BASE_URL } else { $DefaultBaseUrl }
@@ -65,6 +68,7 @@ $CodexApiKey = $env:LAOSHIRENAI_CODEX_API_KEY
 $GrokApiKey = $env:LAOSHIRENAI_GROK_API_KEY
 $GeminiApiKey = $env:LAOSHIRENAI_GEMINI_API_KEY
 $KimiApiKey = $env:LAOSHIRENAI_KIMI_API_KEY
+$OpenCodeApiKey = $env:LAOSHIRENAI_OPENCODE_API_KEY
 $UnifiedApiKey = $env:LAOSHIRENAI_API_KEY
 if ([string]::IsNullOrWhiteSpace($ClaudeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $ClaudeApiKey = $UnifiedApiKey
@@ -80,6 +84,9 @@ if ([string]::IsNullOrWhiteSpace($GeminiApiKey) -and -not [string]::IsNullOrWhit
 }
 if ([string]::IsNullOrWhiteSpace($KimiApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $KimiApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($OpenCodeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $OpenCodeApiKey = $UnifiedApiKey
 }
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
@@ -111,11 +118,13 @@ $script:InstallCodexClient = $false
 $script:InstallGrokClient = $false
 $script:InstallGeminiClient = $false
 $script:InstallKimiClient = $false
+$script:InstallOpenCodeClient = $false
 $script:ExistingClaudeCommand = ''
 $script:ExistingCodexCommand = ''
 $script:ExistingGrokCommand = ''
 $script:ExistingGeminiCommand = ''
 $script:ExistingKimiCommand = ''
+$script:ExistingOpenCodeCommand = ''
 $script:ExistingCodexApp = ''
 
 # 输出信息日志，方便用户了解当前执行到了哪一步。
@@ -192,6 +201,11 @@ function Parse-Arguments {
         if ($i -ge $ArgsList.Count) { Stop-Script '--kimi-api-key 需要一个值' }
         $script:KimiApiKey = $ArgsList[$i]
       }
+      '--opencode-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--opencode-api-key 需要一个值' }
+        $script:OpenCodeApiKey = $ArgsList[$i]
+      }
       '--base-url' {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--base-url 需要一个值' }
@@ -201,8 +215,8 @@ function Parse-Arguments {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--tools 需要一个值' }
         $Value = $ArgsList[$i].ToLowerInvariant()
-        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini', 'kimi')) {
-          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini / kimi'
+        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode')) {
+          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini / kimi / opencode'
         }
         $script:Tools = $Value
       }
@@ -229,16 +243,18 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.21 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.22 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.21 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.22 | iex
 
 参数:
   --api-key              Claude Code API Key
   --codex-api-key        Codex API Key
   --grok-api-key         Grok Build API Key
   --gemini-api-key       Gemini CLI API Key
+  --kimi-api-key         Kimi Code API Key
+  --opencode-api-key     OpenCode API Key
   --tools                需要配置的工具，默认 all
   --base-url             API 基础地址，默认 https://api.laoshirenai.com
   --node-version         指定 Node.js 版本，例如 v24.11.0
@@ -308,6 +324,10 @@ function Prompt-ApiKeys {
     $script:KimiApiKey = Read-SecureInput -Prompt '请输入 Kimi Code API Key'
     if ([string]::IsNullOrWhiteSpace($script:KimiApiKey)) { Stop-Script 'Kimi Code API Key 不能为空' }
   }
+  if ($script:Tools -eq 'opencode' -and [string]::IsNullOrWhiteSpace($script:OpenCodeApiKey)) {
+    $script:OpenCodeApiKey = Read-SecureInput -Prompt '请输入 OpenCode API Key'
+    if ([string]::IsNullOrWhiteSpace($script:OpenCodeApiKey)) { Stop-Script 'OpenCode API Key 不能为空' }
+  }
 }
 
 # 用一次性凭证领取当前目标的专用 API Key。凭证和 Key 均不会打印到终端。
@@ -328,7 +348,7 @@ function Exchange-SetupTicket {
 
   $Data = $Response.data
   if ($null -eq $Data -or
-      $Data.target -notin @('claude', 'codex', 'grok', 'gemini', 'kimi') -or
+      $Data.target -notin @('claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode') -or
       [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
       [string]::IsNullOrWhiteSpace([string]$Data.base_url) -or
       (-not [string]::IsNullOrWhiteSpace([string]$Data.client_id) -and ([string]::IsNullOrWhiteSpace([string]$Data.model_id) -or [string]::IsNullOrWhiteSpace([string]$Data.protocol)))) {
@@ -354,6 +374,8 @@ function Exchange-SetupTicket {
     }
   } elseif ($Data.target -eq 'kimi') {
     $script:KimiApiKey = [string]$Data.api_key
+  } elseif ($Data.target -eq 'opencode') {
+    $script:OpenCodeApiKey = [string]$Data.api_key
   } else {
     $script:GrokApiKey = [string]$Data.api_key
     if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
@@ -474,6 +496,7 @@ function Resolve-ClientInstallPlan {
   $script:InstallGrokClient = $false
   $script:InstallGeminiClient = $false
   $script:InstallKimiClient = $false
+  $script:InstallOpenCodeClient = $false
 
   if ($script:Tools -in @('all', 'claude')) {
     $script:ExistingClaudeCommand = Get-UsableClientCommand -CommandName 'claude'
@@ -550,6 +573,18 @@ function Resolve-ClientInstallPlan {
       $script:InstallKimiClient = $true
     }
   }
+  if ($script:Tools -eq 'opencode') {
+    $script:ExistingOpenCodeCommand = Get-UsableClientCommand -CommandName 'opencode'
+    if ($script:ForceClientInstall) {
+      $script:InstallOpenCodeClient = $true
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingOpenCodeCommand)) {
+      Write-Info "检测到现有 OpenCode，跳过重复安装: $($script:ExistingOpenCodeCommand)"
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到可用的 OpenCode，但已按要求跳过安装'
+    } else {
+      $script:InstallOpenCodeClient = $true
+    }
+  }
 }
 
 function Get-ClientVersion {
@@ -589,7 +624,8 @@ function Resolve-ClientUpdatePlan {
     @{ Label = 'Claude Code CLI'; Command = $script:ExistingClaudeCommand; Package = '@anthropic-ai%2Fclaude-code'; Flag = 'InstallClaudeClient' },
     @{ Label = 'Codex CLI'; Command = $script:ExistingCodexCommand; Package = '@openai%2Fcodex'; Flag = 'InstallCodexClient' },
     @{ Label = 'Gemini CLI'; Command = $script:ExistingGeminiCommand; Package = '@google%2Fgemini-cli'; Flag = 'InstallGeminiClient' },
-    @{ Label = 'Kimi Code CLI'; Command = $script:ExistingKimiCommand; Package = '@moonshot-ai%2Fkimi-code'; Flag = 'InstallKimiClient' }
+    @{ Label = 'Kimi Code CLI'; Command = $script:ExistingKimiCommand; Package = '@moonshot-ai%2Fkimi-code'; Flag = 'InstallKimiClient' },
+    @{ Label = 'OpenCode CLI'; Command = $script:ExistingOpenCodeCommand; Package = 'opencode-ai'; Flag = 'InstallOpenCodeClient' }
   )
   foreach ($Check in $Checks) {
     if ([string]::IsNullOrWhiteSpace([string]$Check.Command) -or (Get-Variable -Scope Script -Name $Check.Flag).Value) { continue }
@@ -607,11 +643,11 @@ function Resolve-ClientUpdatePlan {
 }
 
 function Test-NeedsClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient -or $script:InstallGeminiClient -or $script:InstallKimiClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient -or $script:InstallGeminiClient -or $script:InstallKimiClient -or $script:InstallOpenCodeClient)
 }
 
 function Test-NeedsNpmClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGeminiClient -or $script:InstallKimiClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGeminiClient -or $script:InstallKimiClient -or $script:InstallOpenCodeClient)
 }
 
 # 只解析 npm.cmd，避免 PowerShell 在 Restricted 执行策略下优先命中 npm.ps1。
@@ -1221,6 +1257,10 @@ function Install-RequestedClients {
   if ($script:InstallKimiClient) {
     Write-Info '正在安装或更新 Kimi Code'
     Install-NpmPackageWithFallback -PackageName '@moonshot-ai/kimi-code@latest'
+  }
+  if ($script:InstallOpenCodeClient) {
+    Write-Info '正在安装或更新 OpenCode'
+    Install-NpmPackageWithFallback -PackageName 'opencode-ai@latest'
   }
 }
 
@@ -1967,6 +2007,10 @@ function Test-UsesKimi {
   return $script:Tools -eq 'kimi'
 }
 
+function Test-UsesOpenCode {
+  return $script:Tools -eq 'opencode'
+}
+
 function Get-OpenAIV1BaseUrl {
   param([string]$Value)
 
@@ -2040,6 +2084,7 @@ function Test-SelectedModelRequest {
     'grok' { $script:GrokApiKey }
     'gemini' { $script:GeminiApiKey }
     'kimi' { $script:KimiApiKey }
+    'opencode' { $script:OpenCodeApiKey }
     default { return }
   }
   $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
@@ -2113,6 +2158,10 @@ function Test-KimiApiKey {
   if (Test-UsesKimi) { Test-ApiKeyReadiness -Label 'Kimi Code' -ApiKey $script:KimiApiKey }
 }
 
+function Test-OpenCodeApiKey {
+  if (Test-UsesOpenCode) { Test-ApiKeyReadiness -Label 'OpenCode' -ApiKey $script:OpenCodeApiKey }
+}
+
 function Write-KimiConfig {
   $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
   try {
@@ -2173,6 +2222,64 @@ function Write-KimiConfig {
   } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
 }
 
+function Write-OpenCodeConfig {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{ Authorization = "Bearer $script:OpenCodeApiKey" } -Method GET
+  } catch {
+    Stop-Script "OpenCode 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data | ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } | Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'OpenCode 分组模型目录为空' }
+  if ([string]::IsNullOrWhiteSpace($script:SelectedProtocol)) { Stop-Script 'OpenCode 缺少协议选择' }
+  $Packages = @{
+    responses = '@ai-sdk/openai'
+    chat_completions = '@ai-sdk/openai-compatible'
+    messages = '@ai-sdk/anthropic'
+    generate_content = '@ai-sdk/google'
+  }
+  if (-not $Packages.ContainsKey($script:SelectedProtocol)) { Stop-Script "OpenCode 不支持协议: $($script:SelectedProtocol)" }
+  if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel) -and $script:SelectedModel -notin $Ids) {
+    Stop-Script '票据选择的模型已不在当前 Key 的模型列表中'
+  }
+  $Selected = if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) { $script:SelectedModel } else { $Ids[0] }
+  Backup-IfNeeded $OpenCodeConfigPath
+  Ensure-Directory $OpenCodeDir
+  $Config = [pscustomobject]@{}
+  if (Test-Path -LiteralPath $OpenCodeConfigPath) {
+    $RawConfig = Get-Content -LiteralPath $OpenCodeConfigPath -Raw
+    if (-not $RawConfig.TrimStart().StartsWith('{')) { Stop-Script 'OpenCode 配置根节点必须是对象' }
+    try { $Config = $RawConfig | ConvertFrom-Json } catch { Stop-Script "拒绝覆盖无法解析的 OpenCode 配置: $_" }
+    if ($null -eq $Config -or $Config -is [System.Array]) { Stop-Script 'OpenCode 配置根节点必须是对象' }
+  }
+  $ProviderProperty = $Config.PSObject.Properties['provider']
+  if ($null -eq $ProviderProperty -or $null -eq $ProviderProperty.Value) {
+    $Config | Add-Member -NotePropertyName provider -NotePropertyValue ([pscustomobject]@{}) -Force
+  } elseif ($Config.provider -is [System.Array] -or $Config.provider -is [string] -or $Config.provider -is [ValueType]) {
+    Stop-Script 'OpenCode provider 必须是对象'
+  }
+  $Models = [ordered]@{}
+  foreach ($Id in $Ids) { $Models[$Id] = [ordered]@{ name = $Id } }
+  $RootUrl = $ApiBaseUrl -replace '/v1/?$', ''
+  $ProviderBaseUrl = if ($script:SelectedProtocol -eq 'generate_content') { "$RootUrl/v1beta" } else { "$RootUrl/v1" }
+  $Provider = [ordered]@{
+    npm = $Packages[$script:SelectedProtocol]
+    name = 'lsrai'
+    options = [ordered]@{ baseURL = $ProviderBaseUrl; apiKey = $script:OpenCodeApiKey }
+    models = $Models
+  }
+  if ($null -eq $Config.PSObject.Properties['$schema']) { $Config | Add-Member -NotePropertyName '$schema' -NotePropertyValue 'https://opencode.ai/config.json' -Force }
+  $Config.provider | Add-Member -NotePropertyName lsrai -NotePropertyValue $Provider -Force
+  $Config | Add-Member -NotePropertyName model -NotePropertyValue "lsrai/$Selected" -Force
+  $Json = $Config | ConvertTo-Json -Depth 100
+  $TemporaryPath = "$OpenCodeConfigPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [IO.File]::WriteAllText($TemporaryPath, ($Json + "`n"), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $OpenCodeConfigPath -Force
+  } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
+}
+
 # 根据用户选择写入 Claude Code 配置。
 function Configure-Claude {
   if ($script:Tools -in @('all', 'claude')) {
@@ -2210,6 +2317,13 @@ function Configure-Kimi {
   if ($script:Tools -eq 'kimi') {
     Write-Info '正在写入 Kimi Code 配置'
     Write-KimiConfig
+  }
+}
+
+function Configure-OpenCode {
+  if (Test-UsesOpenCode) {
+    Write-Info '正在写入 OpenCode 配置'
+    Write-OpenCodeConfig
   }
 }
 
@@ -2291,6 +2405,13 @@ function Verify-ClientCommands {
       Write-Info 'Kimi Code 验证通过'
     } elseif ($script:InstallKimiClient) { Stop-Script "Kimi Code 安装验证失败：未找到 $KimiCmd" }
   }
+  if (Test-UsesOpenCode) {
+    $OpenCodeCmd = if ($script:InstallOpenCodeClient) { Join-Path $NpmPrefix 'opencode.cmd' } else { $script:ExistingOpenCodeCommand }
+    if (-not [string]::IsNullOrWhiteSpace($OpenCodeCmd) -and (Test-Path -LiteralPath $OpenCodeCmd)) {
+      & $OpenCodeCmd --version | Out-Null
+      Write-Info 'OpenCode 验证通过'
+    } elseif ($script:InstallOpenCodeClient) { Stop-Script "OpenCode 安装验证失败：未找到 $OpenCodeCmd" }
+  }
 }
 
 # 输出最终结果和下一步指引，帮助用户立即开始使用。
@@ -2311,6 +2432,7 @@ function Print-Summary {
     Write-Host "  - Gemini CLI 默认模型: $CatalogGeminiDefaultModel"
   }
   if (Test-UsesKimi) { Write-Host "  - Kimi Code 配置: $KimiConfigPath" }
+  if (Test-UsesOpenCode) { Write-Host "  - OpenCode 配置: $OpenCodeConfigPath" }
   if (Test-UsesClaude) {
     Write-Host '  - Claude Code 专用 Key: 已配置'
     if ($script:InstallClaudeClient) {
@@ -2346,9 +2468,10 @@ function Print-Summary {
     }
   }
   if (Test-UsesKimi) { Write-Host '  - Kimi Code 专用 Key: 已配置' }
+  if (Test-UsesOpenCode) { Write-Host '  - OpenCode 专用 Key: 已配置' }
   Write-Host ''
   Write-Host '回滚方法（仅显示本次存在的备份）:'
-  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath, $KimiConfigPath)) {
+  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath, $KimiConfigPath, $OpenCodeConfigPath)) {
     if (Test-Path -LiteralPath "$RollbackPath.bak") {
       Write-Host "  Copy-Item -LiteralPath '$RollbackPath.bak' -Destination '$RollbackPath' -Force"
     }
@@ -2382,6 +2505,7 @@ function Print-Summary {
     Write-Host '  - 重新打开 PowerShell 后执行 gemini --version'
   }
   if (Test-UsesKimi) { Write-Host '  - 重新打开 PowerShell 后执行 kimi --version' }
+  if (Test-UsesOpenCode) { Write-Host '  - 重新打开 PowerShell 后执行 opencode --version' }
 }
 
 # 组织整个安装流程，确保安装、配置、校验按固定顺序执行。
@@ -2421,11 +2545,13 @@ function Main {
   Configure-Grok
   Configure-Gemini
   Configure-Kimi
+  Configure-OpenCode
   Test-ClaudeApiKey
   Test-CodexApiKey
   Test-GrokApiKey
   Test-GeminiApiKey
   Test-KimiApiKey
+  Test-OpenCodeApiKey
   Test-SelectedModelRequest
   Verify-ClientCommands
   Open-CcSwitchIfRequested

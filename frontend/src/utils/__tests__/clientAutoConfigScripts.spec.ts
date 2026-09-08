@@ -378,12 +378,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain('verify_selected_model_request')
     expect(script).toContain('${SELECTED_MODEL}:generateContent')
-    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi'].includes(data.target)")
+    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode'].includes(data.target)")
   })
 
   it('installs and configures Grok Build with the native Responses model on Windows', () => {
     const script = readPublicScript('install.ps1')
-    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi')")
+    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode')")
     expect(script).toContain("$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'")
     expect(script).toContain("$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'")
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
@@ -749,7 +749,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
     expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')")
     expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
-    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\')')
+    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\', \'opencode\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
   })
 
@@ -852,6 +852,38 @@ describe('client auto-config scripts', () => {
       expect(first).toContain('[models."lsrai/kimi-k3"]')
       expect(first).toContain('[providers.keep]')
       expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+      runWriter()
+      expect(readFileSync(configPath, 'utf8')).toBe(first)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every OpenCode model while preserving unrelated JSON', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-opencode-config-'))
+    const configDir = join(fixture, '.config', 'opencode')
+    const configPath = join(configDir, 'opencode.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = JSON.stringify({ theme: 'dark', provider: { keep: { npm: 'keep-package' } } })
+    try {
+      mkdirSync(configDir, { recursive: true })
+      writeFileSync(configPath, original)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; OPENCODE_API_KEY="fixture"; SELECTED_MODEL="kimi-k3"; SELECTED_PROTOCOL="chat_completions"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"kimi-k2.7-code"},{"id":"kimi-k3"}]}' > "$out"; printf '200'; }; write_opencode_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const first = readFileSync(configPath, 'utf8')
+      const parsed = JSON.parse(first)
+      expect(parsed.theme).toBe('dark')
+      expect(parsed.provider.keep).toEqual({ npm: 'keep-package' })
+      expect(parsed.provider.lsrai.npm).toBe('@ai-sdk/openai-compatible')
+      expect(parsed.provider.lsrai.options.baseURL).toBe('https://api.example.com/v1')
+      expect(Object.keys(parsed.provider.lsrai.models)).toEqual(['kimi-k2.7-code', 'kimi-k3'])
+      expect(parsed.model).toBe('lsrai/kimi-k3')
+      expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+      expect(statSync(configPath).mode & 0o777).toBe(0o600)
       runWriter()
       expect(readFileSync(configPath, 'utf8')).toBe(first)
     } finally {

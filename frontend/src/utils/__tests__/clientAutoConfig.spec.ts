@@ -38,6 +38,7 @@ describe('client auto-config target selection', () => {
     expect(getClientAutoConfigName('gemini')).toBe('Gemini CLI')
     expect(getClientAutoConfigName('kimi')).toBe('Kimi Code')
     expect(getClientAutoConfigName('opencode')).toBe('OpenCode')
+    expect(getClientAutoConfigName('zcode')).toBe('ZCode')
   })
 })
 

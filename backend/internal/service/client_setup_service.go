@@ -21,6 +21,7 @@ const (
 	ClientSetupTargetGemini   = "gemini"
 	ClientSetupTargetKimi     = "kimi"
 	ClientSetupTargetOpenCode = "opencode"
+	ClientSetupTargetZCode    = "zcode"
 
 	clientSetupTicketPurpose          = "client_setup"
 	clientSetupSelectionTicketPurpose = "client_setup_selection_v1"
@@ -331,6 +332,8 @@ func clientSetupInstallerTarget(clientID string) string {
 		return ClientSetupTargetKimi
 	case "opencode":
 		return ClientSetupTargetOpenCode
+	case "zcode":
+		return ClientSetupTargetZCode
 	case "gemini-cli":
 		return ClientSetupTargetGemini
 	default:

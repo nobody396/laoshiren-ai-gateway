@@ -47,7 +47,10 @@ var releasedSetupGroups = map[int64][]releasedSetupGroup{
 		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "kimi-k3"},
 	},
 	63: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "chat_completions", preferredModel: "minimax-m3"}},
-	64: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "qwen3.8-max"}},
+	64: {
+		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "qwen3.8-max"},
+		{clientID: "zcode", clientName: "ZCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "qwen3.8-max"},
+	},
 }
 
 type ClientSetupOption struct {

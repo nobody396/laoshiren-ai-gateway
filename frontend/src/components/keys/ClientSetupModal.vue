@@ -123,7 +123,7 @@ async function copy(option: ClientSetupOption) {
       target,
       ticket: ticket.ticket,
       isWindows: selectedOS === 'windows',
-      installMissing: true,
+      installMissing: target !== 'zcode',
       installCodexApp: target === 'codex' && selectedOS !== 'linux'
     })
     await copyToClipboard(command, `${option.name} 一键配置命令已复制`)
@@ -139,6 +139,7 @@ function clientIcon(option: ClientSetupOption): string {
   if (option.client_id === 'grok-build') return '/brand/client-tools/grok.svg'
   if (option.client_id === 'kimi-code') return '/brand/client-tools/kimi.svg'
   if (option.client_id === 'opencode') return '/brand/client-tools/opencode.svg'
+  if (option.client_id === 'zcode') return '/tool-icons/zcode.png'
   return '/brand/client-tools/codex-light.png'
 }
 
@@ -147,6 +148,7 @@ function clientTarget(option: ClientSetupOption): ClientAutoConfigTarget {
   if (option.client_id === 'grok-build') return 'grok'
   if (option.client_id === 'kimi-code') return 'kimi'
   if (option.client_id === 'opencode') return 'opencode'
+  if (option.client_id === 'zcode') return 'zcode'
   return 'codex'
 }
 

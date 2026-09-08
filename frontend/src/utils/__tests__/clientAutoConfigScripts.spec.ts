@@ -378,12 +378,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain('verify_selected_model_request')
     expect(script).toContain('${SELECTED_MODEL}:generateContent')
-    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode'].includes(data.target)")
+    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode'].includes(data.target)")
   })
 
   it('installs and configures Grok Build with the native Responses model on Windows', () => {
     const script = readPublicScript('install.ps1')
-    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode')")
+    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode')")
     expect(script).toContain("$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'")
     expect(script).toContain("$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'")
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
@@ -749,7 +749,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
     expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')")
     expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
-    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\', \'opencode\')')
+    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\', \'opencode\', \'zcode\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
   })
 
@@ -886,6 +886,47 @@ describe('client auto-config scripts', () => {
       expect(statSync(configPath).mode & 0o777).toBe(0o600)
       runWriter()
       expect(readFileSync(configPath, 'utf8')).toBe(first)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every ZCode model to App and CLI configs without replacing unrelated providers', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-zcode-config-'))
+    const appPath = join(fixture, '.zcode', 'v2', 'config.json')
+    const cliPath = join(fixture, '.zcode', 'cli', 'config.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const originalApp = JSON.stringify({ provider: { keep: { kind: 'anthropic' } }, theme: 'dark' })
+    const originalCli = JSON.stringify({ provider: { keep: { kind: 'anthropic' } }, mcp: { keep: true } })
+    try {
+      mkdirSync(resolve(appPath, '..'), { recursive: true })
+      mkdirSync(resolve(cliPath, '..'), { recursive: true })
+      writeFileSync(appPath, originalApp)
+      writeFileSync(cliPath, originalCli)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; ZCODE_API_KEY="fixture"; SELECTED_MODEL="qwen3.8-max"; SELECTED_PROTOCOL="responses"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"qwen3.8-max"},{"id":"qwen3.7-max"}]}' > "$out"; printf '200'; }; write_zcode_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const firstApp = readFileSync(appPath, 'utf8')
+      const firstCli = readFileSync(cliPath, 'utf8')
+      const app = JSON.parse(firstApp)
+      const cli = JSON.parse(firstCli)
+      expect(app.theme).toBe('dark')
+      expect(app.provider.keep).toEqual({ kind: 'anthropic' })
+      expect(app.provider.lsrai.kind).toBe('openai')
+      expect(Object.keys(app.provider.lsrai.models)).toEqual(['qwen3.8-max', 'qwen3.7-max'])
+      expect(cli.mcp).toEqual({ keep: true })
+      expect(cli.provider.keep).toEqual({ kind: 'anthropic' })
+      expect(cli.model.main).toBe('lsrai/qwen3.8-max')
+      expect(readFileSync(`${appPath}.bak`, 'utf8')).toBe(originalApp)
+      expect(readFileSync(`${cliPath}.bak`, 'utf8')).toBe(originalCli)
+      expect(statSync(appPath).mode & 0o777).toBe(0o600)
+      expect(statSync(cliPath).mode & 0o777).toBe(0o600)
+      runWriter()
+      expect(readFileSync(appPath, 'utf8')).toBe(firstApp)
+      expect(readFileSync(cliPath, 'utf8')).toBe(firstCli)
     } finally {
       rmSync(fixture, { recursive: true, force: true })
     }

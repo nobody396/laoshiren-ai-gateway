@@ -36,6 +36,7 @@ $RequiredFunctions = @(
   'Set-GrokModelsFromKey',
   'Write-KimiConfig',
   'Write-OpenCodeConfig',
+  'Write-ZCodeConfig',
   'Write-GeminiConfig',
   'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
@@ -181,6 +182,37 @@ try {
   Assert-True ([IO.File]::ReadAllText("$OpenCodeConfigPath.bak") -eq $OriginalOpenCode) 'OpenCode original backup was not preserved'
   Write-OpenCodeConfig
   Assert-True ([IO.File]::ReadAllText($OpenCodeConfigPath) -eq $FirstOpenCode) 'OpenCode config write is not idempotent'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
+
+  $ZCodeDir = Join-Path $FixtureDir 'zcode-home'
+  $ZCodeAppConfigPath = Join-Path $ZCodeDir 'v2\config.json'
+  $ZCodeCliConfigPath = Join-Path $ZCodeDir 'cli\config.json'
+  New-Item -ItemType Directory -Path (Split-Path -Parent $ZCodeAppConfigPath) -Force | Out-Null
+  New-Item -ItemType Directory -Path (Split-Path -Parent $ZCodeCliConfigPath) -Force | Out-Null
+  $OriginalZCodeApp = '{"provider":{"keep":{"kind":"anthropic"}},"theme":"dark"}'
+  $OriginalZCodeCli = '{"provider":{"keep":{"kind":"anthropic"}},"mcp":{"keep":true}}'
+  [IO.File]::WriteAllText($ZCodeAppConfigPath, $OriginalZCodeApp, [Text.UTF8Encoding]::new($false))
+  [IO.File]::WriteAllText($ZCodeCliConfigPath, $OriginalZCodeCli, [Text.UTF8Encoding]::new($false))
+  function Invoke-RestMethod { return [pscustomobject]@{ data = @([pscustomobject]@{ id = 'qwen3.8-max' }, [pscustomobject]@{ id = 'qwen3.7-max' }) } }
+  $script:ZCodeApiKey = 'owned-fixture-key'
+  $script:SelectedModel = 'qwen3.8-max'
+  $script:SelectedProtocol = 'responses'
+  Write-ZCodeConfig
+  $FirstZCodeApp = [IO.File]::ReadAllText($ZCodeAppConfigPath)
+  $FirstZCodeCli = [IO.File]::ReadAllText($ZCodeCliConfigPath)
+  $ParsedZCodeApp = $FirstZCodeApp | ConvertFrom-Json
+  $ParsedZCodeCli = $FirstZCodeCli | ConvertFrom-Json
+  Assert-True ($ParsedZCodeApp.theme -eq 'dark') 'ZCode App unrelated setting was overwritten'
+  Assert-True ($ParsedZCodeApp.provider.keep.kind -eq 'anthropic') 'ZCode App unrelated provider was overwritten'
+  Assert-True ($ParsedZCodeApp.provider.lsrai.kind -eq 'openai') 'ZCode App provider kind is wrong'
+  Assert-True (@($ParsedZCodeApp.provider.lsrai.models.PSObject.Properties.Name).Count -eq 2) 'ZCode App did not import every model'
+  Assert-True ($ParsedZCodeCli.mcp.keep -eq $true) 'ZCode CLI unrelated config was overwritten'
+  Assert-True ($ParsedZCodeCli.model.main -eq 'lsrai/qwen3.8-max') 'ZCode CLI default model is wrong'
+  Assert-True ([IO.File]::ReadAllText("$ZCodeAppConfigPath.bak") -eq $OriginalZCodeApp) 'ZCode App backup was not preserved'
+  Assert-True ([IO.File]::ReadAllText("$ZCodeCliConfigPath.bak") -eq $OriginalZCodeCli) 'ZCode CLI backup was not preserved'
+  Write-ZCodeConfig
+  Assert-True ([IO.File]::ReadAllText($ZCodeAppConfigPath) -eq $FirstZCodeApp) 'ZCode App config is not idempotent'
+  Assert-True ([IO.File]::ReadAllText($ZCodeCliConfigPath) -eq $FirstZCodeCli) 'ZCode CLI config is not idempotent'
   Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
 
   $ReleasedGroups = @(

@@ -2,7 +2,7 @@ import type { GroupPlatform } from '@/types'
 import { clientAutoConfigVersion } from '@/generated/modelCatalog'
 import { powershellInstallerSha256, shellInstallerSha256 } from '@/generated/installerIntegrity'
 
-export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok' | 'gemini' | 'kimi' | 'opencode'
+export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok' | 'gemini' | 'kimi' | 'opencode' | 'zcode'
 
 export interface BuildClientAutoConfigCommandInput {
   target: ClientAutoConfigTarget
@@ -64,6 +64,7 @@ export const getClientAutoConfigName = (target: ClientAutoConfigTarget): string 
   if (target === 'gemini') return 'Gemini CLI'
   if (target === 'kimi') return 'Kimi Code'
   if (target === 'opencode') return 'OpenCode'
+  if (target === 'zcode') return 'ZCode'
   return 'Codex'
 }
 
@@ -141,6 +142,7 @@ export const buildClientManualConfigCommand = ({
     gemini: 'LAOSHIRENAI_GEMINI_API_KEY',
     kimi: 'LAOSHIRENAI_KIMI_API_KEY',
     opencode: 'LAOSHIRENAI_OPENCODE_API_KEY',
+    zcode: 'LAOSHIRENAI_ZCODE_API_KEY',
   }
   if (isWindows) {
     return [

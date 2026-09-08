@@ -53,7 +53,7 @@ export interface DownloadVersionStatus {
   note: string
 }
 
-export type ClientSetupTarget = 'claude' | 'codex' | 'grok' | 'gemini' | 'kimi' | 'opencode'
+export type ClientSetupTarget = 'claude' | 'codex' | 'grok' | 'gemini' | 'kimi' | 'opencode' | 'zcode'
 
 export interface ClientSetupTicket<TTarget extends string = ClientSetupTarget> {
   ticket: string
@@ -72,7 +72,7 @@ export type ClientSetupProtocol = 'responses' | 'chat_completions' | 'messages' 
 export type ClientSetupOS = 'macos' | 'linux' | 'windows'
 
 export interface ClientSetupOption {
-  client_id: 'codex' | 'claude-code' | 'grok-build' | 'kimi-code' | 'opencode'
+  client_id: 'codex' | 'claude-code' | 'grok-build' | 'kimi-code' | 'opencode' | 'zcode'
   name: string
 }
 

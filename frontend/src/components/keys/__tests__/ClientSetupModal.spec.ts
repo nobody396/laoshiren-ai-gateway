@@ -61,6 +61,8 @@ describe('ClientSetupModal', () => {
       global: { stubs: { BaseDialog: BaseDialogStub, Icon: true } },
     })
     await flushPromises()
+    await wrapper.findAll('[role="tab"]').find(button => button.text() === 'macOS')!.trigger('click')
+    await flushPromises()
     await wrapper.get('[data-client="claude-code"]').trigger('click')
     await flushPromises()
 

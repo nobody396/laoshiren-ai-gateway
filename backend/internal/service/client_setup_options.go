@@ -30,16 +30,13 @@ var releasedSetupGroups = map[int64][]releasedSetupGroup{
 	},
 	6: {
 		{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
-		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
 	},
 	58: {
 		{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
 		{clientID: "grok-build", clientName: "Grok Build", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
-		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
 	},
 	59: {
 		{clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
-		{clientID: "opencode", clientName: "OpenCode", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
 	},
 	34: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformGrok, protocol: "chat_completions", preferredModel: "grok-4.6"}},
 	57: {{clientID: "opencode", clientName: "OpenCode", platform: PlatformGemini, protocol: "generate_content", preferredModel: "gemini-3.7-flash"}},

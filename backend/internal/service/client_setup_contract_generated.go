@@ -65,10 +65,10 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"opencode": {
-		VersionKey:     "cli:1.18.15",
-		OneClickStatus: "prototype",
+		VersionKey:     "cli:1.18.29",
+		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"chat_completions": true, "generate_content": true, "messages": true, "responses": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 	"qoder": {
 		VersionKey:     "cli:1.1.41",

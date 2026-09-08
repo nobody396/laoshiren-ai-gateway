@@ -110,8 +110,41 @@ func TestClaudeSetupOptionsCoverAllModelsForThreeReleasedGroupsAndOSes(t *testin
 				svc, key, _ := setupOptionTestService(groupID, PlatformAnthropic, models)
 				options, err := svc.SetupOptions(context.Background(), key.UserID, key.ID, osName)
 				require.NoError(t, err)
-				require.Equal(t, []ClientSetupOption{{ClientID: "claude-code", Name: "Claude Code"}}, options)
+				require.Equal(t, []ClientSetupOption{
+					{ClientID: "claude-code", Name: "Claude Code"},
+					{ClientID: "opencode", Name: "OpenCode"},
+				}, options)
 			})
+		}
+	}
+}
+
+func TestOpenCodeSetupOptionsCoverEveryReleasedGroupModelOnAllOSes(t *testing.T) {
+	cases := []struct {
+		groupID  int64
+		platform string
+		models   []string
+		protocol string
+	}{
+		{34, PlatformGrok, []string{"grok-4.6", "grok-4.5"}, "chat_completions"},
+		{57, PlatformGemini, []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.1-pro"}, "generate_content"},
+		{60, PlatformOpenAI, []string{"glm-5.3", "glm-5.2"}, "chat_completions"},
+		{61, PlatformOpenAI, []string{"deepseek-v4-pro-0813", "deepseek-v4-flash-0731"}, "responses"},
+		{62, PlatformOpenAI, []string{"kimi-k3", "kimi-k2.7-code"}, "chat_completions"},
+		{63, PlatformOpenAI, []string{"minimax-m3"}, "chat_completions"},
+		{64, PlatformOpenAI, []string{"qwen3.8-max", "qwen3.7-max", "qwen3.7-plus", "qwen3.7-flash", "qwen3.6-plus", "qwen3.6-flash"}, "responses"},
+	}
+	for _, tc := range cases {
+		for _, osName := range []string{"macos", "linux", "windows"} {
+			svc, key, _ := setupOptionTestService(tc.groupID, tc.platform, tc.models)
+			options, err := svc.SetupOptions(context.Background(), key.UserID, key.ID, osName)
+			require.NoError(t, err)
+			require.Contains(t, options, ClientSetupOption{ClientID: "opencode", Name: "OpenCode"})
+
+			ticket, err := svc.IssueTicketForOption(context.Background(), key.UserID, key.ID, "opencode", osName)
+			require.NoError(t, err)
+			require.Equal(t, ClientSetupTargetOpenCode, ticket.Target)
+			require.Equal(t, tc.protocol, ticket.Protocol)
 		}
 	}
 }

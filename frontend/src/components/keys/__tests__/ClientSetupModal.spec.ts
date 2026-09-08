@@ -109,4 +109,20 @@ describe('ClientSetupModal', () => {
     expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
     expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
   })
+
+  it('copies a server-approved OpenCode command directly', async () => {
+    mocks.options.mockResolvedValue([{ client_id: 'opencode', name: 'OpenCode' }])
+    mocks.ticket.mockResolvedValueOnce({ ticket: 'opencode-ticket', expires_in: 600, target: 'opencode' })
+    const wrapper = mount(ClientSetupModal, {
+      props: { show: true, apiKeyId: 64, keyName: 'qwen key', groupName: 'Qwen 企业高速线路' },
+      global: { stubs: { BaseDialog: BaseDialogStub, Icon: true } },
+    })
+    await flushPromises()
+    await wrapper.get('[data-client="opencode"]').trigger('click')
+    await flushPromises()
+    const command = mocks.copy.mock.calls[0][0] as string
+    expect(command).toContain("LAOSHIRENAI_TOOLS='opencode'")
+    expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
+    expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+  })
 })

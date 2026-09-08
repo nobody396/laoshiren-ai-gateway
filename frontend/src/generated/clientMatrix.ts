@@ -419,8 +419,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "opencode",
     "name": "OpenCode",
-    "version": "1.18.15",
-    "version_key": "cli:1.18.15",
+    "version": "1.18.29",
+    "version_key": "cli:1.18.29",
     "slug": "integration-opencode",
     "icon": "/tool-icons/opencode.png",
     "protocols": [
@@ -466,7 +466,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.config\\opencode\\opencode.json"
       ]
     },
-    "one_click_status": "prototype",
+    "one_click_status": "ready",
     "verification_os": [
       "macos"
     ],

@@ -1113,7 +1113,7 @@
       "name": "OpenCode",
       "slug": "integration-opencode",
       "icon": "/tool-icons/opencode.png",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
@@ -1129,9 +1129,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-responses-gpt-5.4-group6-20260901-loop.json#evidence-93c53fa4a263a0500c300794",
-              "artifact_sha256": "6a6aea3d0972636f1bbdcdcb80a789b550482cdf3469478ffba82cf9d909bed2"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           },
           {
@@ -1147,9 +1147,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-chat_completions-grok-4.5-group34-20260901-loop.json#evidence-62edd5d70b4d534a6c159cd6",
-              "artifact_sha256": "b8888c1687da2c862c870d7723a101ff69c8b3637063c62ab38cc9b1676fc0f6"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           },
           {
@@ -1165,9 +1165,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-messages-claude-opus-4-7-group15-20260901-loop.json#evidence-b46729b4e5e8348baaebdc91",
-              "artifact_sha256": "62ac6bbc693ca1904d4375d8aa8fa2d4638f99e128ad54787fc39a9660d70112"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           },
           {
@@ -1183,9 +1183,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-generate_content-gemini-3.1-pro-group57-20260901-loop.json#evidence-a689d6cb306ab1398ed99749",
-              "artifact_sha256": "fbfcd2ff4556add77815309a41da4b4547f44f2cb797c9176b30be7e4e3afe77"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           }
         ],
@@ -1220,26 +1220,26 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:1.18.15",
-          "display": "1.18.15",
+          "version_key": "cli:1.18.29",
+          "display": "1.18.29",
           "components": [
             {
               "component": "cli",
-              "version": "1.18.15"
+              "version": "1.18.29"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+            "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.config/opencode/opencode.json",
@@ -1249,14 +1249,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "389ee24b808485c67f3b0d0214deeecbd0f0206dab5cd44e8ff20ef70a713b2f"
             }
           },
           {
             "os": "linux",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.config/opencode/opencode.json",
@@ -1266,14 +1266,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "389ee24b808485c67f3b0d0214deeecbd0f0206dab5cd44e8ff20ef70a713b2f"
             }
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.config\\opencode\\opencode.json",
@@ -1283,9 +1283,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "389ee24b808485c67f3b0d0214deeecbd0f0206dab5cd44e8ff20ef70a713b2f"
             }
           }
         ],

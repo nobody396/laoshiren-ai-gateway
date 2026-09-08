@@ -71,6 +71,11 @@ export interface ClientSetupTicket<TTarget extends string = ClientSetupTarget> {
 export type ClientSetupProtocol = 'responses' | 'chat_completions' | 'messages' | 'generate_content'
 export type ClientSetupOS = 'macos' | 'linux' | 'windows'
 
+export interface ClientSetupOption {
+  client_id: 'codex'
+  name: string
+}
+
 export interface ClientSetupSelection {
   api_key_id: number
   client_id: string
@@ -127,6 +132,22 @@ export async function createClientSetupTicketForSelection(selection: ClientSetup
   return data
 }
 
+export async function getClientSetupOptions(apiKeyId: number, os: ClientSetupOS): Promise<ClientSetupOption[]> {
+  const { data } = await apiClient.get<ClientSetupOption[]>('/resources/setup-options', {
+    params: { api_key_id: apiKeyId, os }
+  })
+  return data
+}
+
+export async function createClientSetupTicketForOption(apiKeyId: number, clientId: ClientSetupOption['client_id'], os: ClientSetupOS): Promise<ClientSetupTicket<string>> {
+  const { data } = await apiClient.post<ClientSetupTicket<string>>('/resources/setup-ticket', {
+    api_key_id: apiKeyId,
+    client_id: clientId,
+    os
+  })
+  return data
+}
+
 export async function getVersionStatus(): Promise<DownloadVersionStatus[]> {
   const { data } = await apiClient.get<DownloadVersionStatus[]>('/resources/version-status')
   return data
@@ -142,5 +163,7 @@ export const resourcesAPI = {
   createClientSetupTicket,
   createClientSetupTicketForAPIKey,
   createClientSetupTicketForSelection,
+  getClientSetupOptions,
+  createClientSetupTicketForOption,
   getVersionStatus
 }

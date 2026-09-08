@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "codex_client_setup_group_acceptance",
+  "started_at": "2026-09-08T15:51:34.695974+00:00",
+  "client": {
+    "name": "Codex CLI",
+    "version": "codex-cli 0.153.4",
+    "os": "macos",
+    "arch": "arm64"
+  },
+  "group_id": 58,
+  "models": [
+    "gpt-5.4",
+    "gpt-5.5",
+    "gpt-5.6",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-6-astra"
+  ],
+  "results": [
+    {
+      "model_id": "gpt-5.4",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 14.98,
+      "stdout_sha256": "e78593f56ed747c0c17a7bbe3e94673659896797074d3868c6586756fee2fc95",
+      "stderr_sha256": "6782af56f4f4d4be38368a7c1a57f794dbc8ea35b94d21034dec00fd0b1bc7ca",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.5",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 13.58,
+      "stdout_sha256": "00e3f51ac316b246af06a9a09369b54c274f2f3c1156ac742d7d752244700bc4",
+      "stderr_sha256": "ffe82fc0b7698881fdaff17dfe14bd658485f9f20b5ba415be64165860e1c60c",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 20.57,
+      "stdout_sha256": "e468fc25a84755106377a5cf2f2698e9a599bad6b8b2ede626ed5f09ffba3f52",
+      "stderr_sha256": "4d757c92e77657754f9171d3bed95417571366e713da41bc979bf1c1916b27fb",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 20.35,
+      "stdout_sha256": "9b247f4f6a9344cb8881206557a429a729873df5646cc2777a01925a90a3a93e",
+      "stderr_sha256": "8ebf9cdad59155fc1667399dd267ca6b8abc30ba2db6f190875ec3641b6788e2",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6-terra",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 122.25,
+      "stdout_sha256": "e2288ff946dc458b69c55a21f014b45e9976124c969e6821c768be3fe49e40e0",
+      "stderr_sha256": "436b703f79cd519a9e92ba83a2a5efeb74b39bdf8ea35af28dd5907a05a473a2",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-6-astra",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 15.85,
+      "stdout_sha256": "3394b2d37966fa80233b7a49d983373482d43fc9a9f27ff10a95092974a1074f",
+      "stderr_sha256": "bb58ea0bdb7cdcbab4b3ac037fad5f6077a4e0b7af194ab1190b5056d78b9919",
+      "passed": true
+    }
+  ],
+  "restored_group_id": 6,
+  "passed": true,
+  "group_name": "GPT 经济线路",
+  "completed_at": "2026-09-08T15:55:18.123908+00:00",
+  "test_identity": "owner-controlled dedicated fixture",
+  "artifact_sha256": "6dbedcd2e06288130c2b85c944793327910c5260f859b381914b3e00bd33c11a"
+}

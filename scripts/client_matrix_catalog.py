@@ -12,6 +12,7 @@ SOURCE = ROOT / "model-doc-contracts" / "client-matrix.json"
 OUTPUT = ROOT / "frontend" / "src" / "generated" / "clientMatrix.ts"
 GO_OUTPUT = ROOT / "backend" / "internal" / "service" / "client_setup_contract_generated.go"
 CONTRACTS = ROOT / "model-doc-contracts"
+CODEX_CLIENT_CATALOG = ROOT / "frontend" / "public" / "auto-config" / "codex-model-catalog.json"
 
 
 def load_reasoning_profiles() -> list[dict]:
@@ -140,11 +141,39 @@ def load_model_protocols() -> dict[str, list[str]]:
             for row in contract.get("protocols") or []
             if row.get("status") == "verified" and str(row.get("name", "")).strip()
         })
+    # Newly released models are first recorded as release contracts before the
+    # long-form model document is generated. Setup must still fail closed, but
+    # it should consume their explicit supported protocol rows instead of
+    # silently treating a fully released model as unknown.
+    for path in sorted((CONTRACTS / "releases").glob("*.release.json")):
+        contract = json.loads(path.read_text())
+        model_id = str(contract.get("model", {}).get("id", "")).strip()
+        if not model_id:
+            continue
+        protocols = {
+            str(row.get("protocol", "")).strip()
+            for row in contract.get("protocol_matrix") or []
+            if row.get("support") == "supported" and str(row.get("protocol", "")).strip()
+        }
+        result[model_id] = sorted(set(result.get(model_id, [])) | protocols)
     return result
 
 
 def go_quote(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
+
+
+def load_codex_setup_models() -> list[str]:
+    catalog = json.loads(CODEX_CLIENT_CATALOG.read_text())
+    rows = catalog.get("models") if isinstance(catalog, dict) else None
+    if not isinstance(rows, list):
+        raise ValueError("Codex client catalog must contain a models array")
+    result = {
+        str(row.get("slug", "")).strip()
+        for row in rows
+        if isinstance(row, dict) and str(row.get("slug", "")).strip()
+    }
+    return sorted(result)
 
 
 def render_go(data: dict) -> str:
@@ -184,6 +213,9 @@ def render_go(data: dict) -> str:
     for model_id, protocols in sorted(load_model_protocols().items()):
         values = ", ".join(f"{go_quote(protocol)}: true" for protocol in protocols)
         lines.append(f"\t{go_quote(model_id)}: {{{values}}},")
+    lines.extend(["}", "", "var generatedCodexSetupModels = map[string]bool{"])
+    for model_id in load_codex_setup_models():
+        lines.append(f"\t{go_quote(model_id)}: true,")
     lines.extend(["}", ""])
     raw = "\n".join(lines)
     return subprocess.run(

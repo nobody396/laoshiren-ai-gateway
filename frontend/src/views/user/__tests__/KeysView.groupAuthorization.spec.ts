@@ -35,7 +35,8 @@ async function page() {
     groupsLoadedScope: string | null;
     handleSubmit(): Promise<void>; editKey(key: unknown): void;
     setScope(scope: 'personal' | 'team'): Promise<void>; loadGroups(): Promise<void>;
-    copyClientAutoConfigCommand(key: unknown): Promise<void>;
+    canOpenCodexSetup(key: unknown): boolean; openClientSetup(key: unknown): void;
+    showClientSetup: boolean; clientSetupRow: unknown;
   }
 }
 beforeEach(() => {
@@ -103,10 +104,16 @@ describe('KeysView group authorization integration', () => {
     expect(vm.groups.map(group => group.id)).toEqual([6, 5])
     expect(vm.groupsLoadedScope).toBe('personal')
   })
-  it('keeps every one-click setup command paused', async () => {
+  it('opens one-click setup only for the three released single-group Codex routes', async () => {
     const vm = await page()
-    await vm.copyClientAutoConfigCommand({ id: 1, status: 'active', group: personal[0] })
-    expect(m.warning).toHaveBeenCalledWith('keys.configureClientPausedHint', 6000)
-    expect(m.setupTicket).not.toHaveBeenCalled()
+    const standard = { id: 1, status: 'active', group: personal[0] }
+    expect(vm.canOpenCodexSetup(standard)).toBe(true)
+    expect(vm.canOpenCodexSetup({ ...standard, group: { ...personal[0], id: 58 } })).toBe(true)
+    expect(vm.canOpenCodexSetup({ ...standard, group: { ...personal[0], id: 59 } })).toBe(true)
+    expect(vm.canOpenCodexSetup({ ...standard, group: { ...personal[0], id: 40 } })).toBe(false)
+    expect(vm.canOpenCodexSetup({ ...standard, group_ids: [6, 58] })).toBe(false)
+    vm.openClientSetup(standard)
+    expect(vm.showClientSetup).toBe(true)
+    expect(vm.clientSetupRow).toEqual(standard)
   })
 })

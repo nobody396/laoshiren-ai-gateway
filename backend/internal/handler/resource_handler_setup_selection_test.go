@@ -36,3 +36,15 @@ func TestSetupSelectionFromRequestRequiresEveryExactField(t *testing.T) {
 	_, _, err = setupSelectionFromRequest(req)
 	require.ErrorIs(t, err, service.ErrInvalidClientSetupSelection)
 }
+
+func TestSimpleSetupOptionRequestContainsOnlyKeyClientAndOS(t *testing.T) {
+	apiKeyID := int64(42)
+	req := clientSetupTicketRequest{APIKeyID: &apiKeyID, ClientID: "codex", OS: "macos"}
+	require.True(t, isSimpleSetupOptionRequest(req))
+
+	req.ModelID = "gpt-5.6-sol"
+	require.False(t, isSimpleSetupOptionRequest(req))
+	req.ModelID = ""
+	req.Target = "codex"
+	require.False(t, isSimpleSetupOptionRequest(req))
+}

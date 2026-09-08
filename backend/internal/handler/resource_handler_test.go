@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExchangeSetupTicketReturnsPausedWithoutExposingCredentials(t *testing.T) {
+func TestExchangeSetupTicketRejectsInvalidTicketWithoutExposingCredentials(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler := NewResourceHandler(nil, nil)
 	router := gin.New()
@@ -26,8 +26,8 @@ func TestExchangeSetupTicketReturnsPausedWithoutExposingCredentials(t *testing.T
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/setup/exchange", strings.NewReader(`{"ticket":"existing-ticket"}`)))
 
-	require.Equal(t, http.StatusServiceUnavailable, recorder.Code)
-	require.Contains(t, recorder.Body.String(), `"reason":"CLIENT_SETUP_PAUSED"`)
+	require.Equal(t, http.StatusUnauthorized, recorder.Code)
+	require.Contains(t, recorder.Body.String(), `"reason":"INVALID_CLIENT_SETUP_TICKET"`)
 	require.NotContains(t, recorder.Body.String(), `"api_key"`)
 }
 

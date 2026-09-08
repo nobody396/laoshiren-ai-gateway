@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "kind": "codex_client_setup_group_acceptance",
+  "started_at": "2026-09-08T15:56:46.491183+00:00",
+  "client": {
+    "name": "Codex CLI",
+    "version": "codex-cli 0.153.4",
+    "os": "macos",
+    "arch": "arm64"
+  },
+  "group_id": 59,
+  "models": [
+    "gpt-5.3-codex-spark",
+    "gpt-5.4",
+    "gpt-5.4-mini",
+    "gpt-5.5",
+    "gpt-5.6-luna",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-6-astra"
+  ],
+  "results": [
+    {
+      "model_id": "gpt-5.3-codex-spark",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 13.49,
+      "stdout_sha256": "29c82f4b728ce43d543e4bda5009d05bf1f19cd452005f816a673800eb76e274",
+      "stderr_sha256": "f80ef833a18e5565aef20ac0482f0ac00873ebfdf3161009e518ad9d9b9c7914",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.4",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 50.2,
+      "stdout_sha256": "ac7321586cd907e47e236235d85b4cdfc3c59023891354f8d44c10956b93b898",
+      "stderr_sha256": "9597301f1c58b82049a99fc44c434ea7eee15b3778f6e98cb84f3126b45b5b0f",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.4-mini",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 185.87,
+      "stdout_sha256": "0b31d12aeb548ada7c7aca4c35787d032e26ef25d8a388b1338e527744e1608b",
+      "stderr_sha256": "861ad5d02ab6d01ebc0b61b27a75e9bda656ac195f4d221a978842c485994029",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.5",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 13.77,
+      "stdout_sha256": "eb44cec47ffba7ba3c0ef320522c043f2f6ec9440821862616c9fbaf1e6cb4d5",
+      "stderr_sha256": "8c58548780fbdf82334e55f85a5641e8211938904eefab03df253f1d835d2422",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6-luna",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 15.02,
+      "stdout_sha256": "30a23532cec92f5c474868052c9243e9f1052386273dd0a0b301e6657f88b488",
+      "stderr_sha256": "49db7c8fea8d0c11b9c033f340086697a79fc46bf8abfd120e1e14c169371809",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6-sol",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 17.24,
+      "stdout_sha256": "502e8382b6490f94aac5caf7286cfe53a8c33e54623215a0c8e3d47e09c15395",
+      "stderr_sha256": "b999bb86ff7a62441b03190955043ba4600dd061c8fd04ec7195e4da0c8d3277",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-5.6-terra",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 13.93,
+      "stdout_sha256": "28c521f4b1b156db43456d39e1ac6c4934c987f2c70240a26e4c533208c9e8fe",
+      "stderr_sha256": "6a20e365a5a836af4ac375ebf299fdfa74d6826e6303d1f1d86273335a23364c",
+      "passed": true
+    },
+    {
+      "model_id": "gpt-6-astra",
+      "protocol": "responses",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 16.02,
+      "stdout_sha256": "5aab44afd513ec00e5cb91839a63f4e9f459da887c8ce26b9f8e04774842c5e7",
+      "stderr_sha256": "5114ffe2e5df0df6369192eea1fe13913daaa95be3ff9deb981ca3df574c2006",
+      "passed": true
+    }
+  ],
+  "restored_group_id": 6,
+  "passed": true,
+  "group_name": "GPT 企业高速线路",
+  "completed_at": "2026-09-08T16:02:25.888480+00:00",
+  "test_identity": "owner-controlled dedicated fixture",
+  "artifact_sha256": "98ec4f702987543e8cbffee935b42c3119be7657d9038bd153110ec95efc473e"
+}

@@ -256,6 +256,54 @@ describe('client auto-config scripts', () => {
     }
   })
 
+  it('refuses a partial Codex import when any authorized model is missing from the catalog', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-full-coverage-'))
+    const sourcePath = join(fixture, 'source.json')
+    const authorizedPath = join(fixture, 'authorized.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      writeFileSync(sourcePath, readPublicScript('codex-model-catalog.json'))
+      writeFileSync(authorizedPath, JSON.stringify({ data: [
+        { id: 'gpt-5.6-sol' },
+        { id: 'future-unverified-model' },
+      ] }))
+      expect(() => execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; filter_codex_model_catalog "$2" "$3"',
+        '_', installerPath, sourcePath, authorizedPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })).toThrow()
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('imports every key-visible model for the three released Codex groups', () => {
+    const groups = {
+      standard: ['gpt-5.3-codex-spark', 'gpt-5.4', 'gpt-5.5', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra'],
+      economy: ['gpt-5.4', 'gpt-5.5', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra'],
+      enterprise: ['gpt-5.3-codex-spark', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.5', 'gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra'],
+    }
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    for (const [name, models] of Object.entries(groups)) {
+      const fixture = mkdtempSync(join(tmpdir(), `laoshirenai-codex-${name}-`))
+      const sourcePath = join(fixture, 'source.json')
+      const authorizedPath = join(fixture, 'authorized.json')
+      try {
+        writeFileSync(sourcePath, readPublicScript('codex-model-catalog.json'))
+        writeFileSync(authorizedPath, JSON.stringify({ data: models.map(id => ({ id })) }))
+        execFileSync('bash', [
+          '-c',
+          'source "$1"; NODE_BIN="$(command -v node)"; filter_codex_model_catalog "$2" "$3"',
+          '_', installerPath, sourcePath, authorizedPath,
+        ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+        const imported = JSON.parse(readFileSync(sourcePath, 'utf8')).models.map((model: { slug: string }) => model.slug)
+        expect(imported).toEqual(models)
+      } finally {
+        rmSync(fixture, { recursive: true, force: true })
+      }
+    }
+  })
+
   it('updates only Codex-owned TOML fields and preserves MCP and other providers', () => {
     const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-merge-'))
     const codexDir = join(fixture, '.codex')

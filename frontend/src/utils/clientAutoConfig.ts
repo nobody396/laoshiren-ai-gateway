@@ -10,6 +10,7 @@ export interface BuildClientAutoConfigCommandInput {
   isWindows?: boolean
   installCodexApp?: boolean
   grokCcSwitchCompat?: boolean
+  installMissing?: boolean
 }
 
 export interface BuildClientManualConfigCommandInput {
@@ -69,6 +70,7 @@ export const buildClientAutoConfigCommand = ({
   ticket,
   installCodexApp = false,
   grokCcSwitchCompat = false,
+  installMissing = false,
   isWindows = typeof navigator !== 'undefined' &&
     navigator.userAgent.toLowerCase().includes('windows')
 }: BuildClientAutoConfigCommandInput): string => {
@@ -76,8 +78,8 @@ export const buildClientAutoConfigCommand = ({
     const parts = [
       `$env:LAOSHIRENAI_SETUP_TOKEN=${powerShellSingleQuote(ticket)}`,
       `$env:LAOSHIRENAI_TOOLS='${target}'`,
-      "$env:LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'"
     ]
+    if (!installMissing) parts.push("$env:LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'")
     if (target === 'codex' && installCodexApp) {
       parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
     }
@@ -99,8 +101,8 @@ export const buildClientAutoConfigCommand = ({
   const environment = [
     `LAOSHIRENAI_SETUP_TOKEN=${shellSingleQuote(ticket)}`,
     `LAOSHIRENAI_TOOLS=${shellSingleQuote(target)}`,
-    "LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'"
   ]
+  if (!installMissing) environment.push("LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'")
   if (target === 'codex' && installCodexApp) {
     environment.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
   }

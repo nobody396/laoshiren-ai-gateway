@@ -107,7 +107,7 @@ try {
   Assert-True ([int]$DaybreakModel.context_window -eq 1050000) 'Daybreak context window is incorrect'
 
   $StandardCatalogOutput = Join-Path $FixtureDir 'standard-codex-model-catalog.json'
-  $StandardModels = @('gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4', 'gpt-5.3-codex-spark')
+  $StandardModels = @('gpt-6-astra', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4', 'gpt-5.3-codex-spark')
   Convert-CodexModelCatalog `
     -SourcePath $CodexCatalogSource `
     -AuthorizedModels $StandardModels `
@@ -119,6 +119,28 @@ try {
   Assert-True ($AstraModel.visibility -eq 'list') 'GPT-6 Astra is not visible in the Codex selector'
   Assert-True ([int]$AstraModel.context_window -eq 1050000) 'GPT-6 Astra context window is incorrect'
   Assert-True (@($AstraModel.supported_reasoning_levels | ForEach-Object { $_.effort }) -contains 'max') 'GPT-6 Astra max reasoning is missing'
+
+  $ReleasedGroups = @(
+    @{ Name = 'economic'; Models = @('gpt-6-astra', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4') },
+    @{ Name = 'enterprise'; Models = @('gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.3-codex-spark') }
+  )
+  foreach ($Group in $ReleasedGroups) {
+    $Output = Join-Path $FixtureDir "$($Group.Name)-codex-model-catalog.json"
+    Convert-CodexModelCatalog -SourcePath $CodexCatalogSource -AuthorizedModels $Group.Models -OutputPath $Output
+    $Actual = @((Get-Content -LiteralPath $Output -Raw | ConvertFrom-Json).models | ForEach-Object { [string]$_.slug })
+    Assert-True (($Actual -join ',') -eq ($Group.Models -join ',')) "GPT $($Group.Name) Codex model catalog mismatch: $($Actual -join ',')"
+  }
+
+  $PartialImportRejected = $false
+  try {
+    Convert-CodexModelCatalog `
+      -SourcePath $CodexCatalogSource `
+      -AuthorizedModels @('gpt-5.6-sol', 'future-unverified-model') `
+      -OutputPath (Join-Path $FixtureDir 'must-not-exist.json')
+  } catch {
+    $PartialImportRejected = $true
+  }
+  Assert-True $PartialImportRejected 'Codex accepted a partial import with an unknown authorized model'
 
   foreach ($Client in @('claude', 'codex')) {
     $CmdPath = Join-Path $FixtureDir "$Client.cmd"

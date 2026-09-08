@@ -180,6 +180,10 @@ func (s *ClientSetupService) IssueTicketForSelection(ctx context.Context, userID
 }
 
 func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID int64, target string, apiKey *APIKey, selection *ClientSetupSelection) (*ClientSetupTicket, error) {
+	return s.issueTicketForAPIKeyWithPurpose(ctx, userID, target, apiKey, selection, "")
+}
+
+func (s *ClientSetupService) issueTicketForAPIKeyWithPurpose(ctx context.Context, userID int64, target string, apiKey *APIKey, selection *ClientSetupSelection, selectionPurpose string) (*ClientSetupTicket, error) {
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, fmt.Errorf("generate client setup ticket: %w", err)
@@ -195,6 +199,9 @@ func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID in
 	}
 	if selection != nil {
 		data.Purpose = clientSetupSelectionTicketPurpose
+		if selectionPurpose != "" {
+			data.Purpose = selectionPurpose
+		}
 		data.ClientID = selection.ClientID
 		data.ClientVersionKey = selection.ClientVersionKey
 		data.Protocol = selection.Protocol
@@ -246,7 +253,7 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 		return nil, fmt.Errorf("consume client setup ticket: %w", err)
 	}
 	now := time.Now().UTC()
-	if (data.Purpose != clientSetupTicketPurpose && data.Purpose != clientSetupSelectionTicketPurpose) ||
+	if (data.Purpose != clientSetupTicketPurpose && data.Purpose != clientSetupSelectionTicketPurpose && data.Purpose != clientSetupCodexOptionTicketPurpose) ||
 		data.APIKeyID == nil ||
 		data.CreatedAt.IsZero() ||
 		data.CreatedAt.After(now.Add(5*time.Second)) ||
@@ -269,9 +276,16 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 	target := ""
 	if explicit {
 		selection, err = normalizeClientSetupSelection(selection)
-		if err != nil || data.Purpose != clientSetupSelectionTicketPurpose || data.TargetKind != selection.ClientID ||
+		validPurpose := data.Purpose == clientSetupSelectionTicketPurpose || data.Purpose == clientSetupCodexOptionTicketPurpose
+		if err != nil || !validPurpose || data.TargetKind != selection.ClientID ||
 			!s.isSelectionReady(selection) || !s.apiKeyExposesModel(ctx, apiKey, selection.ModelID) {
 			return nil, ErrInvalidClientSetupTicket
+		}
+		if data.Purpose == clientSetupCodexOptionTicketPurpose {
+			expected, ok := s.codexSetupSelection(ctx, apiKey, selection.OS)
+			if !ok || expected != selection {
+				return nil, ErrInvalidClientSetupTicket
+			}
 		}
 		target = clientSetupInstallerTarget(selection.ClientID)
 		if target == "" {

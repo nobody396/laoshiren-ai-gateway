@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.17'
+$ScriptVersion = '0.7.18'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -216,10 +216,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.17 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.18 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.17 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.18 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -1432,6 +1432,10 @@ function Convert-CodexModelCatalog {
   $ById = @{}
   foreach ($Model in $Models) {
     $ById[[string]$Model.slug] = $Model
+  }
+  $Missing = @($Authorized | Where-Object { -not $ById.ContainsKey($_) })
+  if ($Missing.Count -gt 0) {
+    throw "Codex 模型目录没有覆盖当前 Key 的全部模型: $($Missing -join ', ')"
   }
   $Filtered = New-Object System.Collections.Generic.List[object]
   foreach ($Id in $Authorized) {

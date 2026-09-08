@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.17'
+SCRIPT_VERSION='0.7.18'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -1177,6 +1177,10 @@ if (preferredModel && !authorized.includes(preferredModel)) {
 }
 
 const byID = new Map(models.map((model) => [model.slug, model]))
+const missing = authorized.filter((id) => !byID.has(id))
+if (missing.length) {
+  throw new Error(`Codex catalog does not cover every authorized model: ${missing.join(', ')}`)
+}
 const filtered = authorized
   .flatMap((id) => byID.has(id) ? [{ ...byID.get(id) }] : [])
   .map((model, index) => ({ ...model, priority: index + 1 }))

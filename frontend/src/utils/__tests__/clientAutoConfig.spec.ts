@@ -97,6 +97,17 @@ describe('client auto-config commands', () => {
     expect(cliOnly).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
   })
 
+  it('installs a missing client when the released one-click option requests it', () => {
+    const shell = buildClientAutoConfigCommand({
+      target: 'codex', ticket: 'ticket-install', isWindows: false, installMissing: true
+    })
+    const windows = buildClientAutoConfigCommand({
+      target: 'codex', ticket: 'ticket-install', isWindows: true, installMissing: true
+    })
+    expect(shell).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+    expect(windows).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+  })
+
   it('never adds Codex App installation to Claude Code commands', () => {
     const command = buildClientAutoConfigCommand({
       target: 'claude',

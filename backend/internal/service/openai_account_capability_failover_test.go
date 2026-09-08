@@ -56,6 +56,18 @@ func TestOpenAIAccountCapabilityRejection(t *testing.T) {
 			want:    true,
 		},
 		{
+			name:    "compatible gateway account pool misses model",
+			status:  http.StatusNotFound,
+			message: `Model "gpt-5.4" is not supported by any configured account in this group`,
+			want:    true,
+		},
+		{
+			name:    "ordinary not found remains terminal",
+			status:  http.StatusNotFound,
+			message: "resource not found",
+			want:    false,
+		},
+		{
 			name:    "ordinary invalid request remains terminal",
 			status:  http.StatusBadRequest,
 			message: "Invalid input: field is required",
@@ -140,6 +152,38 @@ func TestOpenAIGatewayServiceCapability400ReturnsFailoverWithoutWritingClientErr
 	require.Equal(t, http.StatusBadRequest, failoverErr.StatusCode)
 	require.False(t, failoverErr.RetryableOnSameAccount)
 	require.False(t, c.Writer.Written(), "capability rejection must return to the handler for next-account failover")
+}
+
+func TestOpenAIGatewayServiceCapability404ReturnsFailoverWithoutWritingClientError(t *testing.T) {
+	t.Parallel()
+	gin.SetMode(gin.TestMode)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(nil))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusNotFound,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"error":{"message":"Model \"gpt-5.4\" is not supported by any configured account in this group","type":"not_found_error"}}`,
+		)),
+	}}
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{ForceCodexCLI: false}}, httpUpstream: upstream}
+	account := &Account{
+		ID: 79, Name: "compatible-gateway", Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Concurrency: 1, Credentials: map[string]any{"api_key": "sk-test"}, Status: StatusActive,
+		Schedulable: true, RateMultiplier: f64p(1),
+	}
+
+	_, err := svc.Forward(context.Background(), c, account, []byte(`{"model":"gpt-5.4","stream":false,"input":"hello"}`))
+	require.Error(t, err)
+	var failoverErr *UpstreamFailoverError
+	require.True(t, errors.As(err, &failoverErr))
+	require.Equal(t, http.StatusNotFound, failoverErr.StatusCode)
+	require.False(t, failoverErr.RetryableOnSameAccount)
+	require.False(t, c.Writer.Written())
 }
 
 func TestOpenAIGatewayServiceSessionPolicyBlockSkipsSameAccountRetry(t *testing.T) {

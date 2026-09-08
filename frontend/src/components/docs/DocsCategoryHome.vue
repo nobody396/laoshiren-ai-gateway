@@ -65,6 +65,7 @@
 import { computed } from 'vue'
 import type { DocCategory } from '@/docs/config'
 import { clientMatrix } from '@/generated/clientMatrix'
+import { simpleClientGuideById } from '@/docs/guides/simpleClientGuides'
 
 const props = defineProps<{ category: DocCategory }>()
 
@@ -85,16 +86,18 @@ type ClientProtocol = Record<ProtocolKey, boolean> & {
 
 const protocolKeys: ProtocolKey[] = ['responses', 'chat', 'messages', 'gemini']
 
-const clientProtocols: ClientProtocol[] = clientMatrix.map(client => ({
-  name: client.name,
-  slug: client.slug,
-  version: client.version,
-  status: client.one_click_status,
-  responses: client.protocols.includes('responses'),
-  chat: client.protocols.includes('chat_completions'),
-  messages: client.protocols.includes('messages'),
-  gemini: client.protocols.includes('generate_content'),
-}))
+const clientProtocols: ClientProtocol[] = clientMatrix
+  .filter(client => simpleClientGuideById[client.id])
+  .map(client => ({
+    name: client.name,
+    slug: client.slug,
+    version: client.version,
+    status: client.one_click_status,
+    responses: client.protocols.includes('responses'),
+    chat: client.protocols.includes('chat_completions'),
+    messages: client.protocols.includes('messages'),
+    gemini: client.protocols.includes('generate_content'),
+  }))
 
 function statusLabel(status: ClientProtocol['status']): string {
   if (status === 'ready') return '一键导入可用'

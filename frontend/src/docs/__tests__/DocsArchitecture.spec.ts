@@ -7,6 +7,7 @@ import docsModelCatalogSource from '@/components/docs/DocsModelCatalog.vue?raw'
 import docsViewSource from '@/views/docs/DocsView.vue?raw'
 import routerSource from '@/router/index.ts?raw'
 import { clientMatrix } from '@/generated/clientMatrix'
+import { simpleClientGuideById, simpleClientGuides } from '@/docs/guides/simpleClientGuides'
 
 const markdownModules = import.meta.glob('../content/*.md', {
   query: '?raw',
@@ -25,7 +26,7 @@ function stripQueryAndHash(value: string): string {
 }
 
 describe('documentation information architecture', () => {
-  it('publishes the reviewed developer documentation architecture including all client contracts', () => {
+  it('publishes only reviewed client guides while keeping the complete matrix source', () => {
     expect(docsConfig.map(category => category.title)).toEqual([
       '快速开始',
       'API 参考',
@@ -33,7 +34,7 @@ describe('documentation information architecture', () => {
       '模型目录',
     ])
 
-    expect(primarySlugs.size).toBe(25)
+    expect(primarySlugs.size).toBe(19)
     for (const slug of [
       'api-responses',
       'api-chat-completions',
@@ -49,7 +50,10 @@ describe('documentation information architecture', () => {
     ]) {
       expect(primarySlugs).toContain(slug)
     }
-    for (const client of clientMatrix) expect(primarySlugs).toContain(client.slug)
+    expect(simpleClientGuides).toHaveLength(8)
+    for (const client of clientMatrix) {
+      expect(primarySlugs.has(client.slug)).toBe(Boolean(simpleClientGuideById[client.id]))
+    }
   })
 
   it('removes whole-page copy while preserving code-block copy', () => {
@@ -66,7 +70,7 @@ describe('documentation information architecture', () => {
     expect(docsCategoryHomeSource).toContain('客户端原生协议')
     expect(docsCategoryHomeSource).toContain('Gemini GenerateContent')
     expect(docsCategoryHomeSource).toContain("import { clientMatrix } from '@/generated/clientMatrix'")
-    expect(docsCategoryHomeSource).toContain('clientMatrix.map(client =>')
+    expect(docsCategoryHomeSource).toContain('.filter(client => simpleClientGuideById[client.id])')
     expect(clientMatrix).toHaveLength(14)
     expect(clientMatrix.map(client => client.name)).toContain('Visual Studio Code Local Agent')
   })

@@ -7,6 +7,7 @@
  */
 
 import { clientMatrix, type ClientMatrixEntry, type ClientMatrixProtocol } from '@/generated/clientMatrix'
+import { simpleClientGuideById } from '@/docs/guides/simpleClientGuides'
 
 export interface DocItem {
   title: string
@@ -48,11 +49,13 @@ function integrationDescription(client: ClientMatrixEntry): string {
   return `${protocols}；${state}。`
 }
 
-const integrationItems: DocItem[] = clientMatrix.map(client => ({
-  title: client.name,
-  slug: client.slug,
-  description: integrationDescription(client),
-}))
+const integrationItems: DocItem[] = clientMatrix
+  .filter(client => simpleClientGuideById[client.id])
+  .map(client => ({
+    title: client.name,
+    slug: client.slug,
+    description: integrationDescription(client),
+  }))
 
 export const docsConfig: DocsConfig = [
   {

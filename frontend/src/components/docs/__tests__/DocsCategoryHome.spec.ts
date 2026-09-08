@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import DocsCategoryHome from '@/components/docs/DocsCategoryHome.vue'
 import { docsConfig } from '@/docs/config'
-import { clientMatrix } from '@/generated/clientMatrix'
+import { simpleClientGuides } from '@/docs/guides/simpleClientGuides'
 
 const RouterLinkStub = {
   props: ['to'],
@@ -26,7 +26,12 @@ describe('DocsCategoryHome', () => {
     expect(wrapper.text()).toContain('ZCode')
     expect(wrapper.text()).not.toContain('API 概览')
     expect(wrapper.text()).not.toContain('Images')
-    expect(wrapper.findAll('.docs-category-list > a')).toHaveLength(14)
-    for (const client of clientMatrix) expect(wrapper.text()).toContain(client.name)
+    expect(wrapper.findAll('.docs-category-list > a')).toHaveLength(simpleClientGuides.length)
+    expect(wrapper.text()).not.toContain('Gemini CLI')
+    expect(wrapper.text()).not.toContain('Hermes Agent')
+    expect(wrapper.text()).not.toContain('Qoder')
+    expect(wrapper.text()).not.toContain('MiniMax Code')
+    expect(wrapper.text()).not.toContain('DeepSeek Harness')
+    expect(wrapper.text()).not.toContain('Visual Studio Code Local Agent')
   })
 })

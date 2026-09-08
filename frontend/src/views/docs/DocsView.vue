@@ -32,6 +32,7 @@ import DocsClientMatrix from '@/components/docs/DocsClientMatrix.vue'
 import DocsIntegrationsHome from '@/components/docs/DocsIntegrationsHome.vue'
 import DocsIntegrationDetail from '@/components/docs/DocsIntegrationDetail.vue'
 import { clientMatrixBySlug } from '@/generated/clientMatrix'
+import { simpleClientGuideById } from '@/docs/guides/simpleClientGuides'
 
 const route = useRoute()
 const categoryKey = computed(() => String(route.params.category || ''))
@@ -42,7 +43,10 @@ const isHome = computed(() => !route.params.slug && !route.params.category)
 const isLanding = computed(() => isHome.value || Boolean(activeCategory.value))
 // 详情页的侧边栏高亮和内容加载统一使用规范化后的 slug。
 const slug = computed(() => isLanding.value ? '' : resolveDocSlug((route.params.slug as string) || defaultSlug))
-const integrationClient = computed(() => clientMatrixBySlug[slug.value])
+const integrationClient = computed(() => {
+  const client = clientMatrixBySlug[slug.value]
+  return client && simpleClientGuideById[client.id] ? client : undefined
+})
 
 const markdownSource = ref('')
 const loading = ref(true)

@@ -56,6 +56,7 @@
 import { computed } from 'vue'
 import { clientMatrix, type ClientMatrixEntry } from '@/generated/clientMatrix'
 import { formatMatrixLevels } from '@/utils/matrixDisplay'
+import { simpleClientGuideById } from '@/docs/guides/simpleClientGuides'
 
 const PROTOCOL_COLUMNS = [
   { key: 'responses', label: 'Responses' },
@@ -91,7 +92,7 @@ function clientReasoningText(client: ClientMatrixEntry): string {
   return parts.join('；')
 }
 
-const clientRows = computed(() => clientMatrix.map((client) => {
+const clientRows = computed(() => clientMatrix.filter(client => simpleClientGuideById[client.id]).map((client) => {
   const ready = client.one_click_status === 'ready'
   return {
     id: client.id,

@@ -54,7 +54,7 @@ describe('ClientSetupModal', () => {
   })
 
   it('builds a Claude Code command without Codex-only flags', async () => {
-    mocks.options.mockResolvedValueOnce([{ client_id: 'claude-code', name: 'Claude Code' }])
+    mocks.options.mockResolvedValue([{ client_id: 'claude-code', name: 'Claude Code' }])
     mocks.ticket.mockResolvedValueOnce({ ticket: 'claude-ticket', expires_in: 600, target: 'claude' })
     const wrapper = mount(ClientSetupModal, {
       props: { show: true, apiKeyId: 43, keyName: 'claude key', groupName: 'Claude 经济线路' },

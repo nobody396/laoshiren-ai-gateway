@@ -35,7 +35,7 @@ async function page() {
     groupsLoadedScope: string | null;
     handleSubmit(): Promise<void>; editKey(key: unknown): void;
     setScope(scope: 'personal' | 'team'): Promise<void>; loadGroups(): Promise<void>;
-    canOpenCodexSetup(key: unknown): boolean; openClientSetup(key: unknown): void;
+    canOpenClientSetup(key: unknown): boolean; openClientSetup(key: unknown): void;
     showClientSetup: boolean; clientSetupRow: unknown;
   }
 }
@@ -107,11 +107,11 @@ describe('KeysView group authorization integration', () => {
   it('opens one-click setup only for the three released single-group Codex routes', async () => {
     const vm = await page()
     const standard = { id: 1, status: 'active', group: personal[0] }
-    expect(vm.canOpenCodexSetup(standard)).toBe(true)
-    expect(vm.canOpenCodexSetup({ ...standard, group: { ...personal[0], id: 58 } })).toBe(true)
-    expect(vm.canOpenCodexSetup({ ...standard, group: { ...personal[0], id: 59 } })).toBe(true)
-    expect(vm.canOpenCodexSetup({ ...standard, group: { ...personal[0], id: 40 } })).toBe(false)
-    expect(vm.canOpenCodexSetup({ ...standard, group_ids: [6, 58] })).toBe(false)
+    for (const id of [5, 15, 65, 6, 58, 59]) {
+      expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id } })).toBe(true)
+    }
+    expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id: 40 } })).toBe(false)
+    expect(vm.canOpenClientSetup({ ...standard, group_ids: [6, 58] })).toBe(false)
     vm.openClientSetup(standard)
     expect(vm.showClientSetup).toBe(true)
     expect(vm.clientSetupRow).toEqual(standard)

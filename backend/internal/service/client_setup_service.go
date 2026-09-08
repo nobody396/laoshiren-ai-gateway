@@ -253,7 +253,7 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 		return nil, fmt.Errorf("consume client setup ticket: %w", err)
 	}
 	now := time.Now().UTC()
-	if (data.Purpose != clientSetupTicketPurpose && data.Purpose != clientSetupSelectionTicketPurpose && data.Purpose != clientSetupCodexOptionTicketPurpose) ||
+	if (data.Purpose != clientSetupTicketPurpose && data.Purpose != clientSetupSelectionTicketPurpose && data.Purpose != clientSetupOptionTicketPurpose) ||
 		data.APIKeyID == nil ||
 		data.CreatedAt.IsZero() ||
 		data.CreatedAt.After(now.Add(5*time.Second)) ||
@@ -276,13 +276,13 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 	target := ""
 	if explicit {
 		selection, err = normalizeClientSetupSelection(selection)
-		validPurpose := data.Purpose == clientSetupSelectionTicketPurpose || data.Purpose == clientSetupCodexOptionTicketPurpose
+		validPurpose := data.Purpose == clientSetupSelectionTicketPurpose || data.Purpose == clientSetupOptionTicketPurpose
 		if err != nil || !validPurpose || data.TargetKind != selection.ClientID ||
 			!s.isSelectionReady(selection) || !s.apiKeyExposesModel(ctx, apiKey, selection.ModelID) {
 			return nil, ErrInvalidClientSetupTicket
 		}
-		if data.Purpose == clientSetupCodexOptionTicketPurpose {
-			expected, ok := s.codexSetupSelection(ctx, apiKey, selection.OS)
+		if data.Purpose == clientSetupOptionTicketPurpose {
+			expected, _, ok := s.setupSelection(ctx, apiKey, selection.OS)
 			if !ok || expected != selection {
 				return nil, ErrInvalidClientSetupTicket
 			}

@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "kind": "claude_code_setup_group_acceptance",
+  "started_at": "2026-09-08T17:40:32.639720+00:00",
+  "test_identity": "owner-controlled dedicated fixture",
+  "client": {
+    "name": "Claude Code",
+    "version": "2.1.263 (Claude Code)",
+    "os": "macos",
+    "arch": "arm64"
+  },
+  "group_id": 5,
+  "models": [
+    "claude-fable-5",
+    "claude-fable-5-1",
+    "claude-haiku-4-5",
+    "claude-opus-4-6",
+    "claude-opus-4-7",
+    "claude-opus-4-8",
+    "claude-opus-5",
+    "claude-sonnet-4-6",
+    "claude-sonnet-5"
+  ],
+  "results": [
+    {
+      "model_id": "claude-fable-5",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 10.48,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-fable-5-1",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 11.78,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-haiku-4-5",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 12.2,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-opus-4-6",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 21.68,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-opus-4-7",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 22.65,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-opus-4-8",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 170.99,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-opus-5",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 10.47,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-sonnet-4-6",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 31.89,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "model_id": "claude-sonnet-5",
+      "protocol": "messages",
+      "exit_code": 0,
+      "timed_out": false,
+      "file_marker_ok": true,
+      "final_marker_seen": true,
+      "duration_seconds": 50.1,
+      "stdout_sha256": "f4158a2eba387e5cf847ac9724c69639a23d27ad4f004d7e97f1babb22340da7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    }
+  ],
+  "restored_group_id": 5,
+  "passed": true,
+  "group_name": "Claude 标准线路",
+  "completed_at": "2026-09-08T17:42:13.914056+00:00",
+  "artifact_sha256": "15c301b31c05231cfd0a2700d213e16d5db0d402f6b994eb048bfcfe4ad398f7"
+}

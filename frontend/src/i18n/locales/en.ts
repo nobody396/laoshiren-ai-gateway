@@ -864,7 +864,7 @@ export default {
     importToCcSwitch: 'Import to CC Switch',
     importToCcSwitchHint: 'Open CC Switch and import compatible app settings for this API key',
     configureClient: 'One-click Setup',
-    configureClientHint: 'Generate a single-use command valid for 10 minutes; detect, install or update {client}, configure it, and verify readiness',
+    configureClientHint: 'Choose an operating system and tool, then automatically copy a single-use setup command valid for 10 minutes',
     configureClientPausedHint: 'One-click setup is temporarily unavailable while it is being updated. Please use the integration docs for manual setup.',
     saveOfficialProvider: 'Save Official',
     saveOfficialProviderHint: 'Copy a script command that saves the local OpenAI official login as a CC Switch Provider',

@@ -41,7 +41,7 @@
         :data-client="option.client_id"
         @click="copy(option)"
       >
-        <img src="/brand/client-tools/codex-light.png" alt="" class="h-10 w-10 rounded-lg object-contain" />
+        <img :src="clientIcon(option)" alt="" class="h-10 w-10 rounded-lg object-contain" />
         <span class="min-w-0 flex-1">
           <strong class="block text-base text-gray-900 dark:text-white">{{ option.name }}</strong>
           <small class="mt-1 block text-gray-500 dark:text-gray-400">
@@ -52,7 +52,7 @@
       </button>
 
       <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
-        命令十分钟内有效且只能使用一次，不包含 API Key。它会安装缺失的 Codex、备份原配置，并导入当前分组的全部模型。
+        命令十分钟内有效且只能使用一次，不包含 API Key。它会安装缺失的客户端、备份原配置，并接入当前分组的全部模型。
       </p>
     </div>
   </BaseDialog>
@@ -117,12 +117,13 @@ async function copy(option: ClientSetupOption) {
   error.value = ''
   try {
     const ticket = await resourcesAPI.createClientSetupTicketForOption(props.apiKeyId, option.client_id, selectedOS)
+    const target = option.client_id === 'claude-code' ? 'claude' : 'codex'
     const command = buildClientAutoConfigCommand({
-      target: 'codex',
+      target,
       ticket: ticket.ticket,
       isWindows: selectedOS === 'windows',
       installMissing: true,
-      installCodexApp: selectedOS !== 'linux'
+      installCodexApp: target === 'codex' && selectedOS !== 'linux'
     })
     await copyToClipboard(command, `${option.name} 一键配置命令已复制`)
   } catch (cause: any) {
@@ -130,6 +131,12 @@ async function copy(option: ClientSetupOption) {
   } finally {
     copying.value = false
   }
+}
+
+function clientIcon(option: ClientSetupOption): string {
+  return option.client_id === 'claude-code'
+    ? '/brand/client-tools/claude.svg'
+    : '/brand/client-tools/codex-light.png'
 }
 
 watch([() => props.show, () => props.apiKeyId, os], load, { immediate: true })

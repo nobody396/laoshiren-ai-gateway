@@ -1,0 +1,139 @@
+package service
+
+import (
+	"context"
+	"strings"
+)
+
+const clientSetupOptionTicketPurpose = "client_setup_option_v1"
+
+type releasedSetupGroup struct {
+	clientID       string
+	clientName     string
+	platform       string
+	protocol       string
+	preferredModel string
+}
+
+var releasedSetupGroups = map[int64]releasedSetupGroup{
+	5:  {clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
+	15: {clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
+	65: {clientID: "claude-code", clientName: "Claude Code", platform: PlatformAnthropic, protocol: "messages", preferredModel: "claude-opus-5"},
+	6:  {clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+	58: {clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+	59: {clientID: "codex", clientName: "Codex", platform: PlatformOpenAI, protocol: "responses", preferredModel: "gpt-5.6-sol"},
+}
+
+type ClientSetupOption struct {
+	ClientID string `json:"client_id"`
+	Name     string `json:"name"`
+}
+
+// SetupOptions returns only fully covered choices. Partial model coverage is
+// an internal failure state and never becomes a customer-visible option.
+func (s *ClientSetupService) SetupOptions(ctx context.Context, userID, apiKeyID int64, osName string) ([]ClientSetupOption, error) {
+	key, err := s.setupAPIKey(ctx, userID, apiKeyID)
+	if err != nil {
+		return nil, err
+	}
+	selection, config, ok := s.setupSelection(ctx, key, osName)
+	if !ok || selection.ClientID == "" {
+		return []ClientSetupOption{}, nil
+	}
+	return []ClientSetupOption{{ClientID: config.clientID, Name: config.clientName}}, nil
+}
+
+func (s *ClientSetupService) IssueTicketForOption(ctx context.Context, userID, apiKeyID int64, clientID, osName string) (*ClientSetupTicket, error) {
+	key, err := s.setupAPIKey(ctx, userID, apiKeyID)
+	if err != nil {
+		return nil, err
+	}
+	selection, config, ok := s.setupSelection(ctx, key, osName)
+	if !ok || strings.ToLower(strings.TrimSpace(clientID)) != config.clientID {
+		return nil, ErrClientSetupSelectionUnavailable
+	}
+	target := clientSetupInstallerTarget(selection.ClientID)
+	if target == "" {
+		return nil, ErrClientSetupSelectionUnavailable
+	}
+	ticket, err := s.issueTicketForAPIKeyWithPurpose(ctx, userID, selection.ClientID, key, &selection, clientSetupOptionTicketPurpose)
+	if err != nil {
+		return nil, err
+	}
+	// The stored target remains the exact client ID; the copied command only
+	// needs the installer's compact target name.
+	ticket.Target = target
+	return ticket, nil
+}
+
+func (s *ClientSetupService) setupAPIKey(ctx context.Context, userID, apiKeyID int64) (*APIKey, error) {
+	if s == nil || s.apiKeys == nil || s.tickets == nil || s.models == nil || userID <= 0 || apiKeyID <= 0 {
+		return nil, ErrClientSetupKeyUnavailable
+	}
+	key, err := s.apiKeys.GetByID(ctx, apiKeyID)
+	if err != nil || key == nil || key.UserID != userID || !key.IsActive() || key.IsExpired() || key.IsQuotaExhausted() || key.Group == nil {
+		return nil, ErrClientSetupKeyUnavailable
+	}
+	if key.IsMultiGroup() {
+		return nil, ErrClientSetupSelectionUnavailable
+	}
+	return key, nil
+}
+
+func (s *ClientSetupService) setupSelection(ctx context.Context, key *APIKey, osName string) (ClientSetupSelection, releasedSetupGroup, bool) {
+	if key == nil || key.Group == nil {
+		return ClientSetupSelection{}, releasedSetupGroup{}, false
+	}
+	config, ok := releasedSetupGroups[key.Group.ID]
+	if !ok || key.Group.Platform != config.platform {
+		return ClientSetupSelection{}, releasedSetupGroup{}, false
+	}
+	osName = strings.ToLower(strings.TrimSpace(osName))
+	contract, ok := generatedClientSetupContracts[config.clientID]
+	if !ok || contract.OneClickStatus != "ready" || !contract.Protocols[config.protocol] || !contract.OSReady[osName] {
+		return ClientSetupSelection{}, releasedSetupGroup{}, false
+	}
+
+	groupID := key.Group.ID
+	models := s.models.GetAvailableModels(ctx, &groupID, "")
+	visible := make([]string, 0, len(models))
+	seen := make(map[string]bool, len(models))
+	for _, raw := range models {
+		model := strings.ToLower(strings.TrimSpace(raw))
+		if model == "" || model == "codex-auto-review" || seen[model] || s.models.IsModelRestricted(ctx, groupID, model) {
+			continue
+		}
+		seen[model] = true
+		visible = append(visible, model)
+	}
+	if len(visible) == 0 {
+		return ClientSetupSelection{}, releasedSetupGroup{}, false
+	}
+	for _, model := range visible {
+		if !setupClientSupportsModel(config.clientID, config.protocol, model) {
+			return ClientSetupSelection{}, releasedSetupGroup{}, false
+		}
+	}
+
+	defaultModel := visible[0]
+	for _, model := range visible {
+		if model == config.preferredModel {
+			defaultModel = model
+			break
+		}
+	}
+	return ClientSetupSelection{
+		ClientID:         config.clientID,
+		ClientVersionKey: contract.VersionKey,
+		Protocol:         config.protocol,
+		ModelID:          defaultModel,
+		OS:               osName,
+	}, config, true
+}
+
+func setupClientSupportsModel(clientID, protocol, model string) bool {
+	if clientID == "codex" {
+		return protocol == "responses" && generatedCodexSetupModels[model]
+	}
+	return generatedClientSetupModelProtocols[model][protocol]
+}

@@ -72,7 +72,7 @@ export type ClientSetupProtocol = 'responses' | 'chat_completions' | 'messages' 
 export type ClientSetupOS = 'macos' | 'linux' | 'windows'
 
 export interface ClientSetupOption {
-  client_id: 'codex'
+  client_id: 'codex' | 'claude-code'
   name: string
 }
 

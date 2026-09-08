@@ -52,4 +52,22 @@ describe('ClientSetupModal', () => {
     expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
     expect(command).not.toContain('sk-')
   })
+
+  it('builds a Claude Code command without Codex-only flags', async () => {
+    mocks.options.mockResolvedValueOnce([{ client_id: 'claude-code', name: 'Claude Code' }])
+    mocks.ticket.mockResolvedValueOnce({ ticket: 'claude-ticket', expires_in: 600, target: 'claude' })
+    const wrapper = mount(ClientSetupModal, {
+      props: { show: true, apiKeyId: 43, keyName: 'claude key', groupName: 'Claude 经济线路' },
+      global: { stubs: { BaseDialog: BaseDialogStub, Icon: true } },
+    })
+    await flushPromises()
+    await wrapper.get('[data-client="claude-code"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.ticket).toHaveBeenCalledWith(43, 'claude-code', 'macos')
+    const command = mocks.copy.mock.calls[0][0] as string
+    expect(command).toContain("LAOSHIRENAI_TOOLS='claude'")
+    expect(command).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
+    expect(command).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+  })
 })

@@ -24,6 +24,7 @@ describe('client setup ticket API', () => {
     mockClient.get.mockResolvedValueOnce({ data: [{ client_id: 'codex', name: 'Codex' }] })
     await getClientSetupOptions(42, 'windows')
     await createClientSetupTicketForOption(42, 'codex', 'windows')
+    await createClientSetupTicketForOption(43, 'claude-code', 'macos')
 
     expect(mockClient.get).toHaveBeenCalledWith('/resources/setup-options', {
       params: { api_key_id: 42, os: 'windows' }
@@ -32,6 +33,11 @@ describe('client setup ticket API', () => {
       api_key_id: 42,
       client_id: 'codex',
       os: 'windows'
+    })
+    expect(mockClient.post).toHaveBeenCalledWith('/resources/setup-ticket', {
+      api_key_id: 43,
+      client_id: 'claude-code',
+      os: 'macos'
     })
   })
 

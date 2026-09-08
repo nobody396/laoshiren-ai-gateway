@@ -863,7 +863,7 @@ export default {
     importToCcSwitch: '导入 CC Switch',
     importToCcSwitchHint: '打开 CC Switch，并导入当前 API Key 的兼容工具配置',
     configureClient: '一键配置',
-    configureClientHint: '生成 10 分钟有效的一次性命令：自动检测、安装或更新 {client}，写入配置并测试可用性',
+    configureClientHint: '选择系统和工具，自动复制 10 分钟有效的一次性配置命令',
     configureClientPausedHint: '一键配置正在调整，暂时不可用。请先查看接入文档手动配置。',
     saveOfficialProvider: '保存官方订阅',
     saveOfficialProviderHint: '复制脚本命令，把本机 OpenAI 官方登录保存成 CC Switch Provider',

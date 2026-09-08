@@ -318,15 +318,15 @@
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
               <div
-                v-if="canOpenCodexSetup(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
+                v-if="canOpenClientSetup(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
                 class="flex items-center gap-1 rounded-lg"
                 data-tour="keys-setup-options"
               >
                 <!-- Client Auto Config Button -->
                 <button
-                  v-if="canOpenCodexSetup(row)"
+                  v-if="canOpenClientSetup(row)"
                   @click="openClientSetup(row)"
-                  :title="t('keys.configureClientHint', { client: 'Codex' })"
+                  :title="t('keys.configureClientHint')"
                   class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
                 >
                   <Icon name="terminal" size="sm" />
@@ -1556,11 +1556,11 @@ const copyApiBaseUrl = async () => {
   }
 }
 
-const codexSetupGroupIds = new Set([6, 58, 59])
-const canOpenCodexSetup = (row: ApiKey): boolean => (
+const releasedSetupGroupIds = new Set([5, 15, 65, 6, 58, 59])
+const canOpenClientSetup = (row: ApiKey): boolean => (
   row.status === 'active' &&
   !row.group_ids?.length &&
-  Boolean(row.group && codexSetupGroupIds.has(row.group.id))
+  Boolean(row.group && releasedSetupGroupIds.has(row.group.id))
 )
 
 const openClientSetup = (row: ApiKey) => {

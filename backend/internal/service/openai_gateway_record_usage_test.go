@@ -550,6 +550,52 @@ func TestOpenAIGatewayServiceRecordUsage_FixedGPTImageCallPriceDoesNotChargeWith
 	require.Zero(t, subRepo.incrementCalls)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_GPTImage25EditBillsTextImageInputAndImageOutput(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, &openAIRecordUsageSubRepoStub{}, nil)
+	groupID := int64(51)
+	inputPrice := 5e-6
+	outputPrice := 30e-6
+	cachePrice := 1.25e-6
+	imageOutputPrice := 30e-6
+	channelSvc := &ChannelService{}
+	channelSvc.cache.Store(populateChannelCache([]Channel{{
+		ID: 1, Status: StatusActive, GroupIDs: []int64{groupID},
+		ModelPricing: []ChannelModelPricing{{
+			Platform: PlatformOpenAI, Models: []string{"gpt-image-2.5-sunburst"}, BillingMode: BillingModeToken,
+			InputPrice: &inputPrice, OutputPrice: &outputPrice, CacheReadPrice: &cachePrice, ImageOutputPrice: &imageOutputPrice,
+		}},
+	}}, map[int64]string{groupID: PlatformOpenAI}))
+	svc.resolver = NewModelPricingResolver(channelSvc, svc.billingService)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_gpt_image_25_edit",
+			Usage: OpenAIUsage{
+				InputTokens: 140, ImageInputTokens: 100,
+				OutputTokens: 196, ImageOutputTokens: 196,
+			},
+			Model: "gpt-image-2.5-sunburst", Duration: time.Second, ImageCount: 1, ImageSize: "1K",
+		},
+		APIKey: &APIKey{ID: 1051, GroupID: &groupID, Group: &Group{
+			ID: groupID, Platform: PlatformOpenAI, RateMultiplier: 4,
+			ImageRateIndependent: true, ImageRateMultiplier: 4,
+		}},
+		User: &User{ID: 2051}, Account: &Account{ID: 39, Platform: PlatformOpenAI},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 140, usageRepo.lastLog.InputTokens, "usage log keeps the provider's total non-cached input count")
+	require.Equal(t, 196, usageRepo.lastLog.ImageOutputTokens)
+	require.InDelta(t, 40*5e-6+100*8e-6, usageRepo.lastLog.InputCost, 1e-12)
+	require.Zero(t, usageRepo.lastLog.OutputCost)
+	require.InDelta(t, 196*30e-6, usageRepo.lastLog.ImageOutputCost, 1e-12)
+	require.InDelta(t, (40*5e-6+100*8e-6+196*30e-6)*4, usageRepo.lastLog.ActualCost, 1e-12)
+	require.Equal(t, 1, userRepo.deductCalls)
+	require.InDelta(t, usageRepo.lastLog.ActualCost, userRepo.lastAmount, 1e-12)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_FixedGPTImageCallPriceDoesNotChangeTextTokenBilling(t *testing.T) {
 	price := 0.30
 	groupRate := 0.5

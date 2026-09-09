@@ -643,6 +643,34 @@ func TestAccountOpenAIImageGenerationTransportRouting(t *testing.T) {
 		require.False(t, configured, "native image route must fail closed without its explicit public-to-upstream mapping")
 	})
 
+	t.Run("native Images route accepts both GPT Image 2.5 models", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeAPIKey,
+			Credentials: map[string]any{
+				"model_mapping": map[string]any{
+					"gpt-image-2.5-flare":    "gpt-image-2.5-flare",
+					"gpt-image-2.5-sunburst": "gpt-image-2.5-sunburst",
+				},
+			},
+			Extra: map[string]any{
+				"supports_images":                      true,
+				OpenAIImageGenerationPriorityExtraKey:  4,
+				OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"},
+				OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+			},
+		}
+
+		for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
+			priority, configured := account.OpenAIImageGenerationRoutingPriority(model)
+			require.True(t, configured, model)
+			require.Equal(t, 4, priority, model)
+			transport, configured := account.OpenAIImageGenerationTransport(model)
+			require.True(t, configured, model)
+			require.Equal(t, OpenAIImageGenerationTransportImages, transport, model)
+		}
+	})
+
 	t.Run("invalid transport fails closed", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformOpenAI,

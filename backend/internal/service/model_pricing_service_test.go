@@ -569,7 +569,7 @@ func TestModelPricingDoesNotSynthesizeMissingDisabledRows(t *testing.T) {
 	}
 }
 
-func TestModelPricingPublishesGPTImage2ModalPricesAtImageMultiplier(t *testing.T) {
+func TestModelPricingPublishesGPTImage2FamilyModalPricesAtImageMultiplier(t *testing.T) {
 	groups := []Group{{
 		ID:                   51,
 		Name:                 "GPT Image 2 生图分组",
@@ -584,7 +584,7 @@ func TestModelPricingPublishesGPTImage2ModalPricesAtImageMultiplier(t *testing.T
 		// 故意放入错误/过期的通用价，验证页面不会再走 LiteLLM 三列。
 		"gpt-image-2": {InputCostPerToken: 1.25e-6, OutputCostPerToken: 10e-6, CacheReadInputTokenCost: 0.125e-6},
 	}
-	models := map[int64][]string{51: {"gpt-image-2"}}
+	models := map[int64][]string{51: {"gpt-image-2", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst"}}
 
 	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
 	catalog, err := svc.GetPublicModelPricing(context.Background())
@@ -599,7 +599,7 @@ func TestModelPricingPublishesGPTImage2ModalPricesAtImageMultiplier(t *testing.T
 		t.Fatal("image-only group models must be an empty array, not nil")
 	}
 	if len(group.Models) != 0 {
-		t.Fatalf("gpt-image-2 must not be rendered as a generic text model: %+v", group.Models)
+		t.Fatalf("GPT Image 2 family must not be rendered as generic text models: %+v", group.Models)
 	}
 	encoded, err := json.Marshal(group)
 	if err != nil {

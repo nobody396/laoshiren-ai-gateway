@@ -63,3 +63,17 @@ func TestValidatePricingRejectsInvalidCostMultiplier(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "cost_multiplier")
 }
+
+func TestTryModelFilePricingDoesNotDoubleChargeImageOutput(t *testing.T) {
+	svc := &BillingService{}
+	tokens := UsageTokens{
+		InputTokens:       40,
+		ImageInputTokens:  100,
+		OutputTokens:      196,
+		ImageOutputTokens: 196,
+	}
+
+	cost := tryModelFilePricing(svc, "gpt-image-2.5-sunburst", tokens)
+	require.NotNil(t, cost)
+	require.InDelta(t, 40*5e-6+100*8e-6+196*30e-6, *cost, 1e-12)
+}

@@ -117,16 +117,33 @@ var disabledPublicModelRules = []disabledPublicModelRule{
 	{model: "gpt-5.4-mini", allowedGroupIDs: []int64{52, 59}},
 }
 
-// GPT Image 2 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套
+// GPT Image 2/2.5 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套
 // 输入/缓存费率，不能压扁成普通文本模型的 input/output/cache 三列。
 // https://openai.com/api/pricing/
+const (
+	gptImageTextInputPricePerMTok       = 5.0
+	gptImageTextCachedInputPricePerMTok = 1.25
+	gptImageInputPricePerMTok           = 8.0
+	gptImageCachedInputPricePerMTok     = 2.0
+	gptImageOutputPricePerMTok          = 30.0
+)
+
 var gptImage2OfficialPrice = PublicImageGenerationPricing{
 	Mode:                  "token",
-	TextInputPrice:        ptr(5),
-	TextCachedInputPrice:  ptr(1.25),
-	ImageInputPrice:       ptr(8),
-	ImageCachedInputPrice: ptr(2),
-	ImageOutputPrice:      ptr(30),
+	TextInputPrice:        ptr(gptImageTextInputPricePerMTok),
+	TextCachedInputPrice:  ptr(gptImageTextCachedInputPricePerMTok),
+	ImageInputPrice:       ptr(gptImageInputPricePerMTok),
+	ImageCachedInputPrice: ptr(gptImageCachedInputPricePerMTok),
+	ImageOutputPrice:      ptr(gptImageOutputPricePerMTok),
+}
+
+func isGPTImage2FamilyModel(model string) bool {
+	switch strings.ToLower(strings.TrimSpace(model)) {
+	case "gpt-image-2", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst":
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *ModelPricingService) isDisplayHiddenModel(model string) bool {
@@ -318,7 +335,7 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 			}
 			// 生图费率由分组独立配置决定；不要再把 gpt-image-2 当普通文本
 			// 模型套用 LiteLLM 三列价格，否则缓存模态和实际倍率都会显示错误。
-			if imagePricing != nil && strings.EqualFold(strings.TrimSpace(model), "gpt-image-2") {
+			if imagePricing != nil && isGPTImage2FamilyModel(model) {
 				continue
 			}
 			price, ok := s.priceForModel(ctx, g.ID, model, g.RateMultiplier)
@@ -387,7 +404,7 @@ func IsDisabledPublicModelForGroup(model string, groupID int64) bool {
 }
 
 func publicImageGenerationPricing(g Group, models []string) *PublicImageGenerationPricing {
-	if !g.AllowImageGeneration || !containsModelName(models, "gpt-image-2") {
+	if !g.AllowImageGeneration || !containsGPTImage2FamilyModel(models) {
 		return nil
 	}
 	multiplier := g.RateMultiplier
@@ -409,9 +426,9 @@ func publicImageGenerationPricing(g Group, models []string) *PublicImageGenerati
 	return &p
 }
 
-func containsModelName(models []string, want string) bool {
+func containsGPTImage2FamilyModel(models []string) bool {
 	for _, model := range models {
-		if strings.EqualFold(strings.TrimSpace(model), want) {
+		if isGPTImage2FamilyModel(model) {
 			return true
 		}
 	}

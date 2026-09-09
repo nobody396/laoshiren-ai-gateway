@@ -176,7 +176,17 @@ func changelogSlugFromPath(path string) (string, bool) {
 func legacyFrontendRedirect(path string) (string, bool) {
 	switch normalizeSEOPath(path) {
 	case "/docs/backend/ai/claude-code":
-		return "/docs/claude-code-china-guide", true
+		return "/docs/integration-claude-code", true
+	case "/docs/claude-code-quickstart", "/docs/claude-code-troubleshooting", "/docs/claude-code-china-guide":
+		return "/docs/integration-claude-code", true
+	case "/docs/codex-quickstart", "/docs/codex-troubleshooting", "/docs/codex-china-guide", "/docs/codex-custom-api-guide":
+		return "/docs/integration-codex", true
+	case "/docs/base-url-guide", "/docs/common-api-errors":
+		return "/docs/api-overview", true
+	case "/docs/api-key-group-guide":
+		return "/docs/models", true
+	case "/docs/gpt-image-quickstart":
+		return "/docs/api-images", true
 	default:
 		return "", false
 	}

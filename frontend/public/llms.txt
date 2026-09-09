@@ -39,6 +39,14 @@
 - 模型目录：https://laoshirenai.com/docs/models
 - 模型能力矩阵：https://laoshirenai.com/docs/model-matrix
 - 客户端能力矩阵：https://laoshirenai.com/docs/client-matrix
+- Claude Code：https://laoshirenai.com/docs/integration-claude-code
+- Codex：https://laoshirenai.com/docs/integration-codex
+- Grok Build：https://laoshirenai.com/docs/integration-grok-build
+- OpenCode：https://laoshirenai.com/docs/integration-opencode
+- Antigravity：https://laoshirenai.com/docs/integration-antigravity
+- Kimi Code：https://laoshirenai.com/docs/integration-kimi-code
+- ZCode：https://laoshirenai.com/docs/integration-zcode
+- WorkBuddy：https://laoshirenai.com/docs/integration-workbuddy
 
 
 ## 引用边界

@@ -11,10 +11,14 @@ const frontendRoot = resolve(scriptDir, '..')
 const publicFeatures = JSON.parse(readFileSync(resolve(frontendRoot, 'config/public-features.json'), 'utf8'))
 const publicDocsEnabled = publicFeatures.docs === true
 const contentDir = resolve(frontendRoot, 'src/docs/content')
+const simpleContentDir = resolve(frontendRoot, 'src/docs/simple')
 const configPath = resolve(frontendRoot, 'src/docs/config.ts')
+const simpleGuidesPath = resolve(frontendRoot, 'src/docs/guides/simpleClientGuides.ts')
+const clientMatrixPath = resolve(frontendRoot, '../model-doc-contracts/client-matrix.json')
 const publicDir = resolve(frontendRoot, 'public')
 const publicDocsDir = resolve(publicDir, 'docs')
 const configSource = readFileSync(configPath, 'utf8')
+const simpleGuidesSource = readFileSync(simpleGuidesPath, 'utf8')
 const docsLastModified = matchSingle(configSource, /docsLastModified\s*=\s*'([^']+)'/) || new Date().toISOString().slice(0, 10)
 
 const marked = new Marked({
@@ -76,7 +80,9 @@ const publicRouteOverrides = new Map([
 ])
 
 const docs = parseDocItems(configSource)
-const docsBySlug = new Map(docs.map((doc) => [doc.slug, doc]))
+const integrationDocs = parseIntegrationDocs(simpleGuidesSource)
+const allDocs = [...docs, ...integrationDocs]
+const docsBySlug = new Map(allDocs.map((doc) => [doc.slug, doc]))
 
 const routes = [
   homeRoute,
@@ -126,8 +132,28 @@ if (publicDocsEnabled) {
     ogType: 'website',
     schemaType: 'CollectionPage',
     dateModified: docsLastModified,
-    staticHtml: docsIndexHtml(docs),
+    staticHtml: docsIndexHtml(allDocs),
   })
+
+  const docsCategories = [
+    { path: '/docs/category/start', title: '快速开始', description: '从创建 API Key 到完成第一次请求。', items: docs.filter((doc) => doc.slug === 'quickstart') },
+    { path: '/docs/category/api', title: 'API 参考', description: '查看鉴权、协议、端点与错误格式。', items: docs.filter((doc) => doc.slug.startsWith('api-')) },
+    { path: '/docs/category/integrations', title: '工具集成', description: '查看已经核对完成的开发工具配置教程。', items: integrationDocs },
+    { path: '/docs/category/models', title: '模型目录', description: '查看模型、协议和客户端能力矩阵。', items: docs.filter((doc) => ['models', 'model-matrix', 'client-matrix'].includes(doc.slug)) },
+  ]
+  for (const category of docsCategories) {
+    routes.push({
+      path: category.path,
+      title: `${category.title} - 文档 - ${siteName}`,
+      description: category.description,
+      priority: 0.75,
+      changefreq: 'monthly',
+      ogType: 'website',
+      schemaType: 'CollectionPage',
+      dateModified: docsLastModified,
+      staticHtml: docsCollectionHtml(category.title, category.description, category.items),
+    })
+  }
 }
 
 routes.push({
@@ -155,8 +181,8 @@ routes.push({
 })
 
 if (publicDocsEnabled) {
-  for (const doc of docs) {
-    const markdown = readMarkdown(doc.slug)
+  for (const doc of allDocs) {
+    const markdown = readDocMarkdown(doc)
     routes.push({
       path: `/docs/${doc.slug}`,
       title: `${doc.title} - 文档 - ${siteName}`,
@@ -182,13 +208,13 @@ const manifest = {
   routes: dedupedRoutes,
 }
 
-const llmsText = buildLlms(publicDocsEnabled ? docs : [])
+const llmsText = buildLlms(publicDocsEnabled ? allDocs : [])
 writeFileSync(resolve(publicDir, 'seo-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
 writeFileSync(resolve(publicDir, 'sitemap.xml'), buildSitemap(dedupedRoutes))
 writeFileSync(resolve(publicDir, 'llms.txt'), llmsText)
 
 if (publicDocsEnabled) {
-  writeDocsAiAssets(docs, llmsText)
+  writeDocsAiAssets(allDocs, llmsText)
 } else {
   // Markdown under Vite's public/ directory bypasses the Vue route guard.
   // Remove it while Docs are hidden so /docs/*.md cannot leak the draft.
@@ -198,7 +224,7 @@ if (publicDocsEnabled) {
 function writeDocsAiAssets(items, llmsText) {
   mkdirSync(publicDocsDir, { recursive: true })
   for (const item of items) {
-    writeFileSync(resolve(publicDocsDir, `${item.slug}.md`), readMarkdown(item.slug))
+    writeFileSync(resolve(publicDocsDir, `${item.slug}.md`), readDocMarkdown(item))
   }
   writeFileSync(resolve(publicDocsDir, 'llms.txt'), llmsText)
 }
@@ -225,8 +251,33 @@ function parseDocItems(source) {
   return items
 }
 
+function parseIntegrationDocs(source) {
+  const matrix = JSON.parse(readFileSync(clientMatrixPath, 'utf8'))
+  const clients = new Map((matrix.clients || []).map((client) => [client.id, client]))
+  const guides = []
+  const pattern = /\{\s*id:\s*'([^']+)'\s*,\s*checkedVersion:\s*'([^']+)'/g
+  for (const match of source.matchAll(pattern)) {
+    const client = clients.get(match[1])
+    if (!client?.slug) continue
+    guides.push({
+      title: client.name,
+      slug: client.slug,
+      description: `${client.name} ${match[2]} 配置教程。`,
+      lastModified: docsLastModified,
+      source: 'simple',
+    })
+  }
+  return guides
+}
+
 function readMarkdown(slug) {
   const path = resolve(contentDir, `${slug}.md`)
+  return existsSync(path) ? readFileSync(path, 'utf8') : ''
+}
+
+function readDocMarkdown(doc) {
+  const directory = doc.source === 'simple' ? simpleContentDir : contentDir
+  const path = resolve(directory, `${doc.slug}.md`)
   return existsSync(path) ? readFileSync(path, 'utf8') : ''
 }
 
@@ -234,8 +285,11 @@ function markdownToStaticHtml(markdown, fallbackTitle) {
   if (!markdown.trim()) {
     return `<main class="seo-static-content"><h1>${escapeHtml(fallbackTitle)}</h1><p>${escapeHtml(homeRoute.description)}</p></main>`
   }
-  const html = marked.parse(markdown)
-  return `<main class="seo-static-content">${normalizeStaticLinks(html)}</main>`
+  const html = String(marked.parse(markdown))
+  const titled = /<h1[\s>]/i.test(html)
+    ? html
+    : `<h1>${escapeHtml(fallbackTitle)}</h1>${html}`
+  return `<main class="seo-static-content">${normalizeStaticLinks(titled)}</main>`
 }
 
 function normalizeStaticLinks(html) {
@@ -252,6 +306,11 @@ function docsIndexHtml(items) {
       <p>快速开始、API 参考、工具集成和实时模型目录。</p>
       <ul>${links}</ul>
     </main>`
+}
+
+function docsCollectionHtml(title, description, items) {
+  const links = items.map((item) => `<li><a href="/docs/${escapeAttr(item.slug)}">${escapeHtml(item.title)}</a>：${escapeHtml(item.description)}</li>`).join('\n')
+  return `<main class="seo-static-content"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p><ul>${links}</ul></main>`
 }
 
 function descriptionFromMarkdown(markdown) {

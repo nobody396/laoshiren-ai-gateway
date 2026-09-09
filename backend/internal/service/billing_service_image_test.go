@@ -8,6 +8,42 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestComputeTokenBreakdown_UsesSeparateImageInputPrice(t *testing.T) {
+	svc := &BillingService{}
+	pricing := &ModelPricing{
+		InputPricePerToken:       5e-6,
+		ImageInputPricePerToken:  8e-6,
+		OutputPricePerToken:      30e-6,
+		ImageOutputPricePerToken: 30e-6,
+	}
+	tokens := UsageTokens{
+		InputTokens:       40,
+		ImageInputTokens:  100,
+		OutputTokens:      196,
+		ImageOutputTokens: 196,
+	}
+
+	cost := svc.computeTokenBreakdown(pricing, tokens, 4, "", false)
+
+	require.InDelta(t, 40*5e-6+100*8e-6, cost.InputCost, 1e-12)
+	require.Zero(t, cost.OutputCost, "image output tokens must not also be charged as text output")
+	require.InDelta(t, 196*30e-6, cost.ImageOutputCost, 1e-12)
+	require.InDelta(t, (40*5e-6+100*8e-6+196*30e-6)*4, cost.ActualCost, 1e-12)
+}
+
+func TestGPTImage2FamilyPricingIsPinnedToOfficialModalRates(t *testing.T) {
+	svc := &BillingService{}
+	for _, model := range []string{"gpt-image-2", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
+		pricing, err := svc.GetModelPricing(model)
+		require.NoError(t, err, model)
+		require.InDelta(t, 5e-6, pricing.InputPricePerToken, 1e-12, model)
+		require.InDelta(t, 1.25e-6, pricing.CacheReadPricePerToken, 1e-12, model)
+		require.InDelta(t, 8e-6, pricing.ImageInputPricePerToken, 1e-12, model)
+		require.InDelta(t, 30e-6, pricing.OutputPricePerToken, 1e-12, model)
+		require.InDelta(t, 30e-6, pricing.ImageOutputPricePerToken, 1e-12, model)
+	}
+}
+
 // TestCalculateImageCost_DefaultPricing 测试无分组配置时使用默认价格
 func TestCalculateImageCost_DefaultPricing(t *testing.T) {
 	svc := &BillingService{} // pricingService 为 nil，使用硬编码默认值

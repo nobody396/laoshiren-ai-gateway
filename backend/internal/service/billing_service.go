@@ -59,6 +59,7 @@ type ModelPricing struct {
 	LongContextInputThreshold      int      // 超过阈值后按整次会话提升输入价格
 	LongContextInputMultiplier     float64  // 长上下文整次会话输入倍率
 	LongContextOutputMultiplier    float64  // 长上下文整次会话输出倍率
+	ImageInputPricePerToken        float64  // 图片输入 token 价格 (USD)
 	ImageOutputPricePerToken       float64  // 图片输出 token 价格 (USD)
 }
 
@@ -121,6 +122,7 @@ type UsageTokens struct {
 	CacheReadTokens       int
 	CacheCreation5mTokens int
 	CacheCreation1hTokens int
+	ImageInputTokens      int
 	ImageOutputTokens     int
 }
 
@@ -410,6 +412,9 @@ func mergeGeneratedCatalogPricing(catalog, auxiliary *ModelPricing) *ModelPricin
 		out.CacheCreation1hPrice = auxiliary.CacheCreation1hPrice
 	}
 	out.SupportsCacheBreakdown = auxiliary.SupportsCacheBreakdown
+	if auxiliary.ImageInputPricePerToken > 0 {
+		out.ImageInputPricePerToken = auxiliary.ImageInputPricePerToken
+	}
 	if auxiliary.ImageOutputPricePerToken > 0 {
 		out.ImageOutputPricePerToken = auxiliary.ImageOutputPricePerToken
 	}
@@ -550,6 +555,15 @@ func (s *BillingService) gpt56FallbackPricing(model string) *ModelPricing {
 func (s *BillingService) GetModelPricing(model string) (*ModelPricing, error) {
 	// 标准化模型名称（转小写）
 	model = strings.ToLower(model)
+	if isGPTImage2FamilyModel(model) {
+		return &ModelPricing{
+			InputPricePerToken:       gptImageTextInputPricePerMTok / 1_000_000,
+			CacheReadPricePerToken:   gptImageTextCachedInputPricePerMTok / 1_000_000,
+			OutputPricePerToken:      gptImageOutputPricePerMTok / 1_000_000,
+			ImageInputPricePerToken:  gptImageInputPricePerMTok / 1_000_000,
+			ImageOutputPricePerToken: gptImageOutputPricePerMTok / 1_000_000,
+		}, nil
+	}
 
 	if fallback := s.gpt56FallbackPricing(model); fallback != nil {
 		return s.applyModelSpecificPricingPolicy(model, fallback), nil
@@ -707,7 +721,7 @@ func (s *BillingService) CalculateCostUnified(input CostInput) (*CostBreakdown, 
 
 // calculateTokenCost 按 token 区间计费
 func (s *BillingService) calculateTokenCost(resolved *ResolvedPricing, input CostInput) (*CostBreakdown, error) {
-	totalContext := input.Tokens.InputTokens + input.Tokens.CacheCreationTokens + input.Tokens.CacheReadTokens
+	totalContext := input.Tokens.InputTokens + input.Tokens.ImageInputTokens + input.Tokens.CacheCreationTokens + input.Tokens.CacheReadTokens
 
 	pricing := input.Resolver.GetIntervalPricing(resolved, totalContext)
 	if pricing == nil {
@@ -794,6 +808,7 @@ func (s *BillingService) computeTokenBreakdown(
 	}
 
 	inputPrice := pricing.InputPricePerToken
+	imageInputPrice := pricing.ImageInputPricePerToken
 	outputPrice := pricing.OutputPricePerToken
 	cacheReadPrice := pricing.CacheReadPricePerToken
 	cacheCreationMultiplier := 1.0
@@ -827,6 +842,12 @@ func (s *BillingService) computeTokenBreakdown(
 
 	bd := &CostBreakdown{}
 	bd.InputCost = float64(tokens.InputTokens) * inputPrice
+	if tokens.ImageInputTokens > 0 {
+		if imageInputPrice == 0 {
+			imageInputPrice = inputPrice
+		}
+		bd.InputCost += float64(tokens.ImageInputTokens) * imageInputPrice
+	}
 
 	// 分离图片输出 token 与文本输出 token
 	textOutputTokens := tokens.OutputTokens - tokens.ImageOutputTokens

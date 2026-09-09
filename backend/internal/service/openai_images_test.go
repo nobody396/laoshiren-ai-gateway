@@ -42,6 +42,24 @@ func TestParseOpenAIImagesRequest(t *testing.T) {
 	require.Equal(t, "b64_json", req.ResponseFormat)
 }
 
+func TestParseOpenAIImagesRequestAcceptsGPTImage25Controls(t *testing.T) {
+	svc := &OpenAIGatewayService{}
+	for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
+		req, err := svc.ParseOpenAIImagesRequest([]byte(fmt.Sprintf(`{
+			"model":%q,
+			"prompt":"draw a transparent product mark",
+			"n":1,
+			"size":"1536x864",
+			"quality":"max",
+			"background":"transparent",
+			"output_format":"png"
+		}`, model)))
+		require.NoError(t, err, model)
+		require.Equal(t, model, req.Model)
+		require.Equal(t, "1536x864", req.Size)
+	}
+}
+
 func TestParseOpenAIImagesRequestRejectsStream(t *testing.T) {
 	svc := &OpenAIGatewayService{}
 	_, err := svc.ParseOpenAIImagesRequest([]byte(`{

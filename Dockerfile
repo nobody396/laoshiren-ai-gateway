@@ -34,6 +34,7 @@ RUN --mount=type=cache,target=/pnpm/store,sharing=locked \
 
 # Copy frontend source and build
 COPY frontend/ ./
+COPY model-doc-contracts/client-matrix.json /app/model-doc-contracts/client-matrix.json
 RUN pnpm run build
 
 # -----------------------------------------------------------------------------

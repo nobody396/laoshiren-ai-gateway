@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run exact OpenCode 1.18.15 tool loops with the owned matrix key.
+"""Run exact OpenCode 1.18.29 tool loops with the owned matrix key.
 
 This command is live-only and requires both ``--execute`` and
 ``--acknowledge-paid-probes``.  The owned key is retrieved through the shared
@@ -26,22 +26,12 @@ import time
 from typing import Any
 import urllib.parse
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from claude_code_client_loop_acceptance import (  # noqa: E402
-    OWNED_KEY_ID,
-    OWNED_KEY_NAME,
-    OWNED_USER_ID,
-    RESTORE_GROUP_ID,
-    file_sha,
-    load_controller,
-    rows,
-    switch_group,
-)
-
-
 ROOT = Path(__file__).resolve().parents[1]
-CLIENT_VERSION = "1.18.15"
+OWNED_KEY_ID = 128
+OWNED_KEY_NAME = "一键安装 · Codex"
+OWNED_USER_ID = 2
+RESTORE_GROUP_ID = 6
+CLIENT_VERSION = "1.18.29"
 CLIENT_VERSION_KEY = f"cli:{CLIENT_VERSION}"
 KEY_ENV = "LAOSHIRENAI_OPENCODE_KEY"
 PROTOCOLS = {"responses", "chat_completions", "messages", "generate_content"}
@@ -71,6 +61,59 @@ SECRET_PATTERNS = (
 )
 SAFE_MODEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
 CREDENTIAL_ENV = re.compile(r"(?:API[_-]?KEY|TOKEN|SECRET|PASSWORD|AUTHORIZATION|COOKIE)", re.I)
+
+
+def file_sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def rows(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, dict) and "data" in value:
+        value = value["data"]
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, dict)]
+    if isinstance(value, dict):
+        for field in ("items", "list", "groups"):
+            if isinstance(value.get(field), list):
+                return [item for item in value[field] if isinstance(item, dict)]
+    return []
+
+
+class LiveController:
+    def __init__(self, module: Any):
+        self.module = module
+
+    def owned_key(self) -> dict[str, Any]:
+        return self.module.owned_key()
+
+    def switch_group(self, group_id: int) -> dict[str, Any]:
+        return self.module.switch_group(group_id)
+
+    def admin_cli_json(self, args: list[str]) -> Any:
+        return self.module.admin_cli_json(args)
+
+
+def load_controller() -> LiveController:
+    source = Path(os.environ.get(
+        "LAOSHIRENAI_GROUP_MATRIX_PROBE",
+        "/Users/fujunhao/laoshirenai/.agents/skills/laoshirenai-account-ops/scripts/group_matrix_probe.py",
+    ))
+    if not source.is_file():
+        raise RuntimeError("owned group-matrix controller is unavailable")
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("lsrai_group_matrix_probe", source)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("owned group-matrix controller cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if module.PROFILE_NAME != "user2-codex":
+        raise RuntimeError("OpenCode acceptance requires the user2-codex profile")
+    return LiveController(module)
+
+
+def switch_group(controller: Any, group_id: int) -> dict[str, Any]:
+    return controller.switch_group(group_id)
 
 
 def utc_now() -> str:
@@ -200,11 +243,21 @@ def parse_events(raw: bytes, file_marker: str, final_marker: str) -> dict[str, A
     assistant_fragments: list[str] = []
     tool_use = tool_result = False
     file_marker_seen = False
+    errors: list[dict[str, str]] = []
     for event in events:
         if not isinstance(event, dict):
             continue
         event_type = str(event.get("type") or "unknown")
         event_counts[event_type] = event_counts.get(event_type, 0) + 1
+        if event_type == "error":
+            error = event.get("error") if isinstance(event.get("error"), dict) else {}
+            data = error.get("data") if isinstance(error.get("data"), dict) else {}
+            safe_error = {
+                "name": str(error.get("name") or "")[:120],
+                "message": str(error.get("message") or data.get("message") or "")[:600],
+            }
+            assert_secret_free(safe_error, "OpenCode error summary")
+            errors.append(safe_error)
         part = event.get("part")
         if event_type == "text" and isinstance(part, dict) and isinstance(part.get("text"), str):
             assistant_fragments.append(part["text"])
@@ -240,6 +293,7 @@ def parse_events(raw: bytes, file_marker: str, final_marker: str) -> dict[str, A
         "final_marker_verified": final_marker in assistant_text,
         "assistant_text_sha256": hashlib.sha256(assistant_text.encode()).hexdigest(),
         "assistant_text_bytes": len(assistant_text.encode()),
+        "errors": errors,
     }
 
 
@@ -297,7 +351,7 @@ def usage_rows(
 
 def version_ok(raw: bytes) -> bool:
     text = raw.decode("utf-8", errors="replace").strip()
-    return bool(re.search(r"(?:^|\D)1\.18\.15(?:\D|$)", text))
+    return bool(re.search(rf"(?:^|\D){re.escape(CLIENT_VERSION)}(?:\D|$)", text))
 
 
 def command_for(model_id: str, protocol: str, workspace: Path, prompt: str) -> list[str]:
@@ -383,7 +437,7 @@ def run_one(
         protocol=protocol, started_at=started_at,
     )
     output_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"opencode-{protocol}-{model_id}-group{group_id}-20260901"
+    stem = f"opencode-{protocol}-{model_id}-group{group_id}-20260909"
     attribution_path = output_dir / f"{stem}-usage.json"
     atomic_json(attribution_path, {
         "schema_version": 1,

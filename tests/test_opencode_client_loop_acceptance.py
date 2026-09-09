@@ -20,7 +20,7 @@ SPEC.loader.exec_module(MODULE)
 
 class OpenCodeClientLoopAcceptanceTest(unittest.TestCase):
     def test_exact_version_and_all_protocol_configs_are_secret_free(self):
-        self.assertEqual(MODULE.CLIENT_VERSION, "1.18.15")
+        self.assertEqual(MODULE.CLIENT_VERSION, "1.18.29")
         for protocol in sorted(MODULE.PROTOCOLS):
             config = MODULE.build_config("alpha", protocol)
             rendered = json.dumps(config)
@@ -93,7 +93,7 @@ class OpenCodeClientLoopAcceptanceTest(unittest.TestCase):
                     "requested_model": "alpha",
                     "inbound_endpoint": "/v1/responses",
                     "upstream_endpoint": "/v1/responses",
-                    "user_agent": "opencode/1.18.15",
+                    "user_agent": "opencode/1.18.29",
                     "input_tokens": 1,
                     "output_tokens": 2,
                 }]}}
@@ -113,7 +113,7 @@ class OpenCodeClientLoopAcceptanceTest(unittest.TestCase):
                     "id": 1, "created_at": "2026-09-01T00:00:01+00:00",
                     "api_key_id": 128, "group_id": 34, "model": "grok-4.5",
                     "inbound_endpoint": "/v1/chat/completions", "upstream_endpoint": "/v1/responses",
-                    "user_agent": "opencode/1.18.15", "input_tokens": 1, "output_tokens": 2,
+                    "user_agent": "opencode/1.18.29", "input_tokens": 1, "output_tokens": 2,
                 }]}}
 
         rows, upstream = MODULE.usage_rows(
@@ -146,7 +146,7 @@ class OpenCodeClientLoopAcceptanceTest(unittest.TestCase):
         self.assertIn("live run requires", completed.stderr)
 
     def test_version_parser_is_exact(self):
-        self.assertTrue(MODULE.version_ok(b"opencode 1.18.15\n"))
+        self.assertTrue(MODULE.version_ok(b"opencode 1.18.29\n"))
         self.assertFalse(MODULE.version_ok(b"opencode 1.18.14\n"))
         self.assertFalse(MODULE.version_ok(b"opencode 11.18.150\n"))
 

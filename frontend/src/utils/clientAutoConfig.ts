@@ -2,7 +2,7 @@ import type { GroupPlatform } from '@/types'
 import { clientAutoConfigVersion } from '@/generated/modelCatalog'
 import { powershellInstallerSha256, shellInstallerSha256 } from '@/generated/installerIntegrity'
 
-export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok' | 'gemini'
+export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok' | 'gemini' | 'kimi' | 'opencode' | 'zcode' | 'workbuddy'
 
 export interface BuildClientAutoConfigCommandInput {
   target: ClientAutoConfigTarget
@@ -10,6 +10,7 @@ export interface BuildClientAutoConfigCommandInput {
   isWindows?: boolean
   installCodexApp?: boolean
   grokCcSwitchCompat?: boolean
+  installMissing?: boolean
 }
 
 export interface BuildClientManualConfigCommandInput {
@@ -61,6 +62,10 @@ export const getClientAutoConfigName = (target: ClientAutoConfigTarget): string 
   if (target === 'claude') return 'Claude Code'
   if (target === 'grok') return 'Grok Build'
   if (target === 'gemini') return 'Gemini CLI'
+  if (target === 'kimi') return 'Kimi Code'
+  if (target === 'opencode') return 'OpenCode'
+  if (target === 'zcode') return 'ZCode'
+  if (target === 'workbuddy') return 'WorkBuddy'
   return 'Codex'
 }
 
@@ -69,6 +74,7 @@ export const buildClientAutoConfigCommand = ({
   ticket,
   installCodexApp = false,
   grokCcSwitchCompat = false,
+  installMissing = false,
   isWindows = typeof navigator !== 'undefined' &&
     navigator.userAgent.toLowerCase().includes('windows')
 }: BuildClientAutoConfigCommandInput): string => {
@@ -76,8 +82,8 @@ export const buildClientAutoConfigCommand = ({
     const parts = [
       `$env:LAOSHIRENAI_SETUP_TOKEN=${powerShellSingleQuote(ticket)}`,
       `$env:LAOSHIRENAI_TOOLS='${target}'`,
-      "$env:LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'"
     ]
+    if (!installMissing) parts.push("$env:LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'")
     if (target === 'codex' && installCodexApp) {
       parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
     }
@@ -99,8 +105,8 @@ export const buildClientAutoConfigCommand = ({
   const environment = [
     `LAOSHIRENAI_SETUP_TOKEN=${shellSingleQuote(ticket)}`,
     `LAOSHIRENAI_TOOLS=${shellSingleQuote(target)}`,
-    "LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'"
   ]
+  if (!installMissing) environment.push("LAOSHIRENAI_SKIP_CLIENT_INSTALL='1'")
   if (target === 'codex' && installCodexApp) {
     environment.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
   }
@@ -135,6 +141,10 @@ export const buildClientManualConfigCommand = ({
     codex: 'LAOSHIRENAI_CODEX_API_KEY',
     grok: 'LAOSHIRENAI_GROK_API_KEY',
     gemini: 'LAOSHIRENAI_GEMINI_API_KEY',
+    kimi: 'LAOSHIRENAI_KIMI_API_KEY',
+    opencode: 'LAOSHIRENAI_OPENCODE_API_KEY',
+    zcode: 'LAOSHIRENAI_ZCODE_API_KEY',
+    workbuddy: 'LAOSHIRENAI_WORKBUDDY_API_KEY',
   }
   if (isWindows) {
     return [

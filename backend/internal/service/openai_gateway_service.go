@@ -2137,7 +2137,7 @@ func (s *OpenAIGatewayService) shouldFailoverOpenAIUpstreamResponse(statusCode i
 }
 
 func isOpenAIAccountCapabilityRejection(statusCode int, upstreamMsg string, upstreamBody []byte) bool {
-	if statusCode != http.StatusBadRequest && statusCode != http.StatusUnprocessableEntity {
+	if statusCode != http.StatusBadRequest && statusCode != http.StatusNotFound && statusCode != http.StatusUnprocessableEntity {
 		return false
 	}
 
@@ -2162,6 +2162,14 @@ func isOpenAIAccountCapabilityRejection(statusCode int, upstreamMsg string, upst
 	}
 	if strings.Contains(combined, "unsupported value: 'max'") &&
 		strings.Contains(combined, "not supported with the 'gpt-5.4' model") {
+		return true
+	}
+	// Some compatible upstream gateways return an account-pool capability miss
+	// as 404 even though the public model exists. This is safe to retry on the
+	// next account only for the exact pool-level signature; ordinary resource
+	// 404 responses remain terminal.
+	if statusCode == http.StatusNotFound &&
+		strings.Contains(combined, "is not supported by any configured account in this group") {
 		return true
 	}
 

@@ -36,6 +36,10 @@ describe('client auto-config target selection', () => {
     expect(getClientAutoConfigName('codex')).toBe('Codex')
     expect(getClientAutoConfigName('grok')).toBe('Grok Build')
     expect(getClientAutoConfigName('gemini')).toBe('Gemini CLI')
+    expect(getClientAutoConfigName('kimi')).toBe('Kimi Code')
+    expect(getClientAutoConfigName('opencode')).toBe('OpenCode')
+    expect(getClientAutoConfigName('zcode')).toBe('ZCode')
+    expect(getClientAutoConfigName('workbuddy')).toBe('WorkBuddy')
   })
 })
 
@@ -95,6 +99,17 @@ describe('client auto-config commands', () => {
 
     expect(withApp).toContain("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
     expect(cliOnly).not.toContain('LAOSHIRENAI_INSTALL_CODEX_APP')
+  })
+
+  it('installs a missing client when the released one-click option requests it', () => {
+    const shell = buildClientAutoConfigCommand({
+      target: 'codex', ticket: 'ticket-install', isWindows: false, installMissing: true
+    })
+    const windows = buildClientAutoConfigCommand({
+      target: 'codex', ticket: 'ticket-install', isWindows: true, installMissing: true
+    })
+    expect(shell).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
+    expect(windows).not.toContain('LAOSHIRENAI_SKIP_CLIENT_INSTALL')
   })
 
   it('never adds Codex App installation to Claude Code commands', () => {

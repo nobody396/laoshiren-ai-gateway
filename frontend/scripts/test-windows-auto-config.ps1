@@ -33,6 +33,11 @@ $RequiredFunctions = @(
   'ConvertTo-TomlString',
   'Get-OpenAIV1BaseUrl',
   'Write-GrokTomlConfig',
+  'Set-GrokModelsFromKey',
+  'Write-KimiConfig',
+  'Write-OpenCodeConfig',
+  'Write-ZCodeConfig',
+  'Write-WorkBuddyConfig',
   'Write-GeminiConfig',
   'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
@@ -107,7 +112,7 @@ try {
   Assert-True ([int]$DaybreakModel.context_window -eq 1050000) 'Daybreak context window is incorrect'
 
   $StandardCatalogOutput = Join-Path $FixtureDir 'standard-codex-model-catalog.json'
-  $StandardModels = @('gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4', 'gpt-5.3-codex-spark')
+  $StandardModels = @('gpt-6-astra', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4', 'gpt-5.3-codex-spark')
   Convert-CodexModelCatalog `
     -SourcePath $CodexCatalogSource `
     -AuthorizedModels $StandardModels `
@@ -119,6 +124,143 @@ try {
   Assert-True ($AstraModel.visibility -eq 'list') 'GPT-6 Astra is not visible in the Codex selector'
   Assert-True ([int]$AstraModel.context_window -eq 1050000) 'GPT-6 Astra context window is incorrect'
   Assert-True (@($AstraModel.supported_reasoning_levels | ForEach-Object { $_.effort }) -contains 'max') 'GPT-6 Astra max reasoning is missing'
+
+  function Invoke-RestMethod {
+    return [pscustomobject]@{ data = @(
+      [pscustomobject]@{ id = 'gpt-5.4' },
+      [pscustomobject]@{ id = 'gpt-5.5' },
+      [pscustomobject]@{ id = 'gpt-5.6' },
+      [pscustomobject]@{ id = 'gpt-5.6-sol' },
+      [pscustomobject]@{ id = 'gpt-5.6-terra' },
+      [pscustomobject]@{ id = 'gpt-6-astra' }
+    ) }
+  }
+  $script:BaseUrl = 'https://api.example.com'
+  $script:GrokApiKey = 'owned-fixture-key'
+  $script:SelectedModel = 'gpt-5.6-sol'
+  Set-GrokModelsFromKey
+  Assert-True ($script:CatalogGrokManagedModels.Count -eq 6) 'Grok Build did not import every key-visible model'
+  Assert-True ($script:CatalogGrokDefaultModel -eq 'gpt-5.6-sol') 'Grok Build did not preserve the ticket default model'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
+
+  $KimiDir = Join-Path $FixtureDir 'kimi-home'
+  $KimiConfigPath = Join-Path $KimiDir 'config.toml'
+  New-Item -ItemType Directory -Path $KimiDir -Force | Out-Null
+  $OriginalKimi = "theme = `"dark`"`n`n[providers.keep]`ntype = `"openai`"`napi_key = `"keep`"`n"
+  [IO.File]::WriteAllText($KimiConfigPath, $OriginalKimi, [Text.UTF8Encoding]::new($false))
+  function Invoke-RestMethod {
+    return [pscustomobject]@{ data = @([pscustomobject]@{ id = 'kimi-k2.7-code' }, [pscustomobject]@{ id = 'kimi-k3' }) }
+  }
+  $script:BaseUrl = 'https://api.example.com'
+  $script:KimiApiKey = 'owned-fixture-key'
+  $script:SelectedModel = 'kimi-k3'
+  Write-KimiConfig
+  $FirstKimi = [IO.File]::ReadAllText($KimiConfigPath)
+  Assert-True ($FirstKimi.Contains('default_model = "lsrai/kimi-k3"')) 'Kimi default model is missing'
+  Assert-True ($FirstKimi.Contains('[models."lsrai/kimi-k2.7-code"]')) 'Kimi K2.7 model is missing'
+  Assert-True ($FirstKimi.Contains('[models."lsrai/kimi-k3"]')) 'Kimi K3 model is missing'
+  Assert-True ($FirstKimi.Contains('[providers.keep]')) 'Kimi unrelated provider was overwritten'
+  Assert-True ([IO.File]::ReadAllText("$KimiConfigPath.bak") -eq $OriginalKimi) 'Kimi original backup was not preserved'
+  Write-KimiConfig
+  Assert-True ([IO.File]::ReadAllText($KimiConfigPath) -eq $FirstKimi) 'Kimi config write is not idempotent'
+
+  $OpenCodeDir = Join-Path $FixtureDir 'opencode-home'
+  $OpenCodeConfigPath = Join-Path $OpenCodeDir 'opencode.json'
+  New-Item -ItemType Directory -Path $OpenCodeDir -Force | Out-Null
+  $OriginalOpenCode = '{"theme":"dark","provider":{"keep":{"npm":"keep-package"}}}'
+  [IO.File]::WriteAllText($OpenCodeConfigPath, $OriginalOpenCode, [Text.UTF8Encoding]::new($false))
+  $script:OpenCodeApiKey = 'owned-fixture-key'
+  $script:SelectedProtocol = 'chat_completions'
+  Write-OpenCodeConfig
+  $FirstOpenCode = [IO.File]::ReadAllText($OpenCodeConfigPath)
+  $ParsedOpenCode = $FirstOpenCode | ConvertFrom-Json
+  Assert-True ($ParsedOpenCode.theme -eq 'dark') 'OpenCode unrelated setting was overwritten'
+  Assert-True ($ParsedOpenCode.provider.keep.npm -eq 'keep-package') 'OpenCode unrelated provider was overwritten'
+  Assert-True ($ParsedOpenCode.provider.lsrai.npm -eq '@ai-sdk/openai-compatible') 'OpenCode provider package is wrong'
+  Assert-True ($ParsedOpenCode.provider.lsrai.options.baseURL -eq 'https://api.example.com/v1') 'OpenCode base URL is wrong'
+  Assert-True (@($ParsedOpenCode.provider.lsrai.models.PSObject.Properties.Name).Count -eq 2) 'OpenCode did not import all models'
+  Assert-True ($ParsedOpenCode.model -eq 'lsrai/kimi-k3') 'OpenCode default model is wrong'
+  Assert-True ([IO.File]::ReadAllText("$OpenCodeConfigPath.bak") -eq $OriginalOpenCode) 'OpenCode original backup was not preserved'
+  Write-OpenCodeConfig
+  Assert-True ([IO.File]::ReadAllText($OpenCodeConfigPath) -eq $FirstOpenCode) 'OpenCode config write is not idempotent'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
+
+  $ZCodeDir = Join-Path $FixtureDir 'zcode-home'
+  $ZCodeAppConfigPath = Join-Path $ZCodeDir 'v2\config.json'
+  $ZCodeCliConfigPath = Join-Path $ZCodeDir 'cli\config.json'
+  New-Item -ItemType Directory -Path (Split-Path -Parent $ZCodeAppConfigPath) -Force | Out-Null
+  New-Item -ItemType Directory -Path (Split-Path -Parent $ZCodeCliConfigPath) -Force | Out-Null
+  $OriginalZCodeApp = '{"provider":{"keep":{"kind":"anthropic"}},"theme":"dark"}'
+  $OriginalZCodeCli = '{"provider":{"keep":{"kind":"anthropic"}},"mcp":{"keep":true}}'
+  [IO.File]::WriteAllText($ZCodeAppConfigPath, $OriginalZCodeApp, [Text.UTF8Encoding]::new($false))
+  [IO.File]::WriteAllText($ZCodeCliConfigPath, $OriginalZCodeCli, [Text.UTF8Encoding]::new($false))
+  function Invoke-RestMethod { return [pscustomobject]@{ data = @([pscustomobject]@{ id = 'qwen3.8-max' }, [pscustomobject]@{ id = 'qwen3.7-max' }) } }
+  $script:ZCodeApiKey = 'owned-fixture-key'
+  $script:SelectedModel = 'qwen3.8-max'
+  $script:SelectedProtocol = 'responses'
+  Write-ZCodeConfig
+  $FirstZCodeApp = [IO.File]::ReadAllText($ZCodeAppConfigPath)
+  $FirstZCodeCli = [IO.File]::ReadAllText($ZCodeCliConfigPath)
+  $ParsedZCodeApp = $FirstZCodeApp | ConvertFrom-Json
+  $ParsedZCodeCli = $FirstZCodeCli | ConvertFrom-Json
+  Assert-True ($ParsedZCodeApp.theme -eq 'dark') 'ZCode App unrelated setting was overwritten'
+  Assert-True ($ParsedZCodeApp.provider.keep.kind -eq 'anthropic') 'ZCode App unrelated provider was overwritten'
+  Assert-True ($ParsedZCodeApp.provider.lsrai.kind -eq 'openai') 'ZCode App provider kind is wrong'
+  Assert-True (@($ParsedZCodeApp.provider.lsrai.models.PSObject.Properties.Name).Count -eq 2) 'ZCode App did not import every model'
+  Assert-True ($ParsedZCodeCli.mcp.keep -eq $true) 'ZCode CLI unrelated config was overwritten'
+  Assert-True ($ParsedZCodeCli.model.main -eq 'lsrai/qwen3.8-max') 'ZCode CLI default model is wrong'
+  Assert-True ([IO.File]::ReadAllText("$ZCodeAppConfigPath.bak") -eq $OriginalZCodeApp) 'ZCode App backup was not preserved'
+  Assert-True ([IO.File]::ReadAllText("$ZCodeCliConfigPath.bak") -eq $OriginalZCodeCli) 'ZCode CLI backup was not preserved'
+  Write-ZCodeConfig
+  Assert-True ([IO.File]::ReadAllText($ZCodeAppConfigPath) -eq $FirstZCodeApp) 'ZCode App config is not idempotent'
+  Assert-True ([IO.File]::ReadAllText($ZCodeCliConfigPath) -eq $FirstZCodeCli) 'ZCode CLI config is not idempotent'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
+
+  $WorkBuddyDir = Join-Path $FixtureDir 'workbuddy-home'
+  $WorkBuddyModelsPath = Join-Path $WorkBuddyDir 'models.json'
+  New-Item -ItemType Directory -Path $WorkBuddyDir -Force | Out-Null
+  $OriginalWorkBuddy = '{"keep":true,"models":[{"id":"unrelated","name":"unrelated","apiKey":"keep"}]}'
+  [IO.File]::WriteAllText($WorkBuddyModelsPath, $OriginalWorkBuddy, [Text.UTF8Encoding]::new($false))
+  function Invoke-RestMethod { return [pscustomobject]@{ data = @([pscustomobject]@{ id = 'grok-4.5' }, [pscustomobject]@{ id = 'grok-4.6' }) } }
+  $script:WorkBuddyApiKey = 'owned-fixture-key'
+  $script:SelectedProtocol = 'chat_completions'
+  $CatalogModelReasoningJson = '{"grok-4.5":["low","medium","high","xhigh"],"grok-4.6":["low","medium","high","xhigh"]}'
+  Write-WorkBuddyConfig
+  $FirstWorkBuddy = [IO.File]::ReadAllText($WorkBuddyModelsPath)
+  $ParsedWorkBuddy = $FirstWorkBuddy | ConvertFrom-Json
+  Assert-True ($ParsedWorkBuddy.keep -eq $true) 'WorkBuddy unrelated root field was overwritten'
+  Assert-True ($ParsedWorkBuddy.models.Count -eq 3) 'WorkBuddy did not preserve one unrelated model and import two models'
+  Assert-True ($ParsedWorkBuddy.models[0].id -eq 'unrelated') 'WorkBuddy unrelated model was overwritten'
+  Assert-True ($ParsedWorkBuddy.models[1].url -eq 'https://api.example.com/v1/chat/completions') 'WorkBuddy endpoint is wrong'
+  Assert-True ($ParsedWorkBuddy.models[1].maxInputTokens -eq 500000) 'WorkBuddy context size is wrong'
+  Assert-True ($ParsedWorkBuddy.models[1].reasoning.defaultEffort -eq 'medium') 'WorkBuddy default reasoning effort is wrong'
+  Assert-True ($ParsedWorkBuddy.models[1].reasoning.canDisableThinking -eq $false) 'WorkBuddy unreliable Off control was exposed'
+  Assert-True ([IO.File]::ReadAllText("$WorkBuddyModelsPath.bak") -eq $OriginalWorkBuddy) 'WorkBuddy backup was not preserved'
+  Write-WorkBuddyConfig
+  Assert-True ([IO.File]::ReadAllText($WorkBuddyModelsPath) -eq $FirstWorkBuddy) 'WorkBuddy config is not idempotent'
+  Remove-Item Function:\Invoke-RestMethod -ErrorAction SilentlyContinue
+
+  $ReleasedGroups = @(
+    @{ Name = 'economic'; Models = @('gpt-6-astra', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.4') },
+    @{ Name = 'enterprise'; Models = @('gpt-6-astra', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.3-codex-spark') }
+  )
+  foreach ($Group in $ReleasedGroups) {
+    $Output = Join-Path $FixtureDir "$($Group.Name)-codex-model-catalog.json"
+    Convert-CodexModelCatalog -SourcePath $CodexCatalogSource -AuthorizedModels $Group.Models -OutputPath $Output
+    $Actual = @((Get-Content -LiteralPath $Output -Raw | ConvertFrom-Json).models | ForEach-Object { [string]$_.slug })
+    Assert-True (($Actual -join ',') -eq ($Group.Models -join ',')) "GPT $($Group.Name) Codex model catalog mismatch: $($Actual -join ',')"
+  }
+
+  $PartialImportRejected = $false
+  try {
+    Convert-CodexModelCatalog `
+      -SourcePath $CodexCatalogSource `
+      -AuthorizedModels @('gpt-5.6-sol', 'future-unverified-model') `
+      -OutputPath (Join-Path $FixtureDir 'must-not-exist.json')
+  } catch {
+    $PartialImportRejected = $true
+  }
+  Assert-True $PartialImportRejected 'Codex accepted a partial import with an unknown authorized model'
 
   foreach ($Client in @('claude', 'codex')) {
     $CmdPath = Join-Path $FixtureDir "$Client.cmd"
@@ -389,6 +531,8 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
   Assert-True $FailureObserved 'A non-zero npm.cmd exit code was not converted into a retryable PowerShell error'
 
   $script:InstallGeminiClient = $false
+  $script:InstallKimiClient = $false
+  $script:InstallOpenCodeClient = $false
   $script:InstallClaudeClient = $true
   $script:InstallCodexClient = $false
   Assert-True (Test-NeedsNpmClientInstall) 'Claude Code must use the npm installation path'
@@ -399,6 +543,12 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
   $script:InstallGeminiClient = $true
   Assert-True (Test-NeedsNpmClientInstall) 'Gemini CLI must use the npm installation path'
   $script:InstallGeminiClient = $false
+  $script:InstallKimiClient = $true
+  Assert-True (Test-NeedsNpmClientInstall) 'Kimi Code must use the npm installation path'
+  $script:InstallKimiClient = $false
+  $script:InstallOpenCodeClient = $true
+  Assert-True (Test-NeedsNpmClientInstall) 'OpenCode must use the npm installation path'
+  $script:InstallOpenCodeClient = $false
   $script:InstallGrokClient = $true
   Assert-True (-not (Test-NeedsNpmClientInstall)) 'Grok Build must remain isolated from the npm installation path'
   $script:InstallGrokClient = $false

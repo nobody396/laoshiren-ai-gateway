@@ -1,0 +1,135 @@
+import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import { createPinia } from 'pinia'
+import DocsSimpleClientGuide from '../DocsSimpleClientGuide.vue'
+import { simpleClientGuideById } from '@/docs/guides/simpleClientGuides'
+
+describe('DocsSimpleClientGuide', () => {
+  it('renders the Claude Code settings and temporary environment methods', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById['claude-code'] }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+
+    expect(text).toContain('方式一：修改 settings.json（推荐）')
+    expect(text).toContain('方式二：使用环境变量')
+    expect(text).toContain('~/.claude/settings.json')
+    expect(text).toContain('ANTHROPIC_AUTH_TOKEN')
+    expect(text).toContain('https://api.laoshirenai.com')
+    expect(text).toContain('CLAUDE_CODE_SUBAGENT_MODEL')
+    expect(text).toContain("LAOSHIRENAI_TOOLS='claude'")
+    expect(text).toContain("LAOSHIRENAI_MODEL_ID='YOUR_MODEL_ID'")
+    expect(text).toContain("LAOSHIRENAI_PROTOCOL='messages'")
+  })
+
+  it('renders Codex with the B.AI-style environment provider contract and no WebSocket flags', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById.codex }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+
+    expect(text).toContain('手动配置 Codex')
+    expect(text).toContain('model_provider = "lsrai"')
+    expect(text).toContain('[model_providers.lsrai]')
+    expect(text).toContain('name = "lsrai"')
+    expect(text).toContain('base_url = "https://api.laoshirenai.com/v1"')
+    expect(text).toContain('env_key = "LSRAI_API_KEY"')
+    expect(text).toContain('wire_api = "responses"')
+    expect(text).toContain('requires_openai_auth = false')
+    expect(text).toContain("LAOSHIRENAI_TOOLS='codex'")
+    expect(text).toContain("LAOSHIRENAI_MODEL_ID='YOUR_MODEL_ID'")
+    expect(text).toContain("LAOSHIRENAI_PROTOCOL='responses'")
+    expect(text).toContain("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
+    expect(text).not.toContain('supports_websockets = true')
+    expect(text).not.toContain('responses_websockets_v2 = true')
+    expect(text).toContain("curl -sS 'https://api.laoshirenai.com/v1/models'")
+    expect(text).toContain('$env:LSRAI_API_KEY')
+  })
+
+  it('updates the article when the selected client changes', async () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById.codex }, global: { plugins: [createPinia()] } })
+    expect(wrapper.text()).toContain('手动配置 Codex')
+    await wrapper.setProps({ guide: simpleClientGuideById['claude-code'] })
+    expect(wrapper.text()).toContain('方式一：修改 settings.json（推荐）')
+    expect(wrapper.text()).not.toContain('手动配置 Codex')
+  })
+
+  it('renders the Grok Build user config, inspection, and model discovery commands', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById['grok-build'] }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+    expect(text).toContain('~/.grok/config.toml')
+    expect(text).toContain('[model.lsrai]')
+    expect(text).toContain('name = "lsrai"')
+    expect(text).toContain('api_backend = "responses"')
+    expect(text).toContain('grok inspect')
+    expect(text).toContain("curl -sS 'https://api.laoshirenai.com/v1/models'")
+    expect(text).toContain('macOS / Linux / WSL 仍调用 xAI 官方安装源')
+  })
+
+  it('renders the OpenCode 1.x Responses provider with lsrai identifiers', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById.opencode }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+    expect(text).toContain('OpenCode 1.x')
+    expect(text).toContain('1.18.29')
+    expect(text).toContain('~/.config/opencode/opencode.json')
+    expect(text).toContain('"model": "lsrai/YOUR_MODEL_ID"')
+    expect(text).toContain('"npm": "@ai-sdk/openai"')
+    expect(text).toContain('"name": "lsrai"')
+    expect(text).toContain('"apiKey": "{env:LSRAI_API_KEY}"')
+    expect(text).toContain('/models')
+  })
+
+  it('renders the Antigravity CLI Gemini provider contract and official install boundary', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById.antigravity }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+    expect(text).toContain('Antigravity CLI')
+    expect(text).toContain('1.1.27')
+    expect(text).toContain('~/.gemini/antigravity-cli/settings.json')
+    expect(text).toContain('"modelProvider": "gemini"')
+    expect(text).toContain('GEMINI_API_KEY')
+    expect(text).toContain('GOOGLE_GEMINI_BASE_URL')
+    expect(text).toContain('https://api.laoshirenai.com')
+    expect(text).toContain('agy --model "YOUR_MODEL_ID"')
+    expect(text).toContain('不能标注为国内镜像直装')
+  })
+
+  it('renders the Kimi Code Chat Completions provider and tested domestic install', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById['kimi-code'] }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+    expect(text).toContain('Kimi Code CLI')
+    expect(text).toContain('0.41.0')
+    expect(text).toContain('@moonshot-ai/kimi-code@latest --registry=https://registry.npmmirror.com')
+    expect(text).toContain('~/.kimi-code/config.toml')
+    expect(text).toContain('[providers.lsrai]')
+    expect(text).toContain('type = "openai"')
+    expect(text).toContain('base_url = "https://api.laoshirenai.com/v1"')
+    expect(text).toContain('[models."lsrai/YOUR_MODEL_ID"]')
+    expect(text).toContain('kimi doctor')
+    expect(text).toContain("curl -sS 'https://api.laoshirenai.com/v1/models'")
+    expect(text).not.toContain('responses_websockets_v2')
+  })
+
+  it('renders the ZCode Responses Qwen setup without WebSocket flags', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById.zcode }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+    expect(text).toContain('ZCode App')
+    expect(text).toContain('3.11.2')
+    expect(text).toContain('供应商名称')
+    expect(text).toContain('lsrai')
+    expect(text).toContain('OpenAI Responses')
+    expect(text).toContain('https://api.laoshirenai.com/v1')
+    expect(text).toContain('~/.zcode/v2/config.json')
+    expect(text).toContain("curl -sS 'https://api.laoshirenai.com/v1/models'")
+    expect(text).not.toContain('responses_websockets_v2 = true')
+  })
+
+  it('renders the WorkBuddy exact Chat Completions URL and desktop config boundary', () => {
+    const wrapper = mount(DocsSimpleClientGuide, { props: { guide: simpleClientGuideById.workbuddy }, global: { plugins: [createPinia()] } })
+    const text = wrapper.text()
+    expect(text).toContain('WorkBuddy 桌面版')
+    expect(text).toContain('5.5.3')
+    expect(text).toContain('https://api.laoshirenai.com/v1/chat/completions')
+    expect(text).toContain('自定义协议')
+    expect(text).toContain('工具调用')
+    expect(text).toContain('~/.workbuddy/models.json')
+    expect(text).toContain('不是 WorkBuddy 桌面版的主要配置文件')
+    expect(text).toContain('不支持 Responses、Anthropic Messages 或 Gemini GenerateContent')
+    expect(text).not.toContain('responses_websockets_v2 = true')
+  })
+})

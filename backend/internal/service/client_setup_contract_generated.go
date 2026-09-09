@@ -11,19 +11,19 @@ type generatedClientSetupContract struct {
 
 var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 	"antigravity": {
-		VersionKey:     "cli:1.1.22",
+		VersionKey:     "cli:1.1.27",
 		OneClickStatus: "prototype",
 		Protocols:      map[string]bool{"generate_content": true},
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"claude-code": {
-		VersionKey:     "cli:2.1.258",
+		VersionKey:     "cli:2.1.263",
 		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"messages": true},
 		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 	"codex": {
-		VersionKey:     "cli:0.151.0",
+		VersionKey:     "cli:0.153.4",
 		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"responses": true},
 		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
@@ -53,10 +53,10 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"kimi-code": {
-		VersionKey:     "cli:0.39.1",
-		OneClickStatus: "prototype",
-		Protocols:      map[string]bool{"chat_completions": true, "generate_content": true, "messages": true, "responses": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		VersionKey:     "cli:0.41.0",
+		OneClickStatus: "ready",
+		Protocols:      map[string]bool{"chat_completions": true},
+		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 	"minimax-code": {
 		VersionKey:     "cli:0.2.7",
@@ -65,10 +65,10 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"opencode": {
-		VersionKey:     "cli:1.18.15",
-		OneClickStatus: "prototype",
+		VersionKey:     "cli:1.18.29",
+		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"chat_completions": true, "generate_content": true, "messages": true, "responses": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 	"qoder": {
 		VersionKey:     "cli:1.1.41",
@@ -83,16 +83,16 @@ var generatedClientSetupContracts = map[string]generatedClientSetupContract{
 		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
 	},
 	"workbuddy": {
-		VersionKey:     "app:5.5.1+cli:2.137.1",
-		OneClickStatus: "prototype",
+		VersionKey:     "app:5.5.3+cli:2.137.1",
+		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"chat_completions": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		OSReady:        map[string]bool{"linux": false, "macos": true, "windows": true},
 	},
 	"zcode": {
-		VersionKey:     "app:3.10.1+cli:0.16.5",
-		OneClickStatus: "prototype",
+		VersionKey:     "app:3.11.2+cli:0.16.5",
+		OneClickStatus: "ready",
 		Protocols:      map[string]bool{"responses": true},
-		OSReady:        map[string]bool{"linux": false, "macos": false, "windows": false},
+		OSReady:        map[string]bool{"linux": true, "macos": true, "windows": true},
 	},
 }
 
@@ -111,7 +111,7 @@ var generatedClientSetupModelProtocols = map[string]map[string]bool{
 	"deepseek-v4-pro-0813":     {"chat_completions": true, "responses": true},
 	"gemini-3.1-pro":           {"generate_content": true},
 	"gemini-3.7-flash":         {"generate_content": true},
-	"gemini-3.8-flash":         {},
+	"gemini-3.8-flash":         {"generate_content": true},
 	"glm-5.2":                  {"chat_completions": true, "responses": true},
 	"glm-5.3":                  {"chat_completions": true},
 	"gpt-5.3-codex-spark":      {"responses": true},
@@ -121,6 +121,7 @@ var generatedClientSetupModelProtocols = map[string]map[string]bool{
 	"gpt-5.6-luna":             {"responses": true},
 	"gpt-5.6-sol":              {"responses": true},
 	"gpt-5.6-terra":            {"responses": true},
+	"gpt-6-astra":              {"responses": true},
 	"gpt-daybreak-blue-latest": {"responses": true},
 	"grok-4.5":                 {"chat_completions": true},
 	"grok-4.6":                 {"chat_completions": true},
@@ -133,4 +134,27 @@ var generatedClientSetupModelProtocols = map[string]map[string]bool{
 	"qwen3.7-max":              {"chat_completions": true, "responses": true},
 	"qwen3.7-plus":             {"chat_completions": true, "responses": true},
 	"qwen3.8-max":              {"chat_completions": true, "responses": true},
+}
+
+var generatedCodexSetupModels = map[string]bool{
+	"deepseek-v4-flash-0731":   true,
+	"deepseek-v4-pro-0813":     true,
+	"glm-5.2":                  true,
+	"gpt-5.3-codex-spark":      true,
+	"gpt-5.4":                  true,
+	"gpt-5.4-mini":             true,
+	"gpt-5.5":                  true,
+	"gpt-5.6":                  true,
+	"gpt-5.6-luna":             true,
+	"gpt-5.6-sol":              true,
+	"gpt-5.6-terra":            true,
+	"gpt-6-astra":              true,
+	"gpt-daybreak-blue-latest": true,
+	"minimax-m3":               true,
+	"qwen3.6-flash":            true,
+	"qwen3.6-plus":             true,
+	"qwen3.7-flash":            true,
+	"qwen3.7-max":              true,
+	"qwen3.7-plus":             true,
+	"qwen3.8-max":              true,
 }

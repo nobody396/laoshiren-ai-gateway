@@ -41,6 +41,8 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('SELECTED_REASONING="${LAOSHIRENAI_REASONING_EFFORT:-}"')
     expect(script).toContain("const thinkingLevel = ['low', 'medium', 'high'].includes(requestedReasoning)")
     expect(script).toContain('install_codex_app_if_requested')
+    expect(script).toContain('discover_grok_models')
+    expect(script.indexOf('discover_grok_models\n')).toBeLessThan(script.indexOf('write_grok_config\n'))
     expect(script).toContain('resolve_client_update_plan')
     expect(script).toContain('检测到 ${label} 可更新')
     expect(script).toContain("item.arch === process.env.TARGET_ARCH || item.arch === 'universal'")
@@ -67,6 +69,8 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("Get-Variable -Name 'SelectedReasoning' -ErrorAction SilentlyContinue")
     expect(script).toContain("$ThinkingLevel = if ($EffectiveReasoning -in @('low','medium','high'))")
     expect(script).toContain('Install-CodexAppIfRequested')
+    expect(script).toContain('Set-GrokModelsFromKey')
+    expect(script.indexOf('Set-GrokModelsFromKey\n')).toBeLessThan(script.indexOf('Write-GrokTomlConfig\n'))
     expect(script).toContain('Resolve-ClientUpdatePlan')
     expect(script).toContain('Set-AppxPackageAutoUpdateSettings')
     expect(script).toContain('Add-AppxPackage -AppInstallerFile $AppInstallerPath')
@@ -154,7 +158,7 @@ describe('client auto-config scripts', () => {
         '-c',
         'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CLAUDE_API_KEY="test-key"; CATALOG_ANTHROPIC_DEFAULT_MODEL="$2"; write_claude_config',
         '_', installerPath, model,
-      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      ], { env: { ...process.env, HOME: fixture, XDG_CONFIG_HOME: '', LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
       writeModel('claude-opus-5')
       let settings = JSON.parse(readFileSync(settingsPath, 'utf8'))
       expect(settings.model).toBe('claude-opus-5')
@@ -256,6 +260,54 @@ describe('client auto-config scripts', () => {
     }
   })
 
+  it('refuses a partial Codex import when any authorized model is missing from the catalog', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-full-coverage-'))
+    const sourcePath = join(fixture, 'source.json')
+    const authorizedPath = join(fixture, 'authorized.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      writeFileSync(sourcePath, readPublicScript('codex-model-catalog.json'))
+      writeFileSync(authorizedPath, JSON.stringify({ data: [
+        { id: 'gpt-5.6-sol' },
+        { id: 'future-unverified-model' },
+      ] }))
+      expect(() => execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; filter_codex_model_catalog "$2" "$3"',
+        '_', installerPath, sourcePath, authorizedPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })).toThrow()
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('imports every key-visible model for the three released Codex groups', () => {
+    const groups = {
+      standard: ['gpt-5.3-codex-spark', 'gpt-5.4', 'gpt-5.5', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra'],
+      economy: ['gpt-5.4', 'gpt-5.5', 'gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra'],
+      enterprise: ['gpt-5.3-codex-spark', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.5', 'gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra'],
+    }
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    for (const [name, models] of Object.entries(groups)) {
+      const fixture = mkdtempSync(join(tmpdir(), `laoshirenai-codex-${name}-`))
+      const sourcePath = join(fixture, 'source.json')
+      const authorizedPath = join(fixture, 'authorized.json')
+      try {
+        writeFileSync(sourcePath, readPublicScript('codex-model-catalog.json'))
+        writeFileSync(authorizedPath, JSON.stringify({ data: models.map(id => ({ id })) }))
+        execFileSync('bash', [
+          '-c',
+          'source "$1"; NODE_BIN="$(command -v node)"; filter_codex_model_catalog "$2" "$3"',
+          '_', installerPath, sourcePath, authorizedPath,
+        ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+        const imported = JSON.parse(readFileSync(sourcePath, 'utf8')).models.map((model: { slug: string }) => model.slug)
+        expect(imported).toEqual(models)
+      } finally {
+        rmSync(fixture, { recursive: true, force: true })
+      }
+    }
+  })
+
   it('updates only Codex-owned TOML fields and preserves MCP and other providers', () => {
     const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-merge-'))
     const codexDir = join(fixture, '.codex')
@@ -326,12 +378,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain('verify_selected_model_request')
     expect(script).toContain('${SELECTED_MODEL}:generateContent')
-    expect(script).toContain("['claude', 'codex', 'grok', 'gemini'].includes(data.target)")
+    expect(script).toContain("['claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy'].includes(data.target)")
   })
 
   it('installs and configures Grok Build with the native Responses model on Windows', () => {
     const script = readPublicScript('install.ps1')
-    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini')")
+    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy')")
     expect(script).toContain("$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'")
     expect(script).toContain("$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'")
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
@@ -697,7 +749,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
     expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')")
     expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
-    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\')')
+    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\', \'kimi\', \'opencode\', \'zcode\', \'workbuddy\')')
     expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
   })
 
@@ -774,6 +826,144 @@ describe('client auto-config scripts', () => {
       expect(readFileSync(`${envPath}.bak`, 'utf8')).toBe(originalEnv)
       expect(readFileSync(`${settingsPath}.bak`, 'utf8')).toBe(originalSettings)
       expect(readdirSync(geminiDir).some(name => name.includes('.tmp.'))).toBe(false)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every Kimi Code model while preserving unrelated TOML', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-kimi-config-'))
+    const kimiDir = join(fixture, '.kimi-code')
+    const configPath = join(kimiDir, 'config.toml')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = 'theme = "dark"\n\n[providers.keep]\ntype = "openai"\napi_key = "keep"\n'
+    try {
+      mkdirSync(kimiDir, { recursive: true })
+      writeFileSync(configPath, original)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; KIMI_API_KEY="fixture"; SELECTED_MODEL="kimi-k3"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"kimi-k2.7-code"},{"id":"kimi-k3"}]}' > "$out"; printf '200'; }; write_kimi_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const first = readFileSync(configPath, 'utf8')
+      expect(first).toContain('default_model = "lsrai/kimi-k3"')
+      expect(first).toContain('[models."lsrai/kimi-k2.7-code"]')
+      expect(first).toContain('[models."lsrai/kimi-k3"]')
+      expect(first).toContain('[providers.keep]')
+      expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+      runWriter()
+      expect(readFileSync(configPath, 'utf8')).toBe(first)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every OpenCode model while preserving unrelated JSON', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-opencode-config-'))
+    const configDir = join(fixture, '.config', 'opencode')
+    const configPath = join(configDir, 'opencode.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = JSON.stringify({ theme: 'dark', provider: { keep: { npm: 'keep-package' } } })
+    try {
+      mkdirSync(configDir, { recursive: true })
+      writeFileSync(configPath, original)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; OPENCODE_API_KEY="fixture"; SELECTED_MODEL="kimi-k3"; SELECTED_PROTOCOL="chat_completions"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"kimi-k2.7-code"},{"id":"kimi-k3"}]}' > "$out"; printf '200'; }; write_opencode_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, XDG_CONFIG_HOME: '', LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const first = readFileSync(configPath, 'utf8')
+      const parsed = JSON.parse(first)
+      expect(parsed.theme).toBe('dark')
+      expect(parsed.provider.keep).toEqual({ npm: 'keep-package' })
+      expect(parsed.provider.lsrai.npm).toBe('@ai-sdk/openai-compatible')
+      expect(parsed.provider.lsrai.options.baseURL).toBe('https://api.example.com/v1')
+      expect(Object.keys(parsed.provider.lsrai.models)).toEqual(['kimi-k2.7-code', 'kimi-k3'])
+      expect(parsed.model).toBe('lsrai/kimi-k3')
+      expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+      expect(statSync(configPath).mode & 0o777).toBe(0o600)
+      runWriter()
+      expect(readFileSync(configPath, 'utf8')).toBe(first)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every ZCode model to App and CLI configs without replacing unrelated providers', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-zcode-config-'))
+    const appPath = join(fixture, '.zcode', 'v2', 'config.json')
+    const cliPath = join(fixture, '.zcode', 'cli', 'config.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const originalApp = JSON.stringify({ provider: { keep: { kind: 'anthropic' } }, theme: 'dark' })
+    const originalCli = JSON.stringify({ provider: { keep: { kind: 'anthropic' } }, mcp: { keep: true } })
+    try {
+      mkdirSync(resolve(appPath, '..'), { recursive: true })
+      mkdirSync(resolve(cliPath, '..'), { recursive: true })
+      writeFileSync(appPath, originalApp)
+      writeFileSync(cliPath, originalCli)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; ZCODE_API_KEY="fixture"; SELECTED_MODEL="qwen3.8-max"; SELECTED_PROTOCOL="responses"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"qwen3.8-max"},{"id":"qwen3.7-max"}]}' > "$out"; printf '200'; }; write_zcode_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const firstApp = readFileSync(appPath, 'utf8')
+      const firstCli = readFileSync(cliPath, 'utf8')
+      const app = JSON.parse(firstApp)
+      const cli = JSON.parse(firstCli)
+      expect(app.theme).toBe('dark')
+      expect(app.provider.keep).toEqual({ kind: 'anthropic' })
+      expect(app.provider.lsrai.kind).toBe('openai')
+      expect(Object.keys(app.provider.lsrai.models)).toEqual(['qwen3.8-max', 'qwen3.7-max'])
+      expect(cli.mcp).toEqual({ keep: true })
+      expect(cli.provider.keep).toEqual({ kind: 'anthropic' })
+      expect(cli.model.main).toBe('lsrai/qwen3.8-max')
+      expect(readFileSync(`${appPath}.bak`, 'utf8')).toBe(originalApp)
+      expect(readFileSync(`${cliPath}.bak`, 'utf8')).toBe(originalCli)
+      expect(statSync(appPath).mode & 0o777).toBe(0o600)
+      expect(statSync(cliPath).mode & 0o777).toBe(0o600)
+      runWriter()
+      expect(readFileSync(appPath, 'utf8')).toBe(firstApp)
+      expect(readFileSync(cliPath, 'utf8')).toBe(firstCli)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('writes every WorkBuddy model while preserving the existing object shape', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-workbuddy-config-'))
+    const modelsPath = join(fixture, '.workbuddy', 'models.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = JSON.stringify({ keep: true, models: [{ id: 'unrelated', name: 'unrelated', apiKey: 'keep' }] })
+    try {
+      mkdirSync(resolve(modelsPath, '..'), { recursive: true })
+      writeFileSync(modelsPath, original)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        `source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; WORKBUDDY_API_KEY="fixture"; SELECTED_PROTOCOL="chat_completions"; curl(){ local out=""; while [ $# -gt 0 ]; do if [ "$1" = "-o" ]; then out="$2"; shift 2; else shift; fi; done; printf '%s' '{"data":[{"id":"grok-4.5"},{"id":"grok-4.6"}]}' > "$out"; printf '200'; }; write_workbuddy_config`,
+        '_', installerPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      runWriter()
+      const first = readFileSync(modelsPath, 'utf8')
+      const parsed = JSON.parse(first)
+      expect(parsed.keep).toBe(true)
+      expect(parsed.models[0].id).toBe('unrelated')
+      expect(parsed.models.slice(1).map((row: { id: string }) => row.id)).toEqual(['grok-4.5', 'grok-4.6'])
+      for (const row of parsed.models.slice(1)) {
+        expect(row.name).toBe(row.id)
+        expect(row.url).toBe('https://api.example.com/v1/chat/completions')
+        expect(row.supportsToolCall).toBe(true)
+        expect(row.maxInputTokens).toBe(500000)
+        expect(row.maxOutputTokens).toBe(128000)
+        expect(row.reasoning.defaultEffort).toBe('medium')
+        expect(row.reasoning.canDisableThinking).toBe(false)
+      }
+      expect(readFileSync(`${modelsPath}.bak`, 'utf8')).toBe(original)
+      expect(statSync(modelsPath).mode & 0o777).toBe(0o600)
+      runWriter()
+      expect(readFileSync(modelsPath, 'utf8')).toBe(first)
     } finally {
       rmSync(fixture, { recursive: true, force: true })
     }

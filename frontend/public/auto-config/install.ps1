@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.17'
+$ScriptVersion = '0.7.24'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -54,6 +54,16 @@ $GrokCommandPath = Join-Path $GrokBinDir 'grok.exe'
 $GeminiDir = Join-Path $HOME '.gemini'
 $GeminiEnvPath = Join-Path $GeminiDir '.env'
 $GeminiSettingsPath = Join-Path $GeminiDir 'settings.json'
+$KimiDir = Join-Path $HOME '.kimi-code'
+$KimiConfigPath = Join-Path $KimiDir 'config.toml'
+$OpenCodeConfigRoot = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { Join-Path $HOME '.config' }
+$OpenCodeDir = Join-Path $OpenCodeConfigRoot 'opencode'
+$OpenCodeConfigPath = Join-Path $OpenCodeDir 'opencode.json'
+$ZCodeDir = Join-Path $HOME '.zcode'
+$ZCodeAppConfigPath = Join-Path $ZCodeDir 'v2\config.json'
+$ZCodeCliConfigPath = Join-Path $ZCodeDir 'cli\config.json'
+$WorkBuddyDir = Join-Path $HOME '.workbuddy'
+$WorkBuddyModelsPath = Join-Path $WorkBuddyDir 'models.json'
 
 # 支持通过环境变量传参，解决 `irm | iex` 管道模式下无法传命令行参数的问题
 $BaseUrl = if ($env:LAOSHIRENAI_BASE_URL) { $env:LAOSHIRENAI_BASE_URL } else { $DefaultBaseUrl }
@@ -62,6 +72,10 @@ $ClaudeApiKey = $env:LAOSHIRENAI_CLAUDE_API_KEY
 $CodexApiKey = $env:LAOSHIRENAI_CODEX_API_KEY
 $GrokApiKey = $env:LAOSHIRENAI_GROK_API_KEY
 $GeminiApiKey = $env:LAOSHIRENAI_GEMINI_API_KEY
+$KimiApiKey = $env:LAOSHIRENAI_KIMI_API_KEY
+$OpenCodeApiKey = $env:LAOSHIRENAI_OPENCODE_API_KEY
+$ZCodeApiKey = $env:LAOSHIRENAI_ZCODE_API_KEY
+$WorkBuddyApiKey = $env:LAOSHIRENAI_WORKBUDDY_API_KEY
 $UnifiedApiKey = $env:LAOSHIRENAI_API_KEY
 if ([string]::IsNullOrWhiteSpace($ClaudeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $ClaudeApiKey = $UnifiedApiKey
@@ -74,6 +88,18 @@ if ([string]::IsNullOrWhiteSpace($GrokApiKey) -and -not [string]::IsNullOrWhiteS
 }
 if ([string]::IsNullOrWhiteSpace($GeminiApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $GeminiApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($KimiApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $KimiApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($OpenCodeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $OpenCodeApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($ZCodeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $ZCodeApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($WorkBuddyApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $WorkBuddyApiKey = $UnifiedApiKey
 }
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
@@ -104,10 +130,14 @@ $script:InstallClaudeClient = $false
 $script:InstallCodexClient = $false
 $script:InstallGrokClient = $false
 $script:InstallGeminiClient = $false
+$script:InstallKimiClient = $false
+$script:InstallOpenCodeClient = $false
 $script:ExistingClaudeCommand = ''
 $script:ExistingCodexCommand = ''
 $script:ExistingGrokCommand = ''
 $script:ExistingGeminiCommand = ''
+$script:ExistingKimiCommand = ''
+$script:ExistingOpenCodeCommand = ''
 $script:ExistingCodexApp = ''
 
 # 输出信息日志，方便用户了解当前执行到了哪一步。
@@ -179,6 +209,26 @@ function Parse-Arguments {
         if ($i -ge $ArgsList.Count) { Stop-Script '--gemini-api-key 需要一个值' }
         $script:GeminiApiKey = $ArgsList[$i]
       }
+      '--kimi-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--kimi-api-key 需要一个值' }
+        $script:KimiApiKey = $ArgsList[$i]
+      }
+      '--opencode-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--opencode-api-key 需要一个值' }
+        $script:OpenCodeApiKey = $ArgsList[$i]
+      }
+      '--zcode-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--zcode-api-key 需要一个值' }
+        $script:ZCodeApiKey = $ArgsList[$i]
+      }
+      '--workbuddy-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--workbuddy-api-key 需要一个值' }
+        $script:WorkBuddyApiKey = $ArgsList[$i]
+      }
       '--base-url' {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--base-url 需要一个值' }
@@ -188,8 +238,8 @@ function Parse-Arguments {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--tools 需要一个值' }
         $Value = $ArgsList[$i].ToLowerInvariant()
-        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini')) {
-          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini'
+        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy')) {
+          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini / kimi / opencode / zcode / workbuddy'
         }
         $script:Tools = $Value
       }
@@ -216,16 +266,20 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.17 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.24 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.17 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.24 | iex
 
 参数:
   --api-key              Claude Code API Key
   --codex-api-key        Codex API Key
   --grok-api-key         Grok Build API Key
   --gemini-api-key       Gemini CLI API Key
+  --kimi-api-key         Kimi Code API Key
+  --opencode-api-key     OpenCode API Key
+  --zcode-api-key        ZCode API Key
+  --workbuddy-api-key    WorkBuddy API Key
   --tools                需要配置的工具，默认 all
   --base-url             API 基础地址，默认 https://api.laoshirenai.com
   --node-version         指定 Node.js 版本，例如 v24.11.0
@@ -291,6 +345,22 @@ function Prompt-ApiKeys {
       Stop-Script 'Gemini CLI API Key 不能为空'
     }
   }
+  if ($script:Tools -eq 'kimi' -and [string]::IsNullOrWhiteSpace($script:KimiApiKey)) {
+    $script:KimiApiKey = Read-SecureInput -Prompt '请输入 Kimi Code API Key'
+    if ([string]::IsNullOrWhiteSpace($script:KimiApiKey)) { Stop-Script 'Kimi Code API Key 不能为空' }
+  }
+  if ($script:Tools -eq 'opencode' -and [string]::IsNullOrWhiteSpace($script:OpenCodeApiKey)) {
+    $script:OpenCodeApiKey = Read-SecureInput -Prompt '请输入 OpenCode API Key'
+    if ([string]::IsNullOrWhiteSpace($script:OpenCodeApiKey)) { Stop-Script 'OpenCode API Key 不能为空' }
+  }
+  if ($script:Tools -eq 'zcode' -and [string]::IsNullOrWhiteSpace($script:ZCodeApiKey)) {
+    $script:ZCodeApiKey = Read-SecureInput -Prompt '请输入 ZCode API Key'
+    if ([string]::IsNullOrWhiteSpace($script:ZCodeApiKey)) { Stop-Script 'ZCode API Key 不能为空' }
+  }
+  if ($script:Tools -eq 'workbuddy' -and [string]::IsNullOrWhiteSpace($script:WorkBuddyApiKey)) {
+    $script:WorkBuddyApiKey = Read-SecureInput -Prompt '请输入 WorkBuddy API Key'
+    if ([string]::IsNullOrWhiteSpace($script:WorkBuddyApiKey)) { Stop-Script 'WorkBuddy API Key 不能为空' }
+  }
 }
 
 # 用一次性凭证领取当前目标的专用 API Key。凭证和 Key 均不会打印到终端。
@@ -311,7 +381,7 @@ function Exchange-SetupTicket {
 
   $Data = $Response.data
   if ($null -eq $Data -or
-      $Data.target -notin @('claude', 'codex', 'grok', 'gemini') -or
+      $Data.target -notin @('claude', 'codex', 'grok', 'gemini', 'kimi', 'opencode', 'zcode', 'workbuddy') -or
       [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
       [string]::IsNullOrWhiteSpace([string]$Data.base_url) -or
       (-not [string]::IsNullOrWhiteSpace([string]$Data.client_id) -and ([string]::IsNullOrWhiteSpace([string]$Data.model_id) -or [string]::IsNullOrWhiteSpace([string]$Data.protocol)))) {
@@ -335,6 +405,14 @@ function Exchange-SetupTicket {
       $script:CatalogGeminiDefaultModel = $script:SelectedModel
       $script:CatalogGeminiManagedModels = @($script:SelectedModel)
     }
+  } elseif ($Data.target -eq 'kimi') {
+    $script:KimiApiKey = [string]$Data.api_key
+  } elseif ($Data.target -eq 'opencode') {
+    $script:OpenCodeApiKey = [string]$Data.api_key
+  } elseif ($Data.target -eq 'zcode') {
+    $script:ZCodeApiKey = [string]$Data.api_key
+  } elseif ($Data.target -eq 'workbuddy') {
+    $script:WorkBuddyApiKey = [string]$Data.api_key
   } else {
     $script:GrokApiKey = [string]$Data.api_key
     if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
@@ -454,6 +532,8 @@ function Resolve-ClientInstallPlan {
   $script:InstallCodexClient = $false
   $script:InstallGrokClient = $false
   $script:InstallGeminiClient = $false
+  $script:InstallKimiClient = $false
+  $script:InstallOpenCodeClient = $false
 
   if ($script:Tools -in @('all', 'claude')) {
     $script:ExistingClaudeCommand = Get-UsableClientCommand -CommandName 'claude'
@@ -518,6 +598,30 @@ function Resolve-ClientInstallPlan {
       $script:InstallGeminiClient = $true
     }
   }
+  if ($script:Tools -eq 'kimi') {
+    $script:ExistingKimiCommand = Get-UsableClientCommand -CommandName 'kimi'
+    if ($script:ForceClientInstall) {
+      $script:InstallKimiClient = $true
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingKimiCommand)) {
+      Write-Info "检测到现有 Kimi Code，跳过重复安装: $($script:ExistingKimiCommand)"
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到可用的 Kimi Code，但已按要求跳过安装'
+    } else {
+      $script:InstallKimiClient = $true
+    }
+  }
+  if ($script:Tools -eq 'opencode') {
+    $script:ExistingOpenCodeCommand = Get-UsableClientCommand -CommandName 'opencode'
+    if ($script:ForceClientInstall) {
+      $script:InstallOpenCodeClient = $true
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingOpenCodeCommand)) {
+      Write-Info "检测到现有 OpenCode，跳过重复安装: $($script:ExistingOpenCodeCommand)"
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到可用的 OpenCode，但已按要求跳过安装'
+    } else {
+      $script:InstallOpenCodeClient = $true
+    }
+  }
 }
 
 function Get-ClientVersion {
@@ -556,7 +660,9 @@ function Resolve-ClientUpdatePlan {
   $Checks = @(
     @{ Label = 'Claude Code CLI'; Command = $script:ExistingClaudeCommand; Package = '@anthropic-ai%2Fclaude-code'; Flag = 'InstallClaudeClient' },
     @{ Label = 'Codex CLI'; Command = $script:ExistingCodexCommand; Package = '@openai%2Fcodex'; Flag = 'InstallCodexClient' },
-    @{ Label = 'Gemini CLI'; Command = $script:ExistingGeminiCommand; Package = '@google%2Fgemini-cli'; Flag = 'InstallGeminiClient' }
+    @{ Label = 'Gemini CLI'; Command = $script:ExistingGeminiCommand; Package = '@google%2Fgemini-cli'; Flag = 'InstallGeminiClient' },
+    @{ Label = 'Kimi Code CLI'; Command = $script:ExistingKimiCommand; Package = '@moonshot-ai%2Fkimi-code'; Flag = 'InstallKimiClient' },
+    @{ Label = 'OpenCode CLI'; Command = $script:ExistingOpenCodeCommand; Package = 'opencode-ai'; Flag = 'InstallOpenCodeClient' }
   )
   foreach ($Check in $Checks) {
     if ([string]::IsNullOrWhiteSpace([string]$Check.Command) -or (Get-Variable -Scope Script -Name $Check.Flag).Value) { continue }
@@ -574,11 +680,11 @@ function Resolve-ClientUpdatePlan {
 }
 
 function Test-NeedsClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient -or $script:InstallGeminiClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient -or $script:InstallGeminiClient -or $script:InstallKimiClient -or $script:InstallOpenCodeClient)
 }
 
 function Test-NeedsNpmClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGeminiClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGeminiClient -or $script:InstallKimiClient -or $script:InstallOpenCodeClient)
 }
 
 # 只解析 npm.cmd，避免 PowerShell 在 Restricted 执行策略下优先命中 npm.ps1。
@@ -1185,6 +1291,14 @@ function Install-RequestedClients {
     Write-Info '正在安装或更新 Gemini CLI'
     Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'
   }
+  if ($script:InstallKimiClient) {
+    Write-Info '正在安装或更新 Kimi Code'
+    Install-NpmPackageWithFallback -PackageName '@moonshot-ai/kimi-code@latest'
+  }
+  if ($script:InstallOpenCodeClient) {
+    Write-Info '正在安装或更新 OpenCode'
+    Install-NpmPackageWithFallback -PackageName 'opencode-ai@latest'
+  }
 }
 
 function Install-CodexAppIfRequested {
@@ -1433,6 +1547,10 @@ function Convert-CodexModelCatalog {
   foreach ($Model in $Models) {
     $ById[[string]$Model.slug] = $Model
   }
+  $Missing = @($Authorized | Where-Object { -not $ById.ContainsKey($_) })
+  if ($Missing.Count -gt 0) {
+    throw "Codex 模型目录没有覆盖当前 Key 的全部模型: $($Missing -join ', ')"
+  }
   $Filtered = New-Object System.Collections.Generic.List[object]
   foreach ($Id in $Authorized) {
     if (-not $ById.ContainsKey($Id)) { continue }
@@ -1630,6 +1748,37 @@ function Write-GrokTomlConfig {
     Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $ReplacementBackupPath -Force -ErrorAction SilentlyContinue
   }
+}
+
+function Set-GrokModelsFromKey {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{
+      Authorization = "Bearer $script:GrokApiKey"
+    } -Method GET
+  } catch {
+    Stop-Script "Grok Build 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data |
+    ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } |
+    Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'Grok Build 分组模型目录为空' }
+  if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel) -and $script:SelectedModel -notin $Ids) {
+    Stop-Script '票据选择的模型已不在当前 Key 的模型列表中'
+  }
+  $script:CatalogGrokDefaultModel = if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) {
+    $script:SelectedModel
+  } elseif ($Ids -contains 'gpt-5.6-sol') {
+    'gpt-5.6-sol'
+  } else {
+    $Ids[0]
+  }
+  $script:CatalogGrokDefaultDisplayName = $script:CatalogGrokDefaultModel
+  $script:CatalogGrokManagedModels = @($Ids | ForEach-Object {
+    @{ Id = $_; DisplayName = $_; ContextWindow = 0 }
+  })
+  $script:CatalogGrokManagedModelSections = @($Ids | ForEach-Object { "model.$_"; "model.`"$_`"" })
 }
 
 # 合并写入 Gemini CLI 的 .env 与 settings.json：.env 只更新本站管理的四个键并保留其他行，
@@ -1891,6 +2040,22 @@ function Test-UsesGemini {
   return $script:Tools -eq 'gemini'
 }
 
+function Test-UsesKimi {
+  return $script:Tools -eq 'kimi'
+}
+
+function Test-UsesOpenCode {
+  return $script:Tools -eq 'opencode'
+}
+
+function Test-UsesZCode {
+  return $script:Tools -eq 'zcode'
+}
+
+function Test-UsesWorkBuddy {
+  return $script:Tools -eq 'workbuddy'
+}
+
 function Get-OpenAIV1BaseUrl {
   param([string]$Value)
 
@@ -1963,6 +2128,10 @@ function Test-SelectedModelRequest {
     'codex' { $script:CodexApiKey }
     'grok' { $script:GrokApiKey }
     'gemini' { $script:GeminiApiKey }
+    'kimi' { $script:KimiApiKey }
+    'opencode' { $script:OpenCodeApiKey }
+    'zcode' { $script:ZCodeApiKey }
+    'workbuddy' { $script:WorkBuddyApiKey }
     default { return }
   }
   $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
@@ -2032,6 +2201,268 @@ function Test-GeminiApiKey {
   }
 }
 
+function Test-KimiApiKey {
+  if (Test-UsesKimi) { Test-ApiKeyReadiness -Label 'Kimi Code' -ApiKey $script:KimiApiKey }
+}
+
+function Test-OpenCodeApiKey {
+  if (Test-UsesOpenCode) { Test-ApiKeyReadiness -Label 'OpenCode' -ApiKey $script:OpenCodeApiKey }
+}
+
+function Test-ZCodeApiKey {
+  if (Test-UsesZCode) { Test-ApiKeyReadiness -Label 'ZCode' -ApiKey $script:ZCodeApiKey }
+}
+
+function Test-WorkBuddyApiKey {
+  if (Test-UsesWorkBuddy) { Test-ApiKeyReadiness -Label 'WorkBuddy' -ApiKey $script:WorkBuddyApiKey }
+}
+
+function Write-KimiConfig {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{ Authorization = "Bearer $script:KimiApiKey" } -Method GET
+  } catch {
+    Stop-Script "Kimi Code 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data | ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } | Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'Kimi Code 分组模型目录为空' }
+  if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel) -and $script:SelectedModel -notin $Ids) {
+    Stop-Script '票据选择的模型已不在当前 Key 的模型列表中'
+  }
+  $Selected = if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) { $script:SelectedModel } elseif ($Ids -contains 'kimi-k3') { 'kimi-k3' } else { $Ids[0] }
+  Backup-IfNeeded $KimiConfigPath
+  Ensure-Directory $KimiDir
+  $Text = if (Test-Path -LiteralPath $KimiConfigPath) { [IO.File]::ReadAllText($KimiConfigPath) } else { '' }
+  if ($Text.Contains([char]0)) { Stop-Script '拒绝覆盖损坏的 Kimi Code config.toml' }
+  $Kept = New-Object System.Collections.Generic.List[string]
+  $Section = ''
+  $Managed = $false
+  foreach ($Line in ($Text -split "`r?`n")) {
+    $Trimmed = $Line.Trim()
+    if ($Trimmed -eq '# BEGIN LSRAI KIMI CODE') { $Managed = $true; continue }
+    if ($Trimmed -eq '# END LSRAI KIMI CODE') { $Managed = $false; continue }
+    if ($Managed) { continue }
+    if ($Trimmed.StartsWith('[')) {
+      if ($Trimmed -notmatch '^\[([^\]]+)\](?:\s*#.*)?$') { Stop-Script "拒绝覆盖无法解析的 Kimi Code TOML 表头: $Trimmed" }
+      $Section = $Matches[1]
+    }
+    if ($Section -eq '' -and $Trimmed -match '^default_model\s*=') { continue }
+    $Kept.Add($Line)
+  }
+  while ($Kept.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Kept[0])) { $Kept.RemoveAt(0) }
+  while ($Kept.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Kept[$Kept.Count - 1])) { $Kept.RemoveAt($Kept.Count - 1) }
+  $Lines = New-Object System.Collections.Generic.List[string]
+  $Lines.Add("default_model = `"lsrai/$Selected`"")
+  $Lines.Add('')
+  $Lines.Add('# BEGIN LSRAI KIMI CODE')
+  $Lines.Add('[providers.lsrai]')
+  $Lines.Add('type = "openai"')
+  $Lines.Add("base_url = $(ConvertTo-TomlString $ApiBaseUrl)")
+  $Lines.Add("api_key = $(ConvertTo-TomlString $script:KimiApiKey)")
+  $Lines.Add('')
+  foreach ($Id in $Ids) {
+    $Lines.Add("[models.`"lsrai/$Id`"]")
+    $Lines.Add('provider = "lsrai"')
+    $Lines.Add("model = $(ConvertTo-TomlString $Id)")
+    $Lines.Add('max_context_size = 262144')
+    $Lines.Add('')
+  }
+  $Lines.Add('# END LSRAI KIMI CODE')
+  if ($Kept.Count -gt 0) { $Lines.Add(''); foreach ($Line in $Kept) { $Lines.Add($Line) } }
+  $TemporaryPath = "$KimiConfigPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [IO.File]::WriteAllText($TemporaryPath, (($Lines -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $KimiConfigPath -Force
+  } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
+}
+
+function Write-OpenCodeConfig {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{ Authorization = "Bearer $script:OpenCodeApiKey" } -Method GET
+  } catch {
+    Stop-Script "OpenCode 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data | ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } | Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'OpenCode 分组模型目录为空' }
+  if ([string]::IsNullOrWhiteSpace($script:SelectedProtocol)) { Stop-Script 'OpenCode 缺少协议选择' }
+  $Packages = @{
+    responses = '@ai-sdk/openai'
+    chat_completions = '@ai-sdk/openai-compatible'
+    messages = '@ai-sdk/anthropic'
+    generate_content = '@ai-sdk/google'
+  }
+  if (-not $Packages.ContainsKey($script:SelectedProtocol)) { Stop-Script "OpenCode 不支持协议: $($script:SelectedProtocol)" }
+  if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel) -and $script:SelectedModel -notin $Ids) {
+    Stop-Script '票据选择的模型已不在当前 Key 的模型列表中'
+  }
+  $Selected = if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) { $script:SelectedModel } else { $Ids[0] }
+  Backup-IfNeeded $OpenCodeConfigPath
+  Ensure-Directory $OpenCodeDir
+  $Config = [pscustomobject]@{}
+  if (Test-Path -LiteralPath $OpenCodeConfigPath) {
+    $RawConfig = Get-Content -LiteralPath $OpenCodeConfigPath -Raw
+    if (-not $RawConfig.TrimStart().StartsWith('{')) { Stop-Script 'OpenCode 配置根节点必须是对象' }
+    try { $Config = $RawConfig | ConvertFrom-Json } catch { Stop-Script "拒绝覆盖无法解析的 OpenCode 配置: $_" }
+    if ($null -eq $Config -or $Config -is [System.Array]) { Stop-Script 'OpenCode 配置根节点必须是对象' }
+  }
+  $ProviderProperty = $Config.PSObject.Properties['provider']
+  if ($null -eq $ProviderProperty -or $null -eq $ProviderProperty.Value) {
+    $Config | Add-Member -NotePropertyName provider -NotePropertyValue ([pscustomobject]@{}) -Force
+  } elseif ($Config.provider -is [System.Array] -or $Config.provider -is [string] -or $Config.provider -is [ValueType]) {
+    Stop-Script 'OpenCode provider 必须是对象'
+  }
+  $Models = [ordered]@{}
+  foreach ($Id in $Ids) { $Models[$Id] = [ordered]@{ name = $Id } }
+  $RootUrl = $ApiBaseUrl -replace '/v1/?$', ''
+  $ProviderBaseUrl = if ($script:SelectedProtocol -eq 'generate_content') { "$RootUrl/v1beta" } else { "$RootUrl/v1" }
+  $Provider = [ordered]@{
+    npm = $Packages[$script:SelectedProtocol]
+    name = 'lsrai'
+    options = [ordered]@{ baseURL = $ProviderBaseUrl; apiKey = $script:OpenCodeApiKey }
+    models = $Models
+  }
+  if ($null -eq $Config.PSObject.Properties['$schema']) { $Config | Add-Member -NotePropertyName '$schema' -NotePropertyValue 'https://opencode.ai/config.json' -Force }
+  $Config.provider | Add-Member -NotePropertyName lsrai -NotePropertyValue $Provider -Force
+  $Config | Add-Member -NotePropertyName model -NotePropertyValue "lsrai/$Selected" -Force
+  $Json = $Config | ConvertTo-Json -Depth 100
+  $TemporaryPath = "$OpenCodeConfigPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [IO.File]::WriteAllText($TemporaryPath, ($Json + "`n"), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $OpenCodeConfigPath -Force
+  } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
+}
+
+function Write-ZCodeConfig {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{ Authorization = "Bearer $script:ZCodeApiKey" } -Method GET
+  } catch {
+    Stop-Script "ZCode 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data | ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } | Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'ZCode 分组模型目录为空' }
+  if ($script:SelectedProtocol -ne 'responses') { Stop-Script 'ZCode 一键配置只接受已验证的 Responses 协议' }
+  if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel) -and $script:SelectedModel -notin $Ids) { Stop-Script '票据选择的模型已不在当前 Key 的模型列表中' }
+  $Selected = if (-not [string]::IsNullOrWhiteSpace($script:SelectedModel)) { $script:SelectedModel } else { $Ids[0] }
+  Backup-IfNeeded $ZCodeAppConfigPath
+  Backup-IfNeeded $ZCodeCliConfigPath
+  Ensure-Directory (Split-Path -Parent $ZCodeAppConfigPath)
+  Ensure-Directory (Split-Path -Parent $ZCodeCliConfigPath)
+  $App = [pscustomobject]@{}
+  if (Test-Path -LiteralPath $ZCodeAppConfigPath) {
+    $Raw = Get-Content -LiteralPath $ZCodeAppConfigPath -Raw
+    if (-not $Raw.TrimStart().StartsWith('{')) { Stop-Script 'ZCode App 配置根节点必须是对象' }
+    try { $App = $Raw | ConvertFrom-Json } catch { Stop-Script "拒绝覆盖无法解析的 ZCode App 配置: $_" }
+  }
+  $Cli = [pscustomobject]@{}
+  if (Test-Path -LiteralPath $ZCodeCliConfigPath) {
+    $Raw = Get-Content -LiteralPath $ZCodeCliConfigPath -Raw
+    if (-not $Raw.TrimStart().StartsWith('{')) { Stop-Script 'ZCode CLI 配置根节点必须是对象' }
+    try { $Cli = $Raw | ConvertFrom-Json } catch { Stop-Script "拒绝覆盖无法解析的 ZCode CLI 配置: $_" }
+  }
+  foreach ($Config in @($App, $Cli)) {
+    $ProviderProperty = $Config.PSObject.Properties['provider']
+    if ($null -eq $ProviderProperty -or $null -eq $ProviderProperty.Value) {
+      $Config | Add-Member -NotePropertyName provider -NotePropertyValue ([pscustomobject]@{}) -Force
+    } elseif ($ProviderProperty.Value -is [System.Array] -or $ProviderProperty.Value -is [string] -or $ProviderProperty.Value -is [ValueType]) {
+      Stop-Script 'ZCode provider 必须是对象'
+    }
+  }
+  $Models = [pscustomobject]@{}
+  foreach ($Id in $Ids) { $Models | Add-Member -NotePropertyName $Id -NotePropertyValue ([ordered]@{ name = $Id }) -Force }
+  $AppProvider = [ordered]@{
+    name = 'lsrai'; kind = 'openai'; source = 'custom'; enabled = $true
+    options = [ordered]@{ apiKey = $script:ZCodeApiKey; baseURL = $ApiBaseUrl; apiKeyRequired = $true }
+    models = $Models
+  }
+  $App.provider | Add-Member -NotePropertyName lsrai -NotePropertyValue $AppProvider -Force
+  $CliProvider = [ordered]@{
+    kind = 'openai'
+    options = [ordered]@{ apiKey = $script:ZCodeApiKey; baseURL = $ApiBaseUrl; apiKeyRequired = $true }
+    models = $Models
+  }
+  $Cli.provider | Add-Member -NotePropertyName lsrai -NotePropertyValue $CliProvider -Force
+  $ModelProperty = $Cli.PSObject.Properties['model']
+  if ($null -eq $ModelProperty -or $null -eq $ModelProperty.Value) {
+    $Cli | Add-Member -NotePropertyName model -NotePropertyValue ([pscustomobject]@{}) -Force
+  } elseif ($ModelProperty.Value -is [System.Array] -or $ModelProperty.Value -is [string] -or $ModelProperty.Value -is [ValueType]) {
+    Stop-Script 'ZCode CLI model 必须是对象'
+  }
+  $Cli.model | Add-Member -NotePropertyName main -NotePropertyValue "lsrai/$Selected" -Force
+  foreach ($Path in @($ZCodeAppConfigPath, $ZCodeCliConfigPath)) {
+    $Value = if ($Path -eq $ZCodeAppConfigPath) { $App } else { $Cli }
+    $Json = $Value | ConvertTo-Json -Depth 100
+    $TemporaryPath = "$Path.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+    try {
+      [IO.File]::WriteAllText($TemporaryPath, ($Json + "`n"), [Text.UTF8Encoding]::new($false))
+      Move-Item -LiteralPath $TemporaryPath -Destination $Path -Force
+    } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
+  }
+}
+
+function Write-WorkBuddyConfig {
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  try {
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{ Authorization = "Bearer $script:WorkBuddyApiKey" } -Method GET
+  } catch {
+    Stop-Script "WorkBuddy 分组模型读取失败: $_"
+  }
+  $Ids = @($Response.data | ForEach-Object { ([string]$_.id).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' -and $_ -match '^[A-Za-z0-9][A-Za-z0-9._:-]*$' } | Select-Object -Unique)
+  if ($Ids.Count -eq 0) { Stop-Script 'WorkBuddy 分组模型目录为空' }
+  if ($script:SelectedProtocol -ne 'chat_completions') { Stop-Script 'WorkBuddy 一键配置只接受已验证的 Chat Completions 协议' }
+  Backup-IfNeeded $WorkBuddyModelsPath
+  Ensure-Directory $WorkBuddyDir
+  $Root = @()
+  $Shape = 'array'
+  if (Test-Path -LiteralPath $WorkBuddyModelsPath) {
+    $Raw = Get-Content -LiteralPath $WorkBuddyModelsPath -Raw
+    if (-not [string]::IsNullOrWhiteSpace($Raw)) {
+      try { $Root = $Raw | ConvertFrom-Json } catch { Stop-Script "拒绝覆盖无法解析的 WorkBuddy 配置: $_" }
+      if ($Raw.TrimStart().StartsWith('{')) {
+        if ($null -eq $Root -or $Root -is [string] -or $Root -is [ValueType]) { Stop-Script 'WorkBuddy 配置根节点必须是数组或对象' }
+        $Shape = 'object'
+        $ModelsProperty = $Root.PSObject.Properties['models']
+        if ($null -ne $ModelsProperty -and $null -ne $ModelsProperty.Value -and $ModelsProperty.Value -isnot [System.Array]) { Stop-Script 'WorkBuddy models 必须是数组' }
+      } elseif (-not $Raw.TrimStart().StartsWith('[')) {
+        Stop-Script 'WorkBuddy 配置根节点必须是数组或对象'
+      }
+    }
+  }
+  $Existing = if ($Shape -eq 'array') { @($Root) } elseif ($null -eq $Root.PSObject.Properties['models']) { @() } else { @($Root.models) }
+  $ReasoningCatalog = $CatalogModelReasoningJson | ConvertFrom-Json
+  $Managed = @()
+  foreach ($Id in $Ids) {
+    $Property = $ReasoningCatalog.PSObject.Properties[$Id]
+    $Efforts = if ($null -ne $Property) { @($Property.Value | Where-Object { $_ -in @('minimal','low','medium','high','xhigh','max') }) } else { @() }
+    if ($Efforts.Count -eq 0 -and $Id -eq 'gpt-5.6') { $Efforts = @($ReasoningCatalog.'gpt-5.6-sol') }
+    if ($Efforts.Count -eq 0) { $Efforts = @('low','medium','high') }
+    $DefaultEffort = if ($Efforts -contains 'medium') { 'medium' } else { [string]$Efforts[0] }
+    $Managed += [ordered]@{
+      id = $Id; name = $Id; vendor = 'OpenAI'; apiKey = $script:WorkBuddyApiKey
+      url = "$ApiBaseUrl/chat/completions"
+      supportsToolCall = $true; supportsImages = $false; supportsReasoning = $true
+      onlyReasoning = $false; useCustomProtocol = $false
+      maxInputTokens = if ($Id.StartsWith('grok-')) { 500000 } else { 1050000 }
+      maxOutputTokens = 128000
+      reasoning = [ordered]@{ defaultEffort = $DefaultEffort; supportedEfforts = $Efforts; canDisableThinking = $false }
+    }
+  }
+  $Kept = @($Existing | Where-Object { $null -eq $_ -or [string]::IsNullOrWhiteSpace([string]$_.id) -or [string]$_.id -notin $Ids })
+  $Models = @($Kept) + @($Managed)
+  $Output = if ($Shape -eq 'array') { $Models } else { $Root | Add-Member -NotePropertyName models -NotePropertyValue $Models -Force; $Root }
+  $Json = $Output | ConvertTo-Json -Depth 100
+  $TemporaryPath = "$WorkBuddyModelsPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  try {
+    [IO.File]::WriteAllText($TemporaryPath, ($Json + "`n"), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $TemporaryPath -Destination $WorkBuddyModelsPath -Force
+  } finally { Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue }
+}
+
 # 根据用户选择写入 Claude Code 配置。
 function Configure-Claude {
   if ($script:Tools -in @('all', 'claude')) {
@@ -2053,6 +2484,7 @@ function Configure-Codex {
 function Configure-Grok {
   if (Test-UsesGrok) {
     Write-Info '正在写入 Grok Build 原生模型配置'
+    Set-GrokModelsFromKey
     Write-GrokTomlConfig
   }
 }
@@ -2061,6 +2493,34 @@ function Configure-Gemini {
   if (Test-UsesGemini) {
     Write-Info '正在写入 Gemini CLI 配置'
     Write-GeminiConfig
+  }
+}
+
+function Configure-Kimi {
+  if ($script:Tools -eq 'kimi') {
+    Write-Info '正在写入 Kimi Code 配置'
+    Write-KimiConfig
+  }
+}
+
+function Configure-OpenCode {
+  if (Test-UsesOpenCode) {
+    Write-Info '正在写入 OpenCode 配置'
+    Write-OpenCodeConfig
+  }
+}
+
+function Configure-ZCode {
+  if (Test-UsesZCode) {
+    Write-Info '正在写入 ZCode App 与 CLI 配置'
+    Write-ZCodeConfig
+  }
+}
+
+function Configure-WorkBuddy {
+  if (Test-UsesWorkBuddy) {
+    Write-Info '正在写入 WorkBuddy 模型配置'
+    Write-WorkBuddyConfig
   }
 }
 
@@ -2135,6 +2595,20 @@ function Verify-ClientCommands {
       Stop-Script "Gemini CLI 安装验证失败：未找到 $GeminiCmd"
     }
   }
+  if (Test-UsesKimi) {
+    $KimiCmd = if ($script:InstallKimiClient) { Join-Path $NpmPrefix 'kimi.cmd' } else { $script:ExistingKimiCommand }
+    if (-not [string]::IsNullOrWhiteSpace($KimiCmd) -and (Test-Path -LiteralPath $KimiCmd)) {
+      & $KimiCmd --version | Out-Null
+      Write-Info 'Kimi Code 验证通过'
+    } elseif ($script:InstallKimiClient) { Stop-Script "Kimi Code 安装验证失败：未找到 $KimiCmd" }
+  }
+  if (Test-UsesOpenCode) {
+    $OpenCodeCmd = if ($script:InstallOpenCodeClient) { Join-Path $NpmPrefix 'opencode.cmd' } else { $script:ExistingOpenCodeCommand }
+    if (-not [string]::IsNullOrWhiteSpace($OpenCodeCmd) -and (Test-Path -LiteralPath $OpenCodeCmd)) {
+      & $OpenCodeCmd --version | Out-Null
+      Write-Info 'OpenCode 验证通过'
+    } elseif ($script:InstallOpenCodeClient) { Stop-Script "OpenCode 安装验证失败：未找到 $OpenCodeCmd" }
+  }
 }
 
 # 输出最终结果和下一步指引，帮助用户立即开始使用。
@@ -2154,6 +2628,13 @@ function Print-Summary {
     Write-Host "  - Gemini CLI 设置: $GeminiSettingsPath"
     Write-Host "  - Gemini CLI 默认模型: $CatalogGeminiDefaultModel"
   }
+  if (Test-UsesKimi) { Write-Host "  - Kimi Code 配置: $KimiConfigPath" }
+  if (Test-UsesOpenCode) { Write-Host "  - OpenCode 配置: $OpenCodeConfigPath" }
+  if (Test-UsesZCode) {
+    Write-Host "  - ZCode App 配置: $ZCodeAppConfigPath"
+    Write-Host "  - ZCode CLI 配置: $ZCodeCliConfigPath"
+  }
+  if (Test-UsesWorkBuddy) { Write-Host "  - WorkBuddy 模型配置: $WorkBuddyModelsPath" }
   if (Test-UsesClaude) {
     Write-Host '  - Claude Code 专用 Key: 已配置'
     if ($script:InstallClaudeClient) {
@@ -2188,9 +2669,13 @@ function Print-Summary {
       Write-Host "  - Gemini CLI: 已保留现有安装 ($($script:ExistingGeminiCommand))"
     }
   }
+  if (Test-UsesKimi) { Write-Host '  - Kimi Code 专用 Key: 已配置' }
+  if (Test-UsesOpenCode) { Write-Host '  - OpenCode 专用 Key: 已配置' }
+  if (Test-UsesZCode) { Write-Host '  - ZCode 专用 Key: 已配置' }
+  if (Test-UsesWorkBuddy) { Write-Host '  - WorkBuddy 专用 Key: 已配置' }
   Write-Host ''
   Write-Host '回滚方法（仅显示本次存在的备份）:'
-  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath)) {
+  foreach ($RollbackPath in @($ClaudeSettingsPath, $CodexAuthPath, $CodexConfigPath, $CodexModelCatalogPath, $GrokConfigPath, $GeminiEnvPath, $GeminiSettingsPath, $KimiConfigPath, $OpenCodeConfigPath, $ZCodeAppConfigPath, $ZCodeCliConfigPath, $WorkBuddyModelsPath)) {
     if (Test-Path -LiteralPath "$RollbackPath.bak") {
       Write-Host "  Copy-Item -LiteralPath '$RollbackPath.bak' -Destination '$RollbackPath' -Force"
     }
@@ -2223,6 +2708,10 @@ function Print-Summary {
   if (Test-UsesGemini) {
     Write-Host '  - 重新打开 PowerShell 后执行 gemini --version'
   }
+  if (Test-UsesKimi) { Write-Host '  - 重新打开 PowerShell 后执行 kimi --version' }
+  if (Test-UsesOpenCode) { Write-Host '  - 重新打开 PowerShell 后执行 opencode --version' }
+  if (Test-UsesZCode) { Write-Host '  - 完全退出并重新打开 ZCode' }
+  if (Test-UsesWorkBuddy) { Write-Host '  - 完全退出并重新打开 WorkBuddy' }
 }
 
 # 组织整个安装流程，确保安装、配置、校验按固定顺序执行。
@@ -2261,10 +2750,18 @@ function Main {
   Configure-Codex
   Configure-Grok
   Configure-Gemini
+  Configure-Kimi
+  Configure-OpenCode
+  Configure-ZCode
+  Configure-WorkBuddy
   Test-ClaudeApiKey
   Test-CodexApiKey
   Test-GrokApiKey
   Test-GeminiApiKey
+  Test-KimiApiKey
+  Test-OpenCodeApiKey
+  Test-ZCodeApiKey
+  Test-WorkBuddyApiKey
   Test-SelectedModelRequest
   Verify-ClientCommands
   Open-CcSwitchIfRequested

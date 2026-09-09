@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,8 +17,8 @@ import (
 )
 
 const (
-	resourceDownloadTokenTTL   = 5 * time.Minute
-	clientSetupCommandsEnabled = false
+	resourceDownloadTokenTTL         = 5 * time.Minute
+	legacyClientSetupCommandsEnabled = false
 )
 
 const (
@@ -322,11 +323,6 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		response.Unauthorized(c, "User not authenticated")
 		return
 	}
-	if !clientSetupCommandsEnabled {
-		response.ErrorWithDetails(c, http.StatusServiceUnavailable, "一键配置正在调整，请先查看接入文档手动配置", "CLIENT_SETUP_PAUSED", nil)
-		return
-	}
-
 	var req clientSetupTicketRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "请选择 API 密钥或一键安装目标")
@@ -336,6 +332,19 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		ticket *service.ClientSetupTicket
 		err    error
 	)
+	if isSimpleSetupOptionRequest(req) {
+		ticket, err = h.setup.IssueTicketForOption(c.Request.Context(), subject.UserID, *req.APIKeyID, req.ClientID, req.OS)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		writeClientSetupTicket(c, ticket)
+		return
+	}
+	if !legacyClientSetupCommandsEnabled {
+		response.ErrorWithDetails(c, http.StatusServiceUnavailable, "一键配置正在调整，请先查看接入文档手动配置", "CLIENT_SETUP_PAUSED", nil)
+		return
+	}
 	selection, explicit, selectionErr := setupSelectionFromRequest(req)
 	if selectionErr != nil {
 		response.ErrorFrom(c, selectionErr)
@@ -352,6 +361,16 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	writeClientSetupTicket(c, ticket)
+}
+
+func isSimpleSetupOptionRequest(req clientSetupTicketRequest) bool {
+	return req.APIKeyID != nil && *req.APIKeyID > 0 && strings.TrimSpace(req.Target) == "" &&
+		strings.TrimSpace(req.ClientID) != "" && strings.TrimSpace(req.OS) != "" &&
+		strings.TrimSpace(req.ClientVersionKey) == "" && strings.TrimSpace(req.Protocol) == "" && strings.TrimSpace(req.ModelID) == ""
+}
+
+func writeClientSetupTicket(c *gin.Context, ticket *service.ClientSetupTicket) {
 	c.Header("Cache-Control", "private, no-store")
 	payload := gin.H{
 		"ticket":     ticket.Ticket,
@@ -368,6 +387,26 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 		payload["os"] = ticket.OS
 	}
 	response.Success(c, payload)
+}
+
+func (h *ResourceHandler) ListSetupOptions(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	apiKeyID, err := strconv.ParseInt(strings.TrimSpace(c.Query("api_key_id")), 10, 64)
+	if err != nil || apiKeyID <= 0 {
+		response.BadRequest(c, "API 密钥无效")
+		return
+	}
+	options, err := h.setup.SetupOptions(c.Request.Context(), subject.UserID, apiKeyID, c.Query("os"))
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	c.Header("Cache-Control", "private, no-store")
+	response.Success(c, options)
 }
 
 func setupSelectionFromRequest(req clientSetupTicketRequest) (service.ClientSetupSelection, bool, error) {
@@ -389,11 +428,6 @@ func setupSelectionFromRequest(req clientSetupTicketRequest) (service.ClientSetu
 }
 
 func (h *ResourceHandler) ExchangeSetupTicket(c *gin.Context) {
-	if !clientSetupCommandsEnabled {
-		response.ErrorWithDetails(c, http.StatusServiceUnavailable, "一键配置正在调整，请先查看接入文档手动配置", "CLIENT_SETUP_PAUSED", nil)
-		return
-	}
-
 	var req clientSetupExchangeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "一键安装凭证不能为空")

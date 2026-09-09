@@ -1,0 +1,101 @@
+{
+  "artifact_sha256": "4df7d2da60da9e0d69d111775adf12ea435933415d0ce51515f4b686360bd422",
+  "client_id": "zcode",
+  "client_version": "app:3.11.2+cli:0.16.5",
+  "group_id": 64,
+  "kind": "zcode_public_group_coverage",
+  "models": [
+    "qwen3.8-max",
+    "qwen3.7-max",
+    "qwen3.7-plus",
+    "qwen3.7-flash",
+    "qwen3.6-plus",
+    "qwen3.6-flash"
+  ],
+  "observed_at": "2026-09-09",
+  "os": "macos",
+  "passed": true,
+  "restored_group_id": 6,
+  "results": [
+    {
+      "duration_seconds": 121.94,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "model_id": "qwen3.8-max",
+      "passed": true,
+      "protocol": "responses",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "b9e0bb9b6a9e4666976e0b03fe0ef73b0cc75dc9757dac8097e155cbc5c75bdf",
+      "timed_out": false
+    },
+    {
+      "duration_seconds": 45.68,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "model_id": "qwen3.7-max",
+      "passed": true,
+      "protocol": "responses",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "370dd0f43c2a5762ec51b466ab71e4db7a35f38ad4b4c7ffcb34f6987198b382",
+      "timed_out": false
+    },
+    {
+      "duration_seconds": 91.73,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "model_id": "qwen3.7-plus",
+      "passed": true,
+      "protocol": "responses",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5d5b3b836e7b9967e87a96c04f5c3916b956e7d65547c96b3e4a0bc856de9d6a",
+      "timed_out": false
+    },
+    {
+      "duration_seconds": 47.91,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "model_id": "qwen3.7-flash",
+      "passed": true,
+      "protocol": "responses",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "f09f6e9c94f298822da77b9b7962a5253cd882a909ef78d6c72cf6942c888f7d",
+      "timed_out": false
+    },
+    {
+      "duration_seconds": 71.14,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "model_id": "qwen3.6-plus",
+      "passed": true,
+      "protocol": "responses",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "934cca26a33838ed6164e0cb6ae22b88a7edb44aee271f3dabefd0e1bd2ece02",
+      "timed_out": false
+    },
+    {
+      "duration_seconds": 43.24,
+      "error_summary": "",
+      "exit_code": 0,
+      "final_marker_verified": true,
+      "model_id": "qwen3.6-flash",
+      "passed": true,
+      "protocol": "responses",
+      "result_file_verified": true,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "1c7f0ae19a803d7261b7e06b54f40dccd112aa272254b2d724ebc17ecc187f0a",
+      "timed_out": false
+    }
+  ],
+  "schema_version": 1,
+  "secret_free": true
+}

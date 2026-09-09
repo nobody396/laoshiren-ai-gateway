@@ -131,9 +131,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/claude-code-missing-loops-retry3-20260901/claude-code-loop-claude-sonnet-5-group15-20260901.json#evidence-273bfe42c9dc2d35c0a5f622",
-              "artifact_sha256": "e024b0a61143b7d0ad836abf09afc374c6eb6c6074cf1de297aed08b564d8a74"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/claude-code-public-coverage-20260909.json",
+              "artifact_sha256": "e5ebe854907185d62d94802fbd25a6e7a3f00c1267cbb737898fea7e814feed3"
             }
           },
           {
@@ -206,20 +206,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:2.1.258",
-          "display": "2.1.258",
+          "version_key": "cli:2.1.263",
+          "display": "2.1.263",
           "components": [
             {
               "component": "cli",
-              "version": "2.1.258"
+              "version": "2.1.263"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-03",
-            "source_ref": "model-doc-contracts/evidence/claude-code-installed-refresh-20260903.json",
-            "artifact_sha256": "ed93eaad2fcdd7917c5762ae45a98eea015284228550f9d7b1667fe25562b39a"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/claude-code-public-coverage-20260909.json",
+            "artifact_sha256": "e5ebe854907185d62d94802fbd25a6e7a3f00c1267cbb737898fea7e814feed3"
           }
         },
         "os_support": [
@@ -362,9 +362,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/codex-missing-loops-batch2-20260901/codex-loop-gpt-5.6-terra-group6-20260901.json#evidence-59d38a78e8e4a2811847f4ae",
-              "artifact_sha256": "ac51f1a311c8aff2f6be4a03d8d79f9b333d08b658ce9bc8207bb78f816e79a1"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/codex-public-coverage-20260909.json",
+              "artifact_sha256": "c55f5364c078d8bbc77b8dd9b581b116f5f2e18b939adc39438b8850b7a64d4e"
             }
           },
           {
@@ -457,20 +457,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:0.151.0",
-          "display": "0.151.0",
+          "version_key": "cli:0.153.4",
+          "display": "0.153.4",
           "components": [
             {
               "component": "cli",
-              "version": "0.151.0"
+              "version": "0.153.4"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/codex-public-coverage-20260909.json",
+            "artifact_sha256": "c55f5364c078d8bbc77b8dd9b581b116f5f2e18b939adc39438b8850b7a64d4e"
           }
         },
         "os_support": [
@@ -863,22 +863,22 @@
       "name": "Kimi Code",
       "slug": "integration-kimi-code",
       "icon": "/tool-icons/kimi.png",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
             "protocol": "responses",
-            "support": "supported",
+            "support": "unverified",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-03",
               "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-c9c2c56bd0d940febfa6a232",
               "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
@@ -897,24 +897,24 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-03",
-              "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-492c761099ea4f5393f9a4ab",
-              "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-group62-20260909.json",
+              "artifact_sha256": "7807b4a3ac50aedd2cecd638f01e2feda236c526bc6e139cddf43ead2709e74e"
             }
           },
           {
             "protocol": "messages",
-            "support": "supported",
+            "support": "unverified",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-03",
               "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-loop-claude-sonnet-5-messages-group15-usage.json#evidence-fa00de04741c4acaa387900c",
               "artifact_sha256": "316898c6a6293430a3a25fa801b32e49d11a689cbfc97f6c09b5c32c1b1a7c6d"
@@ -922,17 +922,17 @@
           },
           {
             "protocol": "generate_content",
-            "support": "supported",
+            "support": "unverified",
             "client_transport_features": {
-              "minimal_text": "verified",
-              "streaming_terminal": "verified",
-              "tool_call": "verified",
-              "tool_result_continuation": "verified",
-              "usage": "verified",
-              "invalid_request": "verified"
+              "minimal_text": "unverified",
+              "streaming_terminal": "unverified",
+              "tool_call": "unverified",
+              "tool_result_continuation": "unverified",
+              "usage": "unverified",
+              "invalid_request": "unverified"
             },
             "evidence": {
-              "status": "verified",
+              "status": "unverified",
               "observed_at": "2026-09-03",
               "source_ref": "artifacts/kimi-code-four-protocol-loops-20260903/kimi-invalid-request-probes-20260903.json#evidence-4e08457d24bb420d97cecc8b",
               "artifact_sha256": "1d191516e68dcb867a7117e4d4fa53faa4382481e6809377d6dd3d9879a644ec"
@@ -979,27 +979,26 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:0.39.1",
-          "display": "0.39.1",
+          "version_key": "cli:0.41.0",
+          "display": "0.41.0",
           "components": [
             {
               "component": "cli",
-              "version": "0.39.1",
-              "supported_range": ">=0.38.0"
+              "version": "0.41.0"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-03",
-            "source_ref": "model-doc-contracts/evidence/kimi-code-installed-refresh-20260903.json",
-            "artifact_sha256": "23babd9b31ac709e99f621d6dbe97409e39d22267b54e1249b3002f363db0dc2"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/kimi-code-group62-20260909.json",
+            "artifact_sha256": "7807b4a3ac50aedd2cecd638f01e2feda236c526bc6e139cddf43ead2709e74e"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.kimi-code/config.toml",
@@ -1009,14 +1008,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "6ad4579c070637ffd9a0036c19c97647dc97ea7d1f7130a5c2f5fe23364b2dd5"
             }
           },
           {
             "os": "linux",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.kimi-code/config.toml",
@@ -1026,14 +1025,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "6ad4579c070637ffd9a0036c19c97647dc97ea7d1f7130a5c2f5fe23364b2dd5"
             }
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.kimi-code\\config.toml",
@@ -1043,9 +1042,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/kimi-code-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "6ad4579c070637ffd9a0036c19c97647dc97ea7d1f7130a5c2f5fe23364b2dd5"
             }
           }
         ],
@@ -1114,7 +1113,7 @@
       "name": "OpenCode",
       "slug": "integration-opencode",
       "icon": "/tool-icons/opencode.png",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
@@ -1130,9 +1129,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-responses-gpt-5.4-group6-20260901-loop.json#evidence-93c53fa4a263a0500c300794",
-              "artifact_sha256": "6a6aea3d0972636f1bbdcdcb80a789b550482cdf3469478ffba82cf9d909bed2"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           },
           {
@@ -1148,9 +1147,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-chat_completions-grok-4.5-group34-20260901-loop.json#evidence-62edd5d70b4d534a6c159cd6",
-              "artifact_sha256": "b8888c1687da2c862c870d7723a101ff69c8b3637063c62ab38cc9b1676fc0f6"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           },
           {
@@ -1166,9 +1165,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-messages-claude-opus-4-7-group15-20260901-loop.json#evidence-b46729b4e5e8348baaebdc91",
-              "artifact_sha256": "62ac6bbc693ca1904d4375d8aa8fa2d4638f99e128ad54787fc39a9660d70112"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           },
           {
@@ -1184,9 +1183,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/opencode-representative-loops-20260901/opencode-generate_content-gemini-3.1-pro-group57-20260901-loop.json#evidence-a689d6cb306ab1398ed99749",
-              "artifact_sha256": "fbfcd2ff4556add77815309a41da4b4547f44f2cb797c9176b30be7e4e3afe77"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+              "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
             }
           }
         ],
@@ -1221,26 +1220,26 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:1.18.15",
-          "display": "1.18.15",
+          "version_key": "cli:1.18.29",
+          "display": "1.18.29",
           "components": [
             {
               "component": "cli",
-              "version": "1.18.15"
+              "version": "1.18.29"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/opencode-public-group-coverage-20260909.json",
+            "artifact_sha256": "582521108a62cd8bd05043179afc9ccaca072f11acf179e89e3f0090e2ac5986"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.config/opencode/opencode.json",
@@ -1250,14 +1249,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "389ee24b808485c67f3b0d0214deeecbd0f0206dab5cd44e8ff20ef70a713b2f"
             }
           },
           {
             "os": "linux",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.config/opencode/opencode.json",
@@ -1267,14 +1266,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "389ee24b808485c67f3b0d0214deeecbd0f0206dab5cd44e8ff20ef70a713b2f"
             }
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.config\\opencode\\opencode.json",
@@ -1284,9 +1283,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/opencode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "389ee24b808485c67f3b0d0214deeecbd0f0206dab5cd44e8ff20ef70a713b2f"
             }
           }
         ],
@@ -1351,7 +1350,7 @@
       "name": "ZCode",
       "slug": "integration-zcode",
       "icon": "/tool-icons/zcode.png",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
@@ -1367,9 +1366,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/zcode-client-protocol-loops-20260901/zcode-loop-qwen3.7-max-responses-group64-20260901.json#evidence-4d49055fe0fa328644cb7558",
-              "artifact_sha256": "7f4c33a55bc1d8d094747f9b53772ce53af0f5ff774eba2cade270dec319f2db"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-group64-3.11.2-20260909.json",
+              "artifact_sha256": "fd89f5a11263008733336f2ad5026625f10df88c1a24f72983b807b5e794415d"
             }
           },
           {
@@ -1458,12 +1457,12 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "app:3.10.1+cli:0.16.5",
-          "display": "3.10.1 / CLI 0.16.5",
+          "version_key": "app:3.11.2+cli:0.16.5",
+          "display": "3.11.2 / CLI 0.16.5",
           "components": [
             {
               "component": "app",
-              "version": "3.10.1"
+              "version": "3.11.2"
             },
             {
               "component": "cli",
@@ -1473,15 +1472,15 @@
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/zcode-group64-3.11.2-20260909.json",
+            "artifact_sha256": "fd89f5a11263008733336f2ad5026625f10df88c1a24f72983b807b5e794415d"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.zcode/v2/config.json",
@@ -1496,14 +1495,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "a3d94d604e33191389b2ebf8cd7358bcebc69dbef9ece21031ebc7b46107f99e"
             }
           },
           {
             "os": "linux",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.zcode/v2/config.json",
@@ -1518,14 +1517,14 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "a3d94d604e33191389b2ebf8cd7358bcebc69dbef9ece21031ebc7b46107f99e"
             }
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.zcode\\v2\\config.json",
@@ -1540,9 +1539,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-08-31",
-              "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-              "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/zcode-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "a3d94d604e33191389b2ebf8cd7358bcebc69dbef9ece21031ebc7b46107f99e"
             }
           }
         ],
@@ -1940,9 +1939,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-01",
-              "source_ref": "artifacts/antigravity-tool-loop-key205-gemini37-final3-20260901.json#evidence-1e28786409e20a397ab2fcc6",
-              "artifact_sha256": "7bbdbb3d62dd878b9d87e5ad7360a850ddbba2cf979bf047dc3bdf3e5be8a695"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/antigravity-group57-1.1.27-20260909.json",
+              "artifact_sha256": "2fbea187c27a7d2a2d7122a10c6f72362fc33ae83953439e7cadf5715729405c"
             }
           }
         ],
@@ -1983,20 +1982,20 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "cli:1.1.22",
-          "display": "1.1.22",
+          "version_key": "cli:1.1.27",
+          "display": "1.1.27",
           "components": [
             {
               "component": "cli",
-              "version": "1.1.22"
+              "version": "1.1.27"
             }
           ],
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-08-31",
-            "source_ref": "model-doc-contracts/evidence/client-matrix-source-20260831.json",
-            "artifact_sha256": "476fb826772cd9beb40a69d03e27e900203ae04d11e34c0dd6b70e5acbda92bd"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/antigravity-group57-1.1.27-20260909.json",
+            "artifact_sha256": "2fbea187c27a7d2a2d7122a10c6f72362fc33ae83953439e7cadf5715729405c"
           }
         },
         "os_support": [
@@ -2986,7 +2985,7 @@
       "name": "WorkBuddy",
       "slug": "integration-workbuddy",
       "icon": "/tool-icons/workbuddy.svg",
-      "one_click_status": "prototype",
+      "one_click_status": "ready",
       "client_protocol": {
         "protocols": [
           {
@@ -3020,9 +3019,9 @@
             },
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-02",
-              "source_ref": "artifacts/workbuddy-chat-completions-loop-20260902/workbuddy-chat-completions-invalid-request-20260902.json#evidence-dd2b5ba61bf8456c87a61c10",
-              "artifact_sha256": "274ab95d4b5933404ecb2d3c711397ebb332656060fec338db6ebee33647f14d"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/workbuddy-group34-5.5.3-20260909.json",
+              "artifact_sha256": "d210273739d5804e3172a37bca941993677f8de87d433890a6463497e7e3ab92"
             }
           },
           {
@@ -3119,12 +3118,12 @@
       },
       "client_config_os": {
         "release": {
-          "version_key": "app:5.5.1+cli:2.137.1",
-          "display": "WorkBuddy 5.5.1",
+          "version_key": "app:5.5.3+cli:2.137.1",
+          "display": "WorkBuddy 5.5.3",
           "components": [
             {
               "component": "app",
-              "version": "5.5.1"
+              "version": "5.5.3"
             },
             {
               "component": "cli",
@@ -3134,15 +3133,15 @@
           "channel": "stable",
           "evidence": {
             "status": "verified",
-            "observed_at": "2026-09-02",
-            "source_ref": "model-doc-contracts/evidence/workbuddy-installed-refresh-20260902.json",
-            "artifact_sha256": "59ee32671d57c15970fd30f0c674a5cd431f4867a3335d94bd3628bc58aa66d5"
+            "observed_at": "2026-09-09",
+            "source_ref": "artifacts/workbuddy-group34-5.5.3-20260909.json",
+            "artifact_sha256": "d210273739d5804e3172a37bca941993677f8de87d433890a6463497e7e3ab92"
           }
         },
         "os_support": [
           {
             "os": "macos",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "~/.workbuddy/models.json",
@@ -3170,9 +3169,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-02",
-              "source_ref": "WorkBuddy 5.3.14 local UI screenshot plus /Applications/WorkBuddy.app/Contents/Resources/app.asar#packages/workbuddy-core/src/domains/models/node/desktop-models-repo.ts",
-              "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/workbuddy-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "862339eeef6aeec136f48f3e9aad2484aed5037aff8d465fb0965f9e37296e53"
             }
           },
           {
@@ -3188,7 +3187,7 @@
           },
           {
             "os": "windows",
-            "support": "documented",
+            "support": "verified",
             "config_files": [
               {
                 "path": "%USERPROFILE%\\.workbuddy\\models.json",
@@ -3216,9 +3215,9 @@
             ],
             "evidence": {
               "status": "verified",
-              "observed_at": "2026-09-02",
-              "source_ref": "/Applications/WorkBuddy.app/Contents/Resources/app.asar#packages/workbuddy-core/src/domains/models/node/desktop-models-repo.ts cross-platform homedir resolution",
-              "artifact_sha256": "e84c3bb19d8e391283e81290c0623f8a242bfd1b8d09fe72b7e04068bdbee98b"
+              "observed_at": "2026-09-09",
+              "source_ref": "artifacts/workbuddy-cross-platform-config-qa-20260909.json",
+              "artifact_sha256": "862339eeef6aeec136f48f3e9aad2484aed5037aff8d465fb0965f9e37296e53"
             }
           }
         ],
@@ -3278,7 +3277,9 @@
         ],
         "verification_contract": "Exact app/CLI versions plus the login-free env config path (CODEBUDDY_BASE_URL + CODEBUDDY_API_KEY) verified on 2026-09-02. Chat Completions minimal/stream/tool/continuation/usage/error cells and a clean real Agent loop verified by receipts under artifacts/workbuddy-chat-completions-loop-20260902. Reasoning-level mapping to GUI modes remains unverified."
       },
-      "verification_os": []
+      "verification_os": [
+        "macos"
+      ]
     },
     {
       "id": "deepseek-harness",

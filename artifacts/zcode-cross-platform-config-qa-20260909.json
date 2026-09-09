@@ -1,0 +1,54 @@
+{
+  "artifact_sha256": "e893ce94dc85d5dd9b5637c6eb7070f6484982073b367cc5fc5b17b347039b98",
+  "assertions": [
+    "strict_parse",
+    "recoverable_backup",
+    "preserve_unrelated",
+    "atomic_write",
+    "idempotent",
+    "all_key_visible_models",
+    "app_and_cli_config"
+  ],
+  "client_id": "zcode",
+  "client_version": "app:3.11.2+cli:0.16.5",
+  "head_sha": "96a51e80f29d9cc6998d28e50070d602ad371e92",
+  "installation_scope": "configuration_only_existing_zcode_installation",
+  "installers": {
+    "posix": {
+      "path": "frontend/public/auto-config/install.sh",
+      "sha256": "aa61de53c8717abdc5bafa85a93484e299921670307836c4dd57e4230a6bb45b"
+    },
+    "windows": {
+      "path": "frontend/public/auto-config/install.ps1",
+      "sha256": "bda5b05de9e7d0ccf275727023303c62b22f9358a8054ef5f3f3daa4f5f45734"
+    }
+  },
+  "kind": "client_setup_cross_platform_qa",
+  "observed_at": "2026-09-08T22:07:34Z",
+  "passed": true,
+  "results": [
+    {
+      "os": "linux",
+      "result": "passed",
+      "runner": "ubuntu-latest"
+    },
+    {
+      "os": "macos",
+      "result": "passed",
+      "runner": "macos-latest"
+    },
+    {
+      "os": "windows",
+      "result": "passed",
+      "runner": "windows-latest",
+      "shells": [
+        "PowerShell 7",
+        "Windows PowerShell 5.1"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "secret_free": true,
+  "workflow_run_id": 34284174421,
+  "workflow_url": "https://github.com/nobody396/laoshiren-ai-gateway/actions/runs/34284174421"
+}

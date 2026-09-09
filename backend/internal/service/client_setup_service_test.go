@@ -471,7 +471,7 @@ func TestExplicitSetupSelectionBindsAndReturnsEveryExactField(t *testing.T) {
 	require.Equal(t, selection.OS, credential.OS)
 }
 
-func TestExplicitSetupSelectionFailsClosedForPartialPrototypeAndMissingModel(t *testing.T) {
+func TestExplicitSetupSelectionFailsClosedForPartialStaleVersionAndMissingModel(t *testing.T) {
 	group := &Group{ID: 7, Name: "Mixed model group", Platform: PlatformOpenAI, Status: StatusActive}
 	key := &APIKey{ID: 41, UserID: 9, Status: StatusActive, Group: group}
 	base := ClientSetupSelection{
@@ -489,8 +489,8 @@ func TestExplicitSetupSelectionFailsClosedForPartialPrototypeAndMissingModel(t *
 	_, err := svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, partial)
 	require.ErrorIs(t, err, ErrInvalidClientSetupSelection)
 
-	// The canonical client contract is still prototype, so an exact-looking
-	// selection must remain unavailable until the generated matrix says ready.
+	// A stale client version must remain unavailable even after that client is
+	// published in the generated matrix.
 	_, err = svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, base)
 	require.ErrorIs(t, err, ErrClientSetupSelectionUnavailable)
 
@@ -508,7 +508,7 @@ func TestExplicitSetupSelectionFailsClosedForPartialPrototypeAndMissingModel(t *
 func TestGeneratedExplicitSetupSelectionsAllowReadyAndRejectDisabledClients(t *testing.T) {
 	svc := &ClientSetupService{}
 	require.True(t, svc.isSelectionReady(ClientSetupSelection{
-		ClientID: "codex", ClientVersionKey: "cli:0.151.0",
+		ClientID: "codex", ClientVersionKey: generatedClientSetupContracts["codex"].VersionKey,
 		Protocol: "responses", ModelID: "gpt-5.6-sol", OS: "macos",
 	}))
 	require.False(t, svc.isSelectionReady(ClientSetupSelection{

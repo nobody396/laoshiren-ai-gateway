@@ -1,0 +1,52 @@
+{
+  "artifact_sha256": "fd2a28dbf47cb909585105bae69587704ae32319c24843ea3c754e1999d5dd6a",
+  "assertions": [
+    "strict_parse",
+    "recoverable_backup",
+    "preserve_unrelated",
+    "atomic_write",
+    "idempotent",
+    "all_key_visible_models"
+  ],
+  "client_id": "opencode",
+  "client_version": "cli:1.18.29",
+  "head_sha": "a4998bc6ec9a6561b3c2864e727f18d7fa7cdb82",
+  "installers": {
+    "posix": {
+      "path": "frontend/public/auto-config/install.sh",
+      "sha256": "4ec7d78ccdec8f6e29af1e8a2b345b1b48c2dafcf6dd80103572fc4f9549255f"
+    },
+    "windows": {
+      "path": "frontend/public/auto-config/install.ps1",
+      "sha256": "b2613b3160ae4281e84596d5a97330af7b99cedcc8c1ad825dd80c267c9561a6"
+    }
+  },
+  "kind": "client_setup_cross_platform_qa",
+  "observed_at": "2026-09-08T21:06:26Z",
+  "passed": true,
+  "results": [
+    {
+      "os": "linux",
+      "result": "passed",
+      "runner": "ubuntu-latest"
+    },
+    {
+      "os": "macos",
+      "result": "passed",
+      "runner": "macos-latest"
+    },
+    {
+      "os": "windows",
+      "result": "passed",
+      "runner": "windows-latest",
+      "shells": [
+        "PowerShell 7",
+        "Windows PowerShell 5.1"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "secret_free": true,
+  "workflow_run_id": 34278580180,
+  "workflow_url": "https://github.com/nobody396/laoshiren-ai-gateway/actions/runs/34278580180"
+}

@@ -200,6 +200,7 @@ func RegisterUserRoutes(
 
 		resources := authenticated.Group("/resources")
 		{
+			resources.GET("/setup-options", h.Resource.ListSetupOptions)
 			resources.POST("/setup-ticket", h.Resource.CreateSetupTicket)
 			resources.GET("/version-status", h.Resource.ListVersionStatus)
 			resources.GET("/:tool", h.Resource.ListTool)

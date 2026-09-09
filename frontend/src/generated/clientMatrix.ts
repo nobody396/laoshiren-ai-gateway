@@ -20,8 +20,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "claude-code",
     "name": "Claude Code",
-    "version": "2.1.258",
-    "version_key": "cli:2.1.258",
+    "version": "2.1.263",
+    "version_key": "cli:2.1.263",
     "slug": "integration-claude-code",
     "icon": "/brand/client-tools/claude.svg",
     "protocols": [
@@ -128,8 +128,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "codex",
     "name": "Codex",
-    "version": "0.151.0",
-    "version_key": "cli:0.151.0",
+    "version": "0.153.4",
+    "version_key": "cli:0.153.4",
     "slug": "integration-codex",
     "icon": "/brand/client-tools/codex-light.png",
     "protocols": [
@@ -320,21 +320,18 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "kimi-code",
     "name": "Kimi Code",
-    "version": "0.39.1",
-    "version_key": "cli:0.39.1",
+    "version": "0.41.0",
+    "version_key": "cli:0.41.0",
     "slug": "integration-kimi-code",
     "icon": "/tool-icons/kimi.png",
     "protocols": [
-      "responses",
-      "chat_completions",
-      "messages",
-      "generate_content"
+      "chat_completions"
     ],
     "protocol_details": [
       {
         "protocol": "responses",
-        "support": "supported",
-        "evidence_status": "verified"
+        "support": "unverified",
+        "evidence_status": "unverified"
       },
       {
         "protocol": "chat_completions",
@@ -343,13 +340,13 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
       },
       {
         "protocol": "messages",
-        "support": "supported",
-        "evidence_status": "verified"
+        "support": "unverified",
+        "evidence_status": "unverified"
       },
       {
         "protocol": "generate_content",
-        "support": "supported",
-        "evidence_status": "verified"
+        "support": "unverified",
+        "evidence_status": "unverified"
       }
     ],
     "reasoning": {
@@ -373,7 +370,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.kimi-code\\config.toml"
       ]
     },
-    "one_click_status": "prototype",
+    "one_click_status": "ready",
     "verification_os": [
       "macos"
     ],
@@ -422,8 +419,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "opencode",
     "name": "OpenCode",
-    "version": "1.18.15",
-    "version_key": "cli:1.18.15",
+    "version": "1.18.29",
+    "version_key": "cli:1.18.29",
     "slug": "integration-opencode",
     "icon": "/tool-icons/opencode.png",
     "protocols": [
@@ -469,7 +466,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.config\\opencode\\opencode.json"
       ]
     },
-    "one_click_status": "prototype",
+    "one_click_status": "ready",
     "verification_os": [
       "macos"
     ],
@@ -514,8 +511,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "zcode",
     "name": "ZCode",
-    "version": "3.10.1 / CLI 0.16.5",
-    "version_key": "app:3.10.1+cli:0.16.5",
+    "version": "3.11.2 / CLI 0.16.5",
+    "version_key": "app:3.11.2+cli:0.16.5",
     "slug": "integration-zcode",
     "icon": "/tool-icons/zcode.png",
     "protocols": [
@@ -560,7 +557,7 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.zcode\\cli\\config.json"
       ]
     },
-    "one_click_status": "prototype",
+    "one_click_status": "ready",
     "verification_os": [
       "macos"
     ],
@@ -704,8 +701,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "antigravity",
     "name": "Antigravity",
-    "version": "1.1.22",
-    "version_key": "cli:1.1.22",
+    "version": "1.1.27",
+    "version_key": "cli:1.1.27",
     "slug": "integration-antigravity",
     "icon": "/tool-icons/antigravity.png",
     "protocols": [
@@ -1137,8 +1134,8 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
   {
     "id": "workbuddy",
     "name": "WorkBuddy",
-    "version": "WorkBuddy 5.5.1",
-    "version_key": "app:5.5.1+cli:2.137.1",
+    "version": "WorkBuddy 5.5.3",
+    "version_key": "app:5.5.3+cli:2.137.1",
     "slug": "integration-workbuddy",
     "icon": "/tool-icons/workbuddy.svg",
     "protocols": [
@@ -1198,8 +1195,10 @@ export const clientMatrix: readonly ClientMatrixEntry[] = [
         "%USERPROFILE%\\.workbuddy\\settings.json"
       ]
     },
-    "one_click_status": "prototype",
-    "verification_os": [],
+    "one_click_status": "ready",
+    "verification_os": [
+      "macos"
+    ],
     "config_contract": {
       "base_url_rule": "Default custom-protocol mode: use https://api.laoshirenai.com/v1 and WorkBuddy validates/appends /chat/completions. Exact-URL mode: use https://api.laoshirenai.com/v1/chat/completions and WorkBuddy sends to that URL without path completion.",
       "credential": "WorkBuddy desktop stores each custom model credential in user ~/.workbuddy/models.json (Windows: %USERPROFILE%\\.workbuddy\\models.json). The separate .codebuddy/models.json paths belong to the bundled CodeBuddy CLI / legacy compatibility layer.",

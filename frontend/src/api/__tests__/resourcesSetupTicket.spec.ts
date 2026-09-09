@@ -5,17 +5,40 @@ import {
   createClientSetupTicket,
   createClientSetupTicketForAPIKey,
   createClientSetupTicketForSelection,
+  createClientSetupTicketForOption,
+  getClientSetupOptions,
   type ClientSetupSelection,
 } from '../resources'
 
-vi.mock('../client', () => ({ apiClient: { post: vi.fn(), defaults: {} } }))
+vi.mock('../client', () => ({ apiClient: { get: vi.fn(), post: vi.fn(), defaults: {} } }))
 
-const mockClient = apiClient as unknown as { post: ReturnType<typeof vi.fn> }
+const mockClient = apiClient as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> }
 
 describe('client setup ticket API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockClient.post.mockResolvedValue({ data: { ticket: 'ticket' } })
+  })
+
+  it('reads simple options and issues a ticket without exposing version protocol or model fields', async () => {
+    mockClient.get.mockResolvedValueOnce({ data: [{ client_id: 'codex', name: 'Codex' }] })
+    await getClientSetupOptions(42, 'windows')
+    await createClientSetupTicketForOption(42, 'codex', 'windows')
+    await createClientSetupTicketForOption(43, 'claude-code', 'macos')
+
+    expect(mockClient.get).toHaveBeenCalledWith('/resources/setup-options', {
+      params: { api_key_id: 42, os: 'windows' }
+    })
+    expect(mockClient.post).toHaveBeenCalledWith('/resources/setup-ticket', {
+      api_key_id: 42,
+      client_id: 'codex',
+      os: 'windows'
+    })
+    expect(mockClient.post).toHaveBeenCalledWith('/resources/setup-ticket', {
+      api_key_id: 43,
+      client_id: 'claude-code',
+      os: 'macos'
+    })
   })
 
   it('preserves both legacy target and API-key request shapes', async () => {

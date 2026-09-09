@@ -1,0 +1,54 @@
+{
+  "artifact_sha256": "5bea40e83e5ebde4d4519911ab16f3609316caf0643957bd25ed993d8f0dd505",
+  "assertions": [
+    "strict_parse",
+    "recoverable_backup",
+    "preserve_unrelated",
+    "atomic_write",
+    "idempotent",
+    "all_key_visible_models",
+    "array_and_object_config_shapes"
+  ],
+  "client_id": "workbuddy",
+  "client_version": "app:5.5.3+cli:2.137.1",
+  "head_sha": "178a437422193ebad381a62796fae2c9f2b285f4",
+  "installation_scope": "configuration_only_existing_workbuddy_installation",
+  "installers": {
+    "posix": {
+      "path": "frontend/public/auto-config/install.sh",
+      "sha256": "00342d34ee19b511c07e50c59c6dadad21ac18cec92ced4e818dadef25a99b37"
+    },
+    "windows": {
+      "path": "frontend/public/auto-config/install.ps1",
+      "sha256": "3e8aeb84495459fc76295652e3fcc5269a489dbca3fa87b6164129b60d2ec793"
+    }
+  },
+  "kind": "client_setup_cross_platform_qa",
+  "observed_at": "2026-09-08T23:05:23Z",
+  "passed": true,
+  "results": [
+    {
+      "os": "macos",
+      "result": "passed",
+      "runner": "macos-latest"
+    },
+    {
+      "os": "windows",
+      "result": "passed",
+      "runner": "windows-latest",
+      "shells": [
+        "PowerShell 7",
+        "Windows PowerShell 5.1"
+      ]
+    },
+    {
+      "os": "linux",
+      "result": "config_parser_passed_but_client_remains_unsupported",
+      "runner": "ubuntu-latest"
+    }
+  ],
+  "schema_version": 1,
+  "secret_free": true,
+  "workflow_run_id": 34288939100,
+  "workflow_url": "https://github.com/nobody396/laoshiren-ai-gateway/actions/runs/34288939100"
+}

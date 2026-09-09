@@ -1,159 +1,203 @@
-# Claude Code
+本文说明如何把老实人AI API Key 配置到 **Claude Code CLI**。配置完成后，Claude Code 会通过老实人AI的 Anthropic Messages 接口调用模型。
 
-把当前 API Key 可以调用的模型导入 Claude Code。已验证客户端版本：Claude Code `2.1.251`；连接协议为 **Anthropic Messages**。
-
-## 客户端原生协议
-
-Claude Code 使用 Anthropic Messages。Base URL 填写网关根地址，客户端会自动请求 `/v1/messages`；不使用 Responses、Chat Completions 或 GenerateContent 配置。
-
-## 模型兼容范围
-
-分组决定 Key 能调用的模型；`/v1/models` 返回精确模型 ID。只有通过 Anthropic Messages 与 Claude Code 真实 Agent 验证的模型才提供一键导入。
-
-## 1. 创建 Key
-
-打开 [API 密钥](https://laoshirenai.com/keys)，创建 Key，并选择准备使用的分组。
-
-分组决定这把 Key 可以调用哪些模型。创建完成后，系统会使用这把 Key 查询 `/v1/models`，只读取该分组真实开放的模型 ID。
-
-> 截图待补：`claude-code-01-create-key.png`
-
-## 2. 选择模型和 Claude Code
-
-从这把 Key 返回的模型中选择一个主模型，再选择 **Claude Code**。
-
-只有同时满足以下条件时，Claude Code 才会出现在可导入客户端中：
-
-- 分组允许 Anthropic Messages；
-- 模型推荐或支持 Anthropic Messages；
-- 该模型已经完成 Claude Code 真实 Agent 验证。
-
-协议兼容只代表“可能可以配置”，真实验证通过后才会提供一键导入。
-
-> 截图待补：`claude-code-02-select-model.png`
-
-## 3. 复制一次性命令
-
-页面将生成一条 10 分钟有效、只能使用一次的命令。命令中不包含明文 API Key。
-
-**当前状态：命令待生成。先确认本文配置方法，再实现正式命令。**
-
-正式命令执行后会自动：
-
-1. 读取当前 Key 的模型列表；
-2. 写入 Base URL 和 Key；
-3. 设置主模型；
-4. 设置 Opus、Sonnet、Haiku、Fable 模型槽位；
-5. 读取并验证最终配置；
-6. 运行一个最小 Claude Code 任务。
-
-## 4. 执行并验证
-
-命令完成不等于配置成功。最终必须同时确认：
-
-- Claude Code 可以启动；
-- 当前模型来自这把 Key 的 `/v1/models`；
-- 可以读取测试文件；
-- 可以调用一次本地工具；
-- 可以接收工具结果并返回最终答案。
-
-> 截图待补：`claude-code-03-success.png`
-
-## 命令会修改什么
-
-Claude Code 用户配置文件：
+生产 Base URL：
 
 ```text
-macOS / Linux: ~/.claude/settings.json
-Windows: %USERPROFILE%\.claude\settings.json
+https://api.laoshirenai.com
 ```
 
-只更新以下必要配置：
+## 开始之前
 
-| 配置 | 用途 |
+先准备两样东西：
+
+1. 已经安装 Claude Code；
+2. 已在[老实人AI API 密钥页面](https://laoshirenai.com/keys)创建 Key，并知道这把 Key 可以使用的模型 ID。
+
+### 安装 Claude Code
+
+macOS / Linux / WSL：
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+Windows PowerShell：
+
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+### 国内网络环境一键安装并配置
+
+下面使用老实人AI现有的安装配置脚本。它会自动准备 Node.js、安装或更新 Claude Code，并写入老实人AI配置；Windows 缺少 Git Bash 时也会自动准备。执行后按照提示粘贴 API Key。
+
+运行前先把 `YOUR_MODEL_ID` 替换成当前 Key 模型列表中的模型 ID。
+
+macOS / Linux / WSL：
+
+```bash
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.17' | LAOSHIRENAI_TOOLS='claude' LAOSHIRENAI_MODEL_ID='YOUR_MODEL_ID' LAOSHIRENAI_PROTOCOL='messages' bash
+```
+
+Windows PowerShell：
+
+```powershell
+$env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_MODEL_ID='YOUR_MODEL_ID'; $env:LAOSHIRENAI_PROTOCOL='messages'; irm 'https://laoshirenai.com/auto-config/install.ps1?v=0.7.17' | iex
+```
+
+也可以通过 npm 安装：
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+安装后先确认：
+
+```bash
+claude --version
+```
+
+## 方式一：修改 settings.json（推荐）
+
+这种方式最直观，Claude Code 每次启动都会读取同一份设置。
+
+配置文件位置：
+
+| 系统 | 文件位置 |
 | --- | --- |
-| `model` | Claude Code 默认使用的主模型 |
-| `effortLevel` | 当前模型已经验证的默认推理强度 |
-| `ANTHROPIC_BASE_URL` | 老实人AI API 地址 |
-| `ANTHROPIC_AUTH_TOKEN` | 当前 API Key |
-| `ANTHROPIC_MODEL` | 当前主模型 ID |
-| `ANTHROPIC_DEFAULT_OPUS_MODEL` | Opus 槽位模型 |
-| `ANTHROPIC_DEFAULT_SONNET_MODEL` | Sonnet 槽位模型 |
-| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Haiku 槽位模型 |
-| `ANTHROPIC_DEFAULT_FABLE_MODEL` | Fable 槽位模型（客户端支持时） |
-| `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY` | 允许读取网关模型 |
+| macOS / Linux / WSL | `~/.claude/settings.json` |
+| Windows | `%USERPROFILE%\.claude\settings.json` |
 
-命令会先备份原文件，然后只更新上面的字段。已有的 MCP、Hook、权限、其他环境变量和其他设置都会保留，不会整份替换 `settings.json`。
-
-如果现有 JSON 无法解析，命令会停止并提示错误，不会把配置清空后重写。重复执行同一份配置不会产生重复内容。
-
-## 模型槽位怎么填写
-
-所有写入的模型 ID 都必须来自当前 Key 的 `/v1/models`。
-
-### Key 返回多个 Claude 模型
-
-系统按照维护好的模型优先级，把可用模型分别填入对应槽位：
-
-```text
-主模型    → 用户选择的模型
-Opus      → 当前 Key 可用的 Opus 模型
-Sonnet    → 当前 Key 可用的 Sonnet 模型
-Haiku     → 当前 Key 可用的 Haiku 模型
-Fable     → 当前 Key 可用的 Fable 模型
-```
-
-某个系列不存在时，该槽位回退到用户选择的主模型，避免 Claude Code 自动使用这把 Key 无法调用的官方模型 ID。
-
-### Key 只返回一个模型
-
-主模型和所有受支持槽位都填写这个模型。
-
-### 导入非 Claude 模型
-
-只有已经通过 Anthropic Messages 与 Claude Code 真实验证的模型才允许导入。导入时，主模型和所有受支持槽位都映射到用户选择的模型。
-
-## 手动配置
-
-不使用一键命令时，可以手动编辑 `settings.json`。下面只展示需要合并的字段；不要覆盖文件中的其他内容。
+文件不存在时创建它；已经存在时，只合并下面的 `env` 字段，不要覆盖原来的权限、MCP 或其他设置。
 
 ```json
 {
-  "model": "YOUR_MAIN_MODEL",
-  "effortLevel": "YOUR_VERIFIED_EFFORT",
   "env": {
-    "ANTHROPIC_BASE_URL": "https://api.laoshirenai.com",
     "ANTHROPIC_AUTH_TOKEN": "YOUR_API_KEY",
-    "ANTHROPIC_MODEL": "YOUR_MAIN_MODEL",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "YOUR_OPUS_OR_MAIN_MODEL",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "YOUR_SONNET_OR_MAIN_MODEL",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "YOUR_HAIKU_OR_MAIN_MODEL",
-    "ANTHROPIC_DEFAULT_FABLE_MODEL": "YOUR_FABLE_OR_MAIN_MODEL",
-    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
-    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"
+    "ANTHROPIC_BASE_URL": "https://api.laoshirenai.com",
+    "ANTHROPIC_MODEL": "YOUR_MODEL_ID",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "YOUR_MODEL_ID",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "YOUR_MODEL_ID",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "YOUR_MODEL_ID",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "YOUR_MODEL_ID",
+    "API_TIMEOUT_MS": "3000000"
   }
 }
 ```
 
-Base URL 使用根地址，不要添加 `/v1` 或 `/v1/messages`；Claude Code 会自动请求 `/v1/messages`。
+替换两处内容：
 
-## 更换模型
+- `YOUR_API_KEY`：替换成你在老实人AI创建的 Key；
+- 所有 `YOUR_MODEL_ID`：替换成这把 Key 模型列表里实际显示的同一个模型 ID。
 
-回到 API 密钥页面，重新选择：
+保存文件后，完全退出 Claude Code，再重新打开终端运行：
 
-1. Key；
-2. 该 Key 开放的模型；
-3. Claude Code。
+```bash
+claude
+```
 
-再生成一次命令即可。新命令只更新主模型、对应槽位和必要连接字段，不覆盖其他 Claude Code 设置。
+## 方式二：使用环境变量
 
-## 常见错误
+不想修改 `settings.json` 时，可以先在当前终端设置环境变量。关闭终端后，这些设置会失效。
 
-- **模型没有出现**：当前 Key 的分组没有开放该模型。
-- **Claude Code 没有出现**：该模型尚未完成 Claude Code 真实验证，或者协议不匹配。
-- **`401`**：Key 无效、停用或没有正确写入。
-- **`400 model not supported`**：配置中的模型 ID 不在当前 Key 的 `/v1/models` 中。
-- **仍使用旧模型**：完全退出 Claude Code，重新打开终端并创建新会话。
-- **配置文件无法解析**：先修复现有 `settings.json`，再重新执行命令。
+macOS / Linux / WSL：
 
-[查看模型支持的协议和客户端 →](models)
+```bash
+export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"
+export ANTHROPIC_BASE_URL="https://api.laoshirenai.com"
+export ANTHROPIC_MODEL="YOUR_MODEL_ID"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="YOUR_MODEL_ID"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="YOUR_MODEL_ID"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="YOUR_MODEL_ID"
+export CLAUDE_CODE_SUBAGENT_MODEL="YOUR_MODEL_ID"
+export API_TIMEOUT_MS="3000000"
+claude
+```
+
+Windows PowerShell：
+
+```powershell
+$env:ANTHROPIC_AUTH_TOKEN = "YOUR_API_KEY"
+$env:ANTHROPIC_BASE_URL = "https://api.laoshirenai.com"
+$env:ANTHROPIC_MODEL = "YOUR_MODEL_ID"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL = "YOUR_MODEL_ID"
+$env:ANTHROPIC_DEFAULT_SONNET_MODEL = "YOUR_MODEL_ID"
+$env:ANTHROPIC_DEFAULT_HAIKU_MODEL = "YOUR_MODEL_ID"
+$env:CLAUDE_CODE_SUBAGENT_MODEL = "YOUR_MODEL_ID"
+$env:API_TIMEOUT_MS = "3000000"
+claude
+```
+
+## 切换模型
+
+### 临时切换
+
+macOS / Linux / WSL：
+
+```bash
+ANTHROPIC_MODEL="NEW_MODEL_ID" claude
+```
+
+Windows PowerShell：
+
+```powershell
+$env:ANTHROPIC_MODEL = "NEW_MODEL_ID"
+claude
+```
+
+### 永久切换
+
+修改 `settings.json` 中所有模型字段，并把它们统一替换成新的模型 ID，然后完全重启 Claude Code。
+
+## 模型 ID 从哪里获取
+
+打开[老实人AI API 密钥页面](https://laoshirenai.com/keys)，查看当前 Key 的模型列表并复制准确的模型 ID。
+
+也可以从已经设置好 Key 的终端查询。
+
+macOS / Linux / WSL：
+
+```bash
+curl -sS 'https://api.laoshirenai.com/v1/models' -H "Authorization: Bearer $ANTHROPIC_AUTH_TOKEN"
+```
+
+Windows PowerShell：
+
+```powershell
+(Invoke-RestMethod -Uri 'https://api.laoshirenai.com/v1/models' -Headers @{ Authorization = "Bearer $env:ANTHROPIC_AUTH_TOKEN" }).data.id
+```
+
+macOS / Linux 命令返回 JSON，请从 `data` 数组中复制准确的 `id`。
+
+不要根据模型中文名称猜测，也不要照抄其他分组的模型列表。模型是否可用以当前 Key 的实际授权为准。
+
+## 验证连接
+
+启动 Claude Code 后输入：
+
+```text
+请只回复：老实人AI Claude Code 连接成功
+```
+
+同时满足以下两项才算配置成功：
+
+1. Claude Code 返回正常结果；
+2. 老实人AI的使用记录中出现这次请求。
+
+## 常见问题
+
+| 现象 | 处理方法 |
+| --- | --- |
+| `claude: command not found` | 重新安装 Claude Code，然后重启终端 |
+| 返回 `401` | 检查 `ANTHROPIC_AUTH_TOKEN` 是否为当前有效 Key |
+| 提示模型不存在 | 使用当前 Key 模型列表实际显示的模型 ID |
+| 仍然调用官方 Claude | 检查 `ANTHROPIC_BASE_URL` 是否为 `https://api.laoshirenai.com`，然后完全重启 |
+| 子任务调用其他模型失败 | 确认四个默认模型字段和 `CLAUDE_CODE_SUBAGENT_MODEL` 使用同一个有效模型 ID |
+
+## 安全提示
+
+- `settings.json` 中的 Key 是明文，请不要发送、截图或提交到 Git；
+- 不要把 Key 写进项目目录；
+- Key 泄露后立即在老实人AI停用并重新创建。
+
+配置字段依据：[Claude Code 环境变量](https://code.claude.com/docs/en/env-vars)、[Claude Code 模型配置](https://code.claude.com/docs/en/model-config)。

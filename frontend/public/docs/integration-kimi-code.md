@@ -1,85 +1,183 @@
-# Kimi Code
+本文说明如何把老实人AI API Key 配置到 **Kimi Code CLI**。配置完成后，Kimi Code 会通过老实人AI的 OpenAI Chat Completions 接口调用模型。
 
-Kimi Code 可以通过 **OpenAI Chat Completions** 协议连接老实人AI。本文配置已在 Kimi Code CLI `0.39.1` 与 `kimi-k3` 上完成文件读取、Shell、文件修改和多轮任务测试。
+生产 Base URL：
 
-## 客户端原生协议
-
-Kimi Code 的 Provider 类型决定协议：
-
-- `openai` → Chat Completions；
-- `openai_responses` → Responses；
-- `anthropic` → Anthropic Messages；
-- `google-genai` → Gemini GenerateContent。
-
-客户端具备四种 Provider，不代表任意模型能在四种协议下完成 Agent 任务；仍需匹配模型分组和工具调用格式。
-
-## 模型兼容范围
-
-- 当前 Kimi Key 可选择：`kimi-k2.7-code`、`kimi-k3`。
-- 已完成真实 Kimi Code Agent 闭环：`kimi-k3`。
-- 跨协议真实 Agent 闭环：`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`（Responses），`glm-5.3`（Chat Completions），`claude-sonnet-5`（Messages），`gemini-3.7-flash`（GenerateContent）。
-- DeepSeek Responses 已完成真实 Agent 闭环：`deepseek-v4-pro-0813`、`deepseek-v4-flash-0731`。
-- Qwen Responses 已完成真实 Agent 闭环：`qwen3.7-max`、`qwen3.7-plus`、`qwen3.8-max`。`qwen3.6-flash`、`qwen3.6-plus`、`qwen3.7-flash` 在当前生产网关重复返回 502，暂记为不支持；模型级 reasoning 映射修复部署后需要复测。
-- Kimi Code 的通用推理档位是 `low`、`medium`、`high`、`xhigh`、`max`。GLM 5.3 只接受 `low`、`high`、`max`，网关会将 `medium → high`、`xhigh → max`、`none/minimal → low` 后再转发。
-- 四种 Provider 是四类候选入口，不代表任意模型均可用；只使用本文列出的已实测模型。
-
-## 1. 创建 Key
-
-打开 [API 密钥](https://laoshirenai.com/keys)，选择 Kimi 分组创建 Key。
-
-## 2. 安装
-
-```bash
-npm install -g @moonshot-ai/kimi-code@0.39.1
-kimi --version
+```text
+https://api.laoshirenai.com/v1
 ```
 
-也可以使用官方安装脚本：
+> 本教程已按 `@moonshot-ai/kimi-code` 0.41.0 核对。国内 npm 镜像安装和配置文件解析均已在隔离目录中验证。
+
+## 准备工作
+
+开始前确认：
+
+1. 已在[老实人AI API 密钥页面](https://laoshirenai.com/keys)创建有效 Key；
+2. 当前 Key 有可用额度，并且已经授权目标模型；
+3. 如果使用 npm 安装，Node.js 必须为 22.19.0 或更高版本。
+
+检查 Node.js 版本：
+
+```bash
+node --version
+```
+
+## 安装 Kimi Code
+
+### 官方安装方式
+
+macOS / Linux：
 
 ```bash
 curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
 ```
 
-## 3. 手动配置
+Windows PowerShell：
 
-Kimi Code 提供 `KIMI_MODEL_*` 临时配置通道，不需要修改配置文件：
-
-```bash
-export KIMI_MODEL_NAME='kimi-k3'
-export KIMI_MODEL_API_KEY='YOUR_API_KEY'
-export KIMI_MODEL_PROVIDER_TYPE='openai'
-export KIMI_MODEL_BASE_URL='https://api.laoshirenai.com/v1'
-export KIMI_MODEL_MAX_CONTEXT_SIZE='262144'
-export KIMI_MODEL_CAPABILITIES='thinking,tool_use'
+```powershell
+irm https://code.kimi.com/kimi-code/install.ps1 | iex
 ```
 
-长期配置文件是 `~/.kimi-code/config.toml`。Kimi Code 的普通 `KIMI_API_KEY` 环境变量不会自动成为自定义 Provider 凭据；直接使用上面的 `KIMI_MODEL_*` 方式最简单。
+Windows 首次启动前还需要安装 Git for Windows。
 
-## 4. 启动使用
+### 国内 npm 镜像安装
+
+macOS / Linux / WSL：
+
+```bash
+npm install -g @moonshot-ai/kimi-code@latest --registry=https://registry.npmmirror.com
+```
+
+Windows PowerShell：
+
+```powershell
+npm.cmd install -g @moonshot-ai/kimi-code@latest --registry=https://registry.npmmirror.com
+```
+
+安装后重新打开终端并确认：
+
+```bash
+kimi --version
+```
+
+## 配置 Kimi Code
+
+### 第一步：查询可用模型
+
+macOS / Linux / WSL：
+
+```bash
+export LSRAI_API_KEY="YOUR_API_KEY"
+curl -sS 'https://api.laoshirenai.com/v1/models' -H "Authorization: Bearer $LSRAI_API_KEY"
+```
+
+Windows PowerShell：
+
+```powershell
+$env:LSRAI_API_KEY = "YOUR_API_KEY"
+(Invoke-RestMethod -Uri 'https://api.laoshirenai.com/v1/models' -Headers @{ Authorization = "Bearer $env:LSRAI_API_KEY" }).data.id
+```
+
+从返回结果中复制一个准确的模型 ID，下面用 `YOUR_MODEL_ID` 表示。
+
+### 第二步：修改 config.toml
+
+用户级配置文件位置：
+
+| 系统 | 文件位置 |
+| --- | --- |
+| macOS / Linux / WSL | `~/.kimi-code/config.toml` |
+| Windows | `%USERPROFILE%\.kimi-code\config.toml` |
+
+文件不存在时创建它；已经存在时，把下面的 `lsrai` Provider 和模型合并进去，不要覆盖已有的权限、服务或其他 Provider。
+
+```toml
+default_model = "lsrai/YOUR_MODEL_ID"
+
+[providers.lsrai]
+type = "openai"
+base_url = "https://api.laoshirenai.com/v1"
+api_key = "YOUR_API_KEY"
+
+[models."lsrai/YOUR_MODEL_ID"]
+provider = "lsrai"
+model = "YOUR_MODEL_ID"
+max_context_size = 262144
+```
+
+替换两类占位内容：
+
+1. 把三处 `YOUR_MODEL_ID` 替换成第一步查到的同一个模型 ID；
+2. 把 `YOUR_API_KEY` 替换成老实人AI API Key。
+
+Provider ID 统一使用纯英文小写 `lsrai`。本教程使用 `type = "openai"`，对应 OpenAI Chat Completions；不要改成 `openai_responses`，也不需要添加任何 WebSocket 配置。
+
+保存后检查配置语法：
+
+```bash
+kimi doctor
+```
+
+看到 `All checked config files are valid.` 说明配置文件格式正确。
+
+### 第三步：启动 Kimi Code
+
+进入项目目录后运行：
 
 ```bash
 kimi
 ```
 
-单次任务：
+如果只想执行一次测试任务：
 
 ```bash
-kimi -p '读取当前目录并只回复 OK' --output-format text
+kimi -p '请只回复：lsrai Kimi Code 连接成功' --output-format text
 ```
 
-Kimi Code 的 Provider 类型决定协议；`openai` 对应 Chat Completions。模型仍必须来自当前 Key 的模型列表。
+## 切换模型
 
-跨协议实测配置：
+重新查询当前 Key 的模型列表，然后同时修改 `config.toml` 中的：
 
-| 模型示例 | `KIMI_MODEL_PROVIDER_TYPE` | `KIMI_MODEL_BASE_URL` |
+1. 顶层 `default_model`；
+2. `[models."lsrai/YOUR_MODEL_ID"]` 表名；
+3. 模型条目中的 `model`。
+
+三处必须使用同一个模型 ID。保存后完全退出并重新启动 Kimi Code。
+
+也可以启动时临时指定已经配置好的模型别名：
+
+```bash
+kimi --model "lsrai/YOUR_MODEL_ID"
+```
+
+## 验证连接
+
+启动 Kimi Code 后输入：
+
+```text
+请只回复：lsrai Kimi Code 连接成功
+```
+
+同时满足以下两项才算配置成功：
+
+1. Kimi Code 正常返回结果；
+2. 老实人AI的使用记录中出现这次请求。
+
+## 常见问题
+
+| 现象 | 可能原因 | 处理方法 |
 | --- | --- | --- |
-| `gpt-5.6-sol` | `openai_responses` | `https://api.laoshirenai.com/v1` |
-| `claude-sonnet-5` | `anthropic` | `https://api.laoshirenai.com` |
-| `gemini-3.7-flash` | `google-genai` | `https://api.laoshirenai.com` |
+| `kimi` 命令不存在 | 安装目录还没有进入 PATH | 重新打开终端，再运行 `kimi --version` |
+| npm 提示 Node.js 版本过低 | 当前 Node.js 低于 22.19.0 | 升级 Node.js，或改用官方安装脚本 |
+| `kimi doctor` 报错 | TOML 引号、表名或字段位置错误 | 对照完整配置修复，不要重复声明同一个 Provider |
+| 返回 `401` | Key 错误、已停用或没有正确写入 | 重新复制当前有效 Key |
+| 提示模型不存在 | 模型 ID 不属于当前 Key | 重新查询 `/v1/models` 并替换三处模型 ID |
+| 工具调用失败 | Provider 协议配置错误 | Kimi 模型保持 `type = "openai"` |
 
-每次切换模型系列时，同时更新模型、Provider 类型、Base URL 和 Key。
+## 安全提示
 
-## 常见错误
+- `config.toml` 中包含 API Key，不要把它提交到 Git 或发给他人；
+- macOS / Linux 可执行 `chmod 600 ~/.kimi-code/config.toml` 限制文件权限；
+- Key 泄露后立即在老实人AI停用并重新创建。
 
-- 缺少 `KIMI_MODEL_API_KEY`：CLI 会在启动时直接报凭据缺失。
-- 模型不存在：把 `KIMI_MODEL_NAME` 改为当前 Key 返回的模型 ID。
+配置字段依据：[Kimi Code 官方安装文档](https://www.kimi.com/code/docs/kimi-code-cli/guides/getting-started)、[Provider 与模型配置](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/providers)、[配置文件说明](https://www.kimi.com/code/docs/en/kimi-code-cli/configuration/config-files.html)。

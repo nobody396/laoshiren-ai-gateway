@@ -585,7 +585,7 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusMovedPermanently, w.Code)
-		assert.Equal(t, "/docs/claude-code-china-guide", w.Header().Get("Location"))
+		assert.Equal(t, "/docs/integration-claude-code", w.Header().Get("Location"))
 	})
 
 	t.Run("serves_static_seo_body_for_public_docs", func(t *testing.T) {
@@ -604,15 +604,41 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		router.Use(server.Middleware())
 
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/docs/claude-code-china-guide", nil)
+		req := httptest.NewRequest(http.MethodGet, "/docs/integration-claude-code", nil)
 		router.ServeHTTP(w, req)
 
 		body := w.Body.String()
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, body, "Claude Code 国内使用完整指南")
+		assert.Contains(t, body, "<h1>Claude Code</h1>")
+		assert.Contains(t, body, "国内网络环境一键安装并配置")
 		assert.Contains(t, body, `<main class="seo-static-content">`)
 		assert.Contains(t, body, `data-seo="server-structured-data"`)
-		assert.Contains(t, body, `"@type":"FAQPage"`)
+		assert.Contains(t, body, `"@type":"TechArticle"`)
+	})
+
+	t.Run("serves_public_integration_docs_and_categories_with_200", func(t *testing.T) {
+		provider := &mockSettingsProvider{settings: map[string]string{"test": "value"}}
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		for _, path := range []string{
+			"/docs/category/integrations",
+			"/docs/integration-claude-code",
+			"/docs/integration-codex",
+			"/docs/integration-zcode",
+			"/docs/integration-workbuddy",
+		} {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code, path)
+			assert.NotContains(t, w.Body.String(), "页面未找到", path)
+			assert.NotContains(t, w.Body.String(), "noindex,nofollow", path)
+		}
 	})
 
 	t.Run("serves_noindex_404_for_missing_public_routes", func(t *testing.T) {

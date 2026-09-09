@@ -7,6 +7,9 @@
     </router-link>
 
     <div class="zen-header__right">
+      <router-link v-if="PUBLIC_DOCS_ENABLED" to="/docs" class="zen-header__docs">
+        {{ docsLabel }}
+      </router-link>
       <LocaleSwitcher class="zen-header__locale" />
       <a :href="ctaTarget" class="zen-header__console" @click="onCtaClick">{{ ctaLabel }}</a>
     </div>
@@ -17,13 +20,13 @@
 /**
  * 落地页头部导航(ZenMux 白底风格)
  * - 白底 + backdrop blur,sticky 吸附
- * - 右侧:语言切换 + 黑色药丸 CTA(登录/控制台,按登录态切换)
- * - 不放任何导航菜单(owner 决定:页内锚点与站点链接均不展示)
+ * - 右侧:公开文档 + 语言切换 + 黑色药丸 CTA(登录/控制台,按登录态切换)
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 
 const props = defineProps<{
   /** 是否已认证 */
@@ -37,6 +40,7 @@ const { locale } = useI18n()
 
 const isEnglish = computed(() => locale.value === 'en')
 const brandName = computed(() => (isEnglish.value ? 'LaoshirenAI' : '老实人AI'))
+const docsLabel = computed(() => (isEnglish.value ? 'Docs' : '文档'))
 const ui = computed(() => (isEnglish.value
   ? { dashboard: 'Dashboard', begin: 'Get started' }
   : { dashboard: '控制台', begin: '开始使用' }))
@@ -94,6 +98,18 @@ function onCtaClick(event: MouseEvent): void {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.zen-header__docs {
+  color: rgb(var(--zen-muted));
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.zen-header__docs:hover {
+  color: rgb(var(--zen-ink));
 }
 
 .zen-header__console {

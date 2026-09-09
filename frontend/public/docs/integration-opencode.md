@@ -1,48 +1,87 @@
-# OpenCode
+本文说明如何把老实人AI API Key 配置到 **OpenCode 1.x**。配置完成后，OpenCode 会通过老实人AI的 Responses API 调用模型。
 
-OpenCode 可以通过自定义 OpenAI 兼容 Provider 接入老实人AI。本文已在 OpenCode `1.18.15` 上分别使用 `gpt-5.6-sol`、`kimi-k3` 和 `glm-5.3` 完成文件读取、Shell、文件修改和多轮任务测试。
+生产 Base URL：
 
-## 客户端原生协议
-
-OpenCode 由 Provider Package 决定协议：
-
-- `@ai-sdk/openai-compatible` → Chat Completions；
-- `@ai-sdk/openai` → Responses；
-- `@ai-sdk/anthropic` → Anthropic Messages；
-- `@ai-sdk/google` → Gemini GenerateContent。
-
-每种协议应使用独立 Provider ID；客户端能加载 Package 只是协议候选，模型能否完成工具循环仍需实测。
-
-## 模型兼容范围
-
-- 当前已完成 OpenCode Agent 闭环：`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`、全部 Qwen 3.6/3.7/3.8 公布模型、`deepseek-v4-pro-0813`、`deepseek-v4-flash-0731`、`claude-sonnet-5`、`gemini-3.7-flash`、`grok-4.6`、`kimi-k3`、`glm-5.3`。
-- 同一份 Provider 模板可以声明多个模型，但当前使用的 Key 必须返回准备选择的模型。
-- 切换模型系列时，必须同时切换 Provider Package、模型 ID、Base URL 和拥有该模型的 Key；不能只改模型名。
-
-## 1. 创建 Key
-
-打开 [API 密钥](https://laoshirenai.com/keys)，选择准备使用模型的分组创建 Key。
-
-## 2. 设置 Key
-
-```bash
-export LAOSHIRENAI_API_KEY='YOUR_API_KEY'
+```text
+https://api.laoshirenai.com/v1
 ```
 
-## 3. 手动配置
+> 本教程已按 `opencode` 1.18.29 核对，不适用于仍在测试中的 `opencode2`。
 
-在项目目录创建 `opencode.json`：
+## 准备工作
+
+开始前确认：
+
+1. 已在[老实人AI API 密钥页面](https://laoshirenai.com/keys)创建有效 Key；
+2. 当前 Key 有可用额度，并且已经授权目标模型；
+3. `opencode --version` 可以正常输出版本。
+
+## 安装 OpenCode
+
+macOS / Linux / WSL：
+
+```bash
+curl -fsSL https://opencode.ai/install | bash
+```
+
+也可以通过 npm 安装：
+
+```bash
+npm install -g opencode-ai
+```
+
+国内 npm 镜像：
+
+```bash
+npm install -g opencode-ai --registry=https://registry.npmmirror.com
+```
+
+Windows PowerShell：
+
+```powershell
+npm.cmd install -g opencode-ai --registry=https://registry.npmmirror.com
+```
+
+Windows 推荐优先在 WSL 中使用 OpenCode。
+
+## 配置 OpenCode
+
+### 第一步：设置 API Key
+
+macOS / Linux / WSL：
+
+```bash
+export LSRAI_API_KEY="YOUR_API_KEY"
+```
+
+Windows PowerShell：
+
+```powershell
+$env:LSRAI_API_KEY = "YOUR_API_KEY"
+```
+
+### 第二步：修改 opencode.json
+
+用户级配置文件位置：
+
+| 系统 | 文件位置 |
+| --- | --- |
+| macOS / Linux / WSL | `~/.config/opencode/opencode.json` |
+| Windows | `%USERPROFILE%\.config\opencode\opencode.json` |
+
+文件不存在时创建它；已经存在时，把 `lsrai` 合并到现有 `provider` 中，不要覆盖插件、权限或其他 Provider。
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "lsrai/YOUR_MODEL_ID",
   "provider": {
-    "laoshirenai": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "老实人AI",
+    "lsrai": {
+      "npm": "@ai-sdk/openai",
+      "name": "lsrai",
       "options": {
         "baseURL": "https://api.laoshirenai.com/v1",
-        "apiKey": "{env:LAOSHIRENAI_API_KEY}"
+        "apiKey": "{env:LSRAI_API_KEY}"
       },
       "models": {
         "YOUR_MODEL_ID": {
@@ -54,30 +93,69 @@ export LAOSHIRENAI_API_KEY='YOUR_API_KEY'
 }
 ```
 
-`@ai-sdk/openai-compatible` 使用 Chat Completions。配置中的 Key 来自环境变量，不需要写入 JSON。把两个 `YOUR_MODEL_ID` 都替换为当前 Key 返回的模型 ID。
+所有 Provider ID 和显示名称统一使用纯英文小写 `lsrai`。把三处 `YOUR_MODEL_ID` 替换成同一个准确模型 ID。
 
-跨协议 Provider Package 与 Base URL：
+这里使用 `@ai-sdk/openai`，因为本教程走 Responses API；不要替换成只用于 Chat Completions 的 `@ai-sdk/openai-compatible`。
 
-| 协议 | Provider Package | Base URL |
-| --- | --- | --- |
-| Responses | `@ai-sdk/openai` | `https://api.laoshirenai.com/v1` |
-| Chat Completions | `@ai-sdk/openai-compatible` | `https://api.laoshirenai.com/v1` |
-| Anthropic Messages | `@ai-sdk/anthropic` | `https://api.laoshirenai.com/v1` |
-| Gemini GenerateContent | `@ai-sdk/google` | `https://api.laoshirenai.com/v1beta` |
+### 第三步：启动 OpenCode
 
-## 4. 启动使用
+从设置了 `LSRAI_API_KEY` 的同一个终端运行：
 
 ```bash
-opencode run --model laoshirenai/YOUR_MODEL_ID '读取当前目录并只回复 OK'
+opencode
 ```
 
-同一个 OpenCode 配置可以使用 GPT 或 Kimi，但切换模型时也必须换成拥有该模型的 Key。协议相同不代表任意 Key 都能调用任意模型。
+进入 OpenCode 后运行 `/models`，选择 `lsrai/YOUR_MODEL_ID`。
 
-`opencode.json` 必须位于当前项目根目录，或者通过 `OPENCODE_CONFIG=/完整路径/opencode.json` 显式指定。若 OpenCode 启动在另一个项目目录，它会报 `ProviderModelNotFoundError`；这属于配置没有加载，不是 Chat Completions 协议不兼容。
+## 查询并切换模型
 
-## 常见错误
+macOS / Linux / WSL：
 
-- Provider 不出现：检查 `provider`、`npm` 和 `models` 层级是否正确。
-- `ProviderModelNotFoundError`：确认启动目录包含这份 `opencode.json`，或设置 `OPENCODE_CONFIG` 指向它。
-- `401`：环境变量没有设置或 Key 无效。
-- 模型不可用：Key 所选分组没有开放该模型。
+```bash
+curl -sS 'https://api.laoshirenai.com/v1/models' -H "Authorization: Bearer $LSRAI_API_KEY"
+```
+
+Windows PowerShell：
+
+```powershell
+(Invoke-RestMethod -Uri 'https://api.laoshirenai.com/v1/models' -Headers @{ Authorization = "Bearer $env:LSRAI_API_KEY" }).data.id
+```
+
+切换模型时，需要同时修改：
+
+1. 顶层 `model`；
+2. `provider.lsrai.models` 中的模型键；
+3. 模型条目里的 `name`。
+
+修改后重新启动 OpenCode，再通过 `/models` 选择新模型。
+
+## 验证连接
+
+启动 OpenCode 后输入：
+
+```text
+请只回复：lsrai OpenCode 连接成功
+```
+
+同时满足以下两项才算配置成功：
+
+1. OpenCode 正常返回结果；
+2. 老实人AI的使用记录中出现这次请求。
+
+## 常见问题
+
+| 现象 | 可能原因 | 处理方法 |
+| --- | --- | --- |
+| 返回 `401` | Key 没有传入 OpenCode | 从设置 `LSRAI_API_KEY` 的同一终端启动 |
+| `/models` 没有 `lsrai` | Provider ID、JSON 结构或路径错误 | 检查用户级 `opencode.json` |
+| 提示模型不存在 | 三处模型 ID 不一致或无权限 | 查询 `/v1/models` 并统一替换 |
+| 工具调用失败 | 使用了错误的 Provider 包 | Responses 使用 `@ai-sdk/openai` |
+| 配置解析失败 | JSON 逗号、引号或括号错误 | 修复 JSON，不要重复添加第二个顶层 `provider` |
+
+## 安全提示
+
+- 使用 `{env:LSRAI_API_KEY}` 引用环境变量，不把真实 Key 写进 JSON；
+- 不要提交包含 Key 的 `.env` 或配置文件；
+- Key 泄露后立即在老实人AI停用并重新创建。
+
+配置字段依据：[OpenCode 自定义 Provider](https://opencode.ai/docs/providers#custom-provider)、[OpenCode 模型配置](https://opencode.ai/docs/models)。

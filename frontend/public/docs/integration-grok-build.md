@@ -1,93 +1,146 @@
-# Grok Build
+本文说明如何把老实人AI API Key 配置到 **Grok Build CLI**。配置完成后，Grok Build 会通过老实人AI的 Responses API 调用模型。
 
-Grok Build 通过 **OpenAI Responses** 协议调用 Grok。本文配置已在 Grok Build `1.0.13` 与 `grok-4.6` 上完成文件读取、Shell、文件修改和多轮任务测试。
+生产 Base URL：
 
-## 客户端原生协议
+```text
+https://api.laoshirenai.com/v1
+```
 
-Grok Build `1.0.13` 的自定义模型 `api_backend` 支持：
+## 准备工作
 
-- `responses` → OpenAI Responses；
-- `chat_completions` → OpenAI Chat Completions；
-- `messages` → Anthropic Messages。
+开始前确认：
 
-Gemini GenerateContent 不支持。未知 `api_backend` 不会变成 Gemini，而会回退到默认 Chat 行为，因此不能据此宣称支持。
+1. 已在[老实人AI API 密钥页面](https://laoshirenai.com/keys)创建有效 Key；
+2. 当前 Key 有可用额度，并且已经授权目标模型；
+3. 本教程配置的是 Grok Build CLI，不是 Grok 网页聊天。
 
-## 模型兼容范围
+## 安装 Grok Build
 
-- 当前 Grok Key 可选择：`grok-4.5`、`grok-4.6`。
-- 已完成真实 Grok Build Agent 闭环：`grok-4.6`。
-- 跨协议真实 Agent 闭环：`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`（Responses），`glm-5.3`（Chat Completions），`claude-sonnet-5`（Messages）。
-- DeepSeek Responses 已完成真实 Agent 闭环：`deepseek-v4-pro-0813`、`deepseek-v4-flash-0731`。
-- Qwen Responses 已完成真实 Agent 闭环：`qwen3.6-flash`、`qwen3.6-plus`、`qwen3.7-flash`、`qwen3.7-plus`、`qwen3.8-max`。`qwen3.7-max` 能返回工具结果，但当前客户端 resident actor 重复以 `DeadFailed` 退出，暂记为不支持。
-- 因此 Grok Build 不只能够使用 Grok 模型；但仍只能选择当前 Key 返回、且在本文列为已实测的模型。不要从“支持三种后端”推导所有模型均可用。
-
-## 1. 创建 Key
-
-打开 [API 密钥](https://laoshirenai.com/keys)，选择 Grok 分组创建 Key。
-
-## 2. 一键配置
-
-在 Key 右侧点击 **一键配置**，选择 Grok Build。生成命令的结构与其他客户端一致：
+macOS / Linux / WSL：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.14' | \
-  LAOSHIRENAI_SETUP_TOKEN='ONE_TIME_SETUP_TOKEN' \
-  LAOSHIRENAI_TOOLS='grok' bash
+curl -fsSL https://x.ai/cli/install.sh | bash
 ```
 
-Windows 使用同版本 `install.ps1`，并把 `LAOSHIRENAI_TOOLS` 设为 `grok`。
-
-## 3. 手动配置
-
-先设置 Key：
-
-```bash
-export LAOSHIRENAI_GROK_API_KEY='YOUR_API_KEY'
-```
-
-编辑 `~/.grok/config.toml`：
-
-```toml
-[models]
-default = "laoshirenai-grok"
-web_search = "laoshirenai-grok"
-
-[model."laoshirenai-grok"]
-model = "grok-4.6"
-base_url = "https://api.laoshirenai.com"
-name = "Grok 4.6"
-env_key = "LAOSHIRENAI_GROK_API_KEY"
-api_backend = "responses"
-context_window = 262144
-supports_backend_search = true
-```
-
-需要其他 Grok 模型时，把 `model` 改成当前 Key 模型列表中的 ID。
-
-跨协议模型使用对应的 `api_backend` 和 Base URL：
-
-| 模型示例 | `api_backend` | Base URL |
-| --- | --- | --- |
-| `gpt-5.6-sol` | `responses` | `https://api.laoshirenai.com` |
-| `glm-5.3` | `chat_completions` | `https://api.laoshirenai.com/v1` |
-| `claude-sonnet-5` | `messages` | `https://api.laoshirenai.com/v1` |
-
-切换模型系列时还要换成拥有该模型的 Key，不能只修改 `model`。
-
-## 4. 启动使用
+安装后确认：
 
 ```bash
 grok --version
-grok --model grok-4.6
 ```
 
-单次任务：
+### 老实人AI一键安装并配置
+
+下面使用老实人AI现有的安装配置脚本。它会安装或更新 Grok Build、写入老实人AI配置并验证 API Key。执行后按照提示粘贴 API Key。
+
+Windows 会从老实人AI同站缓存下载并校验 Grok Build；macOS / Linux / WSL 仍调用 xAI 官方安装源，因此这些系统目前不能标注为“国内镜像直装”。
+
+运行前先把 `YOUR_MODEL_ID` 替换成当前 Key 模型列表中的模型 ID。
+
+macOS / Linux / WSL：
 
 ```bash
-grok --single '读取当前目录并只回复 OK' --model grok-4.6
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.17' | LAOSHIRENAI_TOOLS='grok' LAOSHIRENAI_MODEL_ID='YOUR_MODEL_ID' LAOSHIRENAI_PROTOCOL='responses' bash
 ```
 
-## 常见错误
+Windows PowerShell：
 
-- `401`：环境变量没有设置或 Key 无效。
-- 模型不存在：从当前 Key 的 `/v1/models` 复制模型 ID。
+```powershell
+$env:LAOSHIRENAI_TOOLS='grok'; $env:LAOSHIRENAI_MODEL_ID='YOUR_MODEL_ID'; $env:LAOSHIRENAI_PROTOCOL='responses'; irm 'https://laoshirenai.com/auto-config/install.ps1?v=0.7.17' | iex
+```
+
+## 手动配置 Grok Build
+
+### 第一步：设置 API Key
+
+macOS / Linux / WSL：
+
+```bash
+export LSRAI_API_KEY="YOUR_API_KEY"
+```
+
+Windows PowerShell：
+
+```powershell
+$env:LSRAI_API_KEY = "YOUR_API_KEY"
+```
+
+这些设置只对当前终端有效。配置完成后，要从同一个终端启动 Grok Build。
+
+### 第二步：修改 config.toml
+
+用户级配置文件位置：
+
+| 系统 | 文件位置 |
+| --- | --- |
+| macOS / Linux / WSL | `~/.grok/config.toml` |
+| Windows | `%USERPROFILE%\.grok\config.toml` |
+
+如果设置过 `GROK_HOME`，请修改该目录中的 `config.toml`。已有文件时只合并下面字段，不要覆盖其他设置。
+
+```toml
+[models]
+default = "lsrai"
+
+[model.lsrai]
+model = "YOUR_MODEL_ID"
+base_url = "https://api.laoshirenai.com/v1"
+name = "lsrai"
+env_key = "LSRAI_API_KEY"
+api_backend = "responses"
+```
+
+把 `YOUR_MODEL_ID` 替换成当前 Key 模型列表中的准确 ID。Provider 条目和 `name` 统一使用纯英文小写 `lsrai`。
+
+### 第三步：检查并启动
+
+```bash
+grok inspect
+grok
+```
+
+`grok inspect` 应当显示用户级配置和 `lsrai` 模型。也可以直接执行：
+
+```bash
+grok -p "请只回复：lsrai Grok Build 连接成功" -m lsrai
+```
+
+## 查询并切换模型
+
+macOS / Linux / WSL：
+
+```bash
+curl -sS 'https://api.laoshirenai.com/v1/models' -H "Authorization: Bearer $LSRAI_API_KEY"
+```
+
+Windows PowerShell：
+
+```powershell
+(Invoke-RestMethod -Uri 'https://api.laoshirenai.com/v1/models' -Headers @{ Authorization = "Bearer $env:LSRAI_API_KEY" }).data.id
+```
+
+从返回结果复制准确的模型 ID，然后修改 `[model.lsrai]` 下的 `model`。保存后完全退出并重新启动 Grok Build。
+
+## 验证连接
+
+同时满足以下两项才算配置成功：
+
+1. Grok Build 正常返回结果；
+2. 老实人AI的使用记录中出现这次请求。
+
+## 常见问题
+
+| 现象 | 可能原因 | 处理方法 |
+| --- | --- | --- |
+| 返回 `401` | Key 缺失、错误或已经停用 | 在同一终端重新设置 `LSRAI_API_KEY` |
+| 提示模型不存在 | 模型 ID 不属于当前 Key | 查询 `/v1/models` 并使用准确 ID |
+| `grok inspect` 看不到配置 | 修改了错误目录 | 检查 `GROK_HOME` 和用户级 `config.toml` |
+| 返回 `404` | Base URL 或后端类型错误 | 使用 `/v1` 地址和 `api_backend = "responses"` |
+| 启动后仍使用旧模型 | 客户端没有重新读取配置 | 完全退出并重新启动 Grok Build |
+
+## 安全提示
+
+- 不要把真实 Key 写进 `config.toml`；
+- 不要在聊天、截图或代码仓库中暴露 Key；
+- Key 泄露后立即在老实人AI停用并重新创建。
+
+配置字段依据：[Grok Build 官方设置](https://docs.x.ai/build/settings)、[Grok Build 自定义模型](https://docs.x.ai/build/overview#custom-models)。

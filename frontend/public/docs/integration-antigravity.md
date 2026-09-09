@@ -1,115 +1,172 @@
-# Antigravity
+本文说明如何把老实人AI API Key 配置到 **Antigravity CLI（`agy`）**。配置完成后，Antigravity CLI 会通过老实人AI的 Gemini GenerateContent 接口调用模型。
 
-Antigravity CLI 使用 **Gemini GenerateContent** 协议。本文使用 Antigravity CLI `1.1.22`、Gemini 分组和 `gemini-3.7-flash` 完成了真实 Agent 文件读取、`pwd`、文件修改和修改后复读测试。
-
-## 客户端原生协议
-
-- Gemini GenerateContent：支持；API Key 自定义端点只接受 `modelProvider: "gemini"`。
-- OpenAI Responses / Chat Completions / Anthropic Messages：没有公开的自定义 Provider 配置入口。
-- 默认 Google 登录会连接共享 Agent Harness，但这不是可由用户填写 Base URL 的额外公开协议。
-
-## 模型兼容范围
-
-- 已完成真实 Antigravity Agent 闭环：`gemini-3.7-flash`，`--effort=low` 与 `--effort=high` 均通过。
-- Antigravity 使用 `gemini-3.7-flash`，并通过 `--effort=low` 或 `--effort=high` 控制当前会话的推理档位；不再依赖单独的 High 模型别名。
-- 当前不要选择 `gemini-3.1-pro`：Antigravity `1.1.22` 会将它转换为 `gemini-3.1-pro-preview`，而当前 Gemini Key 没有开放该 Preview ID。
-
-## 1. 创建 Key
-
-打开 [API 密钥](https://laoshirenai.com/keys)，选择 Gemini 分组创建 Key，再从该 Key 的模型列表确认包含 `gemini-3.7-flash`。
-
-Antigravity CLI 的自定义端点是 Gemini Base URL：
+生产 Base URL：
 
 ```text
 https://api.laoshirenai.com
 ```
 
-不要填写 `/v1`、`/v1beta`、模型名或完整 `generateContent` 路径，CLI 会自动追加 Gemini 请求路径。
+> 本教程只适用于 Antigravity CLI，不适用于 Antigravity 桌面应用或 IDE 插件。
 
-## 2. 安装或更新
+> 官方安装脚本已在隔离目录中安装验证，当前得到的版本为 `1.1.27`。
+
+> 当前 Gemini 分组的 `gemini-3.8-flash`、`gemini-3.7-flash` 已通过真实 Agent 工具闭环，但 `gemini-3.1-pro` 会被客户端改写成未开放的 Preview ID。为避免部分导入，密钥页面暂不提供 Antigravity 一键配置。
+
+## 准备工作
+
+开始前确认：
+
+1. 已在[老实人AI API 密钥页面](https://laoshirenai.com/keys)创建有效 Key；
+2. 当前 Key 有可用额度，并且已经授权 Gemini 模型；
+3. 准备使用的模型 ID 来自当前 Key 的模型列表。
+
+## 安装 Antigravity CLI
 
 macOS / Linux：
 
 ```bash
 curl -fsSL https://antigravity.google/cli/install.sh | bash
-agy --version
 ```
 
 Windows PowerShell：
 
 ```powershell
 irm https://antigravity.google/cli/install.ps1 | iex
+```
+
+Windows CMD：
+
+```cmd
+curl -fsSL https://antigravity.google/cli/install.cmd -o install.cmd && install.cmd && del install.cmd
+```
+
+安装后重新打开终端并确认：
+
+```bash
 agy --version
 ```
 
-本文命令以 `1.1.22` 为验证版本。旧版 `1.0.1` 没有 `--model` 参数，请先更新。
+当前还没有老实人AI同站安装镜像。以上安装命令直接使用 Google 官方源，不能标注为国内镜像直装。
 
-## 3. 手动配置
+## 配置 Antigravity CLI
 
-创建或编辑：
+### 第一步：修改 settings.json
 
-```text
-macOS / Linux: ~/.gemini/antigravity-cli/settings.json
-Windows: %USERPROFILE%\.gemini\antigravity-cli\settings.json
-```
+配置文件位置：
 
-写入：
+| 系统 | 文件位置 |
+| --- | --- |
+| macOS / Linux | `~/.gemini/antigravity-cli/settings.json` |
+| Windows | `%USERPROFILE%\.gemini\antigravity-cli\settings.json` |
+
+文件不存在时创建它；已经存在时，只合并 `modelProvider`，不要覆盖其他设置。
 
 ```json
 {
-  "modelProvider": "gemini",
-  "agentMode": "accept-edits"
+  "modelProvider": "gemini"
 }
 ```
 
-当前终端设置 Base URL 和 Key：
+`modelProvider` 只能写 `gemini`。只设置 API Key 而不修改这个文件不会生效。
+
+### 第二步：设置 API Key 和 Base URL
+
+Antigravity CLI 不会自动读取项目里的 `.env`，必须在准备启动 `agy` 的终端设置环境变量。
+
+macOS / Linux：
 
 ```bash
-export GOOGLE_GEMINI_BASE_URL='https://api.laoshirenai.com'
-export GEMINI_API_KEY='YOUR_API_KEY'
+export GEMINI_API_KEY="YOUR_API_KEY"
+export GOOGLE_GEMINI_BASE_URL="https://api.laoshirenai.com"
 ```
 
 Windows PowerShell：
 
 ```powershell
-$env:GOOGLE_GEMINI_BASE_URL='https://api.laoshirenai.com'
-$env:GEMINI_API_KEY='YOUR_API_KEY'
+$env:GEMINI_API_KEY = "YOUR_API_KEY"
+$env:GOOGLE_GEMINI_BASE_URL = "https://api.laoshirenai.com"
 ```
 
-只设置 `GEMINI_API_KEY` 不够；`settings.json` 中还必须将 `modelProvider` 设为 `gemini`。
+这里必须使用 Antigravity CLI 固定读取的 `GEMINI_API_KEY`，不能改成 `LSRAI_API_KEY` 或 `GOOGLE_API_KEY`。
 
-## 4. 启动使用
+### 第三步：查询模型
 
-交互模式：
+macOS / Linux：
 
 ```bash
-agy --model=gemini-3.7-flash --effort=low
+curl -sS 'https://api.laoshirenai.com/v1/models' -H "Authorization: Bearer $GEMINI_API_KEY"
 ```
 
-最小非交互请求：
+Windows PowerShell：
+
+```powershell
+(Invoke-RestMethod -Uri 'https://api.laoshirenai.com/v1/models' -Headers @{ Authorization = "Bearer $env:GEMINI_API_KEY" }).data.id
+```
+
+macOS / Linux 命令返回 JSON，请从 `data` 数组复制准确的 Gemini 模型 `id`。
+
+### 第四步：启动
+
+从刚才设置环境变量的同一个终端运行：
 
 ```bash
-agy --print "只回复 ANTIGRAVITY_OK" \
-  --model=gemini-3.7-flash \
-  --effort=low
+agy --model "YOUR_MODEL_ID" --effort low
 ```
 
-进入项目目录后启动 `agy`，即可让 Agent 读取项目、运行命令和修改文件。默认权限模式会在写文件或执行命令前请求确认。
+把 `YOUR_MODEL_ID` 替换成上一步查到的准确模型 ID。进入界面后，标题栏应显示使用 Gemini API Key，而不是 Google 账号邮箱。
 
-## 当前可用范围
+## 切换模型
 
-- Antigravity CLI `1.1.22`；
-- Gemini API Key 模式；
-- Gemini 兼容 Base URL；
-- `gemini-3.7-flash`，`low` effort；
-- 读取文件、运行 Shell、修改文件和多步 Agent 任务。
+完全退出当前会话，然后使用新的模型 ID 启动：
 
-## 常见错误
+```bash
+agy --model "NEW_MODEL_ID" --effort low
+```
 
-- `flags provided but not defined: -model`：CLI 版本过旧，请更新到 `1.1.22` 或更高版本。
-- `--model ... requires --effort`：同时传入 `--effort=low`。
-- `GEMINI_API_KEY is not set`：当前终端没有设置 Key，或启动 CLI 后才设置。
-- CLI 打开 Google 登录而不是 Key 模式：检查 `settings.json` 中的 `modelProvider` 是否严格等于 `gemini`。
-- `model not supported`：改用当前 Key 模型列表中已开放的 `gemini-3.7-flash`。
+也可以查看当前客户端能够列出的模型：
 
-Antigravity 的 API Key 模式、自定义端点和配置文件规则可参阅 [Antigravity 官方安装与鉴权文档](https://antigravity.google/docs/cli/install/)。
+```bash
+agy models
+```
+
+最终仍以当前老实人AI Key 的 `/v1/models` 返回结果为准。
+
+## 验证连接
+
+启动 Antigravity CLI 后输入：
+
+```text
+请只回复：lsrai Antigravity CLI 连接成功
+```
+
+同时满足以下两项才算配置成功：
+
+1. Antigravity CLI 正常返回结果；
+2. 老实人AI的使用记录中出现这次请求。
+
+## 常见问题
+
+| 现象 | 可能原因 | 处理方法 |
+| --- | --- | --- |
+| 启动后打开 Google 登录 | 没有设置 `modelProvider` | 在用户级 `settings.json` 中设置 `gemini` |
+| 提示 `GEMINI_API_KEY` 未设置 | Key 没有进入当前进程 | 在同一终端重新设置 Key 并启动 |
+| `.env` 里的 Key 没生效 | Antigravity CLI 不读取 `.env` | 直接设置终端环境变量 |
+| 返回 `401` | Key 错误、停用或没有传入 | 重新复制当前有效 Key |
+| 提示模型不可用 | 模型 ID 不属于当前 Key，或选择了会被客户端改写的 `gemini-3.1-pro` | 查询 `/v1/models`，改用 `gemini-3.8-flash` 或 `gemini-3.7-flash` |
+| 返回 `404` | Base URL 多写了路径 | 使用根地址，不添加 `/v1` 或 `/v1beta` |
+
+## 恢复 Google 官方登录
+
+如果不再使用老实人AI：
+
+1. 从 `settings.json` 删除 `modelProvider`；
+2. 清除 `GEMINI_API_KEY` 和 `GOOGLE_GEMINI_BASE_URL`；
+3. 完全退出并重新启动 `agy`。
+
+## 安全提示
+
+- 不要把真实 Key 写进 `settings.json`；
+- 不要把 Key 放进项目 `.env`、截图或代码仓库；
+- Key 泄露后立即在老实人AI停用并重新创建。
+
+配置字段依据：[Antigravity CLI 官方安装与 API Key 配置](https://www.antigravity.google/docs/cli/install/)。

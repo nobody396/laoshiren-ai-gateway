@@ -28,7 +28,7 @@ export type DocsConfig = DocCategory[]
 
 // Keep the public SEO timestamp unchanged while Docs remain hidden. Update this
 // in the separate publication change that flips the public Docs flag.
-export const docsLastModified = '2026-08-29'
+export const docsLastModified = '2026-09-09'
 
 function protocolLabel(protocol: ClientMatrixProtocol): string {
   if (protocol === 'responses') return 'Responses'

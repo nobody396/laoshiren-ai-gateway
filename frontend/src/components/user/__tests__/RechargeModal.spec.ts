@@ -32,12 +32,15 @@ vi.mock('@/api/topup', () => ({
   queryTopupOrderStatus: vi.fn(),
 }))
 
-vi.mock('@/composables/useManualNewcomerOffer', () => ({
-  useManualNewcomerOffer: () => ({
-    mode: { value: 'manual' },
-    refresh: vi.fn().mockResolvedValue(undefined),
-  }),
-}))
+vi.mock('@/composables/useManualNewcomerOffer', async () => {
+  const { ref } = await import('vue')
+  return {
+    useManualNewcomerOffer: () => ({
+      mode: ref('native'),
+      refresh: vi.fn().mockResolvedValue(undefined),
+    }),
+  }
+})
 
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-i18n')>()
@@ -64,6 +67,32 @@ describe('RechargeModal payment methods', () => {
     expect(wrapper.find('[data-testid="recharge-method-wechat"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="recharge-method-card_shop"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('旧卡密商品')
+
+    wrapper.unmount()
+  })
+
+  it('keeps the close control outside the bounded scroll area', async () => {
+    const wrapper = mount(RechargeModal, {
+      props: { modelValue: true },
+      global: {
+        stubs: {
+          Teleport: true,
+          NativeCheckoutTrialOffer: true,
+        },
+      },
+    })
+    await flushPromises()
+
+    const modal = wrapper.get('[data-testid="recharge-modal"]')
+    const body = wrapper.get('[data-testid="recharge-modal-body"]')
+    const close = wrapper.get('[data-testid="recharge-modal-close"]')
+
+    expect(modal.attributes('role')).toBe('dialog')
+    expect(modal.attributes('aria-modal')).toBe('true')
+    expect(modal.classes()).toContain('recharge-modal-card')
+    expect(body.classes()).toContain('overflow-y-auto')
+    expect(body.element.contains(close.element)).toBe(false)
+    expect(wrapper.get('native-checkout-trial-offer-stub').attributes('compact')).toBe('true')
 
     wrapper.unmount()
   })

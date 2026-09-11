@@ -37,6 +37,16 @@
         "report"
       ],
       "ttl": null
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/local/worktrees/remove-wechat-support-gateway-20260911",
+      "owner": "codex-remove-wechat-support-20260911",
+      "kind": "temporary",
+      "allowed_actions": [
+        "develop",
+        "test"
+      ],
+      "ttl": "2026-09-13T00:00:00+08:00"
     }
   ]
 }

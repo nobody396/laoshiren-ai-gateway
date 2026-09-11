@@ -195,12 +195,6 @@
                 <li>{{ t('redeem.codeRule2') }}</li>
                 <li>
                   {{ t('redeem.codeRule3') }}
-                  <span
-                    v-if="contactInfo"
-                    class="ml-1.5 inline-flex items-center rounded-md bg-primary-200/50 px-2 py-0.5 text-xs font-medium text-primary-800 dark:bg-primary-800/40 dark:text-primary-200"
-                  >
-                    {{ contactInfo }}
-                  </span>
                 </li>
                 <li>{{ t('redeem.codeRule4') }}</li>
               </ul>
@@ -360,7 +354,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { publicGroupDisplayName } from '@/utils/groupDisplayName'
-import { redeemAPI, authAPI, type RedeemHistoryItem } from '@/api'
+import { redeemAPI, type RedeemHistoryItem } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateTime } from '@/utils/format'
@@ -392,7 +386,6 @@ const errorMessage = ref('')
 // History data
 const history = ref<RedeemHistoryItem[]>([])
 const loadingHistory = ref(false)
-const contactInfo = ref('')
 
 const firstQueryValue = (value: unknown): string => {
   if (Array.isArray(value)) return String(value[0] || '')
@@ -539,12 +532,6 @@ const handleRedeem = async () => {
 onMounted(async () => {
   applyQueryRedeemCode()
   fetchHistory()
-  try {
-    const settings = await authAPI.getPublicSettings()
-    contactInfo.value = settings.contact_info || ''
-  } catch (error) {
-    console.error('Failed to load contact info:', error)
-  }
 })
 
 watch(

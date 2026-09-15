@@ -135,7 +135,8 @@ func TestMultiGroupSetupOptionStillFailsClosedInsideItsOwnScope(t *testing.T) {
 // configuration fault, not something to route around.
 func TestMultiGroupSetupOptionRejectsPlatformDrift(t *testing.T) {
 	svc, key := multiGroupSetupService(map[int64][]string{6: {"gpt-5.6-sol"}})
-	stub := svc.apiKeys.(*clientSetupAPIKeysStub)
+	stub, ok := svc.apiKeys.(*clientSetupAPIKeysStub)
+	require.True(t, ok)
 	stub.groups = []Group{{ID: 6, Platform: PlatformAnthropic, Status: StatusActive}}
 
 	options, err := svc.SetupOptions(context.Background(), key.UserID, key.ID, "macos")

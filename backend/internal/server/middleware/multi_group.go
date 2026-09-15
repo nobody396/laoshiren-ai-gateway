@@ -2,6 +2,9 @@ package middleware
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/gzip"
+	"compress/zlib"
 	"context"
 	"encoding/json"
 	"errors"
@@ -134,7 +137,14 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 			return
 		}
 		protocol, model, err := multiGroupRequestIdentity(c.Request)
-		if err != nil || (!listing && (protocol == "" || model == "")) {
+		if err != nil {
+			// Say what actually went wrong. Telling a caller whose body merely
+			// failed to decode that their key is the problem sent real users
+			// hunting for a key or model fault that did not exist.
+			fail(400, "Could not read the model from this request body: "+err.Error())
+			return
+		}
+		if !listing && (protocol == "" || model == "") {
 			fail(400, "This multi-group key requires a supported model-bearing HTTP request; use a single-group key for media and stateful endpoints")
 			return
 		}
@@ -337,12 +347,62 @@ func multiGroupRequestIdentity(r *http.Request) (string, string, error) {
 	body, err := io.ReadAll(original)
 	_ = original.Close()
 	if err != nil {
+		return "", "", errors.New("the request body could not be read to the end")
+	}
+	// Always restore the bytes exactly as they arrived: the upstream request is
+	// forwarded verbatim, Content-Encoding header included. Decoding below is
+	// only so this middleware can find the model inside a compressed body.
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	decoded, err := multiGroupDecodedBody(r, body)
+	if err != nil {
 		return "", "", err
 	}
-	r.Body = io.NopCloser(bytes.NewReader(body))
-	model, err := multiGroupBodyModel(body)
-	return protocol, strings.TrimSpace(model), err
+	model, err := multiGroupBodyModel(decoded)
+	if err != nil {
+		return "", "", errors.New("it is not a single JSON object with one model field")
+	}
+	return protocol, strings.TrimSpace(model), nil
 }
+
+// multiGroupDecodedBody returns the bytes the model should be read from. Clients
+// may compress a request body; a single-group key never noticed because nothing
+// before the handler had to parse it, so only multi-group keys saw a compressed
+// body turn into a routing rejection.
+func multiGroupDecodedBody(r *http.Request, body []byte) ([]byte, error) {
+	encoding := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Encoding")))
+	if encoding == "" || encoding == "identity" {
+		return body, nil
+	}
+	var reader io.ReadCloser
+	switch encoding {
+	case "gzip", "x-gzip":
+		zipped, err := gzip.NewReader(bytes.NewReader(body))
+		if err != nil {
+			return nil, errors.New("the body is declared gzip but is not valid gzip")
+		}
+		reader = zipped
+	case "deflate":
+		// Prefer zlib, which is what "deflate" means on the wire, and fall back
+		// to raw DEFLATE because some clients send it headerless.
+		if zipped, err := zlib.NewReader(bytes.NewReader(body)); err == nil {
+			reader = zipped
+		} else {
+			reader = flate.NewReader(bytes.NewReader(body))
+		}
+	default:
+		return nil, errors.New("Content-Encoding " + encoding + " is not supported on this endpoint")
+	}
+	defer func() { _ = reader.Close() }()
+	decoded, err := io.ReadAll(io.LimitReader(reader, multiGroupMaxDecodedBody))
+	if err != nil {
+		return nil, errors.New("the compressed body could not be decoded")
+	}
+	return decoded, nil
+}
+
+// multiGroupMaxDecodedBody bounds decompression so a small hostile body cannot
+// expand without limit while this middleware looks for one field.
+const multiGroupMaxDecodedBody = 64 << 20
 
 // Reject duplicate top-level fields so different gateway parsers cannot disagree
 // about which model was authorized while forwarding the original request bytes.

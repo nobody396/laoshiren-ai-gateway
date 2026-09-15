@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"context"
 	"errors"
 	"io"
@@ -400,4 +403,61 @@ func TestMultiGroupRejectionNamesModelForOpsLogs(t *testing.T) {
 	require.Equal(t, 404, w.Code)
 	require.Equal(t, "gpt-unknown", logged)
 	require.Contains(t, w.Body.String(), "invalid_request_error")
+}
+
+// A client may compress the request body. Only multi-group keys parse that body
+// before the handler, so a compressed body used to come back as "this key needs
+// a model-bearing request; use a single-group key" — a rejection about the key,
+// for a request whose key and model were both fine.
+func TestMultiGroupReadsModelFromCompressedBody(t *testing.T) {
+	payload := []byte(`{"model":"gpt-test","input":"hello"}`)
+
+	var gzipped bytes.Buffer
+	gw := gzip.NewWriter(&gzipped)
+	_, _ = gw.Write(payload)
+	require.NoError(t, gw.Close())
+
+	var deflated bytes.Buffer
+	zw := zlib.NewWriter(&deflated)
+	_, _ = zw.Write(payload)
+	require.NoError(t, zw.Close())
+
+	for _, tt := range []struct {
+		encoding string
+		body     []byte
+	}{
+		{"gzip", gzipped.Bytes()},
+		{"deflate", deflated.Bytes()},
+		{"", payload},
+	} {
+		req := httptest.NewRequest("POST", "/v1/responses", bytes.NewReader(tt.body))
+		if tt.encoding != "" {
+			req.Header.Set("Content-Encoding", tt.encoding)
+		}
+		protocol, model, err := multiGroupRequestIdentity(req)
+		require.NoError(t, err, tt.encoding)
+		require.Equal(t, "responses", protocol, tt.encoding)
+		require.Equal(t, "gpt-test", model, tt.encoding)
+
+		// The upstream request is forwarded verbatim, so the restored body must
+		// still be the exact bytes that arrived, not the decoded ones.
+		forwarded, readErr := io.ReadAll(req.Body)
+		require.NoError(t, readErr)
+		require.Equal(t, tt.body, forwarded, tt.encoding)
+	}
+}
+
+func TestMultiGroupUnreadableBodyIsNotReportedAsAKeyProblem(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{}}
+	key := &service.APIKey{GroupIDs: []int64{6}, User: &service.User{ID: 2}}
+	catalog := func(context.Context, *service.Group) ([]string, error) { return []string{"gpt-test"}, nil }
+
+	req := httptest.NewRequest("POST", "/v1/responses", strings.NewReader("not-gzip-at-all"))
+	req.Header.Set("Content-Encoding", "gzip")
+	w := httptest.NewRecorder()
+	multiRouter(f, key, catalog).ServeHTTP(w, req)
+
+	require.Equal(t, 400, w.Code)
+	require.Contains(t, w.Body.String(), "Could not read the model from this request body")
+	require.NotContains(t, w.Body.String(), "use a single-group key")
 }

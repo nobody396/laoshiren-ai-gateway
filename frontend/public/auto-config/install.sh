@@ -1296,11 +1296,10 @@ if (preferredModel && !authorized.includes(preferredModel)) {
   throw new Error('ticket model is not present in the current key model list')
 }
 
+// A key may be authorized for groups this client cannot serve, so the catalog
+// is the intersection. The two guards below still fail closed: the ticket's
+// model must survive the filter, and an empty intersection is an error.
 const byID = new Map(models.map((model) => [model.slug, model]))
-const missing = authorized.filter((id) => !byID.has(id))
-if (missing.length) {
-  throw new Error(`Codex catalog does not cover every authorized model: ${missing.join(', ')}`)
-}
 const filtered = authorized
   .flatMap((id) => byID.has(id) ? [{ ...byID.get(id) }] : [])
   .map((model, index) => ({ ...model, priority: index + 1 }))

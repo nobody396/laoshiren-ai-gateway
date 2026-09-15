@@ -1547,10 +1547,9 @@ function Convert-CodexModelCatalog {
   foreach ($Model in $Models) {
     $ById[[string]$Model.slug] = $Model
   }
-  $Missing = @($Authorized | Where-Object { -not $ById.ContainsKey($_) })
-  if ($Missing.Count -gt 0) {
-    throw "Codex 模型目录没有覆盖当前 Key 的全部模型: $($Missing -join ', ')"
-  }
+  # A key may be authorized for groups this client cannot serve, so the catalog
+  # is the intersection. The two guards below still fail closed: the ticket's
+  # model must survive the filter, and an empty intersection is an error.
   $Filtered = New-Object System.Collections.Generic.List[object]
   foreach ($Id in $Authorized) {
     if (-not $ById.ContainsKey($Id)) { continue }

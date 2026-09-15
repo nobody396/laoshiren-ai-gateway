@@ -104,14 +104,21 @@ describe('KeysView group authorization integration', () => {
     expect(vm.groups.map(group => group.id)).toEqual([6, 5])
     expect(vm.groupsLoadedScope).toBe('personal')
   })
-  it('opens one-click setup only for released single-group routes', async () => {
+  it('opens one-click setup for released routes, single-group or multi-group', async () => {
     const vm = await page()
     const standard = { id: 1, status: 'active', group: personal[0] }
     for (const id of [5, 6, 15, 34, 57, 58, 59, 60, 61, 62, 63, 64, 65]) {
       expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id } })).toBe(true)
     }
     expect(vm.canOpenClientSetup({ ...standard, group: { ...personal[0], id: 40 } })).toBe(false)
-    expect(vm.canOpenClientSetup({ ...standard, group_ids: [6, 58] })).toBe(false)
+
+    // A multi-group key qualifies on any released group; the server then offers
+    // only the clients those groups can serve.
+    expect(vm.canOpenClientSetup({ ...standard, group_ids: [6, 58] })).toBe(true)
+    expect(vm.canOpenClientSetup({ ...standard, group_ids: [40, 6] })).toBe(true)
+    expect(vm.canOpenClientSetup({ ...standard, group_ids: [40, 41] })).toBe(false)
+    expect(vm.canOpenClientSetup({ ...standard, status: 'disabled', group_ids: [6] })).toBe(false)
+
     vm.openClientSetup(standard)
     expect(vm.showClientSetup).toBe(true)
     expect(vm.clientSetupRow).toEqual(standard)

@@ -952,7 +952,7 @@
       :show="showClientSetup"
       :api-key-id="clientSetupRow?.id || 0"
       :key-name="clientSetupRow?.name || ''"
-      :group-name="clientSetupRow?.group?.name || ''"
+      :group-name="clientSetupRow?.group_ids?.length ? `${clientSetupRow.group_ids.length} 个授权` : (clientSetupRow?.group?.name || '')"
       @close="closeClientSetup"
     />
 
@@ -1557,10 +1557,13 @@ const copyApiBaseUrl = async () => {
 }
 
 const releasedSetupGroupIds = new Set([5, 6, 15, 34, 57, 58, 59, 60, 61, 62, 63, 64, 65])
+// A multi-group key qualifies when any one of its groups is released: the
+// server then offers only the clients that group can actually serve.
 const canOpenClientSetup = (row: ApiKey): boolean => (
   row.status === 'active' &&
-  !row.group_ids?.length &&
-  Boolean(row.group && releasedSetupGroupIds.has(row.group.id))
+  (row.group_ids?.length
+    ? row.group_ids.some(id => releasedSetupGroupIds.has(id))
+    : Boolean(row.group && releasedSetupGroupIds.has(row.group.id)))
 )
 
 const openClientSetup = (row: ApiKey) => {

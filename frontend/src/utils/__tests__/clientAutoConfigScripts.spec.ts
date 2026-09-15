@@ -260,8 +260,10 @@ describe('client auto-config scripts', () => {
     }
   })
 
-  it('refuses a partial Codex import when any authorized model is missing from the catalog', () => {
-    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-full-coverage-'))
+  // A multi-group key is authorized for models this client cannot serve, so the
+  // catalog is the intersection rather than a coverage assertion.
+  it('imports the Codex-capable subset of a key that also sees other models', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-intersection-'))
     const sourcePath = join(fixture, 'source.json')
     const authorizedPath = join(fixture, 'authorized.json')
     const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
@@ -269,8 +271,31 @@ describe('client auto-config scripts', () => {
       writeFileSync(sourcePath, readPublicScript('codex-model-catalog.json'))
       writeFileSync(authorizedPath, JSON.stringify({ data: [
         { id: 'gpt-5.6-sol' },
-        { id: 'future-unverified-model' },
+        { id: 'claude-opus-5' },
+        { id: 'gemini-3.1-pro' },
       ] }))
+      const selected = execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; filter_codex_model_catalog "$2" "$3"',
+        '_', installerPath, sourcePath, authorizedPath,
+      ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' }).toString().trim()
+      expect(selected).toBe('gpt-5.6-sol')
+      const written = JSON.parse(readFileSync(sourcePath, 'utf8'))
+      expect(written.models.map((model: { slug: string }) => model.slug)).toEqual(['gpt-5.6-sol'])
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  // The remaining guard: a key with nothing this client can serve still fails.
+  it('refuses a Codex import when the key exposes no Responses model', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-empty-'))
+    const sourcePath = join(fixture, 'source.json')
+    const authorizedPath = join(fixture, 'authorized.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      writeFileSync(sourcePath, readPublicScript('codex-model-catalog.json'))
+      writeFileSync(authorizedPath, JSON.stringify({ data: [{ id: 'claude-opus-5' }] }))
       expect(() => execFileSync('bash', [
         '-c',
         'source "$1"; NODE_BIN="$(command -v node)"; filter_codex_model_catalog "$2" "$3"',

@@ -11,6 +11,7 @@ var ErrSSOTicketNotFound = errors.New("sso ticket not found")
 
 // SSOTicketData is the short-lived payload stored behind a one-time SSO ticket.
 type SSOTicketData struct {
+	SetupPlanModelIDs    []string  `json:"setup_plan_model_ids,omitempty"`
 	SetupPlanFingerprint string    `json:"setup_plan_fingerprint,omitempty"`
 	Purpose              string    `json:"purpose"`
 	UserID               int64     `json:"user_id"`

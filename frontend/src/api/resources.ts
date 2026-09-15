@@ -98,9 +98,10 @@ export async function getClientSetupPlans(apiKeyId: number, os: ClientSetupOS): 
   const { data } = await apiClient.get<ClientSetupPlan[]>('/resources/setup-plans', { params: { api_key_id: apiKeyId, os } })
   return data
 }
-export async function createClientSetupTicketForPlan(apiKeyId: number, plan: ClientSetupPlan): Promise<ClientSetupTicket> {
+export async function createClientSetupTicketForPlan(apiKeyId: number, plan: ClientSetupPlan, choice?: { model_ids: string[]; default_model: string }): Promise<ClientSetupTicket> {
   const { data } = await apiClient.post<ClientSetupTicket>('/resources/setup-ticket', {
     api_key_id: apiKeyId, client_id: plan.client_id, os: plan.os, plan_fingerprint: plan.fingerprint,
+    ...(choice ?? {}),
   })
   return data
 }

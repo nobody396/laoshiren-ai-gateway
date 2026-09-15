@@ -33,14 +33,16 @@ type ResourceHandler struct {
 }
 
 type clientSetupTicketRequest struct {
-	PlanFingerprint  string `json:"plan_fingerprint"`
-	Target           string `json:"target"`
-	APIKeyID         *int64 `json:"api_key_id"`
-	ClientID         string `json:"client_id"`
-	ClientVersionKey string `json:"client_version_key"`
-	Protocol         string `json:"protocol"`
-	ModelID          string `json:"model_id"`
-	OS               string `json:"os"`
+	ModelIDs         []string `json:"model_ids"`
+	DefaultModel     string   `json:"default_model"`
+	PlanFingerprint  string   `json:"plan_fingerprint"`
+	Target           string   `json:"target"`
+	APIKeyID         *int64   `json:"api_key_id"`
+	ClientID         string   `json:"client_id"`
+	ClientVersionKey string   `json:"client_version_key"`
+	Protocol         string   `json:"protocol"`
+	ModelID          string   `json:"model_id"`
+	OS               string   `json:"os"`
 }
 
 type clientSetupExchangeRequest struct {
@@ -335,7 +337,7 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 			response.ErrorFrom(c, service.ErrInvalidClientSetupSelection)
 			return
 		}
-		ticket, err = h.setup.IssueTicketForPlan(c.Request.Context(), subject.UserID, *req.APIKeyID, req.ClientID, req.OS, req.PlanFingerprint)
+		ticket, err = h.setup.IssueTicketForPlan(c.Request.Context(), subject.UserID, *req.APIKeyID, req.ClientID, req.OS, req.PlanFingerprint, service.ClientSetupModelChoice{ModelIDs: req.ModelIDs, DefaultModel: req.DefaultModel})
 		if err != nil {
 			response.ErrorFrom(c, err)
 			return

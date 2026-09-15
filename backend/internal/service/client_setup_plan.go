@@ -144,7 +144,60 @@ func (s *ClientSetupService) setupPlan(ctx context.Context, userID, keyID int64,
 	}
 	return nil, ErrClientSetupSelectionUnavailable
 }
-func (s *ClientSetupService) IssueTicketForPlan(ctx context.Context, userID, keyID int64, clientID, os, fingerprint string) (*ClientSetupTicket, error) {
+
+type ClientSetupModelChoice struct {
+	ModelIDs     []string
+	DefaultModel string
+}
+
+// The browser chooses a subset, never a replacement catalog or protocol map.
+// Keep catalog order stable and bind the exact choice into the one-time ticket.
+func (p *ClientSetupPlan) withModels(choice ClientSetupModelChoice) (*ClientSetupPlan, error) {
+	selected := map[string]bool{}
+	if choice.ModelIDs == nil {
+		for _, model := range p.Models {
+			selected[model.ID] = true
+		}
+	} else {
+		if len(choice.ModelIDs) == 0 || len(choice.ModelIDs) > len(p.Models) {
+			return nil, ErrInvalidClientSetupSelection
+		}
+		for _, id := range choice.ModelIDs {
+			if selected[id] {
+				return nil, ErrInvalidClientSetupSelection
+			}
+			selected[id] = true
+		}
+	}
+	result := *p
+	result.Models = make([]ClientSetupPlanModel, 0, len(selected))
+	for _, model := range p.Models {
+		if selected[model.ID] {
+			result.Models = append(result.Models, model)
+		}
+	}
+	if len(result.Models) == 0 || len(result.Models) != len(selected) {
+		return nil, ErrClientSetupSelectionUnavailable
+	}
+	result.DefaultModel = choice.DefaultModel
+	if result.DefaultModel == "" {
+		result.DefaultModel = result.Models[0].ID
+	}
+	if !selected[result.DefaultModel] {
+		return nil, ErrInvalidClientSetupSelection
+	}
+	return &result, nil
+}
+func (p *ClientSetupPlan) defaultProtocol() string {
+	for _, model := range p.Models {
+		if model.ID == p.DefaultModel {
+			return model.Protocol
+		}
+	}
+	return ""
+}
+
+func (s *ClientSetupService) IssueTicketForPlan(ctx context.Context, userID, keyID int64, clientID, os, fingerprint string, choices ...ClientSetupModelChoice) (*ClientSetupTicket, error) {
 	if s == nil || s.tickets == nil {
 		return nil, ErrInvalidClientSetupTicket
 	}
@@ -152,10 +205,25 @@ func (s *ClientSetupService) IssueTicketForPlan(ctx context.Context, userID, key
 	if err != nil {
 		return nil, err
 	}
+	if len(choices) > 1 {
+		return nil, ErrInvalidClientSetupSelection
+	}
+	choice := ClientSetupModelChoice{}
+	if len(choices) == 1 {
+		choice = choices[0]
+	}
+	plan, err = plan.withModels(choice)
+	if err != nil {
+		return nil, err
+	}
+	modelIDs := make([]string, 0, len(plan.Models))
+	for _, model := range plan.Models {
+		modelIDs = append(modelIDs, model.ID)
+	}
 	key, err := s.apiKeys.GetByID(ctx, keyID)
 	if err != nil {
 		return nil, err
 	}
-	selection := ClientSetupSelection{ClientID: plan.ClientID, ClientVersionKey: plan.ClientVersionKey, OS: plan.OS, ModelID: plan.DefaultModel, Protocol: plan.Models[0].Protocol, PlanFingerprint: plan.Fingerprint}
+	selection := ClientSetupSelection{ClientID: plan.ClientID, ClientVersionKey: plan.ClientVersionKey, OS: plan.OS, ModelID: plan.DefaultModel, Protocol: plan.defaultProtocol(), PlanFingerprint: plan.Fingerprint, ModelIDs: modelIDs}
 	return s.issueTicketForAPIKey(ctx, userID, plan.Target, key, &selection)
 }

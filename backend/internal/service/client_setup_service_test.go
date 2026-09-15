@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -441,7 +442,7 @@ func TestExplicitSetupSelectionBindsAndReturnsEveryExactField(t *testing.T) {
 		tickets: cache,
 		models:  &clientSetupModelsStub{models: []string{"gpt-5.6-sol", "claude-opus-5"}},
 		selectionReady: func(candidate ClientSetupSelection) bool {
-			return candidate == selection
+			return reflect.DeepEqual(candidate, selection)
 		},
 	}
 
@@ -530,7 +531,7 @@ func TestExplicitSetupSelectionConsumeRejectsVersionOSAndDiscoveryDrift(t *testi
 			apiKeys:        &clientSetupAPIKeysStub{keys: map[int64]*APIKey{key.ID: key}},
 			tickets:        cache,
 			models:         models,
-			selectionReady: func(candidate ClientSetupSelection) bool { return candidate == selection },
+			selectionReady: func(candidate ClientSetupSelection) bool { return reflect.DeepEqual(candidate, selection) },
 		}
 	}
 

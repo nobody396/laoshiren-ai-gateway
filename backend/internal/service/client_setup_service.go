@@ -77,6 +77,7 @@ type ClientSetupCredential struct {
 }
 
 type ClientSetupSelection struct {
+	ModelIDs         []string
 	PlanFingerprint  string
 	ClientID         string
 	ClientVersionKey string
@@ -200,6 +201,7 @@ func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID in
 		if selection.PlanFingerprint != "" {
 			data.Purpose = clientSetupPlanPurpose
 			data.SetupPlanFingerprint = selection.PlanFingerprint
+			data.SetupPlanModelIDs = append([]string(nil), selection.ModelIDs...)
 		}
 		data.ClientID = selection.ClientID
 		data.ClientVersionKey = selection.ClientVersionKey
@@ -264,11 +266,15 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 		if err != nil {
 			return nil, ErrInvalidClientSetupTicket
 		}
+		plan, err = plan.withModels(ClientSetupModelChoice{ModelIDs: data.SetupPlanModelIDs, DefaultModel: data.ModelID})
+		if err != nil {
+			return nil, ErrInvalidClientSetupTicket
+		}
 		key, err := s.apiKeys.GetByID(ctx, *data.APIKeyID)
 		if err != nil || key == nil || key.UserID != data.UserID || !key.IsActive() || key.IsExpired() || key.IsQuotaExhausted() {
 			return nil, ErrInvalidClientSetupTicket
 		}
-		return &ClientSetupCredential{Target: plan.Target, APIKey: key.Key, BaseURL: plan.BaseURL, ClientID: plan.ClientID, ClientVersionKey: plan.ClientVersionKey, ModelID: plan.DefaultModel, Protocol: plan.Models[0].Protocol, OS: plan.OS, Plan: plan}, nil
+		return &ClientSetupCredential{Target: plan.Target, APIKey: key.Key, BaseURL: plan.BaseURL, ClientID: plan.ClientID, ClientVersionKey: plan.ClientVersionKey, ModelID: plan.DefaultModel, Protocol: plan.defaultProtocol(), OS: plan.OS, Plan: plan}, nil
 	}
 	apiKey, err := s.apiKeys.GetByID(ctx, *data.APIKeyID)
 	if err != nil {

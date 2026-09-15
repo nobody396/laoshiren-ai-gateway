@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import DocsIntegrationsHome from '../DocsIntegrationsHome.vue'
+import homeSource from '../DocsIntegrationsHome.vue?raw'
 import { clientMatrix } from '@/generated/clientMatrix'
 
 const RouterLinkStub = {
@@ -9,7 +10,7 @@ const RouterLinkStub = {
 }
 
 describe('DocsIntegrationsHome', () => {
-  it('lists all 14 matrix clients and reports their real integration state', () => {
+  it('keeps all tools visible but marks every old guide as being rewritten', () => {
     const wrapper = mount(DocsIntegrationsHome, {
       global: { stubs: { RouterLink: RouterLinkStub } },
     })
@@ -17,12 +18,18 @@ describe('DocsIntegrationsHome', () => {
     const cards = wrapper.findAll('.client-card')
     expect(cards).toHaveLength(14)
     expect(cards.map(card => card.get('.client-card-head > span:not(.client-icon) > b').text())).toEqual(clientMatrix.map(client => client.name))
-    expect(wrapper.findAll('[data-client-status="ready"]')).toHaveLength(clientMatrix.filter(client => client.one_click_status === 'ready').length)
-    expect(wrapper.findAll('[data-client-status="prototype"]')).toHaveLength(clientMatrix.filter(client => client.one_click_status === 'prototype').length)
-    expect(wrapper.findAll('[data-client-status="disabled"]')).toHaveLength(clientMatrix.filter(client => client.one_click_status === 'disabled').length)
-    expect(wrapper.text()).toContain('配置基线')
-    expect(wrapper.text()).not.toContain('已验证版本')
-    expect(wrapper.text()).not.toContain('交互原型')
-    expect(wrapper.find('pre').exists()).toBe(false)
+    expect(wrapper.findAll('[data-client-status="paused"]')).toHaveLength(clientMatrix.length)
+    expect(wrapper.findAll('.status-paused')).toHaveLength(clientMatrix.length)
+    expect(wrapper.text()).toContain('旧版内容仍保留在代码中')
+    expect(wrapper.find('.status-legend').exists()).toBe(false)
+    expect(wrapper.find('.flow').exists()).toBe(false)
+    expect(wrapper.find('.protocols').exists()).toBe(false)
+  })
+
+  it('keeps the legacy overview implementation in source', () => {
+    expect(homeSource).toContain('legacyIntegrationOverviewVisible = false')
+    expect(homeSource).toContain('CONFIGURATION FLOW')
+    expect(homeSource).toContain('一键导入可用')
+    expect(homeSource).toContain('协议支持只是候选条件')
   })
 })

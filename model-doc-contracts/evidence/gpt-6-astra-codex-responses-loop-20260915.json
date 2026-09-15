@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "client_agent_loop",
+  "artifact_id": "gpt-6-astra-codex-responses-loop-20260915",
+  "observed_at": "2026-09-15",
+  "timezone": "Asia/Shanghai",
+  "secret_free": true,
+  "network_execution": "owned_public_gateway",
+  "model": {
+    "id": "gpt-6-astra",
+    "protocol": "responses",
+    "reasoning_effort": "low"
+  },
+  "client": {
+    "id": "codex",
+    "exact_name": "Codex",
+    "installed_cli_version": "0.154.0",
+    "version_observation": {
+      "command": "codex --version",
+      "stdout": "codex-cli 0.154.0"
+    },
+    "operating_system": "macOS 26.6.2 arm64"
+  },
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "group_id": 6,
+    "group_name": "GPT 标准线路"
+  },
+  "loop": {
+    "complete": true,
+    "steps": [
+      "codex exec started with an isolated CODEX_HOME and wire_api=responses",
+      "agent issued command_execution /bin/zsh -lc 'cat probe.txt'",
+      "tool returned exit_code 0 with aggregated_output ASTRA_PROBE_TOKEN=7f3a91",
+      "agent submitted the tool result and produced the final message TOKEN=7f3a91",
+      "turn.completed and the process exited successfully"
+    ],
+    "tool_result_continuation": true,
+    "final_answer_matched_tool_output": true
+  },
+  "gateway_rows": [
+    {
+      "request_id": "client:8217ba71-adf9-4685-abfe-9b2dfbf8a6c0",
+      "inbound_endpoint": "/v1/responses",
+      "requested_model": "gpt-6-astra",
+      "input_tokens": 15381,
+      "output_tokens": 45
+    },
+    {
+      "request_id": "client:409d93cb-4f4d-4f70-9ab4-3d42f1a1f2a3",
+      "inbound_endpoint": "/v1/responses",
+      "requested_model": "gpt-6-astra",
+      "input_tokens": 263,
+      "output_tokens": 11,
+      "cache_read_tokens": 15232
+    }
+  ],
+  "covered_cells": [
+    "protocols.responses.minimal_text",
+    "protocols.responses.streaming_terminal",
+    "protocols.responses.tool_call",
+    "protocols.responses.tool_result_continuation",
+    "protocols.responses.usage",
+    "clients.codex.responses",
+    "reasoning.model_levels.low"
+  ],
+  "not_covered": [
+    "protocols.responses.invalid_request",
+    "image input",
+    "reasoning levels medium, high, xhigh, max",
+    "every client other than Codex"
+  ]
+}

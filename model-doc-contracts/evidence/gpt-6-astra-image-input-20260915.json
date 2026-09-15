@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "modality_probe",
+  "artifact_id": "gpt-6-astra-image-input-20260915",
+  "observed_at": "2026-09-15",
+  "timezone": "Asia/Shanghai",
+  "secret_free": true,
+  "network_execution": "owned_public_gateway",
+  "model": {
+    "id": "gpt-6-astra",
+    "protocol": "responses",
+    "modality": "image"
+  },
+  "access": {
+    "base_url": "https://api.laoshirenai.com/v1",
+    "group_id": 6,
+    "group_name": "GPT 标准线路"
+  },
+  "case": {
+    "input": "A locally generated 620x200 PNG showing the six digits 748215, sent as an input_image data URI alongside an input_text instruction.",
+    "expected": "748215",
+    "observed": "748215",
+    "exact_match": true,
+    "upstream_response_id": "resp_06bd20c6e43ba738016aa94e0f866c87d091a166d8e1cb61ce",
+    "http_status": 200
+  },
+  "note": "An earlier probe in the same session used a small default-font render and returned ASTRA-IMG-4O7 for ASTRA-IMG-4Q7. That confirmed ingestion but was rerun with unambiguous glyphs so the receipt turns on an exact match rather than on OCR tolerance."
+}

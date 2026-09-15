@@ -17631,6 +17631,388 @@ export const modelDocContracts: readonly ModelDocContract[] = [
   {
     "schema_version": 1,
     "model": {
+      "context_window": 922000,
+      "display_name": "GPT-6 Astra",
+      "family": "gpt",
+      "id": "gpt-6-astra",
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "max_output_tokens": 128000,
+      "output_modalities": [
+        "text"
+      ]
+    },
+    "access": {
+      "base_url": "https://api.laoshirenai.com/v1",
+      "groups": [
+        {
+          "multiplier": 0.5,
+          "name": "GPT 标准线路"
+        },
+        {
+          "multiplier": 0.5,
+          "name": "GPT Plus 月卡组"
+        },
+        {
+          "multiplier": 0.5,
+          "name": "GPT Pro 月卡组"
+        },
+        {
+          "multiplier": 0.5,
+          "name": "GPT Max 月卡组"
+        },
+        {
+          "multiplier": 0.35,
+          "name": "GPT 经济线路"
+        },
+        {
+          "multiplier": 0.8,
+          "name": "GPT 企业高速线路"
+        }
+      ]
+    },
+    "protocols": [
+      {
+        "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+        "evidence_ids": [
+          "gpt-6-astra-codex-responses-loop-20260915"
+        ],
+        "name": "responses",
+        "status": "verified"
+      }
+    ],
+    "tools": [],
+    "recommended_protocol": "responses",
+    "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end agent loop on the public gateway for this model.",
+    "reasoning": {
+      "client_levels": [
+        {
+          "client": "Codex",
+          "levels": [
+            "low"
+          ]
+        }
+      ],
+      "client_mappings": [],
+      "model_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "verification": {
+      "gateway_e2e": true,
+      "limits_source": "official",
+      "modalities": {
+        "image": "verified",
+        "text": "verified",
+        "video": "unsupported"
+      },
+      "official_spec_url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "verified_at": "2026-09-15"
+    },
+    "publication": {
+      "status": "draft",
+      "publishable": false,
+      "missing_evidence": {
+        "blocked_cells": 7,
+        "audit_failures": 55,
+        "validation_errors": [],
+        "by_matrix": [
+          {
+            "matrix": "model_protocol",
+            "count": 5
+          },
+          {
+            "matrix": "client_reasoning",
+            "count": 2
+          },
+          {
+            "matrix": "group_access",
+            "count": 16
+          },
+          {
+            "matrix": "test_evidence",
+            "count": 20
+          },
+          {
+            "matrix": "model_price",
+            "count": 12
+          }
+        ]
+      }
+    },
+    "clients": [
+      {
+        "name": "Codex",
+        "version": "0.154.0",
+        "protocol": "responses",
+        "status": "verified",
+        "recommended": false,
+        "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+        "evidence_ids": [
+          "gpt-6-astra-codex-responses-loop-20260915"
+        ]
+      }
+    ],
+    "client_coverage": [
+      {
+        "name": "Codex",
+        "protocols": [
+          "responses"
+        ],
+        "status": "verified",
+        "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+        "evidence_ids": [
+          "gpt-6-astra-codex-responses-loop-20260915"
+        ]
+      },
+      {
+        "name": "Grok Build",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No owned agent loop has been run for this client and model yet."
+      },
+      {
+        "name": "Hermes Agent",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No owned agent loop has been run for this client and model yet."
+      },
+      {
+        "name": "Kimi Code",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No owned agent loop has been run for this client and model yet."
+      },
+      {
+        "name": "MiniMax Code",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No owned agent loop has been run for this client and model yet."
+      },
+      {
+        "name": "OpenCode",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No owned agent loop has been run for this client and model yet."
+      },
+      {
+        "name": "ZCode",
+        "protocols": [],
+        "status": "blocked",
+        "evidence": "No owned agent loop has been run for this client and model yet."
+      }
+    ],
+    "compatibility": {
+      "protocol_checks": [
+        {
+          "status": "blocked",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "check": "invalid_request"
+        },
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "check": "minimal_text"
+        },
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "check": "streaming_terminal"
+        },
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "check": "tool_call"
+        },
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "check": "tool_result_continuation"
+        },
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "check": "usage"
+        }
+      ],
+      "protocol_features": [
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "feature": "tools"
+        },
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "protocol": "responses",
+          "feature": "usage"
+        }
+      ],
+      "tools": [],
+      "exact_clients": [],
+      "reasoning": {
+        "model_levels": [
+          {
+            "status": "verified",
+            "verified_at": "2026-09-15",
+            "level": "low"
+          },
+          {
+            "status": "verified",
+            "verified_at": "2026-09-15",
+            "level": "medium"
+          },
+          {
+            "status": "verified",
+            "verified_at": "2026-09-15",
+            "level": "high"
+          },
+          {
+            "status": "verified",
+            "verified_at": "2026-09-15",
+            "level": "xhigh"
+          },
+          {
+            "status": "verified",
+            "verified_at": "2026-09-15",
+            "level": "max"
+          }
+        ],
+        "clients": [
+          {
+            "status": "verified",
+            "client": "Codex",
+            "protocol": "responses",
+            "client_levels": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "mappings": []
+          },
+          {
+            "status": "not_exposed",
+            "client": "Grok Build",
+            "protocol": "responses",
+            "client_levels": [],
+            "mappings": []
+          },
+          {
+            "status": "not_exposed",
+            "client": "Hermes Agent",
+            "protocol": "responses",
+            "client_levels": [],
+            "mappings": []
+          },
+          {
+            "status": "not_exposed",
+            "client": "Kimi Code",
+            "protocol": "responses",
+            "client_levels": [],
+            "mappings": []
+          },
+          {
+            "status": "not_exposed",
+            "client": "MiniMax Code",
+            "protocol": "responses",
+            "client_levels": [],
+            "mappings": []
+          },
+          {
+            "status": "not_exposed",
+            "client": "OpenCode",
+            "protocol": "responses",
+            "client_levels": [],
+            "mappings": []
+          },
+          {
+            "status": "not_exposed",
+            "client": "ZCode",
+            "protocol": "responses",
+            "client_levels": [],
+            "mappings": []
+          }
+        ],
+        "declared_mappings": []
+      },
+      "access": [
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "group": "GPT 标准线路"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT Plus 月卡组"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT Pro 月卡组"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT Max 月卡组"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT 经济线路"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT 企业高速线路"
+        }
+      ],
+      "pricing": [
+        {
+          "status": "blocked",
+          "group": "GPT 标准线路"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT Plus 月卡组"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT Pro 月卡组"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT Max 月卡组"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT 经济线路"
+        },
+        {
+          "status": "blocked",
+          "group": "GPT 企业高速线路"
+        },
+        {
+          "status": "verified",
+          "verified_at": "2026-09-15",
+          "group": "gpt-6-astra"
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": 1,
+    "model": {
       "context_window": 1050000,
       "display_name": "GPT Daybreak Blue Latest",
       "family": "gpt",

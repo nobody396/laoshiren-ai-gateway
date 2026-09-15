@@ -1798,6 +1798,25 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "client_mappings": []
   },
   {
+    "model_id": "gpt-6-astra",
+    "model_levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client_levels": [
+      {
+        "client": "Codex",
+        "levels": [
+          "low"
+        ]
+      }
+    ],
+    "client_mappings": []
+  },
+  {
     "model_id": "gpt-daybreak-blue-latest",
     "model_levels": [],
     "client_levels": [

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "counts": {
-    "models": 36,
+    "models": 37,
     "clients": 14,
-    "intersections": 504
+    "intersections": 518
   },
   "contracts": [
     {
@@ -50998,6 +50998,883 @@
             "status": "verified",
             "unit": "per_1m_tokens",
             "verified_at": "2026-08-31"
+          }
+        ]
+      }
+    },
+    {
+      "access": {
+        "base_url": "https://api.laoshirenai.com/v1",
+        "groups": [
+          {
+            "multiplier": 0.5,
+            "name": "GPT 标准线路"
+          },
+          {
+            "multiplier": 0.5,
+            "name": "GPT Plus 月卡组"
+          },
+          {
+            "multiplier": 0.5,
+            "name": "GPT Pro 月卡组"
+          },
+          {
+            "multiplier": 0.5,
+            "name": "GPT Max 月卡组"
+          },
+          {
+            "multiplier": 0.35,
+            "name": "GPT 经济线路"
+          },
+          {
+            "multiplier": 0.8,
+            "name": "GPT 企业高速线路"
+          }
+        ]
+      },
+      "client_coverage": [
+        {
+          "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+          "evidence_ids": [
+            "gpt-6-astra-codex-responses-loop-20260915"
+          ],
+          "name": "Codex",
+          "protocols": [
+            "responses"
+          ],
+          "status": "verified"
+        },
+        {
+          "evidence": "No owned agent loop has been run for this client and model yet.",
+          "name": "Grok Build",
+          "protocols": [],
+          "status": "blocked"
+        },
+        {
+          "evidence": "No owned agent loop has been run for this client and model yet.",
+          "name": "Hermes Agent",
+          "protocols": [],
+          "status": "blocked"
+        },
+        {
+          "evidence": "No owned agent loop has been run for this client and model yet.",
+          "name": "Kimi Code",
+          "protocols": [],
+          "status": "blocked"
+        },
+        {
+          "evidence": "No owned agent loop has been run for this client and model yet.",
+          "name": "MiniMax Code",
+          "protocols": [],
+          "status": "blocked"
+        },
+        {
+          "evidence": "No owned agent loop has been run for this client and model yet.",
+          "name": "OpenCode",
+          "protocols": [],
+          "status": "blocked"
+        },
+        {
+          "evidence": "No owned agent loop has been run for this client and model yet.",
+          "name": "ZCode",
+          "protocols": [],
+          "status": "blocked"
+        }
+      ],
+      "clients": [
+        {
+          "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+          "evidence_ids": [
+            "gpt-6-astra-codex-responses-loop-20260915"
+          ],
+          "name": "Codex",
+          "protocol": "responses",
+          "recommended": false,
+          "status": "verified",
+          "version": "0.154.0"
+        }
+      ],
+      "model": {
+        "context_window": 922000,
+        "display_name": "GPT-6 Astra",
+        "family": "gpt",
+        "id": "gpt-6-astra",
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "max_output_tokens": 128000,
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "protocols": [
+        {
+          "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+          "evidence_ids": [
+            "gpt-6-astra-codex-responses-loop-20260915"
+          ],
+          "name": "responses",
+          "status": "verified"
+        }
+      ],
+      "reasoning": {
+        "client_levels": [
+          {
+            "client": "Codex",
+            "levels": [
+              "low"
+            ]
+          }
+        ],
+        "client_mappings": [],
+        "model_levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      "recommended_protocol": "responses",
+      "recommended_protocol_reason": "Responses is the only protocol with an owned end-to-end agent loop on the public gateway for this model.",
+      "schema_version": 1,
+      "test_matrix": {
+        "clients": {
+          "Codex": {
+            "responses": {
+              "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            }
+          },
+          "Grok Build": {
+            "responses": {
+              "evidence": "No owned agent loop has been run for this client and model yet.",
+              "status": "blocked",
+              "verified_at": "2026-09-15"
+            }
+          },
+          "Hermes Agent": {
+            "responses": {
+              "evidence": "No owned agent loop has been run for this client and model yet.",
+              "status": "blocked",
+              "verified_at": "2026-09-15"
+            }
+          },
+          "Kimi Code": {
+            "responses": {
+              "evidence": "No owned agent loop has been run for this client and model yet.",
+              "status": "blocked",
+              "verified_at": "2026-09-15"
+            }
+          },
+          "MiniMax Code": {
+            "responses": {
+              "evidence": "No owned agent loop has been run for this client and model yet.",
+              "status": "blocked",
+              "verified_at": "2026-09-15"
+            }
+          },
+          "OpenCode": {
+            "responses": {
+              "evidence": "No owned agent loop has been run for this client and model yet.",
+              "status": "blocked",
+              "verified_at": "2026-09-15"
+            }
+          },
+          "ZCode": {
+            "responses": {
+              "evidence": "No owned agent loop has been run for this client and model yet.",
+              "status": "blocked",
+              "verified_at": "2026-09-15"
+            }
+          }
+        },
+        "group_access": {
+          "GPT 标准线路": {
+            "evidence": "The loop routed through group 6 and the gateway billed it there: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          }
+        },
+        "limits": {
+          "context_window": {
+            "evidence": "Official model page publishes this value: https://developers.openai.com/api/docs/models/gpt-6-astra",
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          "max_output_tokens": {
+            "evidence": "Official model page publishes this value: https://developers.openai.com/api/docs/models/gpt-6-astra",
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          }
+        },
+        "modalities": {
+          "image": {
+            "evidence": "Owned public-gateway image probe returned the exact six digits printed in the image: gpt-6-astra-image-input-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-image-input-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          "text": {
+            "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          "video": {
+            "evidence": "The official page lists text and image input only: https://developers.openai.com/api/docs/models/gpt-6-astra",
+            "status": "unsupported",
+            "verified_at": "2026-09-15"
+          }
+        },
+        "pricing": {
+          "gpt-6-astra": {
+            "evidence": "Public pricing catalog readback on 2026-09-15: input 5, output 25, cache write 6.25, cache read 0.5 at the 标准线路 multiplier 0.5.",
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          }
+        },
+        "protocol_features": {
+          "responses": {
+            "tools": {
+              "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "usage": {
+              "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            }
+          }
+        },
+        "protocols": {
+          "responses": {
+            "invalid_request": {
+              "evidence": "No owned negative probe has been run for this model.",
+              "status": "blocked",
+              "verified_at": "2026-09-15"
+            },
+            "minimal_text": {
+              "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "streaming_terminal": {
+              "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "tool_call": {
+              "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "tool_result_continuation": {
+              "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "usage": {
+              "evidence": "Both turns of the loop wrote gateway usage rows carrying input, output and cache-read tokens: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            }
+          }
+        },
+        "reasoning": {
+          "clients": {
+            "Codex": {
+              "responses": {
+                "client_levels": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max"
+                ],
+                "evidence": "client-matrix declares Codex reasoning as model_defined/model_intersection, so it exposes exactly the model catalog levels; an owned loop ran effort=low end to end: gpt-6-astra-codex-responses-loop-20260915",
+                "evidence_ids": [
+                  "gpt-6-astra-codex-responses-loop-20260915"
+                ],
+                "mappings": [],
+                "status": "verified"
+              }
+            },
+            "Grok Build": {
+              "responses": {
+                "client_levels": [],
+                "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+                "mappings": [],
+                "status": "not_exposed"
+              }
+            },
+            "Hermes Agent": {
+              "responses": {
+                "client_levels": [],
+                "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+                "mappings": [],
+                "status": "not_exposed"
+              }
+            },
+            "Kimi Code": {
+              "responses": {
+                "client_levels": [],
+                "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+                "mappings": [],
+                "status": "not_exposed"
+              }
+            },
+            "MiniMax Code": {
+              "responses": {
+                "client_levels": [],
+                "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+                "mappings": [],
+                "status": "not_exposed"
+              }
+            },
+            "OpenCode": {
+              "responses": {
+                "client_levels": [],
+                "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+                "mappings": [],
+                "status": "not_exposed"
+              }
+            },
+            "ZCode": {
+              "responses": {
+                "client_levels": [],
+                "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+                "mappings": [],
+                "status": "not_exposed"
+              }
+            }
+          },
+          "model_levels": {
+            "high": {
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=high: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "low": {
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=low: https://developers.openai.com/api/docs/models/gpt-6-astra. An owned public-gateway loop also ran at this effort: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "max": {
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=max: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "medium": {
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=medium: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            "xhigh": {
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=xhigh: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            }
+          }
+        },
+        "tools": {}
+      },
+      "tools": [],
+      "verification": {
+        "gateway_e2e": true,
+        "limits_source": "official",
+        "modalities": {
+          "image": "verified",
+          "text": "verified",
+          "video": "unsupported"
+        },
+        "official_spec_url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+        "verified_at": "2026-09-15"
+      },
+      "publication": {
+        "status": "draft",
+        "publishable": false,
+        "missing_evidence": {
+          "blocked_cells": 7,
+          "audit_failures": 55,
+          "validation_errors": [],
+          "by_matrix": [
+            {
+              "matrix": "model_protocol",
+              "count": 5
+            },
+            {
+              "matrix": "client_reasoning",
+              "count": 2
+            },
+            {
+              "matrix": "group_access",
+              "count": 16
+            },
+            {
+              "matrix": "test_evidence",
+              "count": 20
+            },
+            {
+              "matrix": "model_price",
+              "count": 12
+            }
+          ]
+        }
+      },
+      "compatibility": {
+        "protocol_checks": [
+          {
+            "protocol": "responses",
+            "check": "invalid_request",
+            "evidence": "No owned negative probe has been run for this model.",
+            "status": "blocked",
+            "verified_at": "2026-09-15"
+          },
+          {
+            "protocol": "responses",
+            "check": "minimal_text",
+            "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          {
+            "protocol": "responses",
+            "check": "streaming_terminal",
+            "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          {
+            "protocol": "responses",
+            "check": "tool_call",
+            "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          {
+            "protocol": "responses",
+            "check": "tool_result_continuation",
+            "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          {
+            "protocol": "responses",
+            "check": "usage",
+            "evidence": "Both turns of the loop wrote gateway usage rows carrying input, output and cache-read tokens: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          }
+        ],
+        "protocol_features": [
+          {
+            "protocol": "responses",
+            "feature": "tools",
+            "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          {
+            "protocol": "responses",
+            "feature": "usage",
+            "evidence": "Owned public-gateway Codex 0.154.0 Responses tool-result loop: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          }
+        ],
+        "tools": [],
+        "exact_clients": [
+          {
+            "client": "Codex",
+            "protocol": "responses",
+            "os": "evidence",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Codex",
+            "protocol": "responses",
+            "os": "evidence_ids",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Codex",
+            "protocol": "responses",
+            "os": "status",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Codex",
+            "protocol": "responses",
+            "os": "verified_at",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Grok Build",
+            "protocol": "responses",
+            "os": "evidence",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Grok Build",
+            "protocol": "responses",
+            "os": "status",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Grok Build",
+            "protocol": "responses",
+            "os": "verified_at",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Hermes Agent",
+            "protocol": "responses",
+            "os": "evidence",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Hermes Agent",
+            "protocol": "responses",
+            "os": "status",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Hermes Agent",
+            "protocol": "responses",
+            "os": "verified_at",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Kimi Code",
+            "protocol": "responses",
+            "os": "evidence",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Kimi Code",
+            "protocol": "responses",
+            "os": "status",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "Kimi Code",
+            "protocol": "responses",
+            "os": "verified_at",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "MiniMax Code",
+            "protocol": "responses",
+            "os": "evidence",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "MiniMax Code",
+            "protocol": "responses",
+            "os": "status",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "MiniMax Code",
+            "protocol": "responses",
+            "os": "verified_at",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "OpenCode",
+            "protocol": "responses",
+            "os": "evidence",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "OpenCode",
+            "protocol": "responses",
+            "os": "status",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "OpenCode",
+            "protocol": "responses",
+            "os": "verified_at",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "ZCode",
+            "protocol": "responses",
+            "os": "evidence",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "ZCode",
+            "protocol": "responses",
+            "os": "status",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "client": "ZCode",
+            "protocol": "responses",
+            "os": "verified_at",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          }
+        ],
+        "reasoning": {
+          "model_levels": [
+            {
+              "level": "low",
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=low: https://developers.openai.com/api/docs/models/gpt-6-astra. An owned public-gateway loop also ran at this effort: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            {
+              "level": "medium",
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=medium: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            {
+              "level": "high",
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=high: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            {
+              "level": "xhigh",
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=xhigh: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            },
+            {
+              "level": "max",
+              "evidence": "The official gpt-6-astra specification lists reasoning.effort=max: https://developers.openai.com/api/docs/models/gpt-6-astra",
+              "status": "verified",
+              "verified_at": "2026-09-15"
+            }
+          ],
+          "clients": [
+            {
+              "client": "Codex",
+              "protocol": "responses",
+              "client_levels": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "evidence": "client-matrix declares Codex reasoning as model_defined/model_intersection, so it exposes exactly the model catalog levels; an owned loop ran effort=low end to end: gpt-6-astra-codex-responses-loop-20260915",
+              "evidence_ids": [
+                "gpt-6-astra-codex-responses-loop-20260915"
+              ],
+              "mappings": [],
+              "status": "verified"
+            },
+            {
+              "client": "Grok Build",
+              "protocol": "responses",
+              "client_levels": [],
+              "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+              "mappings": [],
+              "status": "not_exposed"
+            },
+            {
+              "client": "Hermes Agent",
+              "protocol": "responses",
+              "client_levels": [],
+              "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+              "mappings": [],
+              "status": "not_exposed"
+            },
+            {
+              "client": "Kimi Code",
+              "protocol": "responses",
+              "client_levels": [],
+              "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+              "mappings": [],
+              "status": "not_exposed"
+            },
+            {
+              "client": "MiniMax Code",
+              "protocol": "responses",
+              "client_levels": [],
+              "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+              "mappings": [],
+              "status": "not_exposed"
+            },
+            {
+              "client": "OpenCode",
+              "protocol": "responses",
+              "client_levels": [],
+              "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+              "mappings": [],
+              "status": "not_exposed"
+            },
+            {
+              "client": "ZCode",
+              "protocol": "responses",
+              "client_levels": [],
+              "evidence": "client-matrix explicitly declares model_defined reasoning controls",
+              "mappings": [],
+              "status": "not_exposed"
+            }
+          ],
+          "declared_mappings": []
+        },
+        "access": [
+          {
+            "group": "GPT 标准线路",
+            "evidence": "The loop routed through group 6 and the gateway billed it there: gpt-6-astra-codex-responses-loop-20260915",
+            "evidence_ids": [
+              "gpt-6-astra-codex-responses-loop-20260915"
+            ],
+            "status": "verified",
+            "verified_at": "2026-09-15"
+          },
+          {
+            "group": "GPT Plus 月卡组",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT Pro 月卡组",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT Max 月卡组",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT 经济线路",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT 企业高速线路",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          }
+        ],
+        "pricing": [
+          {
+            "group": "GPT 标准线路",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT Plus 月卡组",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT Pro 月卡组",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT Max 月卡组",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT 经济线路",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "GPT 企业高速线路",
+            "status": "blocked",
+            "evidence": "matrix cell is missing"
+          },
+          {
+            "group": "gpt-6-astra",
+            "evidence": "Public pricing catalog readback on 2026-09-15: input 5, output 25, cache write 6.25, cache read 0.5 at the 标准线路 multiplier 0.5.",
+            "status": "verified",
+            "verified_at": "2026-09-15"
           }
         ]
       }

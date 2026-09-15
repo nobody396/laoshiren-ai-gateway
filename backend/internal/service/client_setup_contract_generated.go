@@ -121,6 +121,7 @@ var generatedClientSetupModelProtocols = map[string]map[string]bool{
 	"gpt-5.6-luna":             {"responses": true},
 	"gpt-5.6-sol":              {"responses": true},
 	"gpt-5.6-terra":            {"responses": true},
+	"gpt-6-astra":              {"responses": true},
 	"gpt-daybreak-blue-latest": {"responses": true},
 	"grok-4.5":                 {"chat_completions": true},
 	"grok-4.6":                 {"chat_completions": true},

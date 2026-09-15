@@ -347,12 +347,11 @@ func TestResolveDeferredMultiGroupBindsSameGroupAsHTTPPath(t *testing.T) {
 	}, &config.Config{RunMode: config.RunModeSimple}))
 	r.GET("/v1/responses", func(c *gin.Context) {
 		require.True(t, IsMultiGroupDeferred(c))
-		status, message, ok := ResolveDeferredMultiGroup(c, "responses", c.Query("model"))
+		bound, message, ok := ResolveDeferredMultiGroup(c, "responses", c.Query("model"))
 		if !ok {
-			c.JSON(status, gin.H{"message": message})
+			c.JSON(422, gin.H{"message": message})
 			return
 		}
-		bound, _ := GetAPIKeyFromContext(c)
 		c.JSON(200, gin.H{"group": *bound.GroupID})
 	})
 
@@ -368,14 +367,13 @@ func TestResolveDeferredMultiGroupBindsSameGroupAsHTTPPath(t *testing.T) {
 	// serves it rather than silently billing the OpenAI group.
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/responses?model=claude-test", nil))
-	require.Equal(t, 404, w.Code)
+	require.Equal(t, 422, w.Code)
 	require.Contains(t, w.Body.String(), "claude-test")
-	require.Contains(t, w.Body.String(), "/v1/messages")
 
 	// No model in the first frame is a client error, never an arbitrary group.
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/responses", nil))
-	require.Equal(t, 400, w.Code)
+	require.Equal(t, 422, w.Code)
 }
 
 func TestMultiGroupRejectionNamesModelForOpsLogs(t *testing.T) {
@@ -401,5 +399,5 @@ func TestMultiGroupRejectionNamesModelForOpsLogs(t *testing.T) {
 	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"gpt-unknown"}`)))
 	require.Equal(t, 404, w.Code)
 	require.Equal(t, "gpt-unknown", logged)
-	require.Contains(t, w.Body.String(), MultiGroupRequestRejectedCode)
+	require.Contains(t, w.Body.String(), "invalid_request_error")
 }

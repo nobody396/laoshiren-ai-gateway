@@ -25,6 +25,12 @@ const (
 	ContextKeySubscription ContextKey = "subscription"
 	// ContextKeyForcePlatform 强制平台（用于 /antigravity 路由）
 	ContextKeyForcePlatform ContextKey = "force_platform"
+
+	// OpsModelKey is the gin key the ops error logger reads the requested model
+	// from. A middleware that rejects a request before any handler runs must set
+	// it, otherwise the error log records an empty model and nobody can tell
+	// which model the caller actually asked for.
+	OpsModelKey = "ops_model"
 	// ContextKeyUserPermissions 当前后台用户的 RBAC 权限 key 集合
 	ContextKeyUserPermissions ContextKey = "user_permissions"
 	// ContextKeyIsSuperAdmin 当前后台用户是否为 RBAC 超级管理员

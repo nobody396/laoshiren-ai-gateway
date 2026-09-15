@@ -27,14 +27,6 @@ type multiGroupDeclaration struct {
 	authorized bool
 }
 
-// Client-visible rejection codes. A 4xx names the caller's own selection so ops
-// attribution books it against the client; 5xx keeps a distinct code because a
-// routing or catalog outage really is ours and must still page.
-const (
-	MultiGroupRequestRejectedCode    = "MULTI_GROUP_REQUEST_REJECTED"
-	MultiGroupRoutingUnavailableCode = "MULTI_GROUP_ROUTING_UNAVAILABLE"
-)
-
 // multiGroupDeferredKey stashes the router for a request whose model is not in
 // the HTTP envelope at all. Codex Desktop opens its Responses stream with
 // "GET /v1/responses" and sends the model in the first WebSocket frame, so the
@@ -58,11 +50,15 @@ func multiGroupFail(c *gin.Context, status int, message string) {
 		abortWithGoogleError(c, status, message)
 		return
 	}
-	code := MultiGroupRequestRejectedCode
+	// A 4xx is a statement about the caller's own key, model or funding, so it
+	// carries the standard client-error type every OpenAI and Anthropic client
+	// already understands, and ops attribution books it against the client.
+	// A 5xx routing or catalog outage really is ours and must still page.
+	errorType := "invalid_request_error"
 	if status >= 500 {
-		code = MultiGroupRoutingUnavailableCode
+		errorType = "api_error"
 	}
-	writeUniversalRouteError(c, status, code, message)
+	writeUniversalRouteError(c, status, errorType, message)
 }
 
 // multiGroupDeferredRequest reports whether the model can only be known after a
@@ -82,30 +78,28 @@ func IsMultiGroupDeferred(c *gin.Context) bool {
 }
 
 // ResolveDeferredMultiGroup binds the billing group for a deferred request now
-// that the handler has read the model off the wire. It applies exactly the same
-// priority, authorization and funding rules as the HTTP path; ok=false carries a
-// client-facing message and never falls through to an arbitrary group.
-func ResolveDeferredMultiGroup(c *gin.Context, protocol, model string) (int, string, bool) {
-	if c == nil {
-		return 0, "", true
+// that the handler has read the model off the wire, and returns the bound key.
+// It applies exactly the same priority, authorization and funding rules as the
+// HTTP path; ok=false carries a client-facing message and never falls through to
+// an arbitrary group. The caller has already completed a protocol handshake, so
+// there is no HTTP status left to return.
+func ResolveDeferredMultiGroup(c *gin.Context, protocol, model string) (*service.APIKey, string, bool) {
+	stashed, _ := c.Get(multiGroupDeferredKey)
+	router, _ := stashed.(*multiGroupRouter)
+	key, keyOK := GetAPIKeyFromContext(c)
+	if router == nil || !keyOK {
+		return nil, "Multi-group routing is unavailable", false
 	}
-	stashed, ok := c.Get(multiGroupDeferredKey)
-	if !ok {
-		return 0, "", true
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return nil, "This multi-group key requires a model in the first message", false
 	}
-	router, ok := stashed.(*multiGroupRouter)
-	if !ok || router == nil {
-		return http.StatusServiceUnavailable, "Multi-group routing is unavailable", false
+	c.Set(OpsModelKey, model)
+	if _, message, ok := router.selectGroup(c, key, protocol, model); !ok {
+		return nil, message, false
 	}
-	key, ok := GetAPIKeyFromContext(c)
-	if !ok || !key.IsMultiGroup() {
-		return 0, "", true
-	}
-	if strings.TrimSpace(model) == "" {
-		return http.StatusBadRequest, "This multi-group key requires a model in the first message", false
-	}
-	c.Set(OpsModelKey, strings.TrimSpace(model))
-	return router.selectGroup(c, key, protocol, model)
+	bound, _ := GetAPIKeyFromContext(c)
+	return bound, "", true
 }
 
 // MultiGroupRouting selects one billing group, never another model. Once a
@@ -242,7 +236,6 @@ func MultiGroupRouting(groups UniversalTargetGroupLoader, access MultiGroupAutho
 // request can never be silently paid for by another group's wallet.
 func (r *multiGroupRouter) selectGroup(c *gin.Context, key *service.APIKey, protocol, model string) (int, string, bool) {
 	ctx := c.Request.Context()
-	var skipped []*service.Group
 	for _, id := range key.GroupIDs {
 		group, loadErr := r.groups.GetByID(ctx, id)
 		if loadErr != nil || group == nil {
@@ -252,7 +245,6 @@ func (r *multiGroupRouter) selectGroup(c *gin.Context, key *service.APIKey, prot
 			continue
 		}
 		if !service.MultiGroupProtocolSupported(group, protocol) {
-			skipped = append(skipped, group)
 			continue
 		}
 		models, catalogErr := r.catalog(ctx, group)
@@ -260,7 +252,6 @@ func (r *multiGroupRouter) selectGroup(c *gin.Context, key *service.APIKey, prot
 			return http.StatusServiceUnavailable, "Model catalog is temporarily unavailable", false
 		}
 		if !models.MatchesProtocol(group, protocol, model) {
-			skipped = append(skipped, group)
 			continue
 		}
 		payer, authErr := r.access.AuthorizeMultiGroupTarget(ctx, key, group)
@@ -308,48 +299,11 @@ func (r *multiGroupRouter) selectGroup(c *gin.Context, key *service.APIKey, prot
 		setGroupContext(c, &boundGroup)
 		return 0, "", true
 	}
-	return http.StatusNotFound, r.unmatchedModelMessage(ctx, skipped, protocol, model), false
-}
-
-// multiGroupAlternateProtocolScanLimit bounds the extra catalog reads spent on
-// explaining a rejection. The hint is a courtesy; it must not turn one bad model
-// name into a hundred database round trips.
-const multiGroupAlternateProtocolScanLimit = 16
-
-// unmatchedModelMessage names the model the caller actually asked for and, when
-// one of the key's own groups serves it under a different native protocol, the
-// endpoint that would work. Discovery returns the union across every authorized
-// group, so an OpenAI-shaped client can legitimately see a Claude or Gemini name
-// in its model picker; saying which endpoint owns it beats a bare 404.
-func (r *multiGroupRouter) unmatchedModelMessage(ctx context.Context, skipped []*service.Group, protocol, model string) string {
-	base := "No authorized group declares model " + model + " for the " + protocol + " endpoint"
-	scanned := 0
-	for _, group := range skipped {
-		if scanned >= multiGroupAlternateProtocolScanLimit {
-			break
-		}
-		scanned++
-		models, err := r.catalog(ctx, group)
-		if err != nil || models == nil {
-			continue
-		}
-		for _, alternate := range service.MultiGroupTextProtocols {
-			if alternate == protocol || !models.MatchesProtocol(group, alternate, model) {
-				continue
-			}
-			if endpoint := multiGroupProtocolEndpoints[alternate]; endpoint != "" {
-				return base + "; this key serves it on " + endpoint + " instead"
-			}
-		}
-	}
-	return base + "; pick a model this key exposes for this endpoint"
-}
-
-var multiGroupProtocolEndpoints = map[string]string{
-	"messages":         "/v1/messages",
-	"responses":        "/v1/responses",
-	"chat_completions": "/v1/chat/completions",
-	"generate_content": "/v1beta/models",
+	// Discovery returns the union across every authorized group, so an
+	// OpenAI-shaped client can legitimately show a Claude or Gemini name in its
+	// model picker. Naming the model and the endpoint is what tells the caller
+	// which of the two to change.
+	return http.StatusNotFound, "No authorized group declares model " + model + " for the " + protocol + " endpoint", false
 }
 
 func multiGroupRequestIdentity(r *http.Request) (string, string, error) {

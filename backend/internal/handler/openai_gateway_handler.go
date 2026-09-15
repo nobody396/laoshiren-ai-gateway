@@ -1474,6 +1474,23 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "model is required in first response.create payload")
 		return
 	}
+	// Codex Desktop opens the stream before it names a model, so a multi-group
+	// key still has no billing group here. Bind it now, under exactly the same
+	// priority and funding rules the HTTP path uses.
+	if middleware2.IsMultiGroupDeferred(c) {
+		if _, message, ok := middleware2.ResolveDeferredMultiGroup(c, "responses", reqModel); !ok {
+			reqLog.Info("openai.websocket_multi_group_rejected", zap.String("model", reqModel), zap.String("reason", message))
+			closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, message)
+			return
+		}
+		bound, boundOK := middleware2.GetAPIKeyFromContext(c)
+		if !boundOK || bound.Group == nil {
+			closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "Multi-group routing is unavailable")
+			return
+		}
+		apiKey = bound
+		reqLog = reqLog.With(zap.Any("group_id", apiKey.GroupID))
+	}
 	previousResponseID := strings.TrimSpace(gjson.GetBytes(firstMessage, "previous_response_id").String())
 	previousResponseIDKind := service.ClassifyOpenAIPreviousResponseIDKind(previousResponseID)
 	if previousResponseID != "" && previousResponseIDKind == service.OpenAIPreviousResponseIDKindMessageID {

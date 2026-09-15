@@ -23,8 +23,10 @@ import (
 )
 
 const (
-	opsModelKey         = "ops_model"
-	opsStreamKey        = "ops_stream"
+	// Shared with the middleware package so a pre-handler rejection can record
+	// the model it rejected under the same key this logger reads.
+	opsModelKey         = middleware2.OpsModelKey
+	opsStreamKey        = middleware2.OpsStreamKey
 	opsRequestBodyKey   = "ops_request_body"
 	opsAccountIDKey     = "ops_account_id"
 	opsUpstreamModelKey = "ops_upstream_model"
@@ -1175,6 +1177,13 @@ func isKnownOpsErrorType(t string) bool {
 func normalizeOpsErrorType(errType string, code string) string {
 	if errType != "" && isKnownOpsErrorType(errType) {
 		return errType
+	}
+	// A 4xx multi-group rejection is a statement about the caller's own key,
+	// model or funding, not a gateway fault. Classify it as a client request
+	// error so it is not booked against platform error rate and paged on.
+	// The 5xx routing/catalog outage keeps its own code and stays platform-owned.
+	if strings.TrimSpace(errType) == middleware2.MultiGroupRequestRejectedCode {
+		return "invalid_request_error"
 	}
 	switch strings.TrimSpace(code) {
 	case opsCodeInsufficientBalance:

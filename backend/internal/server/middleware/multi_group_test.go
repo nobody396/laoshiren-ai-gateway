@@ -101,7 +101,7 @@ func TestMultiGroupUnsupportedPathsFailClosedButLegacyUnchanged(t *testing.T) {
 		t.Fatal("must not guess group")
 		return nil, nil
 	}
-	for _, path := range []string{"/v1/responses", "/v1/videos/job", "/gpt-image/v1/tasks/job"} {
+	for _, path := range []string{"/v1/videos/job", "/gpt-image/v1/tasks/job"} {
 		w := httptest.NewRecorder()
 		multiRouter(f, &service.APIKey{GroupIDs: []int64{6}}, catalog).ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
 		require.Equal(t, 400, w.Code)
@@ -305,4 +305,101 @@ func TestMultiGroupLegacyAnthropicKindsCannotSkipPriorityPayer(t *testing.T) {
 			require.Equal(t, []int64{5}, f.checks)
 		})
 	}
+}
+
+// GET /v1/responses is Codex Desktop's WebSocket ingress: the model arrives in
+// the first frame, so the middleware must hand the request to the handler
+// unbound instead of rejecting it, and must not guess a group on the way past.
+func TestMultiGroupResponsesWebSocketDefersInsteadOfRejecting(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{}}
+	catalog := func(context.Context, *service.Group) ([]string, error) {
+		t.Fatal("must not read the catalog before the model is known")
+		return nil, nil
+	}
+	w := httptest.NewRecorder()
+	multiRouter(f, &service.APIKey{GroupIDs: []int64{6}}, catalog).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/responses", nil))
+	require.Equal(t, 204, w.Code)
+}
+
+func TestResolveDeferredMultiGroupBindsSameGroupAsHTTPPath(t *testing.T) {
+	first, second := int64(5), int64(6)
+	f := &multiGroupsFixture{
+		groups: map[int64]*service.Group{
+			first:  {ID: first, Platform: service.PlatformAnthropic},
+			second: {ID: second, Platform: service.PlatformOpenAI},
+		},
+		denied: map[int64]bool{},
+	}
+	key := &service.APIKey{GroupIDs: []int64{first, second}, User: &service.User{ID: 2}}
+	catalog := func(_ context.Context, g *service.Group) ([]string, error) {
+		if g.ID == first {
+			return []string{"claude-test"}, nil
+		}
+		return []string{"gpt-test"}, nil
+	}
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(func(c *gin.Context) { c.Set(string(ContextKeyAPIKey), key) })
+	r.Use(MultiGroupRouting(f, f, nil, func(ctx context.Context, g *service.Group) (*service.GroupModelDeclaration, error) {
+		names, err := catalog(ctx, g)
+		return &service.GroupModelDeclaration{Models: names}, err
+	}, &config.Config{RunMode: config.RunModeSimple}))
+	r.GET("/v1/responses", func(c *gin.Context) {
+		require.True(t, IsMultiGroupDeferred(c))
+		status, message, ok := ResolveDeferredMultiGroup(c, "responses", c.Query("model"))
+		if !ok {
+			c.JSON(status, gin.H{"message": message})
+			return
+		}
+		bound, _ := GetAPIKeyFromContext(c)
+		c.JSON(200, gin.H{"group": *bound.GroupID})
+	})
+
+	// The Anthropic group is skipped for the responses protocol, exactly as the
+	// HTTP path skips it, so the OpenAI group pays.
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/responses?model=gpt-test", nil))
+	require.Equal(t, 200, w.Code)
+	require.JSONEq(t, `{"group":6}`, w.Body.String())
+	require.Nil(t, key.GroupID)
+
+	// A model only this key's Claude group declares names the endpoint that
+	// serves it rather than silently billing the OpenAI group.
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/responses?model=claude-test", nil))
+	require.Equal(t, 404, w.Code)
+	require.Contains(t, w.Body.String(), "claude-test")
+	require.Contains(t, w.Body.String(), "/v1/messages")
+
+	// No model in the first frame is a client error, never an arbitrary group.
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/responses", nil))
+	require.Equal(t, 400, w.Code)
+}
+
+func TestMultiGroupRejectionNamesModelForOpsLogs(t *testing.T) {
+	f := &multiGroupsFixture{groups: map[int64]*service.Group{6: {ID: 6, Platform: service.PlatformOpenAI}}, denied: map[int64]bool{}}
+	key := &service.APIKey{GroupIDs: []int64{6}, User: &service.User{ID: 2}}
+	catalog := func(context.Context, *service.Group) ([]string, error) { return []string{"gpt-test"}, nil }
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	var logged any
+	r.Use(func(c *gin.Context) {
+		c.Set(string(ContextKeyAPIKey), key)
+		c.Next()
+		logged, _ = c.Get(OpsModelKey)
+	})
+	r.Use(MultiGroupRouting(f, f, nil, func(ctx context.Context, g *service.Group) (*service.GroupModelDeclaration, error) {
+		names, err := catalog(ctx, g)
+		return &service.GroupModelDeclaration{Models: names}, err
+	}, &config.Config{RunMode: config.RunModeSimple}))
+	r.Any("/*path", func(c *gin.Context) { c.Status(204) })
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest("POST", "/v1/responses", strings.NewReader(`{"model":"gpt-unknown"}`)))
+	require.Equal(t, 404, w.Code)
+	require.Equal(t, "gpt-unknown", logged)
+	require.Contains(t, w.Body.String(), MultiGroupRequestRejectedCode)
 }

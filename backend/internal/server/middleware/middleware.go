@@ -121,7 +121,9 @@ func GoogleErrorWriter(c *gin.Context, status int, message string) {
 func RequireGroupAssignment(settingService *service.SettingService, writeError GatewayErrorWriter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey, ok := GetAPIKeyFromContext(c)
-		if !ok || apiKey.GroupID != nil || (apiKey.IsMultiGroup() && c.Request.Method == http.MethodGet && strings.HasSuffix(c.Request.URL.Path, "/usage")) {
+		// A deferred multi-group request is not an ungrouped key: the handler
+		// binds its group once the protocol handshake reveals the model.
+		if !ok || apiKey.GroupID != nil || IsMultiGroupDeferred(c) || (apiKey.IsMultiGroup() && c.Request.Method == http.MethodGet && strings.HasSuffix(c.Request.URL.Path, "/usage")) {
 			c.Next()
 			return
 		}

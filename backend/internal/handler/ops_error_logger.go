@@ -23,7 +23,9 @@ import (
 )
 
 const (
-	opsModelKey         = "ops_model"
+	// Shared with the middleware package so a pre-handler rejection can record
+	// the model it rejected under the same key this logger reads.
+	opsModelKey         = middleware2.OpsModelKey
 	opsStreamKey        = "ops_stream"
 	opsRequestBodyKey   = "ops_request_body"
 	opsAccountIDKey     = "ops_account_id"

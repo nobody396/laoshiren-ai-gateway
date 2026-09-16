@@ -35,7 +35,7 @@ env:
 jobs:
   build:
     name: Build exact linux/amd64 commit
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 35
     outputs:
       image_ref: ${{ steps.resolve.outputs.image_ref }}
@@ -73,14 +73,8 @@ jobs:
       - name: Test immutable release contract
         run: python3 tools/release/test_release_contract.py
 
-      - name: Use persistent Docker Desktop builder
-        shell: bash
-        run: |
-          # Docker Desktop owns this builder and its cache. Unlike a temporary
-          # docker-container builder, it also inherits Docker Desktop's network
-          # and proxy configuration on this Mac.
-          docker buildx use desktop-linux
-          docker buildx inspect --bootstrap
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         if: ${{ inputs.publish }}

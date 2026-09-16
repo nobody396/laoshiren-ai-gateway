@@ -46,7 +46,8 @@ func TestErroneousChargeRefundIsExactSeparateAndIdempotentForBalanceAndBuilderPa
 	builderKey := mustCreateApiKey(t, client, &service.APIKey{UserID: builderUser.ID, Key: "sk-refund-" + uuid.NewString(), Name: "refund-builder"})
 	var groupID, subscriptionID, cycleID, builderUsageID, consumptionID int64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `INSERT INTO groups(name,rate_multiplier,subscription_type) VALUES($1,1,'credit') RETURNING id`, `refund-builder-`+uuid.NewString()).Scan(&groupID))
-	now := time.Now().UTC()
+	// PostgreSQL keeps microseconds; Linux clocks return nanoseconds.
+	now := time.Now().UTC().Truncate(time.Microsecond)
 	expires := now.Add(30 * 24 * time.Hour)
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `INSERT INTO user_subscriptions(user_id,group_id,starts_at,expires_at,status,assigned_by) VALUES($1,$2,$3,$4,'active',$1) RETURNING id`, builderUser.ID, groupID, now.Add(-time.Hour), expires).Scan(&subscriptionID))
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `INSERT INTO monthly_entitlement_cycles(user_id,source_type,source_key,product_code,sale_price_micros,credit_limit_micros,used_credit_micros,confirmed_consumption_micros,starts_at,ends_at) VALUES($1,'paid_redeem',$2,'builder-pass',2000000,2000000,1250000,500000,$3,$4) RETURNING id`, builderUser.ID, "refund-paid-cycle-"+uuid.NewString(), now.Add(-time.Hour), expires).Scan(&cycleID))

@@ -21,7 +21,7 @@ concurrency:
 jobs:
   changes:
     name: Classify changed paths
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       backend: ${{ steps.classify.outputs.backend }}
@@ -76,7 +76,7 @@ jobs:
   release-proof:
     name: Verify tested tree for Main fast path
     needs: changes
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       fast_path: ${{ steps.decide.outputs.fast_path }}
@@ -123,7 +123,7 @@ jobs:
     name: Backend tests and lint
     needs: [changes, release-proof]
     if: ${{ needs.release-proof.outputs.fast_path != 'true' && needs.changes.outputs.backend == 'true' }}
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - name: Checkout repository
@@ -152,16 +152,11 @@ jobs:
     name: Backend deterministic integration gate
     needs: [changes, release-proof]
     if: ${{ needs.release-proof.outputs.fast_path != 'true' && needs.changes.outputs.integration == 'true' }}
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       CI: "true"
       GIT_SHA: ${{ github.sha }}
-      # Docker Desktop 28 can leave HostPort="0" unresolved for Ryuk after a
-      # cross-platform Buildx job. Disable only the reaper sidecar and perform
-      # an explicit label-scoped cleanup below; test modules still own normal
-      # container termination.
-      TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -180,19 +175,12 @@ jobs:
           docker info --format 'docker_server_version={{.ServerVersion}}'
       - name: Run deterministic backend integration gate
         run: make test-backend-integration
-      - name: Remove Testcontainers leftovers
-        if: always()
-        run: |
-          while IFS= read -r id; do
-            [[ -n "$id" ]] || continue
-            docker rm -f -v "$id"
-          done < <(docker ps -aq --filter 'label=org.testcontainers=true')
 
   frontend-tests:
     name: Frontend tests and boundaries
     needs: [changes, release-proof]
     if: ${{ needs.release-proof.outputs.fast_path != 'true' && needs.changes.outputs.frontend == 'true' }}
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -212,7 +200,7 @@ jobs:
     name: Frontend production build and budget
     needs: [changes, release-proof]
     if: ${{ needs.release-proof.outputs.fast_path != 'true' && needs.changes.outputs.frontend == 'true' }}
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -283,7 +271,7 @@ jobs:
             (needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success' &&
              needs.windows-auto-config.result == 'success')) &&
           (needs.changes.outputs.docker != 'true' || needs.docker-pr.result == 'success') }}
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout exact tested merge commit
@@ -356,7 +344,7 @@ jobs:
       - attest-pr
       - docker-main
     if: ${{ always() }}
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Verify required outcome

@@ -268,7 +268,7 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 	if err != nil {
 		return nil, ErrInvalidClientSetupTicket
 	}
-	if apiKey.UserID != data.UserID || apiKey.Status != StatusActive || apiKey.Group == nil {
+	if apiKey.UserID != data.UserID || apiKey.Status != StatusActive || len(setupKeyGroupIDs(apiKey)) == 0 {
 		return nil, ErrInvalidClientSetupTicket
 	}
 
@@ -303,7 +303,7 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 	}
 
 	baseURL := clientSetupAPIBaseURL
-	if apiKey.Group.Platform == PlatformAntigravity {
+	if apiKey.Group != nil && apiKey.Group.Platform == PlatformAntigravity {
 		baseURL += "/antigravity"
 	}
 	credential := &ClientSetupCredential{
@@ -377,17 +377,26 @@ func (s *ClientSetupService) isSelectionReady(selection ClientSetupSelection) bo
 }
 
 func (s *ClientSetupService) apiKeyExposesModel(ctx context.Context, apiKey *APIKey, modelID string) bool {
-	if s == nil || s.models == nil || apiKey == nil || apiKey.Group == nil {
+	if s == nil || s.models == nil || apiKey == nil {
 		return false
 	}
-	groupID := apiKey.Group.ID
-	models := apiKey.Group.UniversalPublicModels()
-	if apiKey.Group.Platform != PlatformUniversal {
-		models = s.models.GetAvailableModels(ctx, &groupID, "")
+	if apiKey.Group != nil && apiKey.Group.Platform == PlatformUniversal {
+		return containsModelName(apiKey.Group.UniversalPublicModels(), modelID)
+	}
+	// One authorized group offering the model unrestricted is enough: that is
+	// the same group the gateway would route the request to.
+	for _, groupID := range setupKeyGroupIDs(apiKey) {
 		if s.models.IsModelRestricted(ctx, groupID, modelID) {
-			return false
+			continue
+		}
+		if containsModelName(s.models.GetAvailableModels(ctx, &groupID, ""), modelID) {
+			return true
 		}
 	}
+	return false
+}
+
+func containsModelName(models []string, modelID string) bool {
 	for _, model := range models {
 		if strings.EqualFold(strings.TrimSpace(model), modelID) {
 			return true

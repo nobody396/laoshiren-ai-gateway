@@ -11,7 +11,8 @@ import (
 )
 
 type clientSetupAPIKeysStub struct {
-	keys map[int64]*APIKey
+	keys   map[int64]*APIKey
+	groups []Group
 }
 
 type clientSetupEnsureAPIKeysStub struct {
@@ -57,7 +58,10 @@ func (s *clientSetupAPIKeysStub) GetByID(_ context.Context, id int64) (*APIKey, 
 }
 
 func (s *clientSetupAPIKeysStub) GetAvailableGroups(context.Context, int64) ([]Group, error) {
-	return nil, errors.New("unexpected GetAvailableGroups call")
+	if s.groups == nil {
+		return nil, errors.New("unexpected GetAvailableGroups call")
+	}
+	return append([]Group(nil), s.groups...), nil
 }
 
 func (s *clientSetupAPIKeysStub) List(context.Context, int64, pagination.PaginationParams, APIKeyListFilters) ([]APIKey, *pagination.PaginationResult, error) {
@@ -71,10 +75,14 @@ type clientSetupTicketCacheStub struct {
 
 type clientSetupModelsStub struct {
 	models     []string
+	byGroup    map[int64][]string
 	restricted bool
 }
 
-func (s *clientSetupModelsStub) GetAvailableModels(context.Context, *int64, string) []string {
+func (s *clientSetupModelsStub) GetAvailableModels(_ context.Context, groupID *int64, _ string) []string {
+	if s.byGroup != nil && groupID != nil {
+		return append([]string(nil), s.byGroup[*groupID]...)
+	}
 	return append([]string(nil), s.models...)
 }
 

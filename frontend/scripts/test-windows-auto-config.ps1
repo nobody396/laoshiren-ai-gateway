@@ -251,16 +251,27 @@ try {
     Assert-True (($Actual -join ',') -eq ($Group.Models -join ',')) "GPT $($Group.Name) Codex model catalog mismatch: $($Actual -join ',')"
   }
 
-  $PartialImportRejected = $false
+  # A multi-group key is authorized for models this client cannot serve, so the
+  # catalog is the intersection rather than a coverage assertion.
+  $IntersectionOutput = Join-Path $FixtureDir 'intersection-codex-model-catalog.json'
+  Convert-CodexModelCatalog `
+    -SourcePath $CodexCatalogSource `
+    -AuthorizedModels @('gpt-5.6-sol', 'claude-opus-5', 'gemini-3.1-pro') `
+    -OutputPath $IntersectionOutput
+  $Intersected = @((Get-Content -LiteralPath $IntersectionOutput -Raw | ConvertFrom-Json).models | ForEach-Object { [string]$_.slug })
+  Assert-True (($Intersected -join ',') -eq 'gpt-5.6-sol') "Codex catalog is not the intersection: $($Intersected -join ',')"
+
+  # The remaining guard: a key with nothing this client can serve still fails.
+  $EmptyImportRejected = $false
   try {
     Convert-CodexModelCatalog `
       -SourcePath $CodexCatalogSource `
-      -AuthorizedModels @('gpt-5.6-sol', 'future-unverified-model') `
+      -AuthorizedModels @('claude-opus-5') `
       -OutputPath (Join-Path $FixtureDir 'must-not-exist.json')
   } catch {
-    $PartialImportRejected = $true
+    $EmptyImportRejected = $true
   }
-  Assert-True $PartialImportRejected 'Codex accepted a partial import with an unknown authorized model'
+  Assert-True $EmptyImportRejected 'Codex accepted an import with no Responses model'
 
   foreach ($Client in @('claude', 'codex')) {
     $CmdPath = Join-Path $FixtureDir "$Client.cmd"

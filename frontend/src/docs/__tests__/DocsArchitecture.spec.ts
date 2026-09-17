@@ -62,8 +62,8 @@ describe('documentation information architecture', () => {
     expect(docsContentSource).toContain('code-copy-btn')
   })
 
-  it('does not expose a personal support contact in documentation', () => {
-    expect(docsLayoutSource).not.toContain('CustomerServiceButton')
+  it('does not expose the support entry to signed-out documentation visitors', () => {
+    expect(docsLayoutSource).toContain('<CustomerServiceButton v-if="authStore.isAuthenticated" />')
   })
 
   it('renders the client wire-protocol matrix from the generated 14-client source', () => {

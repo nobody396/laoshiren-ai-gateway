@@ -25,6 +25,7 @@ import (
 const (
 	// Shared with the middleware package so a pre-handler rejection can record
 	// the model it rejected under the same key this logger reads.
+	opsFinalErrorKey    = "ops_final_error"
 	opsModelKey         = middleware2.OpsModelKey
 	opsStreamKey        = "ops_stream"
 	opsRequestBodyKey   = "ops_request_body"
@@ -510,6 +511,10 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService, reliabilityEvidence ...*s
 		}
 
 		status := c.Writer.Status()
+		finalError := getOpsFinalError(c)
+		if finalError != nil {
+			status = finalError.StatusCode
+		}
 		if status < 400 {
 			if evidence != nil {
 				evidence.SubmitFinalOutcome(buildFinalReliabilityObservation(c, requestStartedAt, nil))
@@ -773,6 +778,9 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService, reliabilityEvidence ...*s
 
 		body := w.buf.Bytes()
 		parsed := parseOpsErrorResponse(body)
+		if finalError != nil {
+			parsed = parsedOpsError{ErrorType: finalError.ErrorType, Message: finalError.ErrorMessage}
+		}
 
 		apiKey, _ := middleware2.GetAPIKeyFromContext(c)
 
@@ -1431,4 +1439,27 @@ func shouldSkipOpsErrorLog(ctx context.Context, ops *service.OpsService, message
 	}
 
 	return false
+}
+
+// SSE commits HTTP 200 before its final outcome is known. Keep an explicit
+// terminal failure separate from transport status and from retryable attempts.
+func markOpsFinalError(c *gin.Context, status int, errType, message string) {
+	if c == nil {
+		return
+	}
+	phase := classifyOpsPhase(errType, message, "")
+	c.Set(opsFinalErrorKey, &service.OpsInsertErrorLogInput{
+		StatusCode: status, ErrorType: errType, ErrorMessage: message,
+		ErrorOwner:        classifyOpsErrorOwner(phase, message),
+		IsBusinessLimited: classifyOpsIsBusinessLimited(errType, phase, "", status, message),
+	})
+}
+
+func getOpsFinalError(c *gin.Context) *service.OpsInsertErrorLogInput {
+	if c == nil {
+		return nil
+	}
+	value, _ := c.Get(opsFinalErrorKey)
+	entry, _ := value.(*service.OpsInsertErrorLogInput)
+	return entry
 }

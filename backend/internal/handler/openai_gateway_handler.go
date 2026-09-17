@@ -568,9 +568,12 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
-				if c.Writer.Size() != writerSizeBeforeForward {
+				if c.Writer.Size() != writerSizeBeforeForward && !failoverErr.SafeToFailoverAfterWrite {
 					h.handleFailoverExhausted(c, failoverErr, true)
 					return
+				}
+				if c.Writer.Written() {
+					streamStarted = true
 				}
 				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 				// 池模式：同账号重试
@@ -612,6 +615,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				continue
 			}
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+			if reqStream && c.Writer.Status() < 400 {
+				markOpsFinalError(c, http.StatusBadGateway, "upstream_error", "OpenAI upstream response failed before completion")
+			}
 			upstreamErrorAlreadyCommunicated := openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err)
 			wroteFallback := false
 			if !upstreamErrorAlreadyCommunicated {
@@ -2121,6 +2127,9 @@ func (h *OpenAIGatewayHandler) mapUpstreamError(statusCode int) (int, string, st
 
 // handleStreamingAwareError handles errors that may occur after streaming has started
 func (h *OpenAIGatewayHandler) handleStreamingAwareError(c *gin.Context, status int, errType, message string, streamStarted bool) {
+	if (streamStarted || c.Writer.Written()) && getOpsFinalError(c) == nil {
+		markOpsFinalError(c, status, errType, message)
+	}
 	if streamStarted {
 		// /v1/responses 的严格 SDK（Codex CLI）要求终止事件必须属于
 		// response.completed/failed/incomplete/cancelled 集合。

@@ -275,3 +275,56 @@ func TestReliabilityEvidenceRemainsEnabledWhenLegacyOpsMonitoringIsDisabled(t *t
 }
 
 func int64Pointer(value int64) *int64 { return &value }
+
+// A previous 524 followed by a truncated native Responses stream is not a
+// recovered customer request, even though SSE has already committed HTTP 200.
+func TestResponsesTruncatedStreamIsNotRecovered(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest("POST", "/responses", nil)
+	c.Writer.Header().Set("X-Request-Id", "req-truncated")
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Set(opsAccountIDKey, int64(2))
+	c.Set(service.OpsUpstreamErrorsKey, []*service.OpsUpstreamErrorEvent{{AccountID: 1, UpstreamStatusCode: 524}})
+	_, _ = c.Writer.WriteString("data: {\"type\":\"response.output_text.delta\",\"delta\":\"partial\"}\n\n")
+	h := &OpenAIGatewayHandler{}
+	require.True(t, h.ensureForwardErrorResponse(c, true))
+	require.Equal(t, 200, rec.Code)
+	require.Contains(t, rec.Body.String(), `"type":"response.failed"`)
+	outcome := buildFinalReliabilityObservation(c, time.Now(), nil)
+	require.Equal(t, service.ReliabilityOutcomeFailure, outcome.Outcome)
+	require.Equal(t, 502, *outcome.StatusCode)
+	require.Nil(t, buildSuccessfulAttemptReliabilityObservation(c))
+}
+
+func TestResponsesStreamFailureMiddlewarePersistsFailureNotSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	settings := handlerReliabilitySettings{disableOps: true}
+	ops := service.NewOpsService(nil, settings, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	evidence, mock := newHandlerReliabilityEvidence(t, settings)
+	args := make([]driver.Value, 25)
+	for i := range args {
+		args[i] = sqlmock.AnyArg()
+	}
+	args[1], args[18], args[19], args[20], args[22] = "customer_request", "failure", int64(502), "provider", true
+	mock.ExpectBegin()
+	mock.ExpectPrepare(regexp.QuoteMeta("INSERT INTO reliability_observations")).ExpectExec().WithArgs(args...).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+	router := gin.New()
+	router.POST("/responses", OpsErrorLoggerMiddleware(ops, evidence), func(c *gin.Context) {
+		c.Set(string(middleware2.ContextKeyAPIKey), &service.APIKey{ID: 8, UserID: 9, User: &service.User{ID: 9}})
+		c.Header("X-Request-Id", "req-native-truncated")
+		c.Header("Content-Type", "text/event-stream")
+		c.Set(opsAccountIDKey, int64(2))
+		_, _ = c.Writer.WriteString("data: {\"type\":\"response.output_text.delta\",\"delta\":\"partial\"}\n\n")
+		markOpsFinalError(c, 502, "upstream_error", "OpenAI upstream response failed before completion")
+		(&OpenAIGatewayHandler{}).ensureForwardErrorResponse(c, true)
+	})
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest("POST", "/responses", nil))
+	require.Equal(t, 200, rec.Code)
+	require.Contains(t, rec.Body.String(), `"type":"response.failed"`)
+	require.Eventually(t, func() bool { return evidence.Completeness().Written == 1 }, 2*time.Second, 10*time.Millisecond)
+	require.Equal(t, int64(1), evidence.Completeness().Enqueued, "no fake successful upstream attempt")
+}

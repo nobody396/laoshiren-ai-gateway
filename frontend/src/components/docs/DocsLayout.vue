@@ -20,6 +20,7 @@
       </nav>
 
       <div class="ml-4 flex items-center gap-2">
+        <CustomerServiceButton v-if="authStore.isAuthenticated" />
         <router-link to="/dashboard" class="docs-console-link">控制台 ↗</router-link>
         <!-- Mobile sidebar toggle -->
         <button
@@ -75,7 +76,9 @@
 import { ref } from 'vue'
 import DocsSidebar from '@/components/docs/DocsSidebar.vue'
 import DocsToc from '@/components/docs/DocsToc.vue'
+import CustomerServiceButton from '@/components/common/CustomerServiceButton.vue'
 import type { TocItem } from '@/composables/useMarkdownRenderer'
+import { useAuthStore } from '@/stores/auth'
 
 defineProps<{
   currentSlug: string
@@ -84,6 +87,7 @@ defineProps<{
 }>()
 
 const mobileOpen = ref(false)
+const authStore = useAuthStore()
 </script>
 
 <style scoped>

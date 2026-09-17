@@ -23,6 +23,12 @@
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">{{ inviteCodeHint }}</p>
       </div>
+      <div v-if="contactInfo" class="card border-primary-200 bg-primary-50 dark:bg-primary-900/20 p-6">
+        <div class="flex items-center gap-4">
+          <div class="rounded-xl bg-primary-100 p-3 text-primary-600"><Icon name="chat" size="lg" /></div>
+          <div><h3 class="font-semibold text-primary-800 dark:text-primary-200">{{ t('common.contactSupport') }}</h3><p class="text-sm font-medium">{{ contactInfo }}</p></div>
+        </div>
+      </div>
       <ProfileEditForm :initial-username="user?.username || ''" />
       <ProfileIdentityBindingsCard />
       <BalanceAlertCard />
@@ -37,6 +43,7 @@ import { ref, computed, h, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/format'
+import { authAPI } from '@/api'
 import { userAPI, type UserReferralDashboard } from '@/api/user'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import StatCard from '@/components/common/StatCard.vue'
@@ -46,12 +53,14 @@ import ProfileIdentityBindingsCard from '@/components/user/profile/ProfileIdenti
 import BalanceAlertCard from '@/components/user/profile/BalanceAlertCard.vue'
 import ProfilePasswordForm from '@/components/user/profile/ProfilePasswordForm.vue'
 import ProfileTotpCard from '@/components/user/profile/ProfileTotpCard.vue'
+import { Icon } from '@/components/icons'
 import { getMyInviteCode } from '@/api/agent'
 import { useClipboard } from '@/composables/useClipboard'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
+const contactInfo = ref('')
 const myInviteCode = ref('')
 const inviteCodeLoading = ref(true)
 const referralStats = ref<UserReferralDashboard | null>(null)
@@ -86,6 +95,13 @@ async function copyInviteLink() {
 }
 
 onMounted(async () => {
+  try {
+    const s = await authAPI.getPublicSettings()
+    contactInfo.value = s.contact_info || ''
+  } catch (error) {
+    console.error('Failed to load contact info:', error)
+  }
+
   try {
     const inviteCode = await getMyInviteCode()
     myInviteCode.value = inviteCode.invite_code

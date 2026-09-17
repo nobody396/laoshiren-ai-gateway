@@ -977,6 +977,9 @@ func TestOpenAIStreamingTimeout(t *testing.T) {
 		Header:     http.Header{},
 	}
 
+	go func() {
+		_, _ = pw.Write([]byte("data: {\"type\":\"response.output_text.delta\",\"delta\":\"partial\"}\n\n"))
+	}()
 	start := time.Now()
 	_, err := svc.handleStreamingResponse(c.Request.Context(), resp, c, &Account{ID: 1}, start, "model", "model")
 	_ = pw.Close()
@@ -2251,4 +2254,75 @@ func TestHandleOpenAIHTTPContextWindowExceededReturnsActionableInvalidRequest(t 
 		"Your input exceeds the context window of this model",
 		[]byte(`{"error":{"code":"context_length_exceeded"}}`),
 	))
+}
+
+func TestNativeResponsesIdleBeforeOutputFailsOver(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{StreamDataIntervalTimeout: 1}}}
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/responses", nil)
+	reader, writer := io.Pipe()
+	defer func() { _ = reader.Close() }()
+	defer func() { _ = writer.Close() }()
+	resp := &http.Response{StatusCode: 200, Header: http.Header{}, Body: reader}
+	_, err := svc.handleStreamingResponse(c.Request.Context(), resp, c, &Account{ID: 1}, time.Now(), "model", "model")
+	var failover *UpstreamFailoverError
+	require.ErrorAs(t, err, &failover)
+	require.False(t, c.Writer.Written(), "an idle upstream must not commit a client error before trying another account")
+}
+
+func TestNativeResponsesKeepaliveDoesNotCommitPreamble(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{StreamKeepaliveInterval: 1}}}
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/responses", nil)
+	reader, writer := io.Pipe()
+	defer func() { _ = reader.Close() }()
+	go func() {
+		defer func() { _ = writer.Close() }()
+		_, _ = writer.Write([]byte("data: {\"type\":\"response.in_progress\",\"response\":{}}\n\n"))
+		time.Sleep(1100 * time.Millisecond)
+	}()
+	resp := &http.Response{StatusCode: 200, Header: http.Header{}, Body: reader}
+	_, err := svc.handleStreamingResponse(c.Request.Context(), resp, c, &Account{ID: 1}, time.Now(), "model", "model")
+	var failover *UpstreamFailoverError
+	require.ErrorAs(t, err, &failover)
+	require.True(t, failover.SafeToFailoverAfterWrite)
+	require.Equal(t, ":\n\n", rec.Body.String(), "only SSE comments may escape before safe failover")
+}
+
+func TestNativeResponsesNeverReplayCommittedOutput(t *testing.T) {
+	for _, payload := range []string{
+		"data: {\"type\":\"response.output_text.delta\",\"delta\":\"partial\"}\n\n",
+		"data: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"{}\"}\n\n",
+		"data: {\"type\":\"response.in_progress\",\"padding\":\"" + strings.Repeat("x", 8192) + "\"}\n\n",
+	} {
+		t.Run(fmt.Sprint(len(payload)), func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(rec)
+			c.Request = httptest.NewRequest(http.MethodPost, "/responses", nil)
+			resp := &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(payload))}
+			svc := &OpenAIGatewayService{cfg: &config.Config{}}
+			_, err := svc.handleStreamingResponse(c.Request.Context(), resp, c, &Account{ID: 1}, time.Now(), "model", "model")
+			require.Error(t, err)
+			var failover *UpstreamFailoverError
+			require.False(t, errors.As(err, &failover), "never replay text, tools, or an auto-flushed preamble")
+		})
+	}
+}
+
+func TestNativeResponsesCancelledEOFDoesNotFailover(t *testing.T) {
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/responses", nil)
+	ctx, cancel := context.WithCancel(c.Request.Context())
+	cancel()
+	svc := &OpenAIGatewayService{cfg: &config.Config{}}
+	resp := &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(""))}
+	_, err := svc.handleStreamingResponse(ctx, resp, c, &Account{ID: 1}, time.Now(), "model", "model")
+	require.ErrorIs(t, err, context.Canceled)
+	var failover *UpstreamFailoverError
+	require.False(t, errors.As(err, &failover))
 }

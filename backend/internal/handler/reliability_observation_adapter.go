@@ -23,6 +23,9 @@ func buildFinalReliabilityObservation(c *gin.Context, startedAt time.Time, entry
 	if correlationID == "" {
 		return nil
 	}
+	if entry == nil {
+		entry = getOpsFinalError(c)
+	}
 	status := c.Writer.Status()
 	statusCode := status
 	model := reliabilityContextString(c, opsModelKey)
@@ -176,6 +179,9 @@ func buildAttemptReliabilityObservations(entry *service.OpsInsertErrorLogInput, 
 }
 
 func buildSuccessfulAttemptReliabilityObservation(c *gin.Context) *service.ReliabilityAttemptOutcome {
+	if getOpsFinalError(c) != nil {
+		return nil
+	}
 	if c == nil || c.Request == nil {
 		return nil
 	}

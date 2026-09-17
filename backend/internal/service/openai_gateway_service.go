@@ -4547,9 +4547,22 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 	sawFailedEvent := false
 	failedMessage := ""
 	clientOutputStarted := false
+	// Comments keep the connection alive but do not commit model output. A
+	// bufio auto-flush still counts as output and must prohibit replay.
+	initialWriterSize := max(c.Writer.Size(), 0)
+	keepaliveBytes := 0
+	hasClientOutput := func() bool {
+		return clientOutputStarted || c.Writer.Size() > initialWriterSize+keepaliveBytes
+	}
+
 	upstreamRequestID := strings.TrimSpace(resp.Header.Get("x-request-id"))
 	responseID := ""
 	var streamFailoverErr error
+	failoverBeforeOutput := func(payload []byte, message string) *UpstreamFailoverError {
+		err := s.newOpenAIStreamFailoverError(c, account, false, upstreamRequestID, payload, message)
+		err.SafeToFailoverAfterWrite = !hasClientOutput()
+		return err
+	}
 	sendErrorEvent := func(reason string) {
 		if errorEventSent || clientDisconnected {
 			return
@@ -4579,8 +4592,11 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 	}
 	finalizeStream := func() (*openaiStreamingResult, error) {
 		if !sawTerminalEvent {
-			if !openAIStreamClientOutputStarted(c, clientOutputStarted) {
-				return resultWithUsage(), s.newOpenAIStreamFailoverError(c, account, false, upstreamRequestID, nil, "OpenAI stream ended before a terminal event")
+			if ctx.Err() != nil {
+				return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", ctx.Err())
+			}
+			if !hasClientOutput() {
+				return resultWithUsage(), failoverBeforeOutput(nil, "OpenAI stream ended before a terminal event")
 			}
 			return resultWithUsage(), fmt.Errorf("stream usage incomplete: missing terminal event")
 		}
@@ -4624,12 +4640,12 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 			sendErrorEvent("response_too_large")
 			return resultWithUsage(), scanErr, true
 		}
-		if !openAIStreamClientOutputStarted(c, clientOutputStarted) {
+		if !hasClientOutput() {
 			msg := "OpenAI stream disconnected before completion"
 			if errText := strings.TrimSpace(scanErr.Error()); errText != "" {
 				msg += ": " + errText
 			}
-			return resultWithUsage(), s.newOpenAIStreamFailoverError(c, account, false, upstreamRequestID, nil, msg), true
+			return resultWithUsage(), failoverBeforeOutput(nil, msg), true
 		}
 		sendErrorEvent("stream_read_error")
 		return resultWithUsage(), fmt.Errorf("stream read error: %w", scanErr), true
@@ -4677,9 +4693,9 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 			switch eventType {
 			case "response.failed":
 				failedMessage = extractOpenAISSEErrorMessage(dataBytes)
-				if !openAIStreamClientOutputStarted(c, clientOutputStarted) && openAIStreamFailedEventShouldFailover(dataBytes, failedMessage) {
+				if !hasClientOutput() && openAIStreamFailedEventShouldFailover(dataBytes, failedMessage) {
 					sawFailedEvent = true
-					streamFailoverErr = s.newOpenAIStreamFailoverError(c, account, false, upstreamRequestID, dataBytes, failedMessage)
+					streamFailoverErr = failoverBeforeOutput(dataBytes, failedMessage)
 					return
 				}
 				forceFlushFailedEvent = true
@@ -4841,6 +4857,9 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 			if s.rateLimitService != nil {
 				s.rateLimitService.HandleStreamTimeout(ctx, account, originalModel)
 			}
+			if !hasClientOutput() {
+				return resultWithUsage(), failoverBeforeOutput(nil, "OpenAI stream data interval timeout before output")
+			}
 			sendErrorEvent("stream_timeout")
 			return resultWithUsage(), fmt.Errorf("stream data interval timeout")
 
@@ -4849,6 +4868,17 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				continue
 			}
 			if time.Since(lastDownstreamWriteAt) < keepaliveInterval {
+				continue
+			}
+			if !hasClientOutput() {
+				n, err := w.WriteString(":\n\n")
+				keepaliveBytes += n
+				if err != nil {
+					clientDisconnected = true
+					continue
+				}
+				flusher.Flush()
+				lastDownstreamWriteAt = time.Now()
 				continue
 			}
 			if _, err := bufferedWriter.WriteString(":\n\n"); err != nil {

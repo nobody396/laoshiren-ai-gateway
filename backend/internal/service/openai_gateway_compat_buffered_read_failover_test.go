@@ -84,7 +84,8 @@ func TestChatCompletionsBufferedResponsesOversizedLineDoesNotFailover(t *testing
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
-	oversized := strings.Repeat("x", 256)
+	// Must exceed the scanner's 64KB initial buffer to trigger bufio.ErrTooLong.
+	oversized := strings.Repeat("x", 128*1024)
 	resp := &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(oversized))}
 	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{MaxLineSize: 64}}}
 
@@ -113,4 +114,50 @@ func TestAnthropicBufferedResponsesReadErrorKeepsExistingBehavior(t *testing.T) 
 	require.Nil(t, result)
 	var failoverErr *UpstreamFailoverError
 	require.NotErrorAs(t, err, &failoverErr)
+}
+
+func TestChatCompletionsBufferedResponsesMissingTerminalEventReturnsFailover(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	partial := "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_1\",\"status\":\"in_progress\"}}\n\n"
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/event-stream"}, "X-Request-Id": []string{"upstream-rid"}},
+		Body:       io.NopCloser(strings.NewReader(partial)),
+	}
+
+	result, err := (&OpenAIGatewayService{}).handleChatBufferedStreamingResponse(
+		resp, c, &Account{ID: 76, Name: "openai-apikey", Platform: PlatformOpenAI}, "gpt-5.6-terra", "gpt-5.6-terra", "gpt-5.6-terra", time.Now(),
+	)
+
+	require.Error(t, err)
+	require.Nil(t, result)
+	var failoverErr *UpstreamFailoverError
+	require.ErrorAs(t, err, &failoverErr)
+	require.Equal(t, http.StatusBadGateway, failoverErr.StatusCode)
+	require.Equal(t, "upstream-rid", failoverErr.ResponseHeaders.Get("x-request-id"))
+	require.Empty(t, rec.Body.String())
+	require.False(t, c.Writer.Written())
+}
+
+func TestChatCompletionsBufferedResponsesMissingTerminalEventAfterClientCancelWritesError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	requestContext, cancel := context.WithCancel(context.Background())
+	cancel()
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil).WithContext(requestContext)
+	resp := &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}
+
+	result, err := (&OpenAIGatewayService{}).handleChatBufferedStreamingResponse(
+		resp, c, &Account{ID: 76, Platform: PlatformOpenAI}, "gpt-5.6-terra", "gpt-5.6-terra", "gpt-5.6-terra", time.Now(),
+	)
+
+	require.Error(t, err)
+	require.Nil(t, result)
+	var failoverErr *UpstreamFailoverError
+	require.NotErrorAs(t, err, &failoverErr)
+	require.Equal(t, http.StatusBadGateway, rec.Code)
 }

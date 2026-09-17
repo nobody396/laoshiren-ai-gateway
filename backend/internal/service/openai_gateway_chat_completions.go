@@ -395,6 +395,15 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 	}
 
 	if finalResponse == nil {
+		// Nothing has reached the client yet, so a clean EOF without a terminal
+		// event is safe to retry on another account.
+		if c == nil || c.Request == nil || c.Request.Context().Err() == nil {
+			failoverErr := s.newOpenAIStreamFailoverError(c, account, false, requestID, nil, "OpenAI stream ended before a terminal event")
+			if resp != nil {
+				failoverErr.ResponseHeaders = resp.Header.Clone()
+			}
+			return nil, failoverErr
+		}
 		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
 		writeChatCompletionsError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		return nil, fmt.Errorf("upstream stream ended without terminal event")

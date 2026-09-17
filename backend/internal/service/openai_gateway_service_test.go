@@ -2263,8 +2263,8 @@ func TestNativeResponsesIdleBeforeOutputFailsOver(t *testing.T) {
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodPost, "/responses", nil)
 	reader, writer := io.Pipe()
-	defer reader.Close()
-	defer writer.Close()
+	defer func() { _ = reader.Close() }()
+	defer func() { _ = writer.Close() }()
 	resp := &http.Response{StatusCode: 200, Header: http.Header{}, Body: reader}
 	_, err := svc.handleStreamingResponse(c.Request.Context(), resp, c, &Account{ID: 1}, time.Now(), "model", "model")
 	var failover *UpstreamFailoverError
@@ -2279,9 +2279,9 @@ func TestNativeResponsesKeepaliveDoesNotCommitPreamble(t *testing.T) {
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodPost, "/responses", nil)
 	reader, writer := io.Pipe()
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 	go func() {
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 		_, _ = writer.Write([]byte("data: {\"type\":\"response.in_progress\",\"response\":{}}\n\n"))
 		time.Sleep(1100 * time.Millisecond)
 	}()

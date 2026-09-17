@@ -31,7 +31,7 @@ func (u *nativeResponsesRecoveryUpstream) Do(_ *http.Request, _ string, id int64
 		r, w := io.Pipe()
 		resp.Body = r
 		go func() {
-			defer w.Close()
+			defer func() { _ = w.Close() }()
 			if u.partial {
 				_, _ = w.Write([]byte("data: {\"type\":\"response.output_text.delta\",\"delta\":\"partial\"}\n\n"))
 			} else {

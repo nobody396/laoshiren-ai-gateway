@@ -132,6 +132,12 @@ func TestApplyOpenAIReasoningEffortPolicy(t *testing.T) {
 		{name: "does not chain mappings", body: `{"reasoning_effort":"max"}`, mappings: []ReasoningEffortMapping{{From: "max", To: "xhigh"}, {From: "xhigh", To: "low"}}, path: "reasoning_effort", want: "xhigh", changed: true},
 		{name: "keeps unknown without mapping", body: `{"reasoning_effort":"future"}`, max: "low", path: "reasoning_effort", want: "future", changed: false},
 		{name: "keeps non string value", body: `{"reasoning_effort":{"level":"high"}}`, max: "low", path: "reasoning_effort.level", want: "high", changed: false},
+		{name: "rewrites client ultra without any policy", body: `{"reasoning":{"effort":"ultra"}}`, path: "reasoning.effort", want: "max", changed: true},
+		{name: "rewrites client ultra on chat completions", body: `{"messages":[{"role":"user","content":"hi"}],"reasoning_effort":"ULTRA"}`, path: "reasoning_effort", want: "max", changed: true},
+		{name: "rewrites client ultra separator form", body: `{"reasoning_effort":"ultra "}`, path: "reasoning_effort", want: "max", changed: true},
+		{name: "maps rewritten ultra", body: `{"reasoning":{"effort":"ultra"}}`, mappings: []ReasoningEffortMapping{{From: "max", To: "xhigh"}}, path: "reasoning.effort", want: "xhigh", changed: true},
+		{name: "caps rewritten ultra", body: `{"reasoning":{"effort":"ultra"}}`, max: "high", path: "reasoning.effort", want: "high", changed: true},
+		{name: "keeps unrelated unknown without policy", body: `{"reasoning_effort":"future"}`, path: "reasoning_effort", want: "future", changed: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

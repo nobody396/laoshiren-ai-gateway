@@ -30,11 +30,15 @@
       "slug": "gpt-5.6-sol",
       "display_name": "GPT-5.6 Sol",
       "description": "GPT-5.6 Sol via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
+      "default_reasoning_level": "medium",
       "supported_reasoning_levels": [
         {
           "effort": "none",
           "description": "none reasoning"
+        },
+        {
+          "effort": "minimal",
+          "description": "minimal reasoning"
         },
         {
           "effort": "low",
@@ -96,11 +100,15 @@
       "slug": "gpt-5.6-terra",
       "display_name": "GPT-5.6 Terra",
       "description": "GPT-5.6 Terra via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
+      "default_reasoning_level": "medium",
       "supported_reasoning_levels": [
         {
           "effort": "none",
           "description": "none reasoning"
+        },
+        {
+          "effort": "minimal",
+          "description": "minimal reasoning"
         },
         {
           "effort": "low",
@@ -213,11 +221,15 @@
       "slug": "gpt-5.5",
       "display_name": "GPT-5.5",
       "description": "GPT-5.5 via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
+      "default_reasoning_level": "medium",
       "supported_reasoning_levels": [
         {
           "effort": "none",
           "description": "none reasoning"
+        },
+        {
+          "effort": "minimal",
+          "description": "minimal reasoning"
         },
         {
           "effort": "low",
@@ -271,11 +283,15 @@
       "slug": "gpt-5.4",
       "display_name": "GPT-5.4",
       "description": "GPT-5.4 via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
+      "default_reasoning_level": "none",
       "supported_reasoning_levels": [
         {
           "effort": "none",
           "description": "none reasoning"
+        },
+        {
+          "effort": "minimal",
+          "description": "minimal reasoning"
         },
         {
           "effort": "low",
@@ -292,6 +308,10 @@
         {
           "effort": "xhigh",
           "description": "xhigh reasoning"
+        },
+        {
+          "effort": "max",
+          "description": "max reasoning"
         }
       ],
       "additional_speed_tiers": [],
@@ -533,11 +553,15 @@
       "slug": "gpt-5.4-mini",
       "display_name": "GPT-5.4 Mini",
       "description": "GPT-5.4 Mini via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
+      "default_reasoning_level": "none",
       "supported_reasoning_levels": [
         {
           "effort": "none",
           "description": "none reasoning"
+        },
+        {
+          "effort": "minimal",
+          "description": "minimal reasoning"
         },
         {
           "effort": "low",
@@ -591,11 +615,15 @@
       "slug": "gpt-5.6-luna",
       "display_name": "GPT-5.6 Luna",
       "description": "GPT-5.6 Luna via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
+      "default_reasoning_level": "medium",
       "supported_reasoning_levels": [
         {
           "effort": "none",
           "description": "none reasoning"
+        },
+        {
+          "effort": "minimal",
+          "description": "minimal reasoning"
         },
         {
           "effort": "low",
@@ -791,25 +819,8 @@
       "slug": "qwen3.6-flash",
       "display_name": "Qwen 3.6 Flash",
       "description": "Qwen 3.6 Flash via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "none",
-      "supported_reasoning_levels": [
-        {
-          "effort": "none",
-          "description": "none reasoning"
-        },
-        {
-          "effort": "minimal",
-          "description": "minimal reasoning"
-        },
-        {
-          "effort": "low",
-          "description": "low reasoning"
-        },
-        {
-          "effort": "medium",
-          "description": "medium reasoning"
-        }
-      ],
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
       "additional_speed_tiers": [],
       "service_tiers": [],
       "priority": 999,
@@ -846,25 +857,8 @@
       "slug": "qwen3.6-plus",
       "display_name": "Qwen 3.6 Plus",
       "description": "Qwen 3.6 Plus via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "none",
-      "supported_reasoning_levels": [
-        {
-          "effort": "none",
-          "description": "none reasoning"
-        },
-        {
-          "effort": "minimal",
-          "description": "minimal reasoning"
-        },
-        {
-          "effort": "low",
-          "description": "low reasoning"
-        },
-        {
-          "effort": "medium",
-          "description": "medium reasoning"
-        }
-      ],
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
       "additional_speed_tiers": [],
       "service_tiers": [],
       "priority": 999,
@@ -901,25 +895,8 @@
       "slug": "qwen3.7-flash",
       "display_name": "Qwen 3.7 Flash",
       "description": "Qwen 3.7 Flash via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "none",
-      "supported_reasoning_levels": [
-        {
-          "effort": "none",
-          "description": "none reasoning"
-        },
-        {
-          "effort": "minimal",
-          "description": "minimal reasoning"
-        },
-        {
-          "effort": "low",
-          "description": "low reasoning"
-        },
-        {
-          "effort": "medium",
-          "description": "medium reasoning"
-        }
-      ],
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
       "additional_speed_tiers": [],
       "service_tiers": [],
       "priority": 999,
@@ -954,37 +931,8 @@
       "slug": "qwen3.7-max",
       "display_name": "Qwen 3.7 Max",
       "description": "Qwen 3.7 Max via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
-      "supported_reasoning_levels": [
-        {
-          "effort": "none",
-          "description": "none reasoning"
-        },
-        {
-          "effort": "minimal",
-          "description": "minimal reasoning"
-        },
-        {
-          "effort": "low",
-          "description": "low reasoning"
-        },
-        {
-          "effort": "medium",
-          "description": "medium reasoning"
-        },
-        {
-          "effort": "high",
-          "description": "high reasoning"
-        },
-        {
-          "effort": "xhigh",
-          "description": "xhigh reasoning"
-        },
-        {
-          "effort": "max",
-          "description": "max reasoning"
-        }
-      ],
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
       "additional_speed_tiers": [],
       "service_tiers": [],
       "priority": 999,
@@ -1021,37 +969,8 @@
       "slug": "qwen3.7-plus",
       "display_name": "Qwen 3.7 Plus",
       "description": "Qwen 3.7 Plus via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
-      "supported_reasoning_levels": [
-        {
-          "effort": "none",
-          "description": "none reasoning"
-        },
-        {
-          "effort": "minimal",
-          "description": "minimal reasoning"
-        },
-        {
-          "effort": "low",
-          "description": "low reasoning"
-        },
-        {
-          "effort": "medium",
-          "description": "medium reasoning"
-        },
-        {
-          "effort": "high",
-          "description": "high reasoning"
-        },
-        {
-          "effort": "xhigh",
-          "description": "xhigh reasoning"
-        },
-        {
-          "effort": "max",
-          "description": "max reasoning"
-        }
-      ],
+      "default_reasoning_level": null,
+      "supported_reasoning_levels": [],
       "additional_speed_tiers": [],
       "service_tiers": [],
       "priority": 999,
@@ -1088,15 +1007,11 @@
       "slug": "qwen3.8-max",
       "display_name": "Qwen 3.8 Max",
       "description": "Qwen 3.8 Max via the 老实人AI Responses gateway.",
-      "default_reasoning_level": "high",
+      "default_reasoning_level": "xhigh",
       "supported_reasoning_levels": [
         {
           "effort": "none",
           "description": "none reasoning"
-        },
-        {
-          "effort": "minimal",
-          "description": "minimal reasoning"
         },
         {
           "effort": "low",
@@ -1107,16 +1022,8 @@
           "description": "medium reasoning"
         },
         {
-          "effort": "high",
-          "description": "high reasoning"
-        },
-        {
           "effort": "xhigh",
           "description": "xhigh reasoning"
-        },
-        {
-          "effort": "max",
-          "description": "max reasoning"
         }
       ],
       "additional_speed_tiers": [],

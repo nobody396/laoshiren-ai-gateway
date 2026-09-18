@@ -322,6 +322,7 @@
     "client_mappings": [],
     "model_levels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",

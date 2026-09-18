@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.25'
+$ScriptVersion = '0.7.26'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -14,7 +14,7 @@ $CatalogGrokManagedModels = @(@{ Id = 'grok-4.5'; DisplayName = 'Grok 4.5'; Cont
 $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
 $CatalogGeminiDefaultModel = 'gemini-3.7-flash'
 $CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high', 'gemini-3.8-flash')
-$CatalogModelReasoningJson = '{"claude-fable-5-1":["low","medium","high","xhigh","max"],"claude-fable-5":["low","medium","high","xhigh","max"],"claude-haiku-4-5":[],"claude-opus-4-5":["low","medium","high","max"],"claude-opus-4-6":["low","medium","high","max"],"claude-opus-4-7":["low","medium","high","xhigh","max"],"claude-opus-4-8":["low","medium","high","xhigh","max"],"claude-opus-5":["low","medium","high","xhigh","max"],"claude-sonnet-4-6":["low","medium","high","max"],"claude-sonnet-5":["low","medium","high","xhigh","max"],"deepseek-v4-flash-0731":["low","high","max"],"deepseek-v4-pro-0813":["low","high","max"],"gemini-3.1-pro":["low","medium","high"],"gemini-3.7-flash":["low","medium","high"],"gemini-3.8-flash":["low","medium","high"],"glm-5.2":["none","minimal","low","medium","high","xhigh","max"],"glm-5.3":["low","high","max"],"gpt-5.3-codex-spark":["none"],"gpt-5.4-mini":["none","low","medium","high","xhigh"],"gpt-5.4":["none","low","medium","high","xhigh"],"gpt-5.5":["none","low","medium","high","xhigh"],"gpt-5.6-luna":["none","low","medium","high","xhigh","max"],"gpt-5.6-sol":["none","low","medium","high","xhigh","max"],"gpt-5.6-terra":["none","low","medium","high","xhigh","max"],"gpt-daybreak-blue-latest":[],"grok-4.5":["low","medium","high","xhigh"],"grok-4.6":["low","medium","high","xhigh"],"kimi-k2.7-code":["always_on"],"kimi-k3":["low","high","max"],"minimax-m3":["disabled","adaptive"],"qwen3.6-flash":["none","minimal","low","medium"],"qwen3.6-plus":["none","minimal","low","medium"],"qwen3.7-flash":["none","minimal","low","medium"],"qwen3.7-max":["none","minimal","low","medium","high","xhigh","max"],"qwen3.7-plus":["none","minimal","low","medium","high","xhigh","max"],"qwen3.8-max":["none","minimal","low","medium","high","xhigh","max"]}'
+$CatalogModelReasoningJson = '{"claude-fable-5-1":["low","medium","high","xhigh","max"],"claude-fable-5":["low","medium","high","xhigh","max"],"claude-haiku-4-5":[],"claude-opus-4-5":["low","medium","high","max"],"claude-opus-4-6":["low","medium","high","max"],"claude-opus-4-7":["low","medium","high","xhigh","max"],"claude-opus-4-8":["low","medium","high","xhigh","max"],"claude-opus-5":["low","medium","high","xhigh","max"],"claude-sonnet-4-6":["low","medium","high","max"],"claude-sonnet-5":["low","medium","high","xhigh","max"],"deepseek-v4-flash-0731":["low","high","max"],"deepseek-v4-pro-0813":["low","high","max"],"gemini-3.1-pro":["low","medium","high"],"gemini-3.7-flash":["low","medium","high"],"gemini-3.8-flash":["low","medium","high"],"glm-5.2":["none","minimal","low","medium","high","xhigh","max"],"glm-5.3":["low","high","max"],"gpt-5.3-codex-spark":["none"],"gpt-5.4-mini":["none","minimal","low","medium","high","xhigh"],"gpt-5.4":["none","minimal","low","medium","high","xhigh","max"],"gpt-5.5":["none","minimal","low","medium","high","xhigh"],"gpt-5.6-luna":["none","minimal","low","medium","high","xhigh","max"],"gpt-5.6-sol":["none","minimal","low","medium","high","xhigh","max"],"gpt-5.6-terra":["none","minimal","low","medium","high","xhigh","max"],"gpt-daybreak-blue-latest":[],"grok-4.5":["low","medium","high","xhigh"],"grok-4.6":["low","medium","high","xhigh"],"kimi-k2.7-code":[],"kimi-k3":["low","high","max"],"minimax-m3":[],"qwen3.6-flash":[],"qwen3.6-plus":[],"qwen3.7-flash":[],"qwen3.7-max":[],"qwen3.7-plus":[],"qwen3.8-max":["none","low","medium","xhigh"]}'
 # END GENERATED MODEL CATALOG
 $CatalogOpenAIReasoningEffort = 'high'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
@@ -266,10 +266,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.25 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.26 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.25 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.26 | iex
 
 参数:
   --api-key              Claude Code API Key

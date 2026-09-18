@@ -1659,6 +1659,7 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "model_id": "gpt-5.4-mini",
     "model_levels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
@@ -1682,10 +1683,12 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "model_id": "gpt-5.4",
     "model_levels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
-      "xhigh"
+      "xhigh",
+      "max"
     ],
     "client_levels": [
       {
@@ -1705,6 +1708,7 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "model_id": "gpt-5.5",
     "model_levels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
@@ -1728,6 +1732,7 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "model_id": "gpt-5.6-luna",
     "model_levels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
@@ -1752,6 +1757,7 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "model_id": "gpt-5.6-sol",
     "model_levels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
@@ -1776,6 +1782,7 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "model_id": "gpt-5.6-terra",
     "model_levels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
@@ -1837,21 +1844,8 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
   },
   {
     "model_id": "kimi-k2.7-code",
-    "model_levels": [
-      "always_on"
-    ],
-    "client_levels": [
-      {
-        "client": "Kimi Code",
-        "levels": [
-          "low",
-          "medium",
-          "high",
-          "xhigh",
-          "max"
-        ]
-      }
-    ],
+    "model_levels": [],
+    "client_levels": [],
     "client_mappings": []
   },
   {
@@ -1877,117 +1871,47 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
   },
   {
     "model_id": "minimax-m3",
-    "model_levels": [
-      "disabled",
-      "adaptive"
-    ],
-    "client_levels": [
-      {
-        "client": "Kimi Code",
-        "levels": [
-          "low",
-          "medium",
-          "high",
-          "xhigh",
-          "max"
-        ]
-      }
-    ],
+    "model_levels": [],
+    "client_levels": [],
     "client_mappings": []
   },
   {
     "model_id": "qwen3.6-flash",
-    "model_levels": [
-      "none",
-      "minimal",
-      "low",
-      "medium"
-    ],
+    "model_levels": [],
     "client_levels": [],
     "client_mappings": []
   },
   {
     "model_id": "qwen3.6-plus",
-    "model_levels": [
-      "none",
-      "minimal",
-      "low",
-      "medium"
-    ],
+    "model_levels": [],
     "client_levels": [],
     "client_mappings": []
   },
   {
     "model_id": "qwen3.7-flash",
-    "model_levels": [
-      "none",
-      "minimal",
-      "low",
-      "medium"
-    ],
+    "model_levels": [],
     "client_levels": [],
     "client_mappings": []
   },
   {
     "model_id": "qwen3.7-max",
-    "model_levels": [
-      "none",
-      "minimal",
-      "low",
-      "medium",
-      "high",
-      "xhigh",
-      "max"
-    ],
-    "client_levels": [
-      {
-        "client": "Kimi Code",
-        "levels": [
-          "low",
-          "medium",
-          "high",
-          "xhigh",
-          "max"
-        ]
-      }
-    ],
+    "model_levels": [],
+    "client_levels": [],
     "client_mappings": []
   },
   {
     "model_id": "qwen3.7-plus",
-    "model_levels": [
-      "none",
-      "minimal",
-      "low",
-      "medium",
-      "high",
-      "xhigh",
-      "max"
-    ],
-    "client_levels": [
-      {
-        "client": "Kimi Code",
-        "levels": [
-          "low",
-          "medium",
-          "high",
-          "xhigh",
-          "max"
-        ]
-      }
-    ],
+    "model_levels": [],
+    "client_levels": [],
     "client_mappings": []
   },
   {
     "model_id": "qwen3.8-max",
     "model_levels": [
       "none",
-      "minimal",
       "low",
       "medium",
-      "high",
-      "xhigh",
-      "max"
+      "xhigh"
     ],
     "client_levels": [
       {
@@ -1995,9 +1919,7 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
         "levels": [
           "low",
           "medium",
-          "high",
-          "xhigh",
-          "max"
+          "xhigh"
         ]
       }
     ],

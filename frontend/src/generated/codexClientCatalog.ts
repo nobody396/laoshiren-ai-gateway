@@ -15,6 +15,7 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "contextWindow": 1050000,
     "reasoningLevels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
@@ -22,7 +23,7 @@ export const codexClientModels: readonly CodexClientModel[] = [
       "max",
       "ultra"
     ],
-    "defaultReasoningLevel": "high"
+    "defaultReasoningLevel": "medium"
   },
   {
     "model": "gpt-5.6-terra",
@@ -30,6 +31,7 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "contextWindow": 1050000,
     "reasoningLevels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
@@ -37,7 +39,7 @@ export const codexClientModels: readonly CodexClientModel[] = [
       "max",
       "ultra"
     ],
-    "defaultReasoningLevel": "high"
+    "defaultReasoningLevel": "medium"
   },
   {
     "model": "gpt-5.6",
@@ -57,12 +59,13 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "contextWindow": 1050000,
     "reasoningLevels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
       "xhigh"
     ],
-    "defaultReasoningLevel": "high"
+    "defaultReasoningLevel": "medium"
   },
   {
     "model": "gpt-5.4",
@@ -70,12 +73,14 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "contextWindow": 1050000,
     "reasoningLevels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
-      "xhigh"
+      "xhigh",
+      "max"
     ],
-    "defaultReasoningLevel": "high"
+    "defaultReasoningLevel": "none"
   },
   {
     "model": "deepseek-v4-flash-0731",
@@ -129,12 +134,13 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "contextWindow": 400000,
     "reasoningLevels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
       "xhigh"
     ],
-    "defaultReasoningLevel": "high"
+    "defaultReasoningLevel": "none"
   },
   {
     "model": "gpt-5.6-luna",
@@ -142,13 +148,14 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "contextWindow": 1050000,
     "reasoningLevels": [
       "none",
+      "minimal",
       "low",
       "medium",
       "high",
       "xhigh",
       "max"
     ],
-    "defaultReasoningLevel": "high"
+    "defaultReasoningLevel": "medium"
   },
   {
     "model": "gpt-6-astra",
@@ -182,67 +189,36 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "model": "qwen3.6-flash",
     "displayName": "Qwen 3.6 Flash",
     "contextWindow": 1000000,
-    "reasoningLevels": [
-      "none",
-      "minimal",
-      "low",
-      "medium"
-    ],
-    "defaultReasoningLevel": "none"
+    "reasoningLevels": [],
+    "defaultReasoningLevel": null
   },
   {
     "model": "qwen3.6-plus",
     "displayName": "Qwen 3.6 Plus",
     "contextWindow": 1000000,
-    "reasoningLevels": [
-      "none",
-      "minimal",
-      "low",
-      "medium"
-    ],
-    "defaultReasoningLevel": "none"
+    "reasoningLevels": [],
+    "defaultReasoningLevel": null
   },
   {
     "model": "qwen3.7-flash",
     "displayName": "Qwen 3.7 Flash",
     "contextWindow": 1000000,
-    "reasoningLevels": [
-      "none",
-      "minimal",
-      "low",
-      "medium"
-    ],
-    "defaultReasoningLevel": "none"
+    "reasoningLevels": [],
+    "defaultReasoningLevel": null
   },
   {
     "model": "qwen3.7-max",
     "displayName": "Qwen 3.7 Max",
     "contextWindow": 1000000,
-    "reasoningLevels": [
-      "none",
-      "minimal",
-      "low",
-      "medium",
-      "high",
-      "xhigh",
-      "max"
-    ],
-    "defaultReasoningLevel": "high"
+    "reasoningLevels": [],
+    "defaultReasoningLevel": null
   },
   {
     "model": "qwen3.7-plus",
     "displayName": "Qwen 3.7 Plus",
     "contextWindow": 1000000,
-    "reasoningLevels": [
-      "none",
-      "minimal",
-      "low",
-      "medium",
-      "high",
-      "xhigh",
-      "max"
-    ],
-    "defaultReasoningLevel": "high"
+    "reasoningLevels": [],
+    "defaultReasoningLevel": null
   },
   {
     "model": "qwen3.8-max",
@@ -250,13 +226,10 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "contextWindow": 1000000,
     "reasoningLevels": [
       "none",
-      "minimal",
       "low",
       "medium",
-      "high",
-      "xhigh",
-      "max"
+      "xhigh"
     ],
-    "defaultReasoningLevel": "high"
+    "defaultReasoningLevel": "xhigh"
   }
 ]

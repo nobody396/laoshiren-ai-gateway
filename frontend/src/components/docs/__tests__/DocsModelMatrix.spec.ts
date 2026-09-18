@@ -20,7 +20,7 @@ describe('DocsModelMatrix', () => {
     expect(solCells[1].text()).toBe('✗')
     expect(solCells[2].text()).toBe('✗')
     expect(solCells[3].text()).toBe('✗')
-    expect(solRow!.text()).toContain('关闭 / Low / Med / High / XHigh / Max')
+    expect(solRow!.text()).toContain('关闭 / Min / Low / Med / High / XHigh / Max')
     expect(solRow!.text()).toContain('1.05M')
     expect(solCells[0].find('span').attributes('aria-label')).toContain('推荐')
     expect(solCells[1].find('span').attributes('aria-label')).toContain('未在此协议上开放')

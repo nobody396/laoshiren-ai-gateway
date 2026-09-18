@@ -872,6 +872,17 @@ def replace_installer_version_references(text: str, version: str) -> str:
 
 def apply(catalog: dict[str, Any], catalog_path: Path) -> None:
     changed: list[str] = []
+    # Clients fetch the published Codex catalog at
+    # `codex-model-catalog.json?v=<client_auto_config_version>`, so that version
+    # is the CDN cache key. Publishing new catalog bytes under the old version
+    # leaves every customer on the cached copy, which is how an added effort
+    # level can be live in the gateway and still invisible in Codex. Bump the
+    # version whenever the published bytes change, not only on a manifest merge.
+    published = render_codex_client_catalog(catalog)
+    if not CODEX_CLIENT_OUTPUT.exists() or CODEX_CLIENT_OUTPUT.read_text(encoding="utf-8") != published:
+        catalog["client_auto_config_version"] = bump_patch(catalog["client_auto_config_version"])
+        catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        changed.append(str(catalog_path.relative_to(ROOT)))
     for path, content in outputs(catalog).items():
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists() and path.read_text(encoding="utf-8") == content:

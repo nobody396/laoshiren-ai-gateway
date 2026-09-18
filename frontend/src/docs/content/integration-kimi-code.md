@@ -21,6 +21,7 @@ Kimi Code 的 Provider 类型决定协议：
 - DeepSeek Responses 已完成真实 Agent 闭环：`deepseek-v4-pro-0813`、`deepseek-v4-flash-0731`。
 - Qwen Responses 已完成真实 Agent 闭环：`qwen3.7-max`、`qwen3.7-plus`、`qwen3.8-max`。`qwen3.6-flash`、`qwen3.6-plus`、`qwen3.7-flash` 在当前生产网关重复返回 502，暂记为不支持；模型级 reasoning 映射修复部署后需要复测。
 - Kimi Code 的通用推理档位是 `low`、`medium`、`high`、`xhigh`、`max`。GLM 5.3 只接受 `low`、`high`、`max`，网关会将 `medium → high`、`xhigh → max`、`none/minimal → low` 后再转发。
+- `kimi-k2.7-code` 不支持推理档位：上游对思考永远开启，传 `max` 会直接报 400；`kimi-k3` 支持 `low`、`high`、`max`。`qwen3.8-max` 实际档位为 `low`、`medium`、`xhigh`（`high`/`max` 会被上游映射为 `xhigh`）。MiniMax M3 与 Qwen 3.6/3.7 系列没有推理档位概念，选档不生效。
 - 四种 Provider 是四类候选入口，不代表任意模型均可用；只使用本文列出的已实测模型。
 
 ## 1. 创建 Key

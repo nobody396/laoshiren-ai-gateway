@@ -13,7 +13,7 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export const clientAutoConfigVersion = "0.7.25"
+export const clientAutoConfigVersion = "0.7.26"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",

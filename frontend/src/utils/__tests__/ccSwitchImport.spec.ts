@@ -106,9 +106,10 @@ describe('CC Switch provider deeplinks', () => {
       .supported_reasoning_levels
       .map((row: { effort: string }) => row.effort)
 
-    expect(levels('gpt-5.6-sol')).toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'])
+    expect(levels('gpt-5.6-sol')).toEqual(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'])
     expect(levels('gpt-5.3-codex-spark')).toEqual(['none'])
-    expect(levels('qwen3.6-flash')).toEqual(['none', 'minimal', 'low', 'medium'])
+    expect(levels('qwen3.6-flash')).toEqual([])
+    expect(levels('qwen3.8-max')).toEqual(['none', 'low', 'medium', 'xhigh'])
     // ultra is a Codex-only tier the gateway rewrites to max, so it is offered
     // on the three models Codex shows it on and nowhere else.
     expect(levels('gpt-6-astra')).toContain('ultra')

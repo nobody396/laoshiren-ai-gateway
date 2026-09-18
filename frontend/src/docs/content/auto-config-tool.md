@@ -32,7 +32,7 @@ IP 限制、额度限制、速率限制和有效期可按需配置，新手建�
 直接执行：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.25' | bash
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.26' | bash
 ```
 
 脚本会自动完成以下动作：
@@ -52,7 +52,7 @@ curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.25' | bash
 直接执行：
 
 ```powershell
-irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.25 | iex
+irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.26 | iex
 ```
 
 Windows 脚本还会检测现有 Claude Code CLI 和官方 `OpenAI.Codex` App。已有客户端时不会再下载 Node.js 或重复安装，只会备份原配置、写入中转配置并测试 API Key。
@@ -72,13 +72,13 @@ Windows 脚本还会检测现有 Claude Code CLI 和官方 `OpenAI.Codex` App。
 macOS / Linux：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.25' | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.26' | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
 ```
 
 Windows PowerShell（管道模式通过环境变量传参）：
 
 ```powershell
-$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_TOOLS='claude'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.25 | iex
+$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_TOOLS='claude'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.26 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -92,13 +92,13 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.25' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.26' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.25 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.26 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -114,13 +114,13 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.25' | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.26' | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
 ```
 
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.25 | iex
+$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.26 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -134,7 +134,7 @@ Windows PowerShell（下载后直接执行）：
 如果你部署了自定义域名，可以覆盖默认地址：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.25' | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://api.laoshirenai.com
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.26' | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://api.laoshirenai.com
 ```
 
 ---
@@ -326,7 +326,7 @@ Claude Code 在 Windows 上依赖 git-bash 运行。脚本会自动检测并从�
 `irm ... | iex` 后面**不能直接跟参数**，需要通过环境变量传入：
 
 ```powershell
-$env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_KEY'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.25 | iex
+$env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_KEY'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.26 | iex
 ```
 
 如果不传环境变量，脚本会交互式提示输入 API Key。

@@ -27,7 +27,7 @@ describe('Codex manual configuration', () => {
     })
     expect(config.effort).toBe('max')
     expect(config.catalog.models[0].supported_reasoning_levels.map((row: { effort: string }) => row.effort))
-      .toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'])
+      .toEqual(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'])
   })
 
   it('does not write a level that the selected model does not support', () => {

@@ -733,7 +733,11 @@ def codex_client_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
             {"effort": level, "description": f"{level} reasoning"}
             for level in levels
         ]
-        entry["default_reasoning_level"] = "high" if "high" in levels else (levels[0] if levels else None)
+        contract_default = contract.get("reasoning", {}).get("default_level")
+        if isinstance(contract_default, str) and contract_default in levels:
+            entry["default_reasoning_level"] = contract_default
+        else:
+            entry["default_reasoning_level"] = "high" if "high" in levels else (levels[0] if levels else None)
         entry["additional_speed_tiers"] = []
         entry["service_tiers"] = []
         entry["priority"] = 999

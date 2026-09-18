@@ -445,28 +445,9 @@
     }
   ],
   "reasoning": {
-    "client_levels": [
-      {
-        "client": "Kimi Code",
-        "levels": [
-          "low",
-          "medium",
-          "high",
-          "xhigh",
-          "max"
-        ]
-      }
-    ],
+    "client_levels": [],
     "client_mappings": [],
-    "model_levels": [
-      "none",
-      "minimal",
-      "low",
-      "medium",
-      "high",
-      "xhigh",
-      "max"
-    ]
+    "model_levels": []
   },
   "recommended_protocol": "responses",
   "recommended_protocol_reason": "Responses is the native recommended path: server Web Search and the complete model reasoning-level matrix are verified; Chat remains available for clients that require it.",

@@ -346,14 +346,14 @@ describe('client auto-config scripts', () => {
       writeFileSync(catalogPath, readPublicScript('codex-model-catalog.json'))
       const runWriter = () => execFileSync('bash', [
         '-c',
-        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CATALOG_OPENAI_DEFAULT_MODEL="qwen3.7-max"; write_codex_config',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; CATALOG_OPENAI_DEFAULT_MODEL="gpt-6-astra"; write_codex_config',
         '_', installerPath,
       ], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
       runWriter()
       const first = readFileSync(configPath, 'utf8')
-      expect(first).toContain('model = "qwen3.7-max"')
+      expect(first).toContain('model = "gpt-6-astra"')
       expect(first).toContain('model_reasoning_effort = "high"')
-      expect(first).toContain('model_context_window = 1000000')
+      expect(first).toContain('model_context_window = 1050000')
       expect(first).toContain('notify = ["keep"]')
       expect(first).toContain('[mcp_servers.keep]\ncommand = "keep-me"')
       expect(first).toContain('[model_providers.other]\nbase_url = "https://other.example"')

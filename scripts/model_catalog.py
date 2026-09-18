@@ -641,6 +641,46 @@ def render_go(catalog: dict[str, Any]) -> str:
 
 
 
+# Codex offers an "ultra" tier at the top of its effort picker. It is a client
+# product tier (maximum reasoning with automatic task delegation), not a
+# Responses wire value: sending it upstream returns 400. The gateway rewrites
+# ultra -> max, so the client catalog may offer it, while the model contracts
+# keep recording only the efforts the upstream wire actually accepts.
+CODEX_CLIENT_ONLY_EFFORT_ALIASES = {"ultra": "max"}
+
+# Which models expose a client-only tier is a fact about the Codex picker, not
+# something derivable from a wire contract, so the models stay an explicit list.
+# These three are the models we serve that Codex itself offers ultra on; every
+# one of them must still support the wire value the alias resolves to.
+CODEX_CLIENT_ONLY_EFFORT_MODELS = {"gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra"}
+
+
+def with_codex_client_effort_aliases(entry: dict[str, Any]) -> dict[str, Any]:
+    levels = entry.get("supported_reasoning_levels")
+    if entry.get("slug") not in CODEX_CLIENT_ONLY_EFFORT_MODELS or not isinstance(levels, list):
+        return entry
+    present = {
+        row.get("effort")
+        for row in levels
+        if isinstance(row, dict)
+    }
+    additions = []
+    for alias, wire in CODEX_CLIENT_ONLY_EFFORT_ALIASES.items():
+        if alias in present:
+            continue
+        if wire not in present:
+            fail(
+                f"Codex client alias {alias!r} on {entry['slug']} requires wire effort {wire!r}"
+            )
+        additions.append(
+            {"effort": alias, "description": f"{alias} reasoning (gateway maps to {wire})"}
+        )
+    if not additions:
+        return entry
+    entry["supported_reasoning_levels"] = levels + additions
+    return entry
+
+
 def codex_client_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
     base = json.loads(CODEX_CLIENT_BASE.read_text(encoding="utf-8"))
     if not isinstance(base, dict) or not isinstance(base.get("models"), list):
@@ -715,7 +755,7 @@ def codex_client_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
     for slug in sorted(replacements):
         if slug not in seen:
             merged_models.append(replacements[slug])
-    base["models"] = merged_models
+    base["models"] = [with_codex_client_effort_aliases(entry) for entry in merged_models]
     return base
 
 

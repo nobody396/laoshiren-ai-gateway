@@ -17,6 +17,13 @@ Codex 使用 **OpenAI Responses** 协议。本文已在 Codex CLI `0.151.0` 上�
 - `kimi-k3` 虽然可以调用 Responses API，但在 Codex 中缺少兼容模型元数据，真实客户端测试失败，因此不列为 Codex 支持模型。
 - 当前 Codex CLI `0.151.0` 已不支持 `wire_api = "chat"`；配置后会在发出网络请求前直接报错，必须使用 `wire_api = "responses"`。
 
+## 推理档位
+
+- `gpt-6-astra`、`gpt-5.6-sol`、`gpt-5.6-terra` 在 `/model` 里可以选到 **Ultra**。
+- Ultra 是 Codex 客户端的档位，不是 Responses API 的取值：直接把 `ultra` 发给上游会返回 400。网关会把它改写成 `max` 再转发，所以选 Ultra 实际按 **max** 推理，**不包含** ChatGPT 端 Ultra 的自动子任务分发。
+- 分组如果设了推理上限或映射，改写后的 `max` 仍然照常受限。例如企业高速线路把 `max` 映射为 `xhigh`，在该线路上选 Ultra 就按 `xhigh` 执行。
+- 其余模型的档位以各自模型目录为准，不提供 Ultra。
+
 ## 1. 创建 Key
 
 打开 [API 密钥](https://laoshirenai.com/keys)，按准备使用的模型选择 GPT、Qwen 或 DeepSeek 分组创建 Key，再从该 Key 的模型列表复制模型 ID。

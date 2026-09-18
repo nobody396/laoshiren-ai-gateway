@@ -19,7 +19,8 @@ export const codexClientModels: readonly CodexClientModel[] = [
       "medium",
       "high",
       "xhigh",
-      "max"
+      "max",
+      "ultra"
     ],
     "defaultReasoningLevel": "high"
   },
@@ -33,7 +34,8 @@ export const codexClientModels: readonly CodexClientModel[] = [
       "medium",
       "high",
       "xhigh",
-      "max"
+      "max",
+      "ultra"
     ],
     "defaultReasoningLevel": "high"
   },
@@ -157,7 +159,8 @@ export const codexClientModels: readonly CodexClientModel[] = [
       "medium",
       "high",
       "xhigh",
-      "max"
+      "max",
+      "ultra"
     ],
     "defaultReasoningLevel": "high"
   },

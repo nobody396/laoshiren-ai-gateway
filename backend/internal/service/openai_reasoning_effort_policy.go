@@ -17,6 +17,39 @@ const (
 
 var openAIReasoningEffortValues = []string{"minimal", "low", "medium", "high", "xhigh", "max"}
 
+// clientReasoningEffortAliases maps client-only effort tiers onto the wire
+// values the upstream Responses API accepts. Codex exposes "ultra" as a
+// product tier (maximum reasoning with automatic task delegation) rather than a
+// Responses wire value, and upstream rejects it with 400. Rewriting it to "max"
+// keeps the highest reasoning budget the API actually offers instead of failing
+// the request. Group ceilings and mappings still apply to the rewritten value.
+var clientReasoningEffortAliases = map[string]string{"ultra": "max"}
+
+// normalizeClientReasoningEffortAlias resolves a client-only tier to its wire
+// value. The second result reports whether raw was such an alias.
+func normalizeClientReasoningEffortAlias(raw string) (string, bool) {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	value = strings.NewReplacer("-", "", "_", "", " ", "").Replace(value)
+	mapped, ok := clientReasoningEffortAliases[value]
+	return mapped, ok
+}
+
+// bodyHasClientReasoningEffortAlias reports whether the request carries an
+// effort value that only the client vocabulary knows, so a group without a
+// ceiling or mappings still gets the value rewritten.
+func bodyHasClientReasoningEffortAlias(body []byte) bool {
+	for _, path := range []string{"reasoning.effort", "reasoning_effort"} {
+		field := gjson.GetBytes(body, path)
+		if !field.Exists() || field.Type != gjson.String {
+			continue
+		}
+		if _, ok := normalizeClientReasoningEffortAlias(field.String()); ok {
+			return true
+		}
+	}
+	return false
+}
+
 type openAIReasoningEffortPolicyContextKey struct{}
 
 type openAIReasoningEffortPolicy struct {
@@ -253,13 +286,16 @@ func sanitizeGroupReasoningEffortPolicy(group *Group) {
 	group.ReasoningEffortMappings = mappings
 }
 
-// ApplyOpenAIReasoningEffortPolicy applies one exact mapping and then caps
-// known effort levels. A reserved {"from":"default"} mapping supplies an
-// omitted value without overriding an explicit effort, disabled/invalid
-// thinking toggle, or model-suffix effort.
+// ApplyOpenAIReasoningEffortPolicy resolves client-only effort aliases, applies
+// one exact mapping, and then caps known effort levels. A reserved
+// {"from":"default"} mapping supplies an omitted value without overriding an
+// explicit effort, disabled/invalid thinking toggle, or model-suffix effort.
 func ApplyOpenAIReasoningEffortPolicy(body []byte, maxEffort string, mappings []ReasoningEffortMapping) ([]byte, bool) {
 	maxRank, hasMax := reasoningEffortRank(maxEffort)
-	if len(body) == 0 || (!hasMax && len(mappings) == 0) {
+	if len(body) == 0 {
+		return body, false
+	}
+	if !hasMax && len(mappings) == 0 && !bodyHasClientReasoningEffortAlias(body) {
 		return body, false
 	}
 
@@ -275,7 +311,11 @@ func ApplyOpenAIReasoningEffortPolicy(body []byte, maxEffort string, mappings []
 			continue
 		}
 
-		effective, _ := mapReasoningEffort(original, mappings)
+		resolved := original
+		if aliased, isAlias := normalizeClientReasoningEffortAlias(resolved); isAlias {
+			resolved = aliased
+		}
+		effective, _ := mapReasoningEffort(resolved, mappings)
 		if currentRank, recognized := reasoningEffortRank(effective); recognized {
 			effective = NormalizeMaxReasoningEffort(effective)
 			if hasMax && currentRank > maxRank {

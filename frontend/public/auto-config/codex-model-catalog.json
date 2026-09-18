@@ -55,6 +55,10 @@
         {
           "effort": "max",
           "description": "max reasoning"
+        },
+        {
+          "effort": "ultra",
+          "description": "ultra reasoning (gateway maps to max)"
         }
       ],
       "additional_speed_tiers": [],
@@ -117,6 +121,10 @@
         {
           "effort": "max",
           "description": "max reasoning"
+        },
+        {
+          "effort": "ultra",
+          "description": "ultra reasoning (gateway maps to max)"
         }
       ],
       "additional_speed_tiers": [],
@@ -666,6 +674,10 @@
         {
           "effort": "max",
           "description": "max reasoning"
+        },
+        {
+          "effort": "ultra",
+          "description": "ultra reasoning (gateway maps to max)"
         }
       ],
       "additional_speed_tiers": [],

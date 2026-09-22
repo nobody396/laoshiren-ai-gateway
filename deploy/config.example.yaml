@@ -27,6 +27,9 @@ server:
   # Trusted proxies for X-Forwarded-For parsing (CIDR/IP). Empty disables trusted proxies.
   # 信任的代理地址（CIDR/IP 格式），用于解析 X-Forwarded-For 头。留空则禁用代理信任。
   trusted_proxies: []
+  # Read these headers only from trusted peers. Behind an authenticated EdgeOne
+  # origin route, use ["EO-Connecting-IP"] to ignore client-supplied XFF.
+  remote_ip_headers: ["X-Forwarded-For", "X-Real-IP"]
   # Global max request body size in bytes (default: 256MB)
   # 全局最大请求体大小（字节，默认 256MB）
   # Applies to all requests, especially important for h2c first request memory protection

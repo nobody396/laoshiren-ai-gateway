@@ -264,3 +264,72 @@ func TestLogger_AccessLogDroppedWhenLevelWarn(t *testing.T) {
 		}
 	}
 }
+
+func TestLogger_AuthenticatedActorOnly(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		subject  any
+		method   string
+		wantID   int64
+		wantType string
+	}{
+		{name: "anonymous"},
+		{name: "invalid subject", subject: "42"},
+		{name: "authenticated user", subject: AuthSubject{UserID: 42}, wantID: 42},
+		{name: "admin api principal", subject: AuthSubject{UserID: adminAPIKeyServicePrincipalUserID}, method: "admin_api_key", wantType: "admin_api_key"},
+		{name: "unknown principal", subject: AuthSubject{UserID: -2}},
+		{name: "unverified admin principal", subject: AuthSubject{UserID: adminAPIKeyServicePrincipalUserID}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			sink := initMiddlewareTestLogger(t)
+			r := gin.New()
+			r.Use(Logger())
+			r.GET("/api/test", func(c *gin.Context) {
+				if tt.subject != nil {
+					c.Set(string(ContextKeyUser), tt.subject)
+				}
+				if tt.method != "" {
+					c.Set("auth_method", tt.method)
+				}
+				c.Status(http.StatusOK)
+			})
+			req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+			req.Header.Set("Authorization", "Bearer never-log-this-token")
+			req.Header.Set("X-Api-Key", "never-log-this-key")
+			req.Header.Set("X-User-Id", "999")
+			r.ServeHTTP(httptest.NewRecorder(), req)
+			found := false
+			for _, event := range sink.list() {
+				if event == nil || event.Message != "http request completed" {
+					continue
+				}
+				found = true
+				id, hasID := event.Fields["user_id"]
+				if tt.wantID > 0 {
+					if id != tt.wantID {
+						t.Fatalf("user_id = %v, want %v", id, tt.wantID)
+					}
+				} else if hasID {
+					t.Fatal("unexpected user_id")
+				}
+				actorType, hasType := event.Fields["actor_type"]
+				if tt.wantType != "" {
+					if actorType != tt.wantType {
+						t.Fatalf("actor_type = %v", actorType)
+					}
+				} else if hasType {
+					t.Fatal("unexpected actor_type")
+				}
+				for _, value := range event.Fields {
+					if value == "Bearer never-log-this-token" || value == "never-log-this-key" {
+						t.Fatal("credential leaked")
+					}
+				}
+			}
+			if !found {
+				t.Fatal("access log not found")
+			}
+		})
+	}
+}

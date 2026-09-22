@@ -46,6 +46,13 @@ func Logger() gin.HandlerFunc {
 			zap.String("method", method),
 			zap.String("path", path),
 		}
+		if subject, ok := GetAuthSubjectFromContext(c); ok {
+			if subject.UserID > 0 {
+				fields = append(fields, zap.Int64("user_id", subject.UserID))
+			} else if subject.UserID == adminAPIKeyServicePrincipalUserID && c.GetString("auth_method") == "admin_api_key" {
+				fields = append(fields, zap.String("actor_type", "admin_api_key"))
+			}
+		}
 		if hasAccountID && accountID > 0 {
 			fields = append(fields, zap.Int64("account_id", accountID))
 		}

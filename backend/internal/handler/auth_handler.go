@@ -274,7 +274,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// Turnstile 验证（邮箱验证码注册场景避免重复校验一次性 token）
-	if err := h.authService.VerifyTurnstileForRegister(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c), req.VerifyCode); err != nil {
+	if err := h.authService.VerifyTurnstileForRegister(c.Request.Context(), req.TurnstileToken, ip.GetTrustedClientIP(c), req.VerifyCode); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -298,7 +298,7 @@ func (h *AuthHandler) SendVerifyCode(c *gin.Context) {
 	}
 
 	// Turnstile 验证
-	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c)); err != nil {
+	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetTrustedClientIP(c)); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -325,7 +325,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Turnstile 验证
-	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c)); err != nil {
+	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetTrustedClientIP(c)); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -614,7 +614,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	}
 
 	// Turnstile 验证
-	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c)); err != nil {
+	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetTrustedClientIP(c)); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}

@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import copy
 
 
 SCRIPT = Path(__file__).with_name("model_catalog.py")
@@ -56,6 +58,49 @@ class ModelCatalogTest(unittest.TestCase):
             MODULE.CODEX_CLIENT_OUTPUT.read_text(encoding="utf-8"),
         )
         self.assertEqual(MODULE.render_go(catalog), MODULE.render_go(catalog))
+
+    def test_release_profiles_admit_only_public_catalog_models_and_supported_facts(self):
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        source = json.loads((MODULE.MODEL_CONTRACT_DIR / "releases/gpt-6-sol.release.json").read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "releases").mkdir()
+            path = root / "releases/new.release.json"
+            path.write_text(json.dumps(source))
+            with patch.object(MODULE, "MODEL_CONTRACT_DIR", root):
+                self.assertIn("gpt-6-sol", MODULE.release_client_profiles(catalog))
+                for status in ("draft", "hidden", "deprecated"):
+                    changed = copy.deepcopy(source)
+                    changed["lifecycle"]["public_status"] = status
+                    path.write_text(json.dumps(changed))
+                    self.assertEqual({}, MODULE.release_client_profiles(catalog))
+                changed = copy.deepcopy(source)
+                changed["reasoning_matrix"] = [
+                    {"protocol": "responses", "effort": "high", "wire_value": "high", "support": "supported"},
+                    {"protocol": "responses", "effort": "max", "wire_value": "max", "support": "unsupported"},
+                    {"protocol": "responses", "effort": "low", "wire_value": "high", "support": "supported"},
+                ]
+                path.write_text(json.dumps(changed))
+                self.assertEqual(["high"], MODULE.release_client_profiles(catalog)["gpt-6-sol"]["reasoning"]["model_levels"])
+                self.assertEqual({}, MODULE.release_client_profiles({"models": []}))
+                changed["protocol_feature_matrix"][0]["features"]["tool_result_round_trip"] = "untested"
+                path.write_text(json.dumps(changed))
+                self.assertEqual({}, MODULE.release_client_profiles(catalog))
+                path.write_text(json.dumps(source))
+                (root / "gpt-6-sol.json").write_text(json.dumps({"model": {"id": "gpt-6-sol"}, "reasoning": {"model_levels": ["low"]}}))
+                self.assertEqual(["low"], MODULE.model_reasoning_levels()["gpt-6-sol"])
+
+    def test_new_client_models_are_generated_without_retargeting_defaults(self):
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        models = {m["slug"]: m for m in MODULE.codex_client_catalog(catalog)["models"]}
+        for model in ("gpt-6-sol", "gpt-6-luna"):
+            self.assertIn(model, models)
+            self.assertIn("medium", [r["effort"] for r in models[model]["supported_reasoning_levels"]])
+        for entry in models.values():
+            self.assertTrue(set(entry.get("input_modalities", [])) <= {"text", "image", "audio"})
+        self.assertIn("claude-opus-5-5", MODULE.model_reasoning_levels())
+        self.assertEqual("gpt-5.6-sol", MODULE.installer_model_values(catalog)["openai"]["id"])
+        self.assertEqual("claude-opus-5", MODULE.installer_model_values(catalog)["anthropic"]["id"])
 
     def test_rejects_duplicate_defaults(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)

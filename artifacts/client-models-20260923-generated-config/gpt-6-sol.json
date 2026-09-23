@@ -1,0 +1,23 @@
+{
+  "model_id": "gpt-6-sol",
+  "client": "Codex",
+  "client_version": "codex-cli 0.153.4",
+  "operating_system": "macos-arm64",
+  "observed_at": "2026-09-23T04:36:00.620047+00:00",
+  "scope": "installer-generated model/config fields; Codex credential resolution overridden to env-only (real auth.json intentionally not written); Claude loads generated settings without credential field; owned API native tool loop",
+  "key_id": 128,
+  "group_id": 6,
+  "network_execution": "explicit_live",
+  "exit_code": 0,
+  "local_tool_executed": true,
+  "final_marker_matched": true,
+  "passed": true,
+  "stdout_sha256": "6c3b65e115636e174eddd7d50b385feeefb436462541812c7f79b4382fbd30c3",
+  "event_types": [
+    "item.completed",
+    "item.started",
+    "thread.started",
+    "turn.completed",
+    "turn.started"
+  ]
+}

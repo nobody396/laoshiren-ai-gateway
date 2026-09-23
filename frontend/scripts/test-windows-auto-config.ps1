@@ -45,6 +45,8 @@ $RequiredFunctions = @(
   'Test-UsableSystemNode',
   'Ensure-NodeRuntime',
   'Convert-CodexModelCatalog',
+  'Write-CodexTomlConfig',
+  'Write-ClaudeConfig',
   'Write-CodexModelCatalog',
   'Get-NodeReleaseChecksum',
   'Download-VerifiedFileWithFallback',
@@ -108,6 +110,42 @@ try {
   $DaybreakModel = @($CyberCatalog.models | Where-Object { $_.slug -eq 'gpt-daybreak-blue-latest' })[0]
   Assert-True ($DaybreakModel.display_name -eq 'GPT Daybreak Blue Latest') 'Daybreak display name was not synthesized'
   Assert-True (-not [string]::IsNullOrWhiteSpace([string]$DaybreakModel.base_instructions)) 'Daybreak is missing base instructions'
+
+  # BEGIN NEW MODEL CONFIG FIXTURES
+  $BaseUrl = 'https://api.example.com'
+  foreach ($NewModel in @('gpt-6-sol', 'gpt-6-luna')) {
+    $CodexConfigPath = Join-Path $FixtureDir "$NewModel.toml"
+    [IO.File]::WriteAllText($CodexConfigPath, 'notify = ["preserve"]', [Text.UTF8Encoding]::new($false))
+    Convert-CodexModelCatalog -SourcePath $CodexCatalogSource -AuthorizedModels @($NewModel) -OutputPath $CodexCatalogOutput -PreferredModel $NewModel
+    Write-CodexTomlConfig
+    $FirstConfig = [IO.File]::ReadAllText($CodexConfigPath)
+    Assert-True ($FirstConfig.Contains("model = `"$NewModel`"")) 'Selected GPT-6 model was not written'
+    Assert-True ($FirstConfig.Contains('notify = ["preserve"]')) 'Unowned Codex setting was lost'
+    Write-CodexTomlConfig
+    Assert-True ([IO.File]::ReadAllText($CodexConfigPath) -eq $FirstConfig) 'New-model Codex writer is not idempotent'
+  }
+  $ClaudeSettingsPath = Join-Path $FixtureDir 'new-claude-settings.json'
+  $CatalogAnthropicDefaultModel = 'claude-opus-5-5'
+  $ClaudeApiKey = 'fixture-not-a-credential'
+  $ReasoningAssignment = Get-Content -LiteralPath $InstallerPath -Encoding UTF8 | Where-Object { $_.StartsWith('$CatalogModelReasoningJson = ') } | Select-Object -First 1
+  Invoke-Expression $ReasoningAssignment
+  [IO.File]::WriteAllText($ClaudeSettingsPath, '{"theme":"dark","env":{"KEEP":"preserve"}}', [Text.UTF8Encoding]::new($false))
+  Write-ClaudeConfig
+  $FirstClaude = [IO.File]::ReadAllText($ClaudeSettingsPath)
+  $ParsedClaude = $FirstClaude | ConvertFrom-Json
+  Assert-True ($ParsedClaude.model -eq 'claude-opus-5-5') 'Opus 5.5 model was not written'
+  Assert-True ($ParsedClaude.env.ANTHROPIC_MODEL -eq 'claude-opus-5-5') 'Opus 5.5 environment model was not written'
+  Assert-True ($ParsedClaude.modelSettings.'claude-opus-5-5'.effortLevel -eq 'high') 'Opus 5.5 reasoning missing'
+  Assert-True ($ParsedClaude.theme -eq 'dark' -and $ParsedClaude.env.KEEP -eq 'preserve') 'Unowned Claude settings were lost'
+  $FirstClaudePath = "$ClaudeSettingsPath.first.json"
+  [IO.File]::WriteAllText($FirstClaudePath, $FirstClaude, [Text.UTF8Encoding]::new($false))
+  Write-ClaudeConfig
+  $CompareScript = Join-Path $FixtureDir 'compare-settings.js'
+  $CompareCode = 'const fs=require("fs");require("assert").deepStrictEqual(JSON.parse(fs.readFileSync(process.argv[2],"utf8")),JSON.parse(fs.readFileSync(process.argv[3],"utf8")))'
+  [IO.File]::WriteAllText($CompareScript, $CompareCode, [Text.UTF8Encoding]::new($false))
+  & node $CompareScript $FirstClaudePath $ClaudeSettingsPath
+  Assert-True ($LASTEXITCODE -eq 0) 'Opus 5.5 writer is not semantically idempotent'
+  # END NEW MODEL CONFIG FIXTURES
   Assert-True ($DaybreakModel.visibility -eq 'list') 'Daybreak is not visible in the Codex model selector'
   Assert-True ([int]$DaybreakModel.context_window -eq 1050000) 'Daybreak context window is incorrect'
 

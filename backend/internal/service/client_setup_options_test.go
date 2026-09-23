@@ -280,3 +280,32 @@ func TestClaudeSetupOptionTicketUsesMessagesAndRevalidatesFullCoverage(t *testin
 	_, err = svc.ExchangeTicket(context.Background(), ticket.Ticket)
 	require.ErrorIs(t, err, ErrInvalidClientSetupTicket)
 }
+
+func TestNewModelClientSelectionsAndTickets(t *testing.T) {
+	for _, tc := range []struct {
+		model, client, protocol, platform string
+		group                             int64
+	}{
+		{"gpt-6-sol", "codex", "responses", PlatformOpenAI, 6},
+		{"gpt-6-luna", "codex", "responses", PlatformOpenAI, 59},
+		{"claude-opus-5-5", "claude-code", "messages", PlatformAnthropic, 5},
+	} {
+		for _, osName := range []string{"macos", "linux", "windows"} {
+			t.Run(tc.model+"/"+osName, func(t *testing.T) {
+				svc, key, _ := setupOptionTestService(tc.group, tc.platform, []string{tc.model})
+				options, err := svc.SetupOptions(context.Background(), key.UserID, key.ID, osName)
+				require.NoError(t, err)
+				require.Contains(t, options, ClientSetupOption{ClientID: tc.client, Name: map[string]string{"codex": "Codex", "claude-code": "Claude Code"}[tc.client]})
+				selection := ClientSetupSelection{ClientID: tc.client, ClientVersionKey: generatedClientSetupContracts[tc.client].VersionKey, ModelID: tc.model, Protocol: tc.protocol, OS: osName}
+				ticket, err := svc.IssueTicketForSelection(context.Background(), key.UserID, key.ID, selection)
+				require.NoError(t, err)
+				credential, err := svc.ExchangeTicket(context.Background(), ticket.Ticket)
+				require.NoError(t, err)
+				require.Equal(t, tc.model, credential.ModelID)
+				require.Equal(t, tc.protocol, credential.Protocol)
+				_, err = svc.ExchangeTicket(context.Background(), ticket.Ticket)
+				require.Error(t, err)
+			})
+		}
+	}
+}

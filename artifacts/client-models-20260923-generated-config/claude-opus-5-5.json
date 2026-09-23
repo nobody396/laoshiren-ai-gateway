@@ -1,0 +1,22 @@
+{
+  "model_id": "claude-opus-5-5",
+  "client": "Claude Code",
+  "client_version": "2.1.263 (Claude Code)",
+  "operating_system": "macos-arm64",
+  "observed_at": "2026-09-23T04:36:38.093525+00:00",
+  "scope": "installer-generated model/config fields; Codex credential resolution overridden to env-only (real auth.json intentionally not written); Claude loads generated settings without credential field; owned API native tool loop",
+  "key_id": 127,
+  "group_id": 5,
+  "network_execution": "explicit_live",
+  "exit_code": 0,
+  "local_tool_executed": true,
+  "final_marker_matched": true,
+  "passed": true,
+  "stdout_sha256": "a4d9b30eef66b365512373f7932ba9de90b6a0dda030f7f69fd69c54d49ecbee",
+  "event_types": [
+    "assistant",
+    "result",
+    "system",
+    "user"
+  ]
+}

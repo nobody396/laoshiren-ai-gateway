@@ -1,0 +1,282 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "gpt-6-sol",
+    "upstream_id": "gpt-6-sol",
+    "display_name": "GPT-6 Sol",
+    "platform": "openai",
+    "context_window": 1050000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "responses",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": false,
+    "reasoning_efforts": [
+      "medium"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 2,
+    "cached_input_per_mtok_usd": 0.2,
+    "output_per_mtok_usd": 10,
+    "evidence_url": "https://developers.openai.com/api/docs/models/gpt-6-sol",
+    "long_context": {
+      "input_threshold": 272000,
+      "input_multiplier": 2,
+      "output_multiplier": 1.5
+    },
+    "cache_write_5m_per_mtok_usd": 2.5
+  },
+  "lifecycle": {
+    "public_status": "draft",
+    "introduced_at": null,
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "responses",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Native protocol passed basic and complete streaming upstream probes; public gateway acceptance is pending.",
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-03"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "responses",
+      "features": {
+        "basic_request": "pass",
+        "billing": "untested",
+        "context_window": "untested",
+        "disconnect": "untested",
+        "error_passthrough": "pass",
+        "image_input": "pass",
+        "prompt_cache": "untested",
+        "reasoning": "pass",
+        "retry": "untested",
+        "streaming": "pass",
+        "structured_output": "pass",
+        "terminal_event": "pass",
+        "timeout": "untested",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "usage": "pass",
+        "web_search": "pass"
+      },
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-02",
+        "direct-p-03",
+        "direct-p-04",
+        "direct-p-05",
+        "direct-p-06",
+        "direct-p-07",
+        "direct-p-08",
+        "direct-p-10",
+        "direct-p-11",
+        "direct-p-12",
+        "direct-p-15"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "responses",
+      "effort": "medium",
+      "support": "supported",
+      "wire_value": "medium",
+      "evidence_ids": [
+        "direct-p-06"
+      ]
+    }
+  ],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 2,
+      "output": 10,
+      "cached_input": 0.2,
+      "cache_write": 2.5,
+      "long_context": {
+        "input_threshold": 272000,
+        "input_multiplier": 2,
+        "output_multiplier": 1.5
+      },
+      "effective_from": "2026-09-22",
+      "evidence_ids": [
+        "price-source"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "price-source",
+      "kind": "official_docs",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-sol",
+      "observed_at": "2026-09-23T03:11:56.427752+00:00",
+      "subject_version": "gpt-6-sol official model specification",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "direct-p-01",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:01.664+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "741146bab8ba91ef830bc958b87f4104f912471994077db2ae3534a5edb49b08",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-01.json"
+    },
+    {
+      "id": "direct-p-02",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:05.407+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "97de5edc739c9ca120fa0d28c7ea4a87d2451c4f729365859132f35279b1a049",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-02.json"
+    },
+    {
+      "id": "direct-p-03",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:09.769+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "2976143df0256367b476ce065e28f0973e8d6c3e703fe0a5fe594049b85d9c32",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-03.json"
+    },
+    {
+      "id": "direct-p-04",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:12.918+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "f5dec238e425f1bdced2387ea5c09626ed697be5c0be1e99828d6e6d60491485",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-04.json"
+    },
+    {
+      "id": "direct-p-05",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:16.103+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "430878d0752e8789be234e545aa443262b3193d76c9085ade0d777420d7979e4",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-05.json"
+    },
+    {
+      "id": "direct-p-06",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:26.204+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "9154386256b11a424ad043fa80f65818d4a7c07970883134fca232a53422497b",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-06.json"
+    },
+    {
+      "id": "direct-p-07",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:30.806+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "5311ca95b170b50dacee417db9f5ac83c80bac967c8bca0e0f58ee6a0d60c218",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-07.json"
+    },
+    {
+      "id": "direct-p-08",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:42.445+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "8ed88029a0522bed1f0a3ee790e6adb189d8a49308e5c3c91a27af6df47b07c1",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-08.json"
+    },
+    {
+      "id": "direct-p-10",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:45.757+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "8cf11f9bd02efa0b8fee30fed6096121c6cb4c849e24e960e8a03c72bfcbad12",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-10.json"
+    },
+    {
+      "id": "direct-p-11",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:55.915+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "3d8086647af2abd800af026b76841d6f07be7aa4295ba31e746a17659326a8aa",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-11.json"
+    },
+    {
+      "id": "direct-p-12",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:10:00.374+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "b6dd7240133b78209f86671a30892f320bf1bf626b517c6373e458ccd0e3c76f",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-12.json"
+    },
+    {
+      "id": "direct-p-15",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:10:02.204+00:00",
+      "subject_version": "gpt-6-sol/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "ba2e1bad19cd7964f8340bbbb728c3171cfbd332ef8f2115e7f1e0de3081de2d",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-sol/P-15.json"
+    }
+  ],
+  "production": {
+    "account_id": 76,
+    "group_id": 6,
+    "group_name": "GPT 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "release_notes": {
+    "classification": "candidate; not release-ready",
+    "production_configuration_changed": false,
+    "remaining_gates": [
+      "Full protocol/reasoning evidence",
+      "Context boundary and resilience",
+      "Owned gateway usage/accounting/balance reconciliation",
+      "Supplier tariff confirmation and public pricing review",
+      "Catalog generation, regression/builds, PR/CI, approved merge and immutable release",
+      "Exact per-route mapping readback and downstream E2E"
+    ],
+    "compatibility_boundary": "No defaults or aliases changed; cache-hit evidence incomplete."
+  }
+}

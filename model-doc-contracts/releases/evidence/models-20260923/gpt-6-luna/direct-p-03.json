@@ -1,0 +1,49 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://jp.icodeeasy.cc",
+    "case_key": "gpt-6-luna:P-03",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-luna",
+    "name": "streaming_terminal",
+    "p_id": "P-03",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:08.723+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 73739,
+    "body_sha256": "64890ef8fdaa44c8be7c0a7660b7e0802b0bf7726f36aa042280f57eba435b2f",
+    "complete": true,
+    "content_type": "text/event-stream",
+    "error": null,
+    "event_count": 14,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": null,
+    "sse_framing": true,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "passed",
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "result": "pass",
+  "classification": "verified",
+  "offline_verifier": {
+    "status": "passed",
+    "reason": null
+  },
+  "source_receipt_sha256": "25baaab9dd4266df37ffa480a748d150908a1d0322b8dc7e68c31402cd0f9749"
+}

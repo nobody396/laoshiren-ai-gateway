@@ -73,6 +73,23 @@ class FakeController:
 
 
 class ProviderContractLiveHarnessTest(unittest.TestCase):
+    def test_opus55_tool_probe_uses_auto_and_preserves_thinking(self):
+        case = MODULE.LiveCase("opus55", "P-05", "tool_result_continuation", 0,
+                               "direct", "claude-opus-5-5", "messages",
+                               "https://api.example.test", "MARKER")
+        payload = MODULE.request_payload(case)
+        self.assertEqual({"type": "auto"}, payload["tool_choice"])
+        content = [{"type": "thinking", "thinking": "", "signature": "fixture"},
+                   {"type": "tool_use", "id": "call", "name": "echo_contract", "input": {"value": "MARKER"}}]
+        tool, raw = MODULE.extract_tool_call("messages", {"content": content})
+        continuation = MODULE.continuation_payload(case, {}, tool, raw)
+        self.assertEqual(content, continuation["messages"][1]["content"])
+        structured = MODULE.LiveCase(**{**case.__dict__, "p_id": "P-10"})
+        payload = MODULE.request_payload(structured)
+        self.assertEqual("json_schema", payload["output_config"]["format"]["type"])
+        self.assertEqual(["marker"], payload["output_config"]["format"]["schema"]["required"])
+
+
     def fixtures(self, root: Path):
         contracts = root / "contracts"
         contracts.mkdir()

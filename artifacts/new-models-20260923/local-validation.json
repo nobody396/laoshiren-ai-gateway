@@ -1,0 +1,11 @@
+{
+  "python_tests": 86,
+  "frontend_pricing_tests": 12,
+  "frontend_typecheck": "pass",
+  "frontend_build": "pass",
+  "new_tariff_regression": "pass",
+  "review": "No blockers after cache tariff precedence fix",
+  "ablation": "Only exact model additions, native generator outputs, bounded cache tariff preservation, harness compatibility and tests. No group/default/alias changes.",
+  "backend_service_handler_tests": "pass",
+  "backend_build": "pass"
+}

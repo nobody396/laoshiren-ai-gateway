@@ -1,0 +1,44 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://xingwan.store",
+    "case_key": "gpt-6-sol:P-06:high",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_93",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-sol",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "responses",
+    "reasoning_level": "high",
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:15:06.352+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 25632,
+    "body_sha256": "9d0f6c65b8cac1f2e9df082663b58aab5761652790620be5fe373782ad64d688",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "9de66a84-18bf-437a-9881-039d5b33d3f6",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 4421,
+    "output_tokens": 115,
+    "total_tokens": 4536
+  },
+  "verification": "passed"
+}

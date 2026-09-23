@@ -1,0 +1,270 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "gpt-6-luna",
+    "upstream_id": "gpt-6-luna",
+    "display_name": "GPT-6 Luna",
+    "platform": "openai",
+    "context_window": 1050000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "responses",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": false,
+    "reasoning_efforts": []
+  },
+  "pricing": {
+    "input_per_mtok_usd": 0.1,
+    "cached_input_per_mtok_usd": 0.01,
+    "output_per_mtok_usd": 0.5,
+    "evidence_url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "long_context": {
+      "input_threshold": 272000,
+      "input_multiplier": 2,
+      "output_multiplier": 1.5
+    },
+    "cache_write_5m_per_mtok_usd": 0.125
+  },
+  "lifecycle": {
+    "public_status": "draft",
+    "introduced_at": null,
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "responses",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Native protocol passed basic and complete streaming upstream probes; public gateway acceptance is pending.",
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-03"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "responses",
+      "features": {
+        "basic_request": "pass",
+        "billing": "untested",
+        "context_window": "untested",
+        "disconnect": "untested",
+        "error_passthrough": "pass",
+        "image_input": "pass",
+        "prompt_cache": "untested",
+        "reasoning": "untested",
+        "retry": "untested",
+        "streaming": "pass",
+        "structured_output": "pass",
+        "terminal_event": "pass",
+        "timeout": "untested",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "usage": "pass",
+        "web_search": "pass"
+      },
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-02",
+        "direct-p-03",
+        "direct-p-04",
+        "direct-p-05",
+        "direct-p-06",
+        "direct-p-07",
+        "direct-p-08",
+        "direct-p-10",
+        "direct-p-11",
+        "direct-p-12",
+        "direct-p-15"
+      ]
+    }
+  ],
+  "reasoning_matrix": [],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 0.1,
+      "output": 0.5,
+      "cached_input": 0.01,
+      "cache_write": 0.125,
+      "long_context": {
+        "input_threshold": 272000,
+        "input_multiplier": 2,
+        "output_multiplier": 1.5
+      },
+      "effective_from": "2026-09-22",
+      "evidence_ids": [
+        "price-source"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "price-source",
+      "kind": "official_docs",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+      "observed_at": "2026-09-23T03:11:56.427752+00:00",
+      "subject_version": "gpt-6-luna official model specification",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "direct-p-01",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:00.517+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "efd9f1928ea0139face57bc05b564e1c3865563d998d930508be909a098f3ffe",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-01.json"
+    },
+    {
+      "id": "direct-p-02",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:04.250+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "65cd8efbafd529b6608e8c471b8050fd04cd84897ab75b8775b1a29d18eb712a",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-02.json"
+    },
+    {
+      "id": "direct-p-03",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:08.723+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "25baaab9dd4266df37ffa480a748d150908a1d0322b8dc7e68c31402cd0f9749",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-03.json"
+    },
+    {
+      "id": "direct-p-04",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:11.870+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "a22e22a9d64dd7ad58747e1e3417f0bd9df4fb70f5366973f20d9a07fcf02b2f",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-04.json"
+    },
+    {
+      "id": "direct-p-05",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:15.270+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "e5d75004e26c3a6a76eecebc627098012a2a1e9b19155fd0c7cf806d2027d761",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-05.json"
+    },
+    {
+      "id": "direct-p-06",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:22.370+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "eb1bf7456fb78fccc2d7fe70823f3589ffd54965eb840ac0dea9ed61129c2de7",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-06.json"
+    },
+    {
+      "id": "direct-p-07",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:25.497+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "06a52817a7012333a5966ae712f014aeaddc94c4f4d932a9fb4b97c2a860f30b",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-07.json"
+    },
+    {
+      "id": "direct-p-08",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:37.032+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "6c8123e0195a43ae08aeaec416d55ba1c826455de1ccea4563fe3bf49c0b0e61",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-08.json"
+    },
+    {
+      "id": "direct-p-10",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:41.044+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "64288b2daa3746ba4dc690226656cc4659e9cb298e7695c20d47f0fe772324f8",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-10.json"
+    },
+    {
+      "id": "direct-p-11",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:48.827+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "1c691838a384ed19572888c7a5d76d5acbff672688d5f16e6a5c587890cdc012",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-11.json"
+    },
+    {
+      "id": "direct-p-12",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:52.006+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "a76db9491cd9932e253fc8a83832b7a51a16f22fa6a04e2514ae2a44310026b1",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-12.json"
+    },
+    {
+      "id": "direct-p-15",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:54.862+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "3ffcc4569e84af619ba380e2c7d53eb86561e858a5be4eeb862ac72c56809024",
+      "artifact_path": "artifacts/new-models-20260923/gpt-6-luna/P-15.json"
+    }
+  ],
+  "production": {
+    "account_id": 76,
+    "group_id": 6,
+    "group_name": "GPT 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "release_notes": {
+    "classification": "candidate; not release-ready",
+    "production_configuration_changed": false,
+    "remaining_gates": [
+      "Full protocol/reasoning evidence",
+      "Context boundary and resilience",
+      "Owned gateway usage/accounting/balance reconciliation",
+      "Supplier tariff confirmation and public pricing review",
+      "Catalog generation, regression/builds, PR/CI, approved merge and immutable release",
+      "Exact per-route mapping readback and downstream E2E"
+    ],
+    "compatibility_boundary": "No defaults or aliases changed; cache-hit evidence incomplete."
+  }
+}

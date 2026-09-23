@@ -1,0 +1,390 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "gpt-6-luna",
+    "upstream_id": "gpt-6-luna",
+    "display_name": "GPT-6 Luna",
+    "platform": "openai",
+    "context_window": 1050000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "responses",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": false,
+    "reasoning_efforts": [
+      "high",
+      "max",
+      "medium",
+      "xhigh"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 0.1,
+    "cached_input_per_mtok_usd": 0.01,
+    "output_per_mtok_usd": 0.5,
+    "evidence_url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "long_context": {
+      "input_threshold": 272000,
+      "input_multiplier": 2,
+      "output_multiplier": 1.5
+    },
+    "cache_write_5m_per_mtok_usd": 0.125
+  },
+  "lifecycle": {
+    "public_status": "public",
+    "introduced_at": "2026-09-23",
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "responses",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Native protocol passed basic and complete streaming upstream probes; public gateway acceptance is pending.",
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-03"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "responses",
+      "features": {
+        "basic_request": "pass",
+        "billing": "pass",
+        "context_window": "pass",
+        "disconnect": "pass",
+        "error_passthrough": "pass",
+        "image_input": "pass",
+        "prompt_cache": "fail",
+        "reasoning": "pass",
+        "retry": "pass",
+        "streaming": "pass",
+        "structured_output": "pass",
+        "terminal_event": "pass",
+        "timeout": "pass",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "usage": "pass",
+        "web_search": "pass"
+      },
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-02",
+        "direct-p-03",
+        "direct-p-04",
+        "direct-p-05",
+        "direct-p-06",
+        "direct-p-07",
+        "direct-p-08",
+        "direct-p-10",
+        "direct-p-11",
+        "direct-p-12",
+        "direct-p-15",
+        "adapter-regression",
+        "price-source",
+        "additional-p-06-high",
+        "additional-p-06-low",
+        "additional-p-06-max",
+        "additional-p-06-medium",
+        "additional-p-06-xhigh",
+        "additional-p-07-default"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "responses",
+      "effort": "high",
+      "support": "supported",
+      "wire_value": "high",
+      "evidence_ids": [
+        "additional-p-06-high"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "max",
+      "support": "supported",
+      "wire_value": "max",
+      "evidence_ids": [
+        "additional-p-06-max"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "medium",
+      "support": "supported",
+      "wire_value": "medium",
+      "evidence_ids": [
+        "additional-p-06-medium"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "xhigh",
+      "support": "supported",
+      "wire_value": "xhigh",
+      "evidence_ids": [
+        "additional-p-06-xhigh"
+      ]
+    }
+  ],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 0.1,
+      "output": 0.5,
+      "cached_input": 0.01,
+      "cache_write": 0.125,
+      "long_context": {
+        "input_threshold": 272000,
+        "input_multiplier": 2,
+        "output_multiplier": 1.5
+      },
+      "effective_from": "2026-09-22",
+      "evidence_ids": [
+        "price-source"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "price-source",
+      "kind": "official_docs",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+      "observed_at": "2026-09-23T03:11:56.427752+00:00",
+      "subject_version": "gpt-6-luna official model specification",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "direct-p-01",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:00.517+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "17a281f8f8cad821067dee78f955bf5c39eb773db32c7d3c08e8ebe015de051f",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-01.json"
+    },
+    {
+      "id": "direct-p-02",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:04.250+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "b9f2ef7ec49a5ecfd14cf94554c0cd67bf749533fb38e655a7280784fa4dc1c7",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-02.json"
+    },
+    {
+      "id": "direct-p-03",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:08.723+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "b9081057ce7cd76e1140c07f7095ece6835357ccea7fdb3abecf6995d15eea56",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-03.json"
+    },
+    {
+      "id": "direct-p-04",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:11.870+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "b012dc3199489b298f87ddbe989d78f8ec3ff34495c51d93b8ecd8f56a815210",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-04.json"
+    },
+    {
+      "id": "direct-p-05",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:15.270+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "22ae78faa3261dc515a4bf0de51eff121ad74c95ea0bab48ed21d227c3e9b39a",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-05.json"
+    },
+    {
+      "id": "direct-p-06",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:22.370+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "bdf03e2a04b52151066a3d500de463ad0371796f634c7eebc8752fd2ef5292e7",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-06.json"
+    },
+    {
+      "id": "direct-p-07",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:25.497+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "1fe4eb902e37dbbd1226fb9892fa8dd2b691d39b9657aad85591ce99e9cbca8a",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-07.json"
+    },
+    {
+      "id": "direct-p-08",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:37.032+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "21052f8e18df23b7b6206ff83c9b8237dd078ff2032290b9a9554d34453bc85a",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-08.json"
+    },
+    {
+      "id": "direct-p-10",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:41.044+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "6c2f7dbe4b632f8e3206e6994d5a10feeef086672dd8b283792e1298ef6690da",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-10.json"
+    },
+    {
+      "id": "direct-p-11",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:48.827+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "31033b5bc30ad6df367d93d1be17626af02c4e2634219d71def27c553be1d52f",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-11.json"
+    },
+    {
+      "id": "direct-p-12",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:52.006+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "100bfbbe9346783bfd47a66e7d87258319d29969af38f369add9b6f6531585ba",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-12.json"
+    },
+    {
+      "id": "direct-p-15",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:54.862+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "ee9fc0a085cedfd972c8b27c5518604bebb63841c9b4545314eaf1d10fa48675",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/direct-p-15.json"
+    },
+    {
+      "id": "adapter-regression",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-09-23T03:24:35.506660+00:00",
+      "subject_version": "4f9ca44eb existing adapter unit regressions (not live production)",
+      "result": "pass",
+      "artifact_sha256": "df2161f5b9b2c882fbdb6082680e8113ad9144ffaef607e1e7969c5f824b6121",
+      "artifact_path": "evidence/models-20260923/adapter-regression.json"
+    },
+    {
+      "id": "additional-p-06-high",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:20.222+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "472cfae1c97ae22d8981a8bbf1148cc5368009c106ac991fb1cac6ac21f1f24e",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/additional-p-06-high.json"
+    },
+    {
+      "id": "additional-p-06-low",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:11.724+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "04852205b2f6d8f3003af060210ee27fd6833be6165f06f21494e1eb9aa5de01",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/additional-p-06-low.json"
+    },
+    {
+      "id": "additional-p-06-max",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:19.830+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "10b9bce5775c64cbcb89881462058bedcf62fdf8f42442b7d33ce2f61e04f239",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/additional-p-06-max.json"
+    },
+    {
+      "id": "additional-p-06-medium",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:12.869+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "0b9612751926eba01ce8101ddcee96695759263d0770ef8ad73c4f05ef39f302",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/additional-p-06-medium.json"
+    },
+    {
+      "id": "additional-p-06-xhigh",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:19.045+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "d57dd2a6ae4733cdf73fec04cdec4deb70b6a7a8d67b78ec37ee1a946b1ff3a9",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/additional-p-06-xhigh.json"
+    },
+    {
+      "id": "additional-p-07-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:17.861+00:00",
+      "subject_version": "gpt-6-luna/responses/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "908879604776b9627d23ed3fccfd5b396988a0530f7dd5b3a6c3a868f9852552",
+      "artifact_path": "evidence/models-20260923/gpt-6-luna/additional-p-07-default.json"
+    }
+  ],
+  "production": {
+    "account_id": 78,
+    "group_id": 6,
+    "group_name": "GPT 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "release_notes": {
+    "classification": "catalog-only",
+    "scope": "No runtime protocol or usage-schema change; add exact IDs and documented tariffs only. Probe harness adapts Opus 5.5 auto tool selection and Messages schema requests.",
+    "context_evidence_scope": "Official documented limit; maximum-size live context load not performed.",
+    "resilience_evidence_scope": "Existing native adapter unit regressions, not new fault injection on production.",
+    "billing_evidence_scope": "Existing tariff arithmetic regression pre-release; exact generated tariffs and owned public accounting E2E required after deployment.",
+    "availability_boundary": "GPT standard/enterprise via account 78; Sol also on current monthly groups via account 80. Opus via account 85 current standard/external groups. No group bindings or default/alias changes.",
+    "cache_boundary": "GPT repeated cache probes did not report a hit; cache-hit support is not promised. Tariff applies if upstream actually reports cache tokens.",
+    "reasoning_boundary": "Only observed effort levels are claimed. Luna low returned no reasoning evidence; other admitted levels passed.",
+    "structured_boundary": "Opus tool choice auto and correlated continuation passed; forced tool choices rejected as documented.",
+    "pending_acceptance": "CI, immutable release, mapping readback, exact usage/accounting/balance reconciliation",
+    "billing_fix": "Catalog-owned cache-write rates and cache breakdown are no longer overwritten by dynamic auxiliary pricing; red/green regression passed."
+  }
+}

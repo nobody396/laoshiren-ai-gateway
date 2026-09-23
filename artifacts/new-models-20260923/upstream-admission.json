@@ -1,0 +1,351 @@
+{
+  "observed_date_beijing": "2026-09-23",
+  "source": "Hostinger streaming probes",
+  "production_configuration_changed": false,
+  "routes": [
+    {
+      "route": "more-gpt",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://tob.1314mc.net",
+          "customer_model": "gpt-6-luna",
+          "upstream_model": "gpt-6-luna",
+          "http_status": 404,
+          "headers_ms": 965,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 965,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "model_not_found | Model \"gpt-6-luna\" is not supported by any configured account in this group",
+          "passed": false
+        },
+        {
+          "round": 1,
+          "base_url": "https://tob.1314mc.net",
+          "customer_model": "gpt-6-sol",
+          "upstream_model": "gpt-6-sol",
+          "http_status": 404,
+          "headers_ms": 1145,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 1145,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "model_not_found | Model \"gpt-6-sol\" is not supported by any configured account in this group",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "route": "xingwan-gpt",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://xingwan.store",
+          "customer_model": "gpt-6-luna",
+          "upstream_model": "gpt-6-luna",
+          "http_status": 200,
+          "headers_ms": 1624,
+          "first_event_ms": 1624,
+          "first_text_ms": 1640,
+          "total_ms": 1757,
+          "event_count": 9,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        },
+        {
+          "round": 1,
+          "base_url": "https://xingwan.store",
+          "customer_model": "gpt-6-sol",
+          "upstream_model": "gpt-6-sol",
+          "http_status": 200,
+          "headers_ms": 1627,
+          "first_event_ms": 1627,
+          "first_text_ms": 1650,
+          "total_ms": 1805,
+          "event_count": 9,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "route": "pomo-monthly-gpt",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://jp.pomoai.xyz",
+          "customer_model": "gpt-6-luna",
+          "upstream_model": "gpt-6-luna",
+          "http_status": 403,
+          "headers_ms": 1568,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 1568,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "resolve groups failed: model unsupported by selected groups: gpt-6-luna (request id: 202609230307117567845892pBtlAzK)",
+          "passed": false
+        },
+        {
+          "round": 1,
+          "base_url": "https://jp.pomoai.xyz",
+          "customer_model": "gpt-6-sol",
+          "upstream_model": "gpt-6-sol",
+          "http_status": 403,
+          "headers_ms": 1332,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 1333,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "resolve groups failed: model unsupported by selected groups: gpt-6-sol (request id: 20260923030711513581203lIRqM89d)",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "route": "icode",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://jp.icodeeasy.cc",
+          "customer_model": "gpt-6-luna",
+          "upstream_model": "gpt-6-luna",
+          "http_status": 200,
+          "headers_ms": 2803,
+          "first_event_ms": 2803,
+          "first_text_ms": 3402,
+          "total_ms": 3536,
+          "event_count": 9,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        },
+        {
+          "round": 1,
+          "base_url": "https://jp.icodeeasy.cc",
+          "customer_model": "gpt-6-sol",
+          "upstream_model": "gpt-6-sol",
+          "http_status": 200,
+          "headers_ms": 3177,
+          "first_event_ms": 3177,
+          "first_text_ms": 3635,
+          "total_ms": 3937,
+          "event_count": 9,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "route": "pomo-ent",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://jp.pomoai.xyz",
+          "customer_model": "gpt-6-luna",
+          "upstream_model": "gpt-6-luna",
+          "http_status": 404,
+          "headers_ms": 1577,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 1577,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "model_not_found | Model \"gpt-6-luna\" is not supported by any configured account in this group (request id: 20260923030711625464240I2SMtgvS)",
+          "passed": false
+        },
+        {
+          "round": 1,
+          "base_url": "https://jp.pomoai.xyz",
+          "customer_model": "gpt-6-sol",
+          "upstream_model": "gpt-6-sol",
+          "http_status": 200,
+          "headers_ms": 3136,
+          "first_event_ms": 3136,
+          "first_text_ms": 4105,
+          "total_ms": 4106,
+          "event_count": 10,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "route": "xiu-gpt",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://router-api.xiu.ai",
+          "customer_model": "gpt-6-luna",
+          "upstream_model": "gpt-6-luna",
+          "http_status": 200,
+          "headers_ms": 2163,
+          "first_event_ms": 2163,
+          "first_text_ms": 2164,
+          "total_ms": 2376,
+          "event_count": 9,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        },
+        {
+          "round": 1,
+          "base_url": "https://router-api.xiu.ai",
+          "customer_model": "gpt-6-sol",
+          "upstream_model": "gpt-6-sol",
+          "http_status": 200,
+          "headers_ms": 4192,
+          "first_event_ms": 4192,
+          "first_text_ms": 4474,
+          "total_ms": 4603,
+          "event_count": 9,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "route": "pomo-monthly-claude",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://jp.pomoai.xyz",
+          "customer_model": "claude-opus-5-5",
+          "upstream_model": "claude-opus-5-5",
+          "http_status": 404,
+          "headers_ms": 1736,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 1736,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "model_not_available | The requested model is not available for this API key. (request id: 20260923030717929823133VzU3kwsK)",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "route": "pomo-cc",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://www.pomoai.xyz",
+          "customer_model": "claude-opus-5-5",
+          "upstream_model": "claude-opus-5-5",
+          "http_status": 400,
+          "headers_ms": 1006,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 1006,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "<nil> | 我们检测到您的客户端存在异常，请使用标准 Claude Code 客户端请求。如您对此事不知情，请首先尝试升级您的 Claude Code 客户端版本，其次请联系技术或管理员。(We have detected an anomaly in your client. Please use the standard Claude Code client for requests. If you are unaware of this issue, first try upgrading your Claude Code client version, then contact te",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "route": "xiu-claude",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://router-api.xiu.ai",
+          "customer_model": "claude-opus-5-5",
+          "upstream_model": "claude-opus-5-5",
+          "http_status": 200,
+          "headers_ms": 2598,
+          "first_event_ms": 2598,
+          "first_text_ms": 2598,
+          "total_ms": 2603,
+          "event_count": 7,
+          "completed": true,
+          "completion_status": "completed",
+          "correct_text": null,
+          "error": null,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "route": "xingwan-claude",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://xingwan.store",
+          "customer_model": "claude-opus-5-5",
+          "upstream_model": "claude-opus-5-5",
+          "http_status": 503,
+          "headers_ms": 834,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 834,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "new_api_error | model_not_found | 分组 kiro-自建号池-带缓存 下模型 claude-opus-5-5 无可用渠道（distributor） (request id: 202609230307206313961198268d9d6xfssoLOX)",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "route": "more-claude",
+      "results": [
+        {
+          "round": 1,
+          "base_url": "https://tob.1314mc.net",
+          "customer_model": "claude-opus-5-5",
+          "upstream_model": "claude-opus-5-5",
+          "http_status": 404,
+          "headers_ms": 1000,
+          "first_event_ms": null,
+          "first_text_ms": null,
+          "total_ms": 1000,
+          "event_count": 0,
+          "completed": false,
+          "completion_status": null,
+          "correct_text": null,
+          "error": "model_not_found | Model \"claude-opus-5-5\" is not supported by any configured account in this group",
+          "passed": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "gpt-6-luna:P-06:low",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_93",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-luna",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "responses",
+    "reasoning_level": "low",
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:15:11.724+00:00",
+  "reason": "reasoning evidence is required",
+  "response": {
+    "body_bytes": 2578,
+    "body_sha256": "e5de361039c81efa4e49a7e597a056ce99e9c8c293ab1e218f39c5fd14e16691",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 337,
+    "output_tokens": 117,
+    "total_tokens": 454
+  },
+  "verification": "failed"
+}

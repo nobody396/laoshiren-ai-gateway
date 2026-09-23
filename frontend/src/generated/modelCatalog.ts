@@ -13,7 +13,7 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export const clientAutoConfigVersion = "0.7.26"
+export const clientAutoConfigVersion = "0.7.29"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",
@@ -148,6 +148,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     "preset": {
       "from": "claude-opus-5",
       "to": "claude-opus-5",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-opus-5-5",
+    "upstreamId": "claude-opus-5-5",
+    "displayName": "Claude Opus 5.5",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-opus-5-5",
+      "to": "claude-opus-5-5",
       "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
     }
   },
@@ -500,6 +516,38 @@ export const modelCatalog: readonly CatalogModel[] = [
     "preset": {
       "from": "gpt-6-astra",
       "to": "gpt-6-astra",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-6-luna",
+    "upstreamId": "gpt-6-luna",
+    "displayName": "GPT-6 Luna",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-6-luna",
+      "to": "gpt-6-luna",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-6-sol",
+    "upstreamId": "gpt-6-sol",
+    "displayName": "GPT-6 Sol",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-6-sol",
+      "to": "gpt-6-sol",
       "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
     }
   },

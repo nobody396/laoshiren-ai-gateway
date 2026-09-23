@@ -393,7 +393,7 @@ func mergeGeneratedCatalogPricing(catalog, auxiliary *ModelPricing) *ModelPricin
 	if auxiliary.OutputPricePerTokenPriority > 0 {
 		out.OutputPricePerTokenPriority = auxiliary.OutputPricePerTokenPriority
 	}
-	if auxiliary.CacheCreationPricePerToken > 0 {
+	if out.CacheCreationPricePerToken == 0 && auxiliary.CacheCreationPricePerToken > 0 {
 		out.CacheCreationPricePerToken = auxiliary.CacheCreationPricePerToken
 	}
 	if auxiliary.CacheReadPricePerTokenPriority > 0 {
@@ -405,13 +405,14 @@ func mergeGeneratedCatalogPricing(catalog, auxiliary *ModelPricing) *ModelPricin
 	if auxiliary.FlexMultiplier != nil {
 		out.FlexMultiplier = auxiliary.FlexMultiplier
 	}
-	if auxiliary.CacheCreation5mPrice > 0 {
+	if out.CacheCreation5mPrice == 0 && auxiliary.CacheCreation5mPrice > 0 {
 		out.CacheCreation5mPrice = auxiliary.CacheCreation5mPrice
 	}
-	if auxiliary.CacheCreation1hPrice > 0 {
+	if out.CacheCreation1hPrice == 0 && auxiliary.CacheCreation1hPrice > 0 {
 		out.CacheCreation1hPrice = auxiliary.CacheCreation1hPrice
 	}
-	out.SupportsCacheBreakdown = auxiliary.SupportsCacheBreakdown
+	// Reviewed catalog cache tariffs win; auxiliary pricing fills gaps only.
+	out.SupportsCacheBreakdown = out.SupportsCacheBreakdown || auxiliary.SupportsCacheBreakdown
 	if auxiliary.ImageInputPricePerToken > 0 {
 		out.ImageInputPricePerToken = auxiliary.ImageInputPricePerToken
 	}

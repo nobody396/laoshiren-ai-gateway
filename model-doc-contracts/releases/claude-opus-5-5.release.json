@@ -1,0 +1,404 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "claude-opus-5-5",
+    "upstream_id": "claude-opus-5-5",
+    "display_name": "Claude Opus 5.5",
+    "platform": "anthropic",
+    "context_window": 1000000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "messages",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": true,
+    "reasoning_efforts": [
+      "high",
+      "low",
+      "max",
+      "medium",
+      "xhigh"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 4,
+    "cached_input_per_mtok_usd": 0.2,
+    "output_per_mtok_usd": 20,
+    "evidence_url": "https://platform.claude.com/docs/en/models/opus-5-5/overview",
+    "long_context": null,
+    "cache_write_5m_per_mtok_usd": 5,
+    "cache_write_1h_per_mtok_usd": 8
+  },
+  "lifecycle": {
+    "public_status": "public",
+    "introduced_at": "2026-09-23",
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "messages",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Native protocol passed basic and complete streaming upstream probes; public gateway acceptance is pending.",
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-03"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "messages",
+      "features": {
+        "basic_request": "pass",
+        "billing": "pass",
+        "context_window": "pass",
+        "disconnect": "pass",
+        "error_passthrough": "pass",
+        "image_input": "pass",
+        "prompt_cache": "pass",
+        "reasoning": "pass",
+        "retry": "pass",
+        "streaming": "pass",
+        "structured_output": "pass",
+        "terminal_event": "pass",
+        "timeout": "pass",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "usage": "pass",
+        "web_search": "fail"
+      },
+      "evidence_ids": [
+        "direct-p-01",
+        "direct-p-02",
+        "direct-p-03",
+        "direct-p-04",
+        "direct-p-05",
+        "direct-p-06",
+        "direct-p-07",
+        "direct-p-08",
+        "direct-p-10",
+        "direct-p-11",
+        "direct-p-12",
+        "direct-p-15",
+        "adapter-regression",
+        "price-source",
+        "additional-p-06-high",
+        "additional-p-06-low",
+        "additional-p-06-max",
+        "additional-p-06-medium",
+        "additional-p-06-xhigh",
+        "additional-p-07-default",
+        "additional-p-10-default"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "messages",
+      "effort": "high",
+      "support": "supported",
+      "wire_value": "high",
+      "evidence_ids": [
+        "additional-p-06-high"
+      ]
+    },
+    {
+      "protocol": "messages",
+      "effort": "low",
+      "support": "supported",
+      "wire_value": "low",
+      "evidence_ids": [
+        "additional-p-06-low"
+      ]
+    },
+    {
+      "protocol": "messages",
+      "effort": "max",
+      "support": "supported",
+      "wire_value": "max",
+      "evidence_ids": [
+        "additional-p-06-max"
+      ]
+    },
+    {
+      "protocol": "messages",
+      "effort": "medium",
+      "support": "supported",
+      "wire_value": "medium",
+      "evidence_ids": [
+        "additional-p-06-medium"
+      ]
+    },
+    {
+      "protocol": "messages",
+      "effort": "xhigh",
+      "support": "supported",
+      "wire_value": "xhigh",
+      "evidence_ids": [
+        "additional-p-06-xhigh"
+      ]
+    }
+  ],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 4,
+      "output": 20,
+      "cached_input": 0.2,
+      "cache_write": 5,
+      "long_context": null,
+      "effective_from": "2026-09-22",
+      "evidence_ids": [
+        "price-source"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "price-source",
+      "kind": "official_docs",
+      "url": "https://platform.claude.com/docs/en/models/opus-5-5/overview",
+      "observed_at": "2026-09-23T03:11:56.427752+00:00",
+      "subject_version": "claude-opus-5-5 official model specification",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "direct-p-01",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:08:59.359+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "ddcf557c8dd8144ac211021b607048e9a04a3ade1607a19f4d6ac779595685e9",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-01.json"
+    },
+    {
+      "id": "direct-p-02",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:01.962+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "d6be0e0b0fd8cd1a5ca2ca5433586c566573e63f8af47c003cb5f8df8f07027f",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-02.json"
+    },
+    {
+      "id": "direct-p-03",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:07.222+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "e303119f14daaeb396d96527fc08a238fc55490bec65ec02567a3281ca3d1bdd",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-03.json"
+    },
+    {
+      "id": "direct-p-04",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:10:24.238+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "4d1a90f2153e167d82ea4defb10e8c93d5be2efdefea19efaccd11bf76fae864",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-04.json"
+    },
+    {
+      "id": "direct-p-05",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:10:27.371+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "4a5f6ed7bbac2a8124e56aa44083904ca70d1c9888b586fa6d2c4f6cd1126ae3",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-05.json"
+    },
+    {
+      "id": "direct-p-06",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:15.922+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "9cac213a1a4d51ded648cdcc24c58a578359f6cd1f85bb20570e3cc7935bd3c9",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-06.json"
+    },
+    {
+      "id": "direct-p-07",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:19.435+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "f62ec14a3ede9a4fcac1b1fdedbd880a1466fc865952433b6d51dc849a91e448",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-07.json"
+    },
+    {
+      "id": "direct-p-08",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:28.649+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "e13c683149aca634aba25e6097442a463f7cfe50a03c1ce9d03c8841f6f9c9b6",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-08.json"
+    },
+    {
+      "id": "direct-p-10",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:31.315+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "797d874e14807039b10830bd72a6345f3068547d961c6ef023e8d75d4c207574",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-10.json"
+    },
+    {
+      "id": "direct-p-11",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:32.913+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "fail",
+      "artifact_sha256": "a2482b059754d60df15dc93a3a00a158c56d290718560f969c00bea5fa67ac15",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-11.json"
+    },
+    {
+      "id": "direct-p-12",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:35.670+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "1ab53806f0570db72ac629038b37a5c356b7a913b575d272937a6d514bf371cc",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-12.json"
+    },
+    {
+      "id": "direct-p-15",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:09:36.687+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "678389042ccda499cb56502ca6477e6febfbcdf96ed35893533c48309b5fe8c7",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/direct-p-15.json"
+    },
+    {
+      "id": "adapter-regression",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-09-23T03:24:35.506660+00:00",
+      "subject_version": "4f9ca44eb existing adapter unit regressions (not live production)",
+      "result": "pass",
+      "artifact_sha256": "df2161f5b9b2c882fbdb6082680e8113ad9144ffaef607e1e7969c5f824b6121",
+      "artifact_path": "evidence/models-20260923/adapter-regression.json"
+    },
+    {
+      "id": "additional-p-06-high",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:26.848+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "9541d70acdbbcf37f0386898ae88a6dfd3c84f882c0b622a96afe7382c0acf55",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/additional-p-06-high.json"
+    },
+    {
+      "id": "additional-p-06-low",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:25.912+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "90f3e851827059ba94223eca350473bc15d2293c8139cebe143f63a14ac5b83a",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/additional-p-06-low.json"
+    },
+    {
+      "id": "additional-p-06-max",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:33.141+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "e4d5aebc8e5c4b1464f062ba22680d9346881a39b9feab706f281aee15fdf89b",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/additional-p-06-max.json"
+    },
+    {
+      "id": "additional-p-06-medium",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:26.766+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "4e074d3e4f0b2816e5e000d53ffc2b9ea6810c3c57013d5036818fbdd1267559",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/additional-p-06-medium.json"
+    },
+    {
+      "id": "additional-p-06-xhigh",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:29.457+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "c95b1f26ed22506e21c4c07dfee9b9a1cb7f2012b9ecf548abdc49f1fad50e36",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/additional-p-06-xhigh.json"
+    },
+    {
+      "id": "additional-p-07-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:30.102+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "6949fbd137c71610cadae233c085e201dc7e68d62cf4805a74634eb974cadae5",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/additional-p-07-default.json"
+    },
+    {
+      "id": "additional-p-10-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-23T03:15:31.674+00:00",
+      "subject_version": "claude-opus-5-5/messages/direct-upstream-only",
+      "result": "pass",
+      "artifact_sha256": "8dc9b0deeb401ae66b97d1bc96152a94875f7e86479f2bfee9b06c9f8d5351f6",
+      "artifact_path": "evidence/models-20260923/claude-opus-5-5/additional-p-10-default.json"
+    }
+  ],
+  "production": {
+    "account_id": 85,
+    "group_id": 5,
+    "group_name": "Claude 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "release_notes": {
+    "classification": "catalog-only",
+    "scope": "No runtime protocol or usage-schema change; add exact IDs and documented tariffs only. Probe harness adapts Opus 5.5 auto tool selection and Messages schema requests.",
+    "context_evidence_scope": "Official documented limit; maximum-size live context load not performed.",
+    "resilience_evidence_scope": "Existing native adapter unit regressions, not new fault injection on production.",
+    "billing_evidence_scope": "Existing tariff arithmetic regression pre-release; exact generated tariffs and owned public accounting E2E required after deployment.",
+    "availability_boundary": "GPT standard/enterprise via account 78; Sol also on current monthly groups via account 80. Opus via account 85 current standard/external groups. No group bindings or default/alias changes.",
+    "cache_boundary": "GPT repeated cache probes did not report a hit; cache-hit support is not promised. Tariff applies if upstream actually reports cache tokens.",
+    "reasoning_boundary": "Only observed effort levels are claimed. Luna low returned no reasoning evidence; other admitted levels passed.",
+    "structured_boundary": "Opus tool choice auto and correlated continuation passed; forced tool choices rejected as documented.",
+    "pending_acceptance": "CI, immutable release, mapping readback, exact usage/accounting/balance reconciliation",
+    "billing_fix": "Catalog-owned cache-write rates and cache breakdown are no longer overwritten by dynamic auxiliary pricing; red/green regression passed."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "model_id": "gpt-6-sol",
+  "client": "Codex",
+  "client_version": "codex-cli 0.155.1",
+  "operating_system": "macos-arm64",
+  "observed_at": "2026-09-23T04:29:19.659234+00:00",
+  "scope": "owned public API native client local tool loop",
+  "key_id": 128,
+  "group_id": 6,
+  "network_execution": "explicit_live",
+  "exit_code": 0,
+  "local_tool_executed": true,
+  "final_marker_matched": true,
+  "passed": true,
+  "stdout_sha256": "ebecfebe1a607cc07e65c604490d58922fe279b69bcb9b9e75fa25ab51d00d4d",
+  "event_types": [
+    "item.completed",
+    "item.started",
+    "thread.started",
+    "turn.completed",
+    "turn.started"
+  ]
+}

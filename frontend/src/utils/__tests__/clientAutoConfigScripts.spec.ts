@@ -189,6 +189,8 @@ describe('client auto-config scripts', () => {
     const models = catalog.models.map((model: { slug: string }) => model.slug)
 
     expect(models).toContain('gpt-5.6-sol')
+    expect(models).toContain('gpt-6-sol')
+    expect(models).toContain('gpt-6-luna')
     expect(models).toContain('qwen3.7-max')
     expect(models).toContain('deepseek-v4-pro-0813')
     expect(models).toContain('minimax-m3')
@@ -201,7 +203,7 @@ describe('client auto-config scripts', () => {
       // Keep unsupported/untested optional capabilities conservative instead
       // of copying them from another model's catalog entry.
       expect(typeof model.supports_reasoning_summaries).toBe('boolean')
-      if (model.slug === 'gpt-6-astra') {
+      if (['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna'].includes(model.slug)) {
         expect(model.supports_reasoning_summaries).toBe(false)
       } else {
         expect(model.supports_reasoning_summaries).toBe(true)
@@ -331,6 +333,46 @@ describe('client auto-config scripts', () => {
         rmSync(fixture, { recursive: true, force: true })
       }
     }
+  })
+
+  it.each(['gpt-6-sol', 'gpt-6-luna'])('writes selected new Codex model %s idempotently', (model) => {
+    const fixture = mkdtempSync(join(tmpdir(), 'lsrai-new-codex-'))
+    const dir = join(fixture, '.codex')
+    try {
+      mkdirSync(dir)
+      writeFileSync(join(dir, 'laoshirenai-model-catalog.json'), readPublicScript('codex-model-catalog.json'))
+      writeFileSync(join(dir, 'config.toml'), 'notify = ["preserve"]\n')
+      writeFileSync(join(dir, 'authorized.fixture.json'), JSON.stringify({ data: [{ id: model }] }))
+      const run = () => execFileSync('bash', ['-c', 'source "$1"; NODE_BIN="$(command -v node)"; TOOLS="codex"; BASE_URL="https://api.example.com"; SELECTED_MODEL="$2"; CATALOG_OPENAI_DEFAULT_MODEL="$(filter_codex_model_catalog "$CODEX_MODEL_CATALOG_PATH" "$CODEX_DIR/authorized.fixture.json")"; write_codex_config', '_', resolve(process.cwd(), 'public/auto-config/install.sh'), model], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      run()
+      const first = readFileSync(join(dir, 'config.toml'), 'utf8')
+      expect(first).toContain(`model = "${model}"`)
+      expect(first).toContain('notify = ["preserve"]')
+      run()
+      expect(readFileSync(join(dir, 'config.toml'), 'utf8')).toBe(first)
+    } finally { rmSync(fixture, { recursive: true, force: true }) }
+  })
+
+  it('writes selected Opus 5.5 and preserves unrelated Claude settings', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'lsrai-new-claude-'))
+    const dir = join(fixture, '.claude')
+    try {
+      mkdirSync(dir)
+      const path = join(dir, 'settings.json')
+      writeFileSync(path, JSON.stringify({ theme: 'dark', env: { KEEP_ME: 'preserve' } }))
+      const run = () => execFileSync('bash', ['-c', 'source "$1"; NODE_BIN="$(command -v node)"; TOOLS="claude"; BASE_URL="https://api.example.com"; CLAUDE_API_KEY="fixture-not-a-credential"; SELECTED_MODEL="claude-opus-5-5"; apply_manual_selection; write_claude_config', '_', resolve(process.cwd(), 'public/auto-config/install.sh')], { env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' }, stdio: 'pipe' })
+      run()
+      const first = readFileSync(path, 'utf8')
+      const parsed = JSON.parse(first)
+      expect(parsed.model).toBe('claude-opus-5-5')
+      expect(parsed.env.ANTHROPIC_MODEL).toBe('claude-opus-5-5')
+      expect(parsed.env.ANTHROPIC_DEFAULT_OPUS_MODEL).toBe('claude-opus-5-5')
+      expect(parsed.modelSettings['claude-opus-5-5'].effortLevel).toBe('high')
+      expect(parsed.env.KEEP_ME).toBe('preserve')
+      expect(parsed.theme).toBe('dark')
+      run()
+      expect(readFileSync(path, 'utf8')).toBe(first)
+    } finally { rmSync(fixture, { recursive: true, force: true }) }
   })
 
   it('updates only Codex-owned TOML fields and preserves MCP and other providers', () => {

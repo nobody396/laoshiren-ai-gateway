@@ -1,0 +1,23 @@
+{
+  "model_id": "gpt-6-luna",
+  "client": "Codex",
+  "client_version": "codex-cli 0.155.1",
+  "operating_system": "macos-arm64",
+  "observed_at": "2026-09-23T04:29:34.968394+00:00",
+  "scope": "owned public API native client local tool loop",
+  "key_id": 128,
+  "group_id": 6,
+  "network_execution": "explicit_live",
+  "exit_code": 0,
+  "local_tool_executed": true,
+  "final_marker_matched": true,
+  "passed": true,
+  "stdout_sha256": "a7f2a841285fe40a688347b83618c0d82da7fc3501a5dbe78c92d29d687de16a",
+  "event_types": [
+    "item.completed",
+    "item.started",
+    "thread.started",
+    "turn.completed",
+    "turn.started"
+  ]
+}

@@ -557,6 +557,42 @@ def render_shell_block(catalog: dict[str, Any]) -> str:
     ))
 
 
+def release_client_profiles(catalog: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    """Project admitted release facts when a long-form client profile is absent."""
+    catalog = catalog or load_catalog(DEFAULT_CATALOG)
+    public_ids = {row["id"] for row in catalog["models"] if row.get("public_price_visibility", "public") == "public"}
+    result = {}
+    for path in sorted((MODEL_CONTRACT_DIR / "releases").glob("*.release.json")):
+        release = json.loads(path.read_text(encoding="utf-8"))
+        model = release.get("model", {})
+        model_id = model.get("id")
+        if (release.get("schema_version") != 2 or model_id not in public_ids
+                or release.get("lifecycle", {}).get("public_status") != "public"):
+            continue
+        preferred = [row["protocol"] for row in release.get("protocol_matrix", [])
+                     if row.get("support") == "supported" and row.get("recommendation") == "preferred"]
+        if len(preferred) != 1:
+            continue
+        protocol = preferred[0]
+        features = next((row.get("features", {}) for row in release.get("protocol_feature_matrix", [])
+                         if row.get("protocol") == protocol), {})
+        if any(features.get(feature) != "pass" for feature in
+               ("basic_request", "streaming", "terminal_event", "tool_calls", "tool_result_round_trip")):
+            continue
+        admitted = {row["effort"] for row in release.get("reasoning_matrix", [])
+                    if row.get("protocol") == protocol and row.get("support") == "supported"
+                    and row.get("wire_value") == row.get("effort")}
+        levels = [level for level in ("none", "minimal", "low", "medium", "high", "xhigh", "max") if level in admitted]
+        result[model_id] = {
+            "release_projection": True,
+            "model": {**model, "input_modalities": ["text", "image"] if features.get("image_input") == "pass" else ["text"]},
+            "protocols": [{"name": protocol, "status": "verified"}],
+            "reasoning": {"model_levels": levels, "default_level": "medium" if "medium" in levels else None,
+                          "client_levels": [], "client_mappings": []},
+        }
+    return result
+
+
 def model_reasoning_levels() -> dict[str, list[str]]:
     result: dict[str, list[str]] = {}
     for path in sorted(MODEL_CONTRACT_DIR.glob("*.json")):
@@ -569,6 +605,8 @@ def model_reasoning_levels() -> dict[str, list[str]]:
                 str(level) for level in contract.get("reasoning", {}).get("model_levels", [])
                 if isinstance(level, str)
             ]
+    for model_id, profile in release_client_profiles().items():
+        result.setdefault(model_id, profile["reasoning"]["model_levels"])
     return result
 
 
@@ -699,6 +737,9 @@ def codex_client_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
         if model_id:
             contract_by_model[model_id] = contract
 
+    for model_id, profile in release_client_profiles(catalog).items():
+        contract_by_model.setdefault(model_id, profile)
+
     template = replacements.get("gpt-5.6-sol") or next(
         (entry for entry in base["models"] if entry.get("slug") == "gpt-5.6-sol"),
         base["models"][0],
@@ -738,6 +779,13 @@ def codex_client_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
             entry["default_reasoning_level"] = contract_default
         else:
             entry["default_reasoning_level"] = "high" if "high" in levels else (levels[0] if levels else None)
+        if contract.get("release_projection"):
+            # A native protocol pass does not prove optional Codex UI features.
+            entry["supports_reasoning_summaries"] = False
+            entry["default_reasoning_summary"] = "none"
+            entry["supports_parallel_tool_calls"] = False
+            entry["supports_search_tool"] = False
+            entry["experimental_supported_tools"] = []
         entry["additional_speed_tiers"] = []
         entry["service_tiers"] = []
         entry["priority"] = 999
@@ -759,6 +807,11 @@ def codex_client_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
     for slug in sorted(replacements):
         if slug not in seen:
             merged_models.append(replacements[slug])
+    # Codex's catalog schema cannot represent native-provider video inputs.
+    # Keep the provider model contract intact; project only client wire enums.
+    for entry in merged_models:
+        if "input_modalities" in entry:
+            entry["input_modalities"] = [kind for kind in entry["input_modalities"] if kind in {"text", "image", "audio"}]
     base["models"] = [with_codex_client_effort_aliases(entry) for entry in merged_models]
     return base
 

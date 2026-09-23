@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "model-doc-contracts" / "client-matrix.json"
@@ -13,6 +14,9 @@ OUTPUT = ROOT / "frontend" / "src" / "generated" / "clientMatrix.ts"
 GO_OUTPUT = ROOT / "backend" / "internal" / "service" / "client_setup_contract_generated.go"
 CONTRACTS = ROOT / "model-doc-contracts"
 CODEX_CLIENT_CATALOG = ROOT / "frontend" / "public" / "auto-config" / "codex-model-catalog.json"
+
+sys.path.insert(0, str(ROOT / "scripts"))
+from model_catalog import release_client_profiles  # noqa: E402
 
 
 def load_reasoning_profiles() -> list[dict]:
@@ -31,6 +35,11 @@ def load_reasoning_profiles() -> list[dict]:
             "client_levels": reasoning.get("client_levels") or [],
             "client_mappings": reasoning.get("client_mappings") or [],
         })
+    known = {row["model_id"] for row in profiles}
+    for model_id, profile in release_client_profiles().items():
+        if model_id not in known:
+            profiles.append({"model_id": model_id, **{key: profile["reasoning"][key]
+                            for key in ("model_levels", "client_levels", "client_mappings")}})
     return profiles
 
 
@@ -141,21 +150,8 @@ def load_model_protocols() -> dict[str, list[str]]:
             for row in contract.get("protocols") or []
             if row.get("status") == "verified" and str(row.get("name", "")).strip()
         })
-    # Newly released models are first recorded as release contracts before the
-    # long-form model document is generated. Setup must still fail closed, but
-    # it should consume their explicit supported protocol rows instead of
-    # silently treating a fully released model as unknown.
-    for path in sorted((CONTRACTS / "releases").glob("*.release.json")):
-        contract = json.loads(path.read_text())
-        model_id = str(contract.get("model", {}).get("id", "")).strip()
-        if not model_id:
-            continue
-        protocols = {
-            str(row.get("protocol", "")).strip()
-            for row in contract.get("protocol_matrix") or []
-            if row.get("support") == "supported" and str(row.get("protocol", "")).strip()
-        }
-        result[model_id] = sorted(set(result.get(model_id, [])) | protocols)
+    for model_id, profile in release_client_profiles().items():
+        result[model_id] = sorted(set(result.get(model_id, [])) | {row["name"] for row in profile["protocols"]})
     return result
 
 

@@ -29,6 +29,15 @@ class ClientMatrixCatalogTest(unittest.TestCase):
     def setUpClass(cls):
         cls.matrix = json.loads(CATALOG.SOURCE.read_text(encoding="utf-8"))
 
+    def test_new_release_models_reach_setup_and_reasoning_projections(self):
+        models = CATALOG.load_model_protocols()
+        profiles = {r["model_id"]: r for r in CATALOG.load_reasoning_profiles()}
+        for model, protocol in (("gpt-6-sol", "responses"), ("gpt-6-luna", "responses"), ("claude-opus-5-5", "messages")):
+            self.assertIn(protocol, models[model])
+            self.assertIn("high", profiles[model]["model_levels"])
+            self.assertEqual([], profiles[model]["client_mappings"])
+        self.assertTrue({"gpt-6-sol", "gpt-6-luna"}.issubset(CATALOG.load_codex_setup_models()))
+
     def test_public_projection_contains_every_canonical_client(self):
         projected = [CATALOG.project_client(client) for client in self.matrix["clients"]]
         self.assertEqual(

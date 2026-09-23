@@ -1,0 +1,18 @@
+{
+  "model_id": "gpt-6-sol",
+  "client": "Codex",
+  "client_version": "codex-cli 0.155.1",
+  "operating_system": "macos-arm64",
+  "observed_at": "2026-09-23T04:27:23.220258+00:00",
+  "scope": "owned public API native client local tool loop",
+  "key_id": 128,
+  "group_id": 6,
+  "network_execution": "explicit_live",
+  "exit_code": 1,
+  "local_tool_executed": false,
+  "final_marker_matched": false,
+  "passed": false,
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "event_types": [],
+  "diagnostic": "Error: failed to parse model_catalog_json path `/Users/fujunhao/laoshirenai/worktrees/client-models-20260923/frontend/public/auto-config/codex-model-catalog.json` as JSON: unknown variant `video`, expected one of `text`, `image`, `audio` at line 902 column 5\n[]"
+}

@@ -47,16 +47,6 @@
         "test"
       ],
       "ttl": "2026-09-13T00:00:00+08:00"
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/worktrees/client-models-20260923",
-      "owner": "codex-client-models-20260923",
-      "kind": "temporary",
-      "allowed_actions": [
-        "develop",
-        "test"
-      ],
-      "ttl": "2026-09-26T00:00:00+08:00"
     }
   ]
 }

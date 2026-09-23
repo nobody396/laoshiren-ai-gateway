@@ -1,0 +1,44 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://xingwan.store",
+    "case_key": "gpt-6-sol:P-07:None",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_93",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-sol",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:15:08.777+00:00",
+  "reason": "prompt cache claim requires cached_input_tokens > 0",
+  "response": {
+    "body_bytes": 23662,
+    "body_sha256": "cd41142f802b98037304c1229843133250e7d1506f3d54419d5502a7fc813b4b",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "9ab7a2ef-8068-4f10-bdbb-65765da4f40b",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 9520,
+    "output_tokens": 10,
+    "total_tokens": 9530
+  },
+  "verification": "failed"
+}

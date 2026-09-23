@@ -1,0 +1,53 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "claude-opus-5-5:P-11",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "claude-opus-5-5",
+    "name": "web_search",
+    "p_id": "P-11",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:32.913+00:00",
+  "reason": "native server-side search/grounding was not observed",
+  "response": {
+    "body_bytes": 190,
+    "body_sha256": "776e8fff022278985ea4663c45252bf88f610e77f314a92a9cb0f5ca39bebb4c",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "tool_choice: type \"tool\" and \"any\" are not supported for this model. (request id: 202609230309327202253628268d9d6kUd8NldI)",
+      "type": "<nil>"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": null,
+    "server_tool_observed": false,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "failed",
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "result": "blocked",
+  "classification": "contract_failed",
+  "offline_verifier": {
+    "status": "failed",
+    "reason": "native server-side search/grounding was not observed"
+  },
+  "source_receipt_sha256": "9b405c8d8d77d837c4747333c9bbddb430d82231727445b97fe2e075bac061a3"
+}

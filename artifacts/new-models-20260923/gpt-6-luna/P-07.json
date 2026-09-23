@@ -1,0 +1,44 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://jp.icodeeasy.cc",
+    "case_key": "gpt-6-luna:P-07",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-luna",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:25.497+00:00",
+  "reason": "prompt cache claim requires cached_input_tokens > 0",
+  "response": {
+    "body_bytes": 24181,
+    "body_sha256": "e7b849d7cce5f14ffb05bd417140077b00e775ea210795b1588cdfaf2f7b7904",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 9522,
+    "output_tokens": 10,
+    "total_tokens": 9532
+  },
+  "verification": "failed"
+}

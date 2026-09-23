@@ -1,0 +1,44 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://jp.icodeeasy.cc",
+    "case_key": "gpt-6-sol:P-05",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-sol",
+    "name": "tool_result_continuation",
+    "p_id": "P-05",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:16.103+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 24543,
+    "body_sha256": "6d873611c3052c09110a1bd9a56cda57b1ec39027c94c5290954b56a9af0c30f",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 4449,
+    "output_tokens": 18,
+    "total_tokens": 4467
+  },
+  "verification": "passed"
+}

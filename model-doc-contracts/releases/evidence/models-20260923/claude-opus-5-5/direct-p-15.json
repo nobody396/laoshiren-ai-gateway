@@ -1,0 +1,52 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "claude-opus-5-5:P-15",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "claude-opus-5-5",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:36.687+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 207,
+    "body_sha256": "d12efe139514302018f7e60e8af8e6977470a72bae8943d61456ad07466f2b5c",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "json: cannot unmarshal object into Go struct field ***.messages of type []***.ClaudeMessage (request id: 202609230309369117498608268d9d6K14RfILH)",
+      "type": "new_api_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "passed",
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "result": "pass",
+  "classification": "verified",
+  "offline_verifier": {
+    "status": "passed",
+    "reason": null
+  },
+  "source_receipt_sha256": "c1180e9d00ef46a1434f363719cade5ea483cc3ad1a9b73dbfebeca0e5645466"
+}

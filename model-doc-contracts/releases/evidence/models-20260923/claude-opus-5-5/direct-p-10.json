@@ -1,0 +1,54 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "claude-opus-5-5:P-10",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "claude-opus-5-5",
+    "name": "structured_output",
+    "p_id": "P-10",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:31.315+00:00",
+  "reason": "structured output must contain schema-valid object output",
+  "response": {
+    "body_bytes": 594,
+    "body_sha256": "52475a42f72c8f03351c9ac5ba70d3e5bec744b0b54dc17e89c179d877890956",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "522d60b1-9458-42d4-8034-21a073ef003e",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 28,
+    "output_tokens": 14,
+    "total_tokens": 42
+  },
+  "verification": "failed",
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "result": "blocked",
+  "classification": "contract_failed",
+  "offline_verifier": {
+    "status": "failed",
+    "reason": "structured output must contain schema-valid object output"
+  },
+  "source_receipt_sha256": "4ae718491c6103e084f3da6c71691f068fdc42c67da60f47b40fe2a3e09c5450"
+}

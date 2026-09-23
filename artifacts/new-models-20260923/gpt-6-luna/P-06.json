@@ -1,0 +1,44 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://jp.icodeeasy.cc",
+    "case_key": "gpt-6-luna:P-06",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-luna",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "responses",
+    "reasoning_level": "medium",
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:22.370+00:00",
+  "reason": "reasoning evidence is required",
+  "response": {
+    "body_bytes": 24304,
+    "body_sha256": "b4f81b9be9e14a92b8174a6363019cec9ce596cbad870dffa04a1ce0ca72cbc4",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 4423,
+    "output_tokens": 51,
+    "total_tokens": 4474
+  },
+  "verification": "failed"
+}

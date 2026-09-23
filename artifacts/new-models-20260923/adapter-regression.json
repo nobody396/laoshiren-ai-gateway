@@ -1,0 +1,15 @@
+{
+  "observed_at": "2026-09-23T03:24:35.506660+00:00",
+  "scope": "existing adapter regression; not a claim of live gateway reconciliation",
+  "source_commit": "4f9ca44eb",
+  "command": "go test -p 1 -tags unit ./internal/service -run 'Billing|Pricing|ClientDisconnect|ContextCanceled|Timeout|Retry' -count=1",
+  "status": "pass",
+  "result": "ok  \tgithub.com/bozhouDev/DragonCode-sub2api/internal/service\t132.922s\n",
+  "capabilities": [
+    "billing arithmetic",
+    "client disconnect handling",
+    "timeout handling",
+    "retry behavior"
+  ],
+  "boundary": "Exact new-model generated tariff tests and public gateway accounting reconciliation remain mandatory before task completion."
+}

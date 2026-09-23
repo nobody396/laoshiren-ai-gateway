@@ -1,0 +1,44 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "claude-opus-5-5:P-06:low",
+    "context_window": 1000000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_93",
+    "max_output_tokens": 128000,
+    "model_id": "claude-opus-5-5",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "messages",
+    "reasoning_level": "low",
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:15:25.912+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 2272,
+    "body_sha256": "fa2fdf8e137846e61b7916d87025219f186644e7b9cad089aa8181ea03f08253",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "2e273e34-6c0f-462e-8828-2d228c568f0f",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 70,
+    "output_tokens": 433,
+    "total_tokens": 503
+  },
+  "verification": "passed"
+}

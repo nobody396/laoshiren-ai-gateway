@@ -1,0 +1,42 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://jp.icodeeasy.cc",
+    "case_key": "gpt-6-luna:P-15",
+    "context_window": 1050000,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_CONTRACT_92",
+    "max_output_tokens": 128000,
+    "model_id": "gpt-6-luna",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-23T03:09:54.862+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 185,
+    "body_sha256": "bcf6883e05088e1eb3abbb55c86cbf288f5a65e09460b22708b6d06e03d284f0",
+    "complete": false,
+    "content_type": "application/json",
+    "error": {
+      "message": "请求参数有误，请检查后重试。如有疑问，请联系 icodeeasy.cc 客服。",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "passed"
+}

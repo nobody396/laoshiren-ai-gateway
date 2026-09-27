@@ -8,7 +8,7 @@ export function buildCodexRestoreCommand(windows: boolean): string {
       '& {',
       "$ErrorActionPreference='Stop'",
       "$n=Join-Path $HOME '.laoshirenai\\node\\current\\node.exe'",
-      "if(!(Test-Path -LiteralPath $n -PathType Leaf)){$n=(Get-Command node.exe -CommandType Application -ErrorAction Stop).Source}",
+      "if(!(Test-Path -LiteralPath $n -PathType Leaf)){$n=(Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source}",
       '$p=[IO.Path]::GetTempFileName()',
       `try { Invoke-WebRequest -UseBasicParsing -Uri '${url}' -OutFile $p`,
       `if((Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash.ToLowerInvariant() -ne '${codexRestoreSha256}'){throw 'Restore checksum mismatch'}`,

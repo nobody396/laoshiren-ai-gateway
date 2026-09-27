@@ -33,6 +33,7 @@ jobs:
           node-version: 24
       - run: corepack enable && corepack prepare pnpm@10.33.0 --activate
       - run: pnpm -C frontend install --frozen-lockfile
+      - run: node --test frontend/scripts/restore/codex.test.cjs
       - run: pnpm -C frontend exec vitest run src/utils/__tests__/clientAutoConfig.spec.ts src/utils/__tests__/clientAutoConfigScripts.spec.ts src/components/keys/__tests__/ClientSetupModal.spec.ts
 
   windows:

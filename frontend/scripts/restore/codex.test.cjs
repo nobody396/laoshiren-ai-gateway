@@ -81,7 +81,8 @@ for (const scenario of ['success', 'checksum', 'network', 'child failure']) {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
     t.after(() => new Promise(resolve => server.close(resolve)))
     const windows = process.platform === 'win32'
-    let line = command(windows).replace(/https:\/\/laoshirenai.com\/auto-config\/restore-codex.cjs/g, `http://127.0.0.1:${server.address().port}/restore`)
+    let line = command(windows)
+    if (!(process.env.RESTORE_VERIFY_PRODUCTION === 'true' && scenario === 'success')) line = line.replace(/https:\/\/laoshirenai.com\/auto-config\/restore-codex.cjs/g, `http://127.0.0.1:${server.address().port}/restore`)
     const env = { ...process.env, CODEX_HOME: dir, HOME: dir, TMPDIR: dir, TEMP: dir, TMP: dir }
     for (const key of ['OPENAI_API_KEY', 'OPENAI_BASE_URL', 'CODEX_API_KEY']) delete env[key]
     if (windows) {

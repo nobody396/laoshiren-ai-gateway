@@ -7,13 +7,13 @@
       <div class="flex gap-2" role="group" aria-label="选择系统">
         <button v-for="system in systems" :key="system" type="button"
           :aria-pressed="os === system" :class="['btn', os === system ? 'btn-primary' : 'btn-secondary']"
-          @click="os = system; selected = false; copyFailed = false">{{ system }}</button>
+          @click="os = system; copyStatus = 'idle'">{{ system }}</button>
       </div>
       <button type="button" class="btn btn-secondary w-full" data-client="codex" @click="selectCodex">
         Codex · 复制还原命令
       </button>
-      <template v-if="selected">
-        <p role="status">{{ copyFailed ? '自动复制失败，请手动复制下方命令' : '已复制，请在终端执行' }}</p>
+      <template v-if="copyStatus !== 'idle'">
+        <p role="status">{{ copyStatus === 'copying' ? '正在复制…' : copyStatus === 'failed' ? '自动复制失败，请手动复制下方命令' : '已复制，请在终端执行' }}</p>
         <textarea :value="command" readonly aria-label="Codex 还原命令"
           class="input w-full font-mono text-xs" rows="5" @focus="selectCommand" />
         <p class="text-xs text-gray-500">{{ os === 'Windows' ? '使用 Windows PowerShell 5.1 或 PowerShell 7，不要粘贴到 CMD' : '使用终端（bash / zsh）' }}</p>
@@ -37,14 +37,16 @@ const props = defineProps<{ show: boolean }>()
 defineEmits<{ close: [] }>()
 const systems = ['macOS', 'Linux', 'Windows'] as const
 const os = ref<typeof systems[number]>(/windows/i.test(navigator.userAgent) ? 'Windows' : /linux/i.test(navigator.userAgent) ? 'Linux' : 'macOS')
-const selected = ref(false)
-const copyFailed = ref(false)
+const copyStatus = ref<'idle' | 'copying' | 'copied' | 'failed'>('idle')
 const command = computed(() => buildCodexRestoreCommand(os.value === 'Windows'))
 const { copyToClipboard } = useClipboard()
-watch(() => props.show, () => { selected.value = false; copyFailed.value = false })
+watch(() => props.show, () => { copyStatus.value = 'idle' })
 async function selectCodex() {
-  selected.value = true
-  copyFailed.value = !(await copyToClipboard(command.value))
+  const text = command.value
+  copyStatus.value = 'copying'
+  let copied = false
+  try { copied = await copyToClipboard(text) } catch { /* Manual copy remains available. */ }
+  if (copyStatus.value === 'copying' && command.value === text) copyStatus.value = copied ? 'copied' : 'failed'
 }
 function selectCommand(event: FocusEvent) {
   (event.target as HTMLTextAreaElement).select()

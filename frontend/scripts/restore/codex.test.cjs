@@ -89,7 +89,8 @@ for (const scenario of ['success', 'checksum', 'network', 'child failure']) {
     if (windows) {
       fs.writeFileSync(path.join(dir, 'node.ps1'), 'throw "unsafe shim executed"')
       fs.writeFileSync(path.join(dir, 'node.cmd'), '@echo unsafe shim executed\r\nexit /b 99')
-      env.PATH = dir + path.delimiter + env.PATH
+      const pathKey = Object.keys(env).find(key => key.toLowerCase() === 'path') || 'Path'
+      env[pathKey] = dir + path.delimiter + (env[pathKey] || '')
       line = `Set-Variable HOME '${dir.replace(/'/g, "''")}' -Force; Set-ExecutionPolicy -Scope Process Restricted -Force; ${line}`
     }
     const shell = windows ? (process.env.RESTORE_TEST_SHELL || 'pwsh') : '/bin/bash'

@@ -113,3 +113,17 @@ for (const scenario of ['success', 'checksum', 'network', 'child failure']) {
     assert.equal(fs.readdirSync(dir).filter(name => /^(tmp|tmp\.)/i.test(name)).length, 0)
   })
 }
+
+test('failed auth replacement rolls configuration back', t => {
+  const dir = fixture(t)
+  const rename = fs.renameSync
+  let calls = 0
+  fs.renameSync = (...args) => {
+    if (++calls === 2) throw new Error('injected write failure')
+    return rename(...args)
+  }
+  try { assert.throws(() => restore(dir, {}), /还原未完成/) } finally { fs.renameSync = rename }
+  assert.equal(read(dir, 'config.toml'), managed)
+  assert.match(read(dir, 'auth.json'), /dummy-secret/)
+  assert.equal(fs.readdirSync(dir).filter(name => name.includes('.restore-')).length, 0)
+})

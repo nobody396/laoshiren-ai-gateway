@@ -31,9 +31,9 @@ var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 
-// frontend/node_modules/.pnpm/smol-toml@1.4.2/node_modules/smol-toml/dist/index.cjs
+// node_modules/.pnpm/smol-toml@1.4.2/node_modules/smol-toml/dist/index.cjs
 var require_dist = __commonJS({
-  "frontend/node_modules/.pnpm/smol-toml@1.4.2/node_modules/smol-toml/dist/index.cjs"(exports2, module2) {
+  "node_modules/.pnpm/smol-toml@1.4.2/node_modules/smol-toml/dist/index.cjs"(exports2, module2) {
     "use strict";
     var __defProp = Object.defineProperty;
     var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -916,7 +916,7 @@ ${tables}`.trim();
   }
 });
 
-// frontend/scripts/restore/codex.cjs
+// scripts/restore/codex.cjs
 var fs = require("node:fs");
 var path = require("node:path");
 var os = require("node:os");

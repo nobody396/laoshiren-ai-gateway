@@ -59,7 +59,8 @@
       </template>
 
       <template #actions>
-        <div class="flex justify-end gap-3">
+        <div class="flex flex-wrap justify-end gap-3">
+        <button type="button" class="btn btn-secondary" @click="showRestoreModal = true">还原官方配置</button>
         <button
           @click="loadApiKeys"
           :disabled="loading"
@@ -948,6 +949,7 @@
       @close="closeUseKeyModal"
     />
 
+    <RestoreOfficialConfigModal :show="showRestoreModal" @close="showRestoreModal = false" />
     <ClientSetupModal
       :show="showClientSetup"
       :api-key-id="clientSetupRow?.id || 0"
@@ -1165,6 +1167,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import SearchInput from '@/components/common/SearchInput.vue'
 	import Icon from '@/components/icons/Icon.vue'
 import UseKeyModal from '@/components/keys/UseKeyModal.vue'
+import RestoreOfficialConfigModal from '@/components/keys/RestoreOfficialConfigModal.vue'
 import ClientSetupModal from '@/components/keys/ClientSetupModal.vue'
 	import CcsClientIcon from '@/components/keys/CcsClientIcon.vue'
 	import KeyGroupMultiSelect from '@/components/keys/KeyGroupMultiSelect.vue'
@@ -1287,6 +1290,7 @@ const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
 const showClientSetup = ref(false)
+const showRestoreModal = ref(false)
 const clientSetupRow = ref<ApiKey | null>(null)
 const showCcsClientSelect = ref(false)
 const showCcsDiagnostics = ref(false)

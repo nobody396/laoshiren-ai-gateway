@@ -13,3 +13,6 @@ backend/migrations/*.sql text eol=lf
 
 # Dockerfile
 Dockerfile text eol=lf
+
+# Byte-pinned customer restore artifact must be identical on Windows and Unix
+frontend/public/auto-config/restore-codex.cjs text eol=lf

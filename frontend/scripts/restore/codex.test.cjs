@@ -9,7 +9,8 @@ const { restore } = require(process.env.CODEX_RESTORE_TEST_MODULE || '../../publ
 const root = path.resolve(__dirname, '../..')
 const bundle = fs.readFileSync(path.join(root, 'public/auto-config/restore-codex.cjs'))
 const hash = require('node:crypto').createHash('sha256').update(bundle).digest('hex')
-const source = fs.readFileSync(path.join(root, 'src/utils/codexRestore.ts'), 'utf8').replace(/^import .*\n/m, '').replace('export function', 'function').replace('windows: boolean): string', 'windows)')
+const source = fs.readFileSync(path.join(root, 'src/utils/codexRestore.ts'), 'utf8').replace(/^import .*\r?\n/m, '').replace('export function', 'function').replace('windows: boolean): string', 'windows)')
+assert.equal(fs.readFileSync(path.join(root, 'src/generated/codexRestoreIntegrity.ts'), 'utf8').match(/[a-f0-9]{64}/)[0], hash)
 const command = new Function('codexRestoreSha256', `${source}; return buildCodexRestoreCommand`)(hash)
 const managed = 'model_provider = "laoshirenai_responses"\nmodel = "group-only-model"\nmodel_catalog_json="laoshirenai-model-catalog.json"\npreferred_auth_method="apikey"\n[mcp_servers.keep]\ncommand="dummy"\n[model_providers.laoshirenai_responses]\nbase_url="https://api.laoshirenai.com"\n[model_providers.other]\nbase_url="https://example.invalid"\n'
 function fixture(t, config = managed, auth = '{"OPENAI_API_KEY":"dummy-secret","tokens":{"access_token":"dummy-a","refresh_token":"dummy-r"},"other":"keep"}') {

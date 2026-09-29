@@ -108,6 +108,7 @@ var generatedClientSetupModelProtocols = map[string]map[string]bool{
 	"claude-opus-5-5":          {"messages": true},
 	"claude-sonnet-4-6":        {"messages": true},
 	"claude-sonnet-5":          {"messages": true},
+	"claude-sonnet-5-5":        {"messages": true},
 	"deepseek-v4-flash-0731":   {"chat_completions": true, "responses": true},
 	"deepseek-v4-pro-0813":     {"chat_completions": true, "responses": true},
 	"gemini-3.1-pro":           {"generate_content": true},

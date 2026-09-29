@@ -1,0 +1,54 @@
+{
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "xiu-sonnetP-06max",
+    "context_window": 1,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_NEW_MODELS_OK",
+    "max_output_tokens": 4096,
+    "model_id": "claude-sonnet-5-5",
+    "name": "reasoning_transport",
+    "p_id": "P-06",
+    "protocol": "messages",
+    "reasoning_level": "max",
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-29T23:04:24.122+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 2684,
+    "body_sha256": "e2e015f0c49952341d8679baed9b0a97452facc9298764a7aa015cb60142a1c3",
+    "complete": true,
+    "content_type": "application/json",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "bb62c52a-6b7f-4a0b-90a7-3604e3594964",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 73,
+    "output_tokens": 666,
+    "total_tokens": 739
+  },
+  "verification": "passed",
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "result": "pass",
+  "classification": "verified",
+  "offline_verifier": {
+    "status": "passed",
+    "reason": null
+  },
+  "source_receipt_sha256": "d547c93fc61ecb767e002783a3a2cfe71ae483e77ddcb70cbf5e093d4db41509",
+  "billing_reconciled": false
+}

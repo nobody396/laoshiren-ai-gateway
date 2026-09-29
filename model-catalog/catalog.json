@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.32",
+  "client_auto_config_version": "0.7.33",
   "pricing_contract": {
     "default_scope": "provider_public",
     "provider_public_source": "provider_pricing when present, otherwise pricing",
@@ -387,6 +387,49 @@
       "preset": {
         "from": "claude-sonnet-5",
         "to": "claude-sonnet-5",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "upstream_id": "claude-sonnet-5-5",
+      "display_name": "Claude Sonnet 5.5",
+      "platform": "anthropic",
+      "context_window": 1000000,
+      "max_output_tokens": 128000,
+      "client_default": false,
+      "public_price_visibility": "public",
+      "public_group": {
+        "preferred_name": "Claude 标准线路",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 2,
+        "cached_input_per_mtok_usd": 0.2,
+        "cache_write_5m_per_mtok_usd": 2.5,
+        "cache_write_1h_per_mtok_usd": 4,
+        "output_per_mtok_usd": 10,
+        "component_status": {
+          "input": "verified",
+          "output": "verified",
+          "cached_input": "verified",
+          "cache_write": "verified",
+          "long_context": "not_applicable"
+        },
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview"
+      },
+      "provider_pricing": null,
+      "preset": {
+        "from": "claude-sonnet-5-5",
+        "to": "claude-sonnet-5-5",
         "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
       }
     },

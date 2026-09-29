@@ -1,0 +1,361 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "claude-sonnet-5-5",
+    "upstream_id": "claude-sonnet-5-5",
+    "display_name": "Claude Sonnet 5.5",
+    "platform": "anthropic",
+    "context_window": 1000000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "messages",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": true,
+    "reasoning_efforts": [
+      "xhigh",
+      "max"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 2,
+    "cached_input_per_mtok_usd": 0.2,
+    "output_per_mtok_usd": 10,
+    "cache_write_5m_per_mtok_usd": 2.5,
+    "cache_write_1h_per_mtok_usd": 4,
+    "evidence_url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
+    "long_context": null
+  },
+  "lifecycle": {
+    "public_status": "public",
+    "introduced_at": "2026-09-30",
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 2,
+      "output": 10,
+      "cached_input": 0.2,
+      "cache_write": 2.5,
+      "long_context": null,
+      "effective_from": "2026-09-28",
+      "evidence_ids": [
+        "official-spec"
+      ]
+    }
+  ],
+  "production": {
+    "account_id": 85,
+    "group_id": 5,
+    "group_name": "Claude 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "evidence": [
+    {
+      "id": "official-spec",
+      "kind": "official_docs",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
+      "observed_at": "2026-09-29T23:08:52.663209+00:00",
+      "subject_version": "claude-sonnet-5-5 official specifications and prices",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "p-01-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:03:47.797+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "37ccc645f2f1c328488090506b97db6d755a1cbecf6440cd9f23aa9b62a39a4c",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-01-None.json"
+    },
+    {
+      "id": "p-02-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:03:50.233+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "cd0b295f251c36ea84fbd3977b5d5d0c28c5a6ee8e1fb7bfe29721b1e317135a",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-02-None.json"
+    },
+    {
+      "id": "p-03-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:03:59.872+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "45f07fa97382f7cb8c38b3fdd4f9df14752cfdb85b95f56465bbe6f1f81642a8",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-03-None.json"
+    },
+    {
+      "id": "p-04-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:00.724+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "fail",
+      "artifact_sha256": "97b115e811354a82102610009b47d54946171efa30de02ffbc8c759d9a570f69",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-04-None.json"
+    },
+    {
+      "id": "p-04-auto",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:05:07.454+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "0bee128dab33481ebf43df608db650a11035e2df6c7250883e7d6196a2359149",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-04-auto.json"
+    },
+    {
+      "id": "p-05-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:01.452+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "fail",
+      "artifact_sha256": "1a60628053856041c613633fbbca2832a21412a25748632cb78c3ce4769e4e16",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-05-None.json"
+    },
+    {
+      "id": "p-05-auto",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:05:13.651+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "bbc4239d0c706acc7d809f655de25461da7c2ae094d9f57eeeee6e70969aa85f",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-05-auto.json"
+    },
+    {
+      "id": "p-06-high",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:13.019+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "fail",
+      "artifact_sha256": "d197954cda5a9703edc68aa4748342201aa77f475139b2e65d88b6a5ce672551",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-06-high.json"
+    },
+    {
+      "id": "p-06-low",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:05.148+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "fail",
+      "artifact_sha256": "46e39fd1fe61e468a3908f08287a902ddf1ae39dbda7b38e0ff763bc532f4b33",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-06-low.json"
+    },
+    {
+      "id": "p-06-max",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:24.122+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "03e41f8ec8bd64d10a57a4e5f0cb1014402abbf3b363a8c5cc7b027f507d8add",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-06-max.json"
+    },
+    {
+      "id": "p-06-medium",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:09.672+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "fail",
+      "artifact_sha256": "7cda143cf8ebb3ba1cc46c67b53ecd5be16ea08a2489800f22fb5eac7b811edf",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-06-medium.json"
+    },
+    {
+      "id": "p-06-xhigh",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:18.076+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "3b4577726cf231234dae7bd49d9b8952841faaa3d48e7a13683eabc780f269eb",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-06-xhigh.json"
+    },
+    {
+      "id": "p-07-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:34.278+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "948fc01f57347903913d61367d14d14e9a162c1077916ead0703d2450f54effd",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-07-None.json"
+    },
+    {
+      "id": "p-08-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:36.573+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "d07702d4737532c6d311c8ac8901cf6170cef78ee26ed4cd7ce9dc50b72056fa",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-08-None.json"
+    },
+    {
+      "id": "p-10-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:40.043+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "3aa8e90630aacd14ef0c0d5bda9353c5739397285a91d8b0bf13ab5e45fb79e0",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-10-None.json"
+    },
+    {
+      "id": "p-11-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:40.772+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "fail",
+      "artifact_sha256": "7e805da3d3bb84c439c60d85d837c05f32015272ea2ec0644861cf735fdfd0ef",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-11-None.json"
+    },
+    {
+      "id": "p-12-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:43.190+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "2f6c046d4f8840f10691c650942673a96e11dfd2f7e79fea4023d6586ee185f4",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-12-None.json"
+    },
+    {
+      "id": "p-15-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-29T23:04:43.905+00:00",
+      "subject_version": "claude-sonnet-5-5/messages/XiuRouter direct upstream",
+      "result": "pass",
+      "artifact_sha256": "d1250608102bb19448c237776e2bb8c5d9494ed3de133a0441909f1358101c76",
+      "artifact_path": "evidence/models-20260930/claude-sonnet-5-5/P-15-None.json"
+    },
+    {
+      "id": "adapter-regression",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-09-29T23:09:29.631769+00:00",
+      "subject_version": "7c470d13e existing adapter regression",
+      "result": "pass",
+      "artifact_sha256": "ba3efbbdc77a21174782fbe6c5b2d177a3e1f721f94a64cac8801186475f8cd9",
+      "artifact_path": "evidence/models-20260930/adapter-regression.json"
+    }
+  ],
+  "protocol_matrix": [
+    {
+      "protocol": "messages",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Native Messages and complete streaming pass; tool auto and continuation pass.",
+      "evidence_ids": [
+        "p-01-none",
+        "p-03-none"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "messages",
+      "features": {
+        "basic_request": "pass",
+        "streaming": "pass",
+        "terminal_event": "pass",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "prompt_cache": "pass",
+        "image_input": "pass",
+        "structured_output": "pass",
+        "web_search": "fail",
+        "usage": "pass",
+        "error_passthrough": "pass",
+        "reasoning": "pass",
+        "context_window": "pass",
+        "billing": "pass",
+        "disconnect": "pass",
+        "timeout": "pass",
+        "retry": "pass"
+      },
+      "evidence_ids": [
+        "p-01-none",
+        "p-02-none",
+        "p-03-none",
+        "p-04-none",
+        "p-04-auto",
+        "p-05-none",
+        "p-05-auto",
+        "p-06-high",
+        "p-06-low",
+        "p-06-max",
+        "p-06-medium",
+        "p-06-xhigh",
+        "p-07-none",
+        "p-08-none",
+        "p-10-none",
+        "p-11-none",
+        "p-12-none",
+        "p-15-none",
+        "official-spec",
+        "adapter-regression"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "messages",
+      "effort": "xhigh",
+      "support": "supported",
+      "wire_value": "xhigh",
+      "evidence_ids": [
+        "p-06-xhigh"
+      ]
+    },
+    {
+      "protocol": "messages",
+      "effort": "max",
+      "support": "supported",
+      "wire_value": "max",
+      "evidence_ids": [
+        "p-06-max"
+      ]
+    }
+  ],
+  "release_notes": {
+    "classification": "catalog-only",
+    "context_evidence_scope": "Official documented 1M context / 128K output; maximum-size live load not performed.",
+    "resilience_evidence_scope": "Existing adapter local regression, not production fault injection.",
+    "billing_evidence_scope": "Exact generated tariff arithmetic before release; owned gateway accounting and balance reconciliation required after deploy.",
+    "availability_boundary": "Only account 85 existing Claude standard (5) and compatible (15) groups; no monthly/group/default/alias changes.",
+    "reasoning_boundary": "Only xhigh/max returned thinking evidence in these probes. Lower efforts returned text without observable thinking; not claimed as verified reasoning.",
+    "tool_boundary": "Forced tool_choice rejected; auto and tool continuation pass.",
+    "web_search_boundary": "Probe using forced tool selection rejected; no server-side search claim.",
+    "pending_acceptance": "CI, immutable deploy, mapping readback, owned public billing E2E"
+  }
+}

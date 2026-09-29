@@ -13,7 +13,7 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export const clientAutoConfigVersion = "0.7.32"
+export const clientAutoConfigVersion = "0.7.33"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",
@@ -196,6 +196,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     "preset": {
       "from": "claude-sonnet-5",
       "to": "claude-sonnet-5",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "claude-sonnet-5-5",
+    "upstreamId": "claude-sonnet-5-5",
+    "displayName": "Claude Sonnet 5.5",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "Claude 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "claude-sonnet-5-5",
+      "to": "claude-sonnet-5-5",
       "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
     }
   },

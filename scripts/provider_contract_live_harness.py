@@ -517,9 +517,9 @@ def request_payload(case: LiveCase, *, stream: bool = False, invalid: bool = Fal
         payload = {"model": case.model_id, "messages": [{"role": "user", "content": content}], "max_tokens": max(1024, output_budget), "stream": stream}
         if case.p_id in {"P-04", "P-05"}:
             payload.update({"messages": [{"role": "user", "content": f"Call echo_contract with value {case.marker}."}], "tools": [{"name": "echo_contract", "description": "Echo a value", "input_schema": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"], "additionalProperties": False}}], "tool_choice": {"type": "tool", "name": "echo_contract"}})
-            # Opus 5.5 has always-on adaptive thinking and rejects forced tools.
+            # Claude 5.5 models reject forced tool choices.
             # Keep the same tool/result assertions; only use the supported mode.
-            if case.model_id == "claude-opus-5-5":
+            if case.model_id in {"claude-opus-5-5", "claude-sonnet-5-5"}:
                 payload["tool_choice"] = {"type": "auto"}
         elif case.p_id == "P-10":
             payload["messages"] = [{"role": "user", "content": f'Return JSON with marker exactly "{case.marker}".'}]

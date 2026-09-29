@@ -47,6 +47,16 @@
         "test"
       ],
       "ttl": "2026-09-13T00:00:00+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/local/sonnet55-grok47",
+      "owner": "codex-sonnet55-grok47",
+      "kind": "temporary",
+      "allowed_actions": [
+        "develop",
+        "test"
+      ],
+      "ttl": "2026-10-02T00:00:00+08:00"
     }
   ]
 }

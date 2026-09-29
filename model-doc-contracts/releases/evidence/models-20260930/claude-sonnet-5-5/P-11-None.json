@@ -1,0 +1,53 @@
+{
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "xiu-sonnetP-11None",
+    "context_window": 1,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_NEW_MODELS_OK",
+    "max_output_tokens": 4096,
+    "model_id": "claude-sonnet-5-5",
+    "name": "web_search",
+    "p_id": "P-11",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-29T23:04:40.772+00:00",
+  "reason": "native server-side search/grounding was not observed",
+  "response": {
+    "body_bytes": 189,
+    "body_sha256": "b3224f76c58bdf19a00248f1ece04e76015ad59271f2aae741eee085952cfe95",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "claude-sonnet-5-5 does not support forced tool_choice; use auto or none (request id: 202609292304408125162568268d9d6uGD4VDlq)",
+      "type": "<nil>"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": null,
+    "server_tool_observed": false,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "failed",
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "result": "fail",
+  "classification": "capability_boundary",
+  "offline_verifier": {
+    "status": "failed",
+    "reason": "native server-side search/grounding was not observed"
+  },
+  "source_receipt_sha256": "59c5c7f283634044a6fe3cc85a2cf6a9d5387439f42e00203cb647a0e4e2eb6d",
+  "billing_reconciled": false
+}

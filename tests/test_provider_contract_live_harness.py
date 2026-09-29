@@ -90,6 +90,12 @@ class ProviderContractLiveHarnessTest(unittest.TestCase):
         self.assertEqual(["marker"], payload["output_config"]["format"]["schema"]["required"])
 
 
+    def test_sonnet55_tool_probe_uses_auto(self):
+        case = MODULE.LiveCase("sonnet55", "P-05", "tool_result_continuation", 0,
+                               "direct", "claude-sonnet-5-5", "messages",
+                               "https://api.example.test", "MARKER")
+        self.assertEqual({"type": "auto"}, MODULE.request_payload(case)["tool_choice"])
+
     def fixtures(self, root: Path):
         contracts = root / "contracts"
         contracts.mkdir()

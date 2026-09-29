@@ -1938,6 +1938,15 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     "client_mappings": []
   },
   {
+    "model_id": "claude-sonnet-5-5",
+    "model_levels": [
+      "xhigh",
+      "max"
+    ],
+    "client_levels": [],
+    "client_mappings": []
+  },
+  {
     "model_id": "gpt-6-astra",
     "model_levels": [
       "low",

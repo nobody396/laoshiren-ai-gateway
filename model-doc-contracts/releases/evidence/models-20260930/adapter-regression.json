@@ -1,0 +1,9 @@
+{
+  "observed_at": "2026-09-29T23:09:29.631769+00:00",
+  "scope": "local existing adapter regression, not live gateway reconciliation",
+  "source_commit": "7c470d13e",
+  "command": "go test -p 1 -tags unit ./internal/service -run 'Billing|Pricing|ClientDisconnect|ContextCanceled|Timeout|Retry' -count=1",
+  "status": "pass",
+  "result": "ok  \tgithub.com/bozhouDev/DragonCode-sub2api/internal/service\t135.468s\n",
+  "boundary": "Exact new-model tariff tests and owned public gateway billing E2E are still required."
+}

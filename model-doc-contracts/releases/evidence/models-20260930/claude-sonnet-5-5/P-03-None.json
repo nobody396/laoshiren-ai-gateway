@@ -1,0 +1,49 @@
+{
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "xiu-sonnetP-03None",
+    "context_window": 1,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_NEW_MODELS_OK",
+    "max_output_tokens": 4096,
+    "model_id": "claude-sonnet-5-5",
+    "name": "streaming_terminal",
+    "p_id": "P-03",
+    "protocol": "messages",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "observed_at": "2026-09-29T23:03:59.872+00:00",
+  "reason": null,
+  "response": {
+    "body_bytes": 1477,
+    "body_sha256": "209a4e3012ca528a7b8c1476e864d5f0eb9715f381eb2a76e5f3636d638b5cbc",
+    "complete": true,
+    "content_type": "text/event-stream",
+    "error": null,
+    "event_count": 8,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": null,
+    "sse_framing": true,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "passed",
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "result": "pass",
+  "classification": "verified",
+  "offline_verifier": {
+    "status": "passed",
+    "reason": null
+  },
+  "source_receipt_sha256": "a12cce2ea74ca70cb5f2b00ba3fbeb2c74264d199502f478320486612a74aa2f",
+  "billing_reconciled": false
+}

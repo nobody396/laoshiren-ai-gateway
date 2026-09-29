@@ -370,7 +370,7 @@ const resources: DownloadResource[] = [
       },
       {
         label: 'Windows PowerShell',
-        command: 'irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.32 | iex'
+        command: 'irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.33 | iex'
       },
       {
         label: 'npm 兜底方式',

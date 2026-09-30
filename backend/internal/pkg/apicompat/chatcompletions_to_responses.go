@@ -142,6 +142,11 @@ func replayChatResponsesOutput(m ChatMessage) ([]json.RawMessage, error) {
 			if item.Role != "assistant" {
 				return nil, fmt.Errorf("responses_output messages must have the assistant role")
 			}
+			for _, part := range item.Content {
+				if part.Type != "output_text" && part.Type != "refusal" {
+					return nil, fmt.Errorf("unsupported responses_output message content")
+				}
+			}
 		case "function_call":
 		case "reasoning":
 			if item.EncryptedContent == "" {

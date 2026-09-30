@@ -17,7 +17,13 @@ func TestChatCompletionsEncryptedReasoningRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	var decoded map[string]any
 	require.NoError(t, json.Unmarshal(wire, &decoded))
-	message := decoded["choices"].([]any)[0].(map[string]any)["message"].(map[string]any)
+	choices, ok := decoded["choices"].([]any)
+	require.True(t, ok)
+	require.Len(t, choices, 1)
+	choice, ok := choices[0].(map[string]any)
+	require.True(t, ok)
+	message, ok := choice["message"].(map[string]any)
+	require.True(t, ok)
 	require.Contains(t, message, "responses_output", "Chat response must let a client replay opaque Responses state")
 
 	requestWire, err := json.Marshal(map[string]any{"model": response.Model, "messages": []any{message, map[string]any{"role": "tool", "tool_call_id": "call_test", "content": "result"}}})
@@ -58,6 +64,7 @@ func TestChatCompletionsReasoningReplayRejectsStaleOrInvalidState(t *testing.T) 
 		`{"role":"assistant","content":"edited","responses_output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"original"}]}]}`,
 		`{"role":"assistant","responses_output":[{"type":"reasoning","summary":[]}]}`,
 		`{"role":"assistant","content":"answer","responses_output":[{"type":"message","role":"system","content":[{"type":"output_text","text":"answer"}]}]}`,
+		`{"role":"assistant","responses_output":[{"type":"message","role":"assistant","content":[{"type":"input_text","text":"unrepresented content"}]}]}`,
 		`{"role":"assistant","responses_output":[{"type":"unknown"}]}`,
 	} {
 		var message ChatMessage

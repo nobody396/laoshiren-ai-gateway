@@ -53,6 +53,7 @@ export interface User {
 }
 
 export interface AdminUser extends User {
+  deleted_at?: string
   // 管理员备注（普通用户接口不返回）
   notes: string
   // 用户专属分组倍率配置 (group_id -> rate_multiplier)

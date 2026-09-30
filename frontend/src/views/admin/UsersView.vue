@@ -22,6 +22,11 @@
               />
             </div>
 
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input v-model="filters.includeDeleted" type="checkbox" @change="applyFilter" />
+              {{ t('admin.users.includeDeleted') }}
+            </label>
+
             <!-- Role Filter (visible when enabled) -->
             <div v-if="visibleFilters.has('role')" class="w-full sm:w-32">
               <Select
@@ -306,6 +311,7 @@
               <div class="group relative">
                 <button
                   class="font-medium text-gray-900 underline decoration-dashed decoration-gray-300 underline-offset-4 transition-colors hover:text-primary-600 dark:text-white dark:decoration-dark-500 dark:hover:text-primary-400"
+                  :disabled="!!row.deleted_at"
                   @click="handleBalanceHistory(row)"
                 >
                   ${{ value.toFixed(2) }}
@@ -317,6 +323,7 @@
                 </div>
               </div>
               <button
+                v-if="!row.deleted_at"
                 @click.stop="handleDeposit(row)"
                 class="rounded px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
                 :title="t('admin.users.deposit')"
@@ -350,16 +357,16 @@
             />
           </template>
 
-          <template #cell-status="{ value }">
+          <template #cell-status="{ value, row }">
             <div class="flex items-center gap-1.5">
               <span
                 :class="[
                   'inline-block h-2 w-2 rounded-full',
-                  value === 'active' ? 'bg-green-500' : 'bg-red-500'
+                  !row.deleted_at && value === 'active' ? 'bg-green-500' : 'bg-red-500'
                 ]"
               ></span>
               <span class="text-sm text-gray-700 dark:text-gray-300">
-                {{ value === 'active' ? t('common.active') : t('admin.users.disabled') }}
+                {{ row.deleted_at ? t('admin.users.deleted') : value === 'active' ? t('common.active') : t('admin.users.disabled') }}
               </span>
             </div>
           </template>
@@ -375,7 +382,7 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center gap-1">
+            <div v-if="!row.deleted_at" class="flex items-center gap-1">
               <!-- Edit Button -->
               <button
                 @click="handleEdit(row)"
@@ -446,7 +453,7 @@
       >
         <div class="py-1">
           <template v-for="user in users" :key="user.id">
-            <template v-if="user.id === activeMenuId">
+            <template v-if="user.id === activeMenuId && !user.deleted_at">
               <!-- View API Keys -->
               <button
                 @click="handleViewApiKeys(user); closeActionMenu()"
@@ -805,7 +812,8 @@ const getReplaceableExclusiveGroups = (user: AdminUser) => {
 // Filter values (role, status, and custom attributes)
 const filters = reactive({
   role: '',
-  status: ''
+  status: '',
+  includeDeleted: false
 })
 const activeAttributeFilters = reactive<Record<number, string>>({})
 
@@ -1119,6 +1127,7 @@ const loadUsers = async () => {
         status: filters.status as any,
         search: searchQuery.value || undefined,
         attributes: Object.keys(attrFilters).length > 0 ? attrFilters : undefined,
+        include_deleted: filters.includeDeleted,
         include_subscriptions: hasVisibleSubscriptionsColumn.value
       },
       { signal }

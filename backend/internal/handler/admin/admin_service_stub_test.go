@@ -10,6 +10,7 @@ import (
 )
 
 type stubAdminService struct {
+	lastUserFilters      service.UserListFilters
 	users                []service.User
 	apiKeys              []service.APIKey
 	groups               []service.Group
@@ -105,6 +106,7 @@ func newStubAdminService() *stubAdminService {
 }
 
 func (s *stubAdminService) ListUsers(ctx context.Context, page, pageSize int, filters service.UserListFilters) ([]service.User, int64, error) {
+	s.lastUserFilters = filters
 	return s.users, int64(len(s.users)), nil
 }
 

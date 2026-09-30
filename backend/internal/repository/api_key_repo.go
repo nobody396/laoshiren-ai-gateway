@@ -10,6 +10,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/schema/mixins"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/user"
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
 	entsql "entgo.io/ent/dialect/sql"
@@ -38,40 +39,69 @@ func (r *apiKeyRepository) activeQuery() *dbent.APIKeyQuery {
 }
 
 func (r *apiKeyRepository) Create(ctx context.Context, key *service.APIKey) error {
-	builder := r.client.APIKey.Create().
-		SetUserID(key.UserID).
-		SetNillableTeamID(key.TeamID).
-		SetTeamOwnerDisabled(key.TeamOwnerDisabled).
-		SetKey(key.Key).
-		SetName(key.Name).
-		SetStatus(key.Status).
-		SetNillableGroupID(key.GroupID).
-		SetNillableLastUsedAt(key.LastUsedAt).
-		SetQuota(key.Quota).
-		SetQuotaUsed(key.QuotaUsed).
-		SetNillableExpiresAt(key.ExpiresAt).
-		SetRateLimit5h(key.RateLimit5h).
-		SetRateLimit1d(key.RateLimit1d).
-		SetRateLimit7d(key.RateLimit7d)
+	// Lock the owner before counting/inserting. Deleted keys stay in all counts,
+	// so rotating keys (or racing simultaneous creates) cannot reset the budget.
+	return withinEntTransaction(ctx, r.client, func(client *dbent.Client) error {
+		if _, err := client.User.Query().Where(user.IDEQ(key.UserID)).Select(user.FieldID).ForUpdate().Only(ctx); err != nil {
+			return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		}
+		now := time.Now()
+		for _, limit := range []struct {
+			window  time.Duration
+			max     int
+			message string
+		}{
+			{0, 1000, "API key lifetime creation limit reached; contact support"},
+			{time.Hour, 20, "API key hourly creation limit reached; try again later"},
+			{24 * time.Hour, 100, "API key daily creation limit reached; try again later"},
+		} {
+			q := client.APIKey.Query().Where(apikey.UserIDEQ(key.UserID))
+			if limit.window > 0 {
+				q = q.Where(apikey.CreatedAtGTE(now.Add(-limit.window)))
+			}
+			count, err := q.Count(mixins.SkipSoftDelete(ctx))
+			if err != nil {
+				return err
+			}
+			if count >= limit.max {
+				return infraerrors.TooManyRequests("API_KEY_CREATION_LIMIT", limit.message)
+			}
+		}
+		builder := client.APIKey.Create().
+			SetUserID(key.UserID).
+			SetNillableTeamID(key.TeamID).
+			SetTeamOwnerDisabled(key.TeamOwnerDisabled).
+			SetKey(key.Key).
+			SetName(key.Name).
+			SetStatus(key.Status).
+			SetNillableGroupID(key.GroupID).
+			SetNillableLastUsedAt(key.LastUsedAt).
+			SetQuota(key.Quota).
+			SetQuotaUsed(key.QuotaUsed).
+			SetNillableExpiresAt(key.ExpiresAt).
+			SetRateLimit5h(key.RateLimit5h).
+			SetRateLimit1d(key.RateLimit1d).
+			SetRateLimit7d(key.RateLimit7d)
 
-	if len(key.IPWhitelist) > 0 {
-		builder.SetIPWhitelist(key.IPWhitelist)
-	}
-	if len(key.IPBlacklist) > 0 {
-		builder.SetIPBlacklist(key.IPBlacklist)
-	}
+		if len(key.IPWhitelist) > 0 {
+			builder.SetIPWhitelist(key.IPWhitelist)
+		}
+		if len(key.IPBlacklist) > 0 {
+			builder.SetIPBlacklist(key.IPBlacklist)
+		}
 
-	if len(key.GroupIDs) > 0 {
-		builder.SetGroupIds(key.GroupIDs)
-	}
-	created, err := builder.Save(ctx)
-	if err == nil {
-		key.ID = created.ID
-		key.LastUsedAt = created.LastUsedAt
-		key.CreatedAt = created.CreatedAt
-		key.UpdatedAt = created.UpdatedAt
-	}
-	return translatePersistenceError(err, nil, service.ErrAPIKeyExists)
+		if len(key.GroupIDs) > 0 {
+			builder.SetGroupIds(key.GroupIDs)
+		}
+		created, err := builder.Save(ctx)
+		if err == nil {
+			key.ID = created.ID
+			key.LastUsedAt = created.LastUsedAt
+			key.CreatedAt = created.CreatedAt
+			key.UpdatedAt = created.UpdatedAt
+		}
+		return translatePersistenceError(err, nil, service.ErrAPIKeyExists)
+	})
 }
 
 func (r *apiKeyRepository) GetByID(ctx context.Context, id int64) (*service.APIKey, error) {
@@ -696,6 +726,7 @@ func userEntityToService(u *dbent.User) *service.User {
 		TotalRecharged:      u.TotalRecharged,
 		CreatedAt:           u.CreatedAt,
 		UpdatedAt:           u.UpdatedAt,
+		DeletedAt:           u.DeletedAt,
 	}
 	return out
 }

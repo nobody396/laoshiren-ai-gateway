@@ -104,6 +104,7 @@ func UserFromServiceAdmin(u *service.User) *AdminUser {
 		User:       *base,
 		Notes:      u.Notes,
 		GroupRates: u.GroupRates,
+		DeletedAt:  u.DeletedAt,
 	}
 }
 

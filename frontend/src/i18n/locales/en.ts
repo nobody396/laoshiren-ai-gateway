@@ -2123,6 +2123,8 @@ export default {
 
     // Users
     users: {
+      includeDeleted: 'Include deleted users',
+      deleted: 'Deleted',
       title: 'User Management',
       description: 'Manage users and their permissions',
       createUser: 'Create User',

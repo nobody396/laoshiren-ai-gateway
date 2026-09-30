@@ -23,6 +23,7 @@ export async function list(
     search?: string
     group_name?: string         // fuzzy filter by allowed group name
     attributes?: Record<number, string>  // attributeId -> value
+    include_deleted?: boolean
     include_subscriptions?: boolean
     sort_by?: string
     sort_order?: 'asc' | 'desc'
@@ -40,6 +41,7 @@ export async function list(
     search: filters?.search,
     group_name: filters?.group_name,
     include_subscriptions: filters?.include_subscriptions,
+    include_deleted: filters?.include_deleted,
     sort_by: filters?.sort_by,
     sort_order: filters?.sort_order
   }

@@ -1,7 +1,7 @@
 # API key creation abuse guard
 
-Scope: key rotation abuse and deleted-user audit visibility. Account balances,
-subscription usage and user concurrency remain unchanged.
+Scope: key rotation abuse, in-flight settlement and deleted-user audit visibility.
+Balance calculation, subscription usage and user concurrency remain unchanged.
 
 - Repository creation locks the owner row before counting and inserting within
   the existing transaction boundary. Random, custom, personal, team and admin
@@ -16,6 +16,10 @@ subscription usage and user concurrency remain unchanged.
   permanently banned. No new table, migration or policy/configuration framework.
 - Key deletion keeps failed-custom-key counters and invalidates authentication
   caches after deletion, not before the database commit.
+- Already incurred requests settle key quota/window counters even if the key
+  was soft-deleted in flight. This only changes historical settlement filters;
+  deleted keys remain unavailable for authentication, and settlement deduplication
+  still charges each request once.
 - Admin user listing defaults to excluding deleted users. Explicit
   `include_deleted=true` includes them and returns admin-only `deleted_at`.
   Ordinary authentication/lookups continue excluding deleted users; the UI
@@ -37,3 +41,8 @@ exercise high-volume churn against customers in production.
 
 Creation-specific SQLite tests were moved to real PostgreSQL: no production
 fallback or weakened lock is added merely to support a test database.
+
+In-flight settlement regression separately proves quota-only, window-only and
+combined accounting for a key deleted between request admission and settlement:
+exactly one balance debit, one dedup record, counters recorded, and no key
+reactivation. The pre-fix filters must fail all three cases.

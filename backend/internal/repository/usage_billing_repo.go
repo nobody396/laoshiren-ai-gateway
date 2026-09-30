@@ -1379,6 +1379,8 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 	return newBalance, deductedAmount, nil
 }
 
+// Historical settlement must include soft-deleted keys: revocation prevents
+// new authentication, but cannot roll back charges already incurred in flight.
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {
 	var exhausted bool
 	err := tx.QueryRowContext(ctx, `
@@ -1393,7 +1395,7 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 				ELSE status
 			END,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = $2
 		RETURNING quota > 0 AND quota_used >= quota AND quota_used - $1 < quota
 	`, amount, apiKeyID, service.StatusAPIKeyActive, service.StatusAPIKeyQuotaExhausted).Scan(&exhausted)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -1415,7 +1417,7 @@ func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKe
 			window_1d_start = CASE WHEN window_1d_start IS NULL OR window_1d_start + INTERVAL '24 hours' <= NOW() THEN date_trunc('day', NOW()) ELSE window_1d_start END,
 			window_7d_start = CASE WHEN window_7d_start IS NULL OR window_7d_start + INTERVAL '7 days' <= NOW() THEN date_trunc('day', NOW()) ELSE window_7d_start END,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = $2
 	`, cost, apiKeyID)
 	if err != nil {
 		return err

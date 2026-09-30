@@ -390,8 +390,7 @@ type RedeemCodeBatch struct {
 type AdminRedeemCode struct {
 	RedeemCode
 
-	Notes     string     `json:"notes"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	Notes string `json:"notes"`
 }
 
 // UsageLog 是普通用户接口使用的 usage log DTO（不包含管理员字段）。

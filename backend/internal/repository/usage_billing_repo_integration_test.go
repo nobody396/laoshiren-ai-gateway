@@ -2039,3 +2039,45 @@ func createSelfCommissionIntegrationPartner(
 	`, userID)
 	require.NoError(t, err)
 }
+
+// Deleting a key revokes future authentication, not an already incurred bill.
+func TestUsageBillingRepositoryApply_DeletedKeyStillSettlesExactlyOnce(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		quota, rate float64
+	}{
+		{"quota", 1.25, 0}, {"rate", 0, 1.25}, {"both", 1.25, 1.25},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			client := testEntClient(t)
+			user := mustCreateUser(t, client, &service.User{Email: "deleted-key-bill-" + uuid.NewString() + "@example.com", PasswordHash: "hash", Balance: 100})
+			key := mustCreateApiKey(t, client, &service.APIKey{UserID: user.ID, Key: "sk-fixture-deleted-" + uuid.NewString(), Name: "in-flight", Quota: 1, RateLimit5h: 10})
+			keys := NewAPIKeyRepository(client, integrationDB)
+			cmd := &service.UsageBillingCommand{RequestID: uuid.NewString(), UserID: user.ID, APIKeyID: key.ID, BalanceCost: 1.25, APIKeyQuotaCost: tc.quota, APIKeyRateLimitCost: tc.rate}
+			require.NoError(t, keys.Delete(ctx, key.ID))
+			_, err := keys.GetByKeyForAuth(ctx, key.Key)
+			require.ErrorIs(t, err, service.ErrAPIKeyNotFound, "deleted key must remain revoked")
+			billing := NewUsageBillingRepository(client, integrationDB)
+			first, err := billing.Apply(ctx, cmd)
+			require.NoError(t, err)
+			require.True(t, first.Applied)
+			repeated, err := billing.Apply(ctx, cmd)
+			require.NoError(t, err)
+			require.False(t, repeated.Applied)
+			var balance, quotaUsed, rateUsed float64
+			var deleted bool
+			require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id=$1", user.ID).Scan(&balance))
+			require.InDelta(t, 98.75, balance, 0.000001, "key deletion must not erase or duplicate charges")
+			require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT quota_used,usage_5h,deleted_at IS NOT NULL FROM api_keys WHERE id=$1", key.ID).Scan(&quotaUsed, &rateUsed, &deleted))
+			require.InDelta(t, tc.quota, quotaUsed, 0.000001)
+			require.InDelta(t, tc.rate, rateUsed, 0.000001)
+			require.True(t, deleted, "settlement must not restore a deleted key")
+			_, err = keys.GetByKeyForAuth(ctx, key.Key)
+			require.ErrorIs(t, err, service.ErrAPIKeyNotFound)
+			var dedup int
+			require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT count(*) FROM usage_billing_dedup WHERE request_id=$1 AND api_key_id=$2", cmd.RequestID, key.ID).Scan(&dedup))
+			require.Equal(t, 1, dedup)
+		})
+	}
+}

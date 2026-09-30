@@ -68,6 +68,31 @@ hash check or normalizing downloaded bytes. Native CI is rerun on the fix.
 Native Windows PowerShell 5.1/7 and Linux acceptance run in the existing CI
 workflows; macOS pwsh alone is **not** native Windows evidence. Real official
 login and billable requests were not executed. Nothing was deployed and the
-owner's real local client files were not touched. Other clients remain visibly
+owner's real local client files were not touched. Other clients remain
 unsupported: Grok Build, Gemini CLI, OpenCode, Kimi Code, ZCode, WorkBuddy and
 CC Switch's OpenClaw/Hermes. Setup support does not prove restore support.
+
+## UI ablation: copy-only dialog
+
+The initial dialog exposed too much implementation detail. Remove its plaintext
+command field, manual-copy fallback, client-specific paragraphs, technical
+bullets and unsupported-client list. Keep the OS selector, two existing tool
+icons/copy actions and one short prerequisite line. Reuse the shared clipboard
+toast; remove selected-client state, command computed state, copy-status state,
+watchers, request counters and text selection helpers. A single pending flag
+prevents concurrent copies. Restore scripts and command renderer are unchanged.
+
+Rendered before/after at 1440×1000, after copying:
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Dialog height | 826 px | 259 px |
+| Visible characters | 584 | 75 |
+| Paragraphs | 5 | 1 |
+| Plaintext command fields | 1 | 0 |
+
+All six client/OS commands have byte-identical clipboard readback before/after.
+Forced copy failure produces only the shared failure toast, leaves no command
+on the page and allows retry. Desktop/mobile and dark-mode previews have no
+page/console errors. Evidence: `ui-ablation.json`, `simple-desktop.png`,
+`simple-mobile.png`, `simple-dark.png` in the same local QA evidence directory.

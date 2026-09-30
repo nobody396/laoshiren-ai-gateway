@@ -113,7 +113,7 @@ try {
 
   # BEGIN NEW MODEL CONFIG FIXTURES
   $BaseUrl = 'https://api.example.com'
-  foreach ($NewModel in @('gpt-6-sol', 'gpt-6-luna')) {
+  foreach ($NewModel in @('gpt-6-sol', 'gpt-6-luna', 'gpt-6.1-sol')) {
     $CodexConfigPath = Join-Path $FixtureDir "$NewModel.toml"
     [IO.File]::WriteAllText($CodexConfigPath, 'notify = ["preserve"]', [Text.UTF8Encoding]::new($false))
     Convert-CodexModelCatalog -SourcePath $CodexCatalogSource -AuthorizedModels @($NewModel) -OutputPath $CodexCatalogOutput -PreferredModel $NewModel

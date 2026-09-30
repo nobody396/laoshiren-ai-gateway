@@ -13,7 +13,7 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export const clientAutoConfigVersion = "0.7.33"
+export const clientAutoConfigVersion = "0.7.35"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",
@@ -564,6 +564,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     "preset": {
       "from": "gpt-6-sol",
       "to": "gpt-6-sol",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "gpt-6.1-sol",
+    "upstreamId": "gpt-6.1-sol",
+    "displayName": "GPT-6.1 Sol",
+    "platform": "openai",
+    "contextWindow": 1050000,
+    "maxOutputTokens": 128000,
+    "clientDefault": false,
+    "preferredGroupName": "GPT 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gpt-6.1-sol",
+      "to": "gpt-6.1-sol",
       "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
     }
   },

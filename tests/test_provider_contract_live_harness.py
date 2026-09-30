@@ -96,6 +96,29 @@ class ProviderContractLiveHarnessTest(unittest.TestCase):
                                "https://api.example.test", "MARKER")
         self.assertEqual({"type": "auto"}, MODULE.request_payload(case)["tool_choice"])
 
+    def test_responses_continuation_replays_request_and_tool_contract(self):
+        case = MODULE.LiveCase("gpt61", "P-05", "tool_result_continuation", 0,
+                               "direct", "gpt-6.1-sol", "responses",
+                               "https://api.example.test", "LOOKUP_KEY")
+        call = {"type": "function_call", "call_id": "call1", "name": "echo_contract",
+                "arguments": '{"value":"LOOKUP_KEY"}'}
+        payload = MODULE.continuation_payload(case, {"output": [call]}, {"call_id": "call1"}, call)
+        self.assertIn("LOOKUP_KEY", payload["input"][0]["content"])
+        self.assertEqual(call, payload["input"][1])
+        self.assertEqual("call1", payload["input"][2]["call_id"])
+        self.assertEqual(MODULE.tool_result_marker(case), payload["input"][2]["output"])
+        self.assertEqual("echo_contract", payload["tools"][0]["name"])
+        self.assertEqual("auto", payload["tool_choice"])
+        self.assertGreaterEqual(payload["max_output_tokens"], 4096)
+
+    def test_openai_native_nested_cached_usage_is_observed(self):
+        for protocol, field in (("responses", "input_tokens_details"), ("chat_completions", "prompt_tokens_details")):
+            with self.subTest(protocol=protocol):
+                usage = MODULE.extract_usage(protocol, {"usage": {
+                    "input_tokens": 100, "output_tokens": 2, field: {"cached_tokens": 80}}})
+                self.assertEqual(80, usage["cached_input_tokens"])
+                self.assertEqual(102, usage["total_tokens"])
+
     def fixtures(self, root: Path):
         contracts = root / "contracts"
         contracts.mkdir()
@@ -255,8 +278,8 @@ class ProviderContractLiveHarnessTest(unittest.TestCase):
             json.loads(first)["output"][0],
         )
         self.assertNotIn("previous_response_id", payload)
-        self.assertEqual("function_call", payload["input"][0]["type"])
-        self.assertEqual("function_call_output", payload["input"][1]["type"])
+        self.assertEqual("function_call", payload["input"][1]["type"])
+        self.assertEqual("function_call_output", payload["input"][2]["type"])
 
     def test_invalid_request_payload_uses_a_wrong_type_not_a_clampable_limit(self):
         for protocol, field in (

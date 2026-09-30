@@ -1,0 +1,553 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "gpt-6.1-sol",
+    "upstream_id": "gpt-6.1-sol",
+    "display_name": "GPT-6.1 Sol",
+    "platform": "openai",
+    "context_window": 1050000,
+    "max_output_tokens": 128000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "responses",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": true,
+    "reasoning_efforts": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 2,
+    "cached_input_per_mtok_usd": 0.1,
+    "output_per_mtok_usd": 10,
+    "evidence_url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+    "long_context": {
+      "input_threshold": 272000,
+      "input_multiplier": 2,
+      "output_multiplier": 1.5
+    },
+    "cache_write_5m_per_mtok_usd": 2.5
+  },
+  "lifecycle": {
+    "public_status": "public",
+    "introduced_at": "2026-09-30",
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "responses",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Native Responses including correlated tool continuation passed. Chat Completions tool calling is not offered for this model.",
+      "evidence_ids": [
+        "xiu-p-01-none",
+        "xiu-p-03-none",
+        "xiu-p-05-none"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "responses",
+      "features": {
+        "terminal_event": "pass",
+        "tool_calls": "pass",
+        "web_search": "pass",
+        "tool_result_round_trip": "pass",
+        "basic_request": "pass",
+        "streaming": "pass",
+        "usage": "pass",
+        "structured_output": "pass",
+        "prompt_cache": "pass",
+        "image_input": "pass",
+        "error_passthrough": "pass",
+        "reasoning": "pass",
+        "context_window": "pass",
+        "billing": "pass",
+        "disconnect": "pass",
+        "timeout": "pass",
+        "retry": "pass"
+      },
+      "evidence_ids": [
+        "xiu-p-03-none",
+        "xiu-p-06-low",
+        "xiu-p-06-medium",
+        "xiu-p-06-high",
+        "xiu-p-06-xhigh",
+        "xiu-p-06-max",
+        "xiu-p-04-none",
+        "xiu-p-11-none",
+        "xiu-p-05-none",
+        "xiu-p-01-none",
+        "xiu-p-02-none",
+        "xiu-p-12-none",
+        "xiu-p-10-none",
+        "xiu-p-07-none",
+        "xiu-p-08-none",
+        "xiu-p-15-none",
+        "pomo-low-p-03-none",
+        "pomo-low-p-06-low",
+        "pomo-low-p-06-medium",
+        "pomo-low-p-06-high",
+        "pomo-low-p-06-xhigh",
+        "pomo-low-p-06-max",
+        "pomo-low-p-04-none",
+        "pomo-low-p-11-none",
+        "pomo-low-p-05-none",
+        "pomo-low-p-01-none",
+        "pomo-low-p-02-none",
+        "pomo-low-p-12-none",
+        "pomo-low-p-10-none",
+        "pomo-low-p-07-none",
+        "pomo-low-p-08-none",
+        "pomo-low-p-15-none",
+        "official-spec",
+        "adapter-regression"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "responses",
+      "effort": "low",
+      "support": "supported",
+      "wire_value": "low",
+      "evidence_ids": [
+        "xiu-p-06-low"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "medium",
+      "support": "supported",
+      "wire_value": "medium",
+      "evidence_ids": [
+        "xiu-p-06-medium"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "high",
+      "support": "supported",
+      "wire_value": "high",
+      "evidence_ids": [
+        "xiu-p-06-high"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "xhigh",
+      "support": "supported",
+      "wire_value": "xhigh",
+      "evidence_ids": [
+        "xiu-p-06-xhigh"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "max",
+      "support": "supported",
+      "wire_value": "max",
+      "evidence_ids": [
+        "xiu-p-06-max"
+      ]
+    }
+  ],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 2,
+      "output": 10,
+      "cached_input": 0.1,
+      "cache_write": 2.5,
+      "long_context": {
+        "input_threshold": 272000,
+        "input_multiplier": 2,
+        "output_multiplier": 1.5
+      },
+      "effective_from": "2026-09-30",
+      "evidence_ids": [
+        "official-spec"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "official-spec",
+      "kind": "official_docs",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+      "observed_at": "2026-09-30T04:37:12.716017+00:00",
+      "subject_version": "gpt-6.1-sol documented specification and standard USD/MTok tariff",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "xiu-p-03-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:26:26.553+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "fc2ac13c59fdba5c7f2ebb67848418bc0612799d2bcc1814d8dd4d071679ab82",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-03-None.json"
+    },
+    {
+      "id": "xiu-p-06-low",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:26:52.841+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "d020447085b82cffc8916b115bdb430a565bf2a21d61227c2c72bd5ca7908869",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-06-low.json"
+    },
+    {
+      "id": "xiu-p-06-medium",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:26:55.524+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "2344b81a77d5b3dad22093824f41b9d4e0b70a5e3da60e0abad4b7bddfd55264",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-06-medium.json"
+    },
+    {
+      "id": "xiu-p-06-high",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:31:44.824+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "236f405c637fbaf835638dbdaa699f40f95183b4bc13c7bd2e77fa8d1b95aee8",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-06-high-lookup-recheck.json"
+    },
+    {
+      "id": "xiu-p-06-xhigh",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:07.837+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "177dd6298bc4e11bd40f8b1e059d5afbf7dab9976e7c01d5bd83ca704d0121a7",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-06-xhigh.json"
+    },
+    {
+      "id": "xiu-p-06-max",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:13.962+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "5db1ff30b6811a62f80e8588b315cde6091065fdd18ac8a595224bc232f11738",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-06-max.json"
+    },
+    {
+      "id": "xiu-p-04-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:26:52.837+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "03b2f377d86794e3c433c789dcaf56f1ed3ca4125573e32ddca8ef321db7b77f",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-04-None.json"
+    },
+    {
+      "id": "xiu-p-11-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:49.841+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "3c766d83ea7b34e4a3ef80bf583dbbd441050c126d7e08c07782a16fd0572415",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-11-None.json"
+    },
+    {
+      "id": "xiu-p-05-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:31:44.824+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "89aa16bfb4201fdc3574e87c7075b76bf9dc46627221a2afdb11ff5832cabec0",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-05-None-lookup-recheck.json"
+    },
+    {
+      "id": "xiu-p-01-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:26:26.552+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "029b9e4f061ea7ce2a207ed923bc8f0772e68a8573d6a1f1b3e4313623079449",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-01-None.json"
+    },
+    {
+      "id": "xiu-p-02-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:26:52.837+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "fb3af0bb5cf367ec76a01e465b45eaea8990be6438c4b248a3d3d6f9584dde76",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-02-None.json"
+    },
+    {
+      "id": "xiu-p-12-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:26:26.553+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "0b5dfc98f228cf48c1c3344f808db4e0646ef2998e220b5b99f940b310e61a51",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-12-None.json"
+    },
+    {
+      "id": "xiu-p-10-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:44.603+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "fb648f2a89b3dd4a60336a837eba42201534cf620b755e908a82b48c60396771",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-10-None.json"
+    },
+    {
+      "id": "xiu-p-07-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:35:46.740+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "aa9108e92e43f9e78dd966d00eb4a77a156bccb7feee68f0ac63a6fa95628db0",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-07-None-native-cache.json"
+    },
+    {
+      "id": "xiu-p-08-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:33.412+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "970bfbb976a9f005f8d4f8726defb8f1d57364fcc8751c232b4448067cf13715",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-08-None.json"
+    },
+    {
+      "id": "xiu-p-15-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:55.580+00:00",
+      "subject_version": "gpt-6.1-sol/responses/xiu/direct-only",
+      "result": "pass",
+      "artifact_sha256": "ca49108c81fdcf1ea50047e10d5fe88563a4512bcfac86eec759c87aca5d9935",
+      "artifact_path": "evidence/gpt61-20260930/xiu/P-15-None.json"
+    },
+    {
+      "id": "pomo-low-p-03-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:56.841+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "7c96aefe923be385628bf374eca1e03b6ca8694a4cfe702b59cabe953eed9cd7",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-03-None.json"
+    },
+    {
+      "id": "pomo-low-p-06-low",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:28:24.836+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "5e6653a96acdd1056772431c01cf7200eac138c54dcb8cb7ebdf8d3a102a09e3",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-06-low.json"
+    },
+    {
+      "id": "pomo-low-p-06-medium",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:28:26.473+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "e032552e0acf96ad25b3a45449cea085989576e519712cc4d08a0c007c5d3ec3",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-06-medium.json"
+    },
+    {
+      "id": "pomo-low-p-06-high",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:28:26.726+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "1e1b6a808e414777b268bffc184f0fd355520f68b7246446d846f5eb46ab3c74",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-06-high.json"
+    },
+    {
+      "id": "pomo-low-p-06-xhigh",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:28:48.534+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "bbbbf7ec0b33cb568ff040d11a15fc438470af6173a20460185d1278595bd369",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-06-xhigh.json"
+    },
+    {
+      "id": "pomo-low-p-06-max",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:28:52.942+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "e124750199c983c62ac4cdcedf69ddb10442b480985c1b59d5d9458447e0dd3f",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-06-max.json"
+    },
+    {
+      "id": "pomo-low-p-04-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:28:03.629+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "71794b9be783d08438cde98ef98921d96a4fa4bef8181adcadf97ed27be95c42",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-04-None.json"
+    },
+    {
+      "id": "pomo-low-p-11-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:29:25.446+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "513a14275119299b9c72c4e7cb7eaa93d7c1b9b97b6a825d8fefb001961b0d18",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-11-None.json"
+    },
+    {
+      "id": "pomo-low-p-05-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:31:44.826+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "dcb6744dc59de361ef3ee1f48faeb7067d955cacc7c34295b863fd2660bb4373",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-05-None-lookup-recheck.json"
+    },
+    {
+      "id": "pomo-low-p-01-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:56.500+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "52ffe30746fa59d74152bbf1ebfc326c106bd8dfcb9925bd156fa753ebaa51d7",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-01-None.json"
+    },
+    {
+      "id": "pomo-low-p-02-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:27:56.562+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "122c45b82bd2a92668b1160d06520c75c7d225d41577ea594c70486582abba30",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-02-None.json"
+    },
+    {
+      "id": "pomo-low-p-12-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:29:33.525+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "f330ce17fc3550643b1689aff2d9e5ca3a82fb6e39734fa78a6a10dbcac59b4c",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-12-None.json"
+    },
+    {
+      "id": "pomo-low-p-10-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:29:21.134+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "1d8efb37187ec2578d5768f470091b723abb2547de91ca4855a76bee42770134",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-10-None.json"
+    },
+    {
+      "id": "pomo-low-p-07-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:35:46.740+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "f86ea6a6a7d479cc8f08effb43ff2d65180034f5ffb647ec502a539ca484daef",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-07-None-native-cache.json"
+    },
+    {
+      "id": "pomo-low-p-08-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:29:01.056+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "6af839bc26ccc620218173f2daafdb5d82487c7c2ba279ecd2b0294a76d35511",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-08-None.json"
+    },
+    {
+      "id": "pomo-low-p-15-none",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-09-30T04:29:36.134+00:00",
+      "subject_version": "gpt-6.1-sol/responses/pomo-low/direct-only",
+      "result": "pass",
+      "artifact_sha256": "4a5ae3304e6f6907b404fcfc17f0326468d9b2f21c899d74a2851c3b901c51f0",
+      "artifact_path": "evidence/gpt61-20260930/pomo-low/P-15-None.json"
+    },
+    {
+      "id": "adapter-regression",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-09-30T04:37:12.729051+00:00",
+      "subject_version": "bdc177dc096c02606ced22ae4ea7778cd17f5198 local regression",
+      "result": "pass",
+      "artifact_sha256": "e72e9594879862867014bfb5e87ee78cf6f67694851b21c0145c9865385d369a",
+      "artifact_path": "evidence/gpt61-20260930/adapter-regression.json"
+    }
+  ],
+  "production": {
+    "account_id": 78,
+    "group_id": 6,
+    "group_name": "GPT 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "OK",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true
+  },
+  "release_notes": {
+    "classification": "catalog-only plus test-harness correction",
+    "scope": "One exact model added; no adapter, default, alias, group binding, priority or multiplier changes. Accounts 78 and 50 only after immutable deploy.",
+    "context_evidence_scope": "Official 1,050,000 context and 128,000 output; no maximum-size load test.",
+    "resilience_evidence_scope": "Current base adapter unit regression, not new production fault injection.",
+    "billing_evidence_scope": "Exact new tariff regression before release; owned post-deploy usage/accounting/ledger gate mandatory.",
+    "cache_boundary": "Cache-hit tokens observed on both sources after reading native nested usage fields; no universal cache hit-rate guarantee.",
+    "harness_correction": "Replay original request plus tool definitions in Responses continuation and use bounded reasoning-capable output budget; independent receipt lookup passed on three providers without loosening result correlation.",
+    "protocol_boundary": "Preferred Responses; no claim of Chat Completions tool calling.",
+    "pending_acceptance": "CI, immutable deploy, exact mappings, all target-group discovery and owned billing reconciliation."
+  }
+}

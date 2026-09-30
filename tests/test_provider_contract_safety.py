@@ -87,7 +87,10 @@ class ProtocolProofTest(SafetyTest):
         payload=H.continuation_payload(case,{'output':[]},{'name':'echo_contract','call_id':'x'},None)
         marker=H.tool_result_marker(case)
         self.assertNotEqual(case.marker,marker)
-        self.assertEqual(payload['input'][0]['output'],marker)
+        tool_results=[x for x in payload['input'] if x.get('type')=='function_call_output']
+        self.assertEqual(len(tool_results),1)
+        self.assertEqual(tool_results[0]['output'],marker)
+        self.assertEqual(tool_results[0]['call_id'],'x')
         user_messages=[x for x in payload['input'] if x.get('role')=='user']
         self.assertNotIn(marker,json.dumps(user_messages))
 

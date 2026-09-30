@@ -661,6 +661,9 @@ def extract_usage(protocol: str, decoded: Any) -> dict[str, Any] | None:
             return None
         out += thoughts
     cached = raw.get("cached_input_tokens", raw.get("cache_read_input_tokens", raw.get("cachedContentTokenCount", 0)))
+    details = raw.get("input_tokens_details" if protocol == "responses" else "prompt_tokens_details")
+    if protocol in {"responses", "chat_completions"} and isinstance(details, dict):
+        cached = details.get("cached_tokens", cached)
     total = raw.get("total_tokens", raw.get("totalTokenCount"))
     result = {"input_tokens": inp, "output_tokens": out, "cached_input_tokens": cached, "total_tokens": total}
     for key in ("input_tokens", "output_tokens", "cached_input_tokens"):
@@ -750,11 +753,13 @@ def continuation_payload(case: LiveCase, first: dict[str, Any], tool: dict[str, 
             # HTTP Responses rejects previous_response_id because that shortcut
             # belongs to Responses WebSocket v2. Replay the prior output and
             # append the correlated tool result instead.
-            "input": prior_output + [
+            "input": [{"role": "user", "content": f"Call echo_contract with value {case.marker}."}] + prior_output + [
                 {"type": "function_call_output", "call_id": tool["call_id"], "output": result_marker},
                 {"role": "user", "content": followup},
             ],
-            "max_output_tokens": 96,
+            "tools": request_payload(case)["tools"],
+            "tool_choice": "auto",
+            "max_output_tokens": 4096,
         }
     if case.protocol == "chat_completions":
         return {

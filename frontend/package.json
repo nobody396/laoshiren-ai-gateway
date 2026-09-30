@@ -19,8 +19,8 @@
     "bundle:check:test": "node --test scripts/check-bundle-budget.test.mjs",
     "admin-matrix-boundary:test": "node --test scripts/check-admin-matrix-public-boundary.test.mjs",
     "boundary:check": "node scripts/check-frontend-boundaries.mjs",
-    "restore:build": "node scripts/build-codex-restore.mjs",
-    "restore:test": "node --test scripts/restore/codex.test.cjs"
+    "restore:build": "node scripts/build-client-restore.mjs",
+    "restore:test": "node --test scripts/restore/codex.test.cjs scripts/restore/claude.test.cjs scripts/restore/command.test.cjs"
   },
   "dependencies": {
     "@lobehub/icons": "^4.0.2",

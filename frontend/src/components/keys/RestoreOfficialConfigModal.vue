@@ -1,54 +1,44 @@
 <template>
   <BaseDialog :show="show" title="还原官方配置" width="normal" @close="$emit('close')">
-    <div class="space-y-5 text-sm">
-      <p class="leading-6 text-gray-600 dark:text-gray-300">
-        先完全退出 Codex，再选择系统并复制命令，在本机终端执行。目前仅支持还原由老实人AI一键配置接入的 Codex。
-      </p>
-      <div class="flex gap-2" role="group" aria-label="选择系统">
-        <button v-for="system in systems" :key="system" type="button"
+    <div class="space-y-4 text-sm">
+      <p class="text-gray-600 dark:text-gray-300">退出工具后，在终端粘贴执行。</p>
+      <div class="flex flex-wrap gap-2" role="group" aria-label="选择系统">
+        <button v-for="system in systems" :key="system" type="button" :disabled="copying"
           :aria-pressed="os === system" :class="['btn', os === system ? 'btn-primary' : 'btn-secondary']"
-          @click="os = system; copyStatus = 'idle'">{{ system }}</button>
+          @click="os = system">{{ system }}</button>
       </div>
-      <button type="button" class="btn btn-secondary w-full" data-client="codex" @click="selectCodex">
-        Codex · 复制还原命令
-      </button>
-      <template v-if="copyStatus !== 'idle'">
-        <p role="status">{{ copyStatus === 'copying' ? '正在复制…' : copyStatus === 'failed' ? '自动复制失败，请手动复制下方命令' : '已复制，请在终端执行' }}</p>
-        <textarea :value="command" readonly aria-label="Codex 还原命令"
-          class="input w-full font-mono text-xs" rows="5" @focus="selectCommand" />
-        <p class="text-xs text-gray-500">{{ os === 'Windows' ? '使用 Windows PowerShell 5.1 或 PowerShell 7，不要粘贴到 CMD' : '使用终端（bash / zsh）' }}</p>
-      </template>
-      <ul class="list-disc space-y-2 pl-5 leading-6 text-gray-500 dark:text-gray-400">
-        <li>自动备份配置与需要修改的登录文件，再移除本站 provider、模型设置及接入 Key；无需填写 API Key</li>
-        <li>保留会话、MCP、其他设置与已有官方登录信息；TOML 的注释和排版会重新整理</li>
-        <li>完成后重启 Codex，必要时运行 codex login 或选择 Sign in with ChatGPT，登录自己的官方账号</li>
-        <li>这不是恢复到出厂设置，也不会代办官方订阅；CC Switch、环境变量或命令行参数仍可能覆盖配置</li>
-      </ul>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label="选择要还原的工具">
+        <button v-for="tool in tools" :key="tool.id" type="button" :disabled="copying"
+          class="btn btn-secondary flex items-center justify-start gap-3 text-left"
+          :data-client="tool.id" @click="copyCommand(tool.id)">
+          <CcsClientIcon :client="tool.id" class="h-10 w-10" />
+          <span><span class="block">{{ tool.name }}</span><span class="block text-xs font-normal text-gray-500 dark:text-gray-400">复制还原命令</span></span>
+        </button>
+      </div>
     </div>
   </BaseDialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref } from 'vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import CcsClientIcon from './CcsClientIcon.vue'
 import { useClipboard } from '@/composables/useClipboard'
-import { buildCodexRestoreCommand } from '@/utils/codexRestore'
-const props = defineProps<{ show: boolean }>()
+import { buildOfficialRestoreCommand } from '@/utils/officialConfigRestore'
+defineProps<{ show: boolean }>()
 defineEmits<{ close: [] }>()
 const systems = ['macOS', 'Linux', 'Windows'] as const
+const tools = [{ id: 'codex', name: 'Codex' }, { id: 'claude', name: 'Claude Code' }] as const
 const os = ref<typeof systems[number]>(/windows/i.test(navigator.userAgent) ? 'Windows' : /linux/i.test(navigator.userAgent) ? 'Linux' : 'macOS')
-const copyStatus = ref<'idle' | 'copying' | 'copied' | 'failed'>('idle')
-const command = computed(() => buildCodexRestoreCommand(os.value === 'Windows'))
+const copying = ref(false)
 const { copyToClipboard } = useClipboard()
-watch(() => props.show, () => { copyStatus.value = 'idle' })
-async function selectCodex() {
-  const text = command.value
-  copyStatus.value = 'copying'
-  let copied = false
-  try { copied = await copyToClipboard(text) } catch { /* Manual copy remains available. */ }
-  if (copyStatus.value === 'copying' && command.value === text) copyStatus.value = copied ? 'copied' : 'failed'
-}
-function selectCommand(event: FocusEvent) {
-  (event.target as HTMLTextAreaElement).select()
+async function copyCommand(target: 'codex' | 'claude') {
+  if (copying.value) return
+  copying.value = true
+  try {
+    await copyToClipboard(buildOfficialRestoreCommand(target, os.value === 'Windows'), '已复制到剪贴板，请到终端执行')
+  } finally {
+    copying.value = false
+  }
 }
 </script>

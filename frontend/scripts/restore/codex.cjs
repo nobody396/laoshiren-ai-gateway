@@ -26,7 +26,13 @@ function restore(home = process.env.CODEX_HOME || path.join(os.homedir(), '.code
     throw new Error('检测到 profile、官方端点或登录覆盖设置，请先手动检查；未修改任何文件')
   }
   if ((!config.model_provider || config.model_provider === 'openai') && !config.model_providers?.[provider]) return null
-  if (config.model_provider !== provider) {
+  const activeProvider = config.model_provider
+  // CC Switch uses "custom" instead of the one-click provider ID. Only accept
+  // that generic name when its endpoint is exactly ours.
+  const endpoint = config.model_providers?.[activeProvider]?.base_url
+  const gatewayEndpoint = ['https://api.laoshirenai.com', 'https://api.laoshirenai.com/',
+    'https://api.laoshirenai.com/v1', 'https://api.laoshirenai.com/v1/'].includes(endpoint)
+  if (![provider, 'custom'].includes(activeProvider) || !gatewayEndpoint) {
     throw new Error('当前未使用老实人AI一键配置的 Codex provider，未修改任何文件；请检查 CODEX_HOME 或手动配置')
   }
   const authOriginal = read(authPath)
@@ -36,7 +42,7 @@ function restore(home = process.env.CODEX_HOME || path.join(os.homedir(), '.code
   }
   if (authOriginal !== null && auth === null) throw new Error('登录文件不能为 null')
   for (const key of owned) delete config[key]
-  delete config.model_providers?.[provider]
+  delete config.model_providers?.[activeProvider]
   if (config.model_providers && Object.keys(config.model_providers).length === 0) delete config.model_providers
   // Explicitly choose the built-in provider; no hard-coded model or subscription.
   config.model_provider = 'openai'

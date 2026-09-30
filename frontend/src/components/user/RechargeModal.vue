@@ -5,11 +5,23 @@
       <div class="absolute inset-0 bg-black/50" @click="close" />
 
       <!-- Modal -->
-      <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-dark-900 shadow-xl overflow-hidden">
+      <div
+        data-testid="recharge-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recharge-modal-title"
+        class="recharge-modal-card relative flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-dark-900"
+      >
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-dark-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('topup.title') }}</h2>
-          <button @click="close" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
+        <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-dark-700">
+          <h2 id="recharge-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('topup.title') }}</h2>
+          <button
+            type="button"
+            data-testid="recharge-modal-close"
+            :aria-label="t('common.close')"
+            @click="close"
+            class="flex h-10 w-10 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700 dark:hover:text-gray-200"
+          >
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -17,7 +29,7 @@
         </div>
 
         <!-- Step 1: Select amount & pay type -->
-        <div v-if="step === 1" class="px-6 py-5 space-y-5">
+        <div v-if="step === 1" data-testid="recharge-modal-body" class="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
           <div v-if="qrTopupAvailable" class="space-y-2">
             <p class="text-sm font-medium text-gray-700 dark:text-dark-300">{{ t('topup.chooseChannel') }}</p>
             <div class="grid grid-cols-2 gap-2">
@@ -57,7 +69,7 @@
           </div>
 
           <!-- 新人 ¥5→¥10 优惠由易支付通道提供时，在站内直接扫码购买 -->
-          <NativeCheckoutTrialOffer v-if="newcomerOfferMode === 'native'" />
+          <NativeCheckoutTrialOffer v-if="newcomerOfferMode === 'native'" compact />
 
           <!-- Amount presets -->
           <div>
@@ -152,7 +164,7 @@
         </div>
 
         <!-- Step 2: QR Code -->
-        <div v-else-if="step === 2" class="px-6 py-5 space-y-4">
+        <div v-else-if="step === 2" data-testid="recharge-modal-body" class="min-h-0 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
           <div class="text-center space-y-3">
             <p class="text-sm text-gray-600 dark:text-dark-300">
               {{ t('topup.scanHint', { payType: payType === 'alipay' ? t('topup.alipay') : t('topup.wechat') }) }}
@@ -515,3 +527,10 @@ watch(() => props.modelValue, async (val) => {
 
 onUnmounted(() => stopTimers())
 </script>
+
+<style scoped>
+.recharge-modal-card {
+  max-height: calc(100vh - 2rem);
+  max-height: min(42rem, calc(100dvh - 2rem));
+}
+</style>

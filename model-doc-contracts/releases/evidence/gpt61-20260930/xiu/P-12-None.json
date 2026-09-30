@@ -1,0 +1,55 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "xiuP-12None",
+    "context_window": 1,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_GPT61_OK",
+    "max_output_tokens": 4096,
+    "model_id": "gpt-6.1-sol",
+    "name": "usage",
+    "p_id": "P-12",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "classification": "verified",
+  "finished_at": "2026-09-30T04:26:34.389+00:00",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-30T04:26:26.553+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "probe_output_budget": 4096,
+  "reason": null,
+  "response": {
+    "body_bytes": 24172,
+    "body_sha256": "f21d6b649daedbc414f7398605db0d4af92627a2a6e2ecdfc446e8de904c7699",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "f06f1305-18fc-4713-b2ff-f4d4867b5ec3",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 4232,
+    "output_tokens": 10,
+    "total_tokens": 4242
+  },
+  "verification": "passed"
+}

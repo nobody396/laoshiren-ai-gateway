@@ -1,0 +1,50 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://router-api.xiu.ai",
+    "case_key": "xiuP-03None",
+    "context_window": 1,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_GPT61_OK",
+    "max_output_tokens": 4096,
+    "model_id": "gpt-6.1-sol",
+    "name": "streaming_terminal",
+    "p_id": "P-03",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "classification": "verified",
+  "finished_at": "2026-09-30T04:26:30.755+00:00",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-30T04:26:26.553+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "probe_output_budget": 4096,
+  "reason": null,
+  "response": {
+    "body_bytes": 73771,
+    "body_sha256": "2647f07a0da5d4075db7476ad5e3a116049fa5eca13a4ecb168bb25d883a58dd",
+    "complete": true,
+    "content_type": "text/event-stream",
+    "error": null,
+    "event_count": 14,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": null,
+    "sse_framing": true,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "passed"
+}

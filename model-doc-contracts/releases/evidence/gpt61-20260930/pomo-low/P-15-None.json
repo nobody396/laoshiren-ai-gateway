@@ -1,0 +1,53 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://hk2.pomoai.xyz",
+    "case_key": "pomo-lowP-15None",
+    "context_window": 1,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_GPT61_OK",
+    "max_output_tokens": 4096,
+    "model_id": "gpt-6.1-sol",
+    "name": "error_passthrough",
+    "p_id": "P-15",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "classification": "verified",
+  "finished_at": "2026-09-30T04:29:56.916+00:00",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-30T04:29:36.134+00:00",
+  "offline_verifier": {
+    "reason": null,
+    "status": "passed"
+  },
+  "probe_output_budget": 4096,
+  "reason": null,
+  "response": {
+    "body_bytes": 144,
+    "body_sha256": "ed7d63d79ad81ba6af2034b2c35c53ad6e6834723d74b2aa0eddbb04b3f29009",
+    "complete": false,
+    "content_type": "application/json; charset=utf-8",
+    "error": {
+      "message": "Input must be a list (request id: 20260930042937946664184xrkfAsLN)",
+      "type": "invalid_request_error"
+    },
+    "event_count": 0,
+    "http_status": 400,
+    "marker_present": false,
+    "request_id": null,
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": false,
+    "timed_out": false
+  },
+  "result": "pass",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "usage": null,
+  "verification": "passed"
+}

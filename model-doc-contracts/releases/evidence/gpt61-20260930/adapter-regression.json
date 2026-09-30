@@ -1,0 +1,8 @@
+{
+  "observed_at": "2026-09-30T04:37:12.729051+00:00",
+  "kind": "adapter_regression",
+  "source_commit": "bdc177dc096c02606ced22ae4ea7778cd17f5198",
+  "command": "go test -p 1 -tags unit ./internal/service -run 'Billing|Pricing|ClientDisconnect|ContextCanceled|Timeout|Retry' -count=1",
+  "result": "ok  \tgithub.com/bozhouDev/DragonCode-sub2api/internal/service\t132.571s\n",
+  "scope": "local adapter regression, not live billing or maximum-context proof"
+}

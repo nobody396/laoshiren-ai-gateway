@@ -1,0 +1,55 @@
+{
+  "billing_reconciled": false,
+  "case": {
+    "base_url": "https://hk2.pomoai.xyz",
+    "case_key": "pomo-lowP-07None",
+    "context_window": 1,
+    "declared_status": null,
+    "group_id": 0,
+    "group_name": "direct-upstream",
+    "marker": "LSR_GPT61_OK",
+    "max_output_tokens": 4096,
+    "model_id": "gpt-6.1-sol",
+    "name": "prompt_cache",
+    "p_id": "P-07",
+    "protocol": "responses",
+    "reasoning_level": null,
+    "source_case_keys": []
+  },
+  "classification": "blocked",
+  "finished_at": "2026-09-30T04:29:36.132+00:00",
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "observed_at": "2026-09-30T04:28:56.465+00:00",
+  "offline_verifier": {
+    "reason": "prompt cache claim requires cached_input_tokens > 0",
+    "status": "failed"
+  },
+  "probe_output_budget": 4096,
+  "reason": "prompt cache claim requires cached_input_tokens > 0",
+  "response": {
+    "body_bytes": 23682,
+    "body_sha256": "7a6ccf82e90626ad68e3af3dfaa3194535c39320d9be03ece52edbe5a7939cf5",
+    "complete": true,
+    "content_type": "application/json; charset=utf-8",
+    "error": null,
+    "event_count": 0,
+    "http_status": 200,
+    "marker_present": true,
+    "request_id": "1cd1d71d-735a-4210-8ed1-91ab4c239ceb",
+    "sse_framing": false,
+    "sse_parse_errors": 0,
+    "text_present": true,
+    "timed_out": false
+  },
+  "result": "fail",
+  "schema_version": 2,
+  "scope": "direct_upstream_only",
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 9520,
+    "output_tokens": 10,
+    "total_tokens": 9530
+  },
+  "verification": "failed"
+}

@@ -197,6 +197,19 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "defaultReasoningLevel": "medium"
   },
   {
+    "model": "gpt-6.1-sol",
+    "displayName": "GPT-6.1 Sol",
+    "contextWindow": 1050000,
+    "reasoningLevels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "defaultReasoningLevel": "medium"
+  },
+  {
     "model": "gpt-daybreak-blue-latest",
     "displayName": "GPT Daybreak Blue Latest",
     "contextWindow": 1050000,

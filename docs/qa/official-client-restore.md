@@ -56,6 +56,13 @@ Keep these three safeguards. Avoid a generic restore adapter registry, plugin
 framework, extra API, setup ticket, duplicate icon map or duplicate download
 renderer. Two small client-specific scripts and one download renderer suffice.
 
+## Native CI regression repaired
+
+The first Windows run correctly rejected the new Claude bundle: Git converted
+its LF bytes to CRLF, changing the SHA-256. Existing `.gitattributes` covered
+only Codex. Pin all `restore-*.cjs` artifacts to LF rather than weakening the
+hash check or normalizing downloaded bytes. Native CI is rerun on the fix.
+
 ## Remaining boundaries
 
 Native Windows PowerShell 5.1/7 and Linux acceptance run in the existing CI

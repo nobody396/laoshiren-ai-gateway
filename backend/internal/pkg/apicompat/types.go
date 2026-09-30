@@ -316,6 +316,7 @@ type ResponsesOutput struct {
 	Role    string                 `json:"role,omitempty"`
 	Content []ResponsesContentPart `json:"content,omitempty"`
 	Status  string                 `json:"status,omitempty"`
+	Phase   string                 `json:"phase,omitempty"`
 
 	// type=reasoning
 	EncryptedContent string             `json:"encrypted_content,omitempty"`
@@ -337,6 +338,16 @@ type ResponsesOutput struct {
 // arguments value is a JSON object rather than a function-call string.
 func (o ResponsesOutput) MarshalJSON() ([]byte, error) {
 	type responsesOutputAlias ResponsesOutput
+	if o.Type == "reasoning" {
+		summary := o.Summary
+		if summary == nil {
+			summary = []ResponsesSummary{}
+		}
+		return json.Marshal(struct {
+			Summary []ResponsesSummary `json:"summary"`
+			responsesOutputAlias
+		}{Summary: summary, responsesOutputAlias: responsesOutputAlias(o)})
+	}
 	if o.Type != "tool_search_call" {
 		return json.Marshal(responsesOutputAlias(o))
 	}
@@ -556,6 +567,9 @@ type ChatMessage struct {
 	Name             string          `json:"name,omitempty"`
 	ToolCalls        []ChatToolCall  `json:"tool_calls,omitempty"`
 	ToolCallID       string          `json:"tool_call_id,omitempty"`
+	// Gateway extension: clients must replay this complete native output alongside
+	// the unchanged assistant message to preserve opaque reasoning and item order.
+	ResponsesOutput []ResponsesOutput `json:"responses_output,omitempty"`
 
 	// Legacy function calling
 	FunctionCall *ChatFunctionCall `json:"function_call,omitempty"`
@@ -685,12 +699,13 @@ type ChatChunkChoice struct {
 
 // ChatDelta carries incremental content in a streaming chunk.
 type ChatDelta struct {
-	Role             string         `json:"role,omitempty"`
-	Content          *string        `json:"content,omitempty"` // pointer: omit when not present, null vs "" matters
-	Refusal          *string        `json:"refusal,omitempty"`
-	ReasoningContent *string        `json:"reasoning_content,omitempty"`
-	Reasoning        *string        `json:"reasoning,omitempty"`
-	ToolCalls        []ChatToolCall `json:"tool_calls,omitempty"`
+	Role             string            `json:"role,omitempty"`
+	Content          *string           `json:"content,omitempty"` // pointer: omit when not present, null vs "" matters
+	Refusal          *string           `json:"refusal,omitempty"`
+	ReasoningContent *string           `json:"reasoning_content,omitempty"`
+	Reasoning        *string           `json:"reasoning,omitempty"`
+	ToolCalls        []ChatToolCall    `json:"tool_calls,omitempty"`
+	ResponsesOutput  []ResponsesOutput `json:"responses_output,omitempty"`
 }
 
 func (m ChatMessage) reasoningText() string {

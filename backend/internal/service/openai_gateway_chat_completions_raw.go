@@ -54,6 +54,17 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 	if upstreamModel != originalModel {
 		upstreamBody = ReplaceModelInBody(body, upstreamModel)
 	}
+	// A later turn can be scheduled onto a native Chat upstream. The replay
+	// sidecar belongs to our Responses bridge, not that provider's Chat schema.
+	for i, message := range gjson.GetBytes(upstreamBody, "messages").Array() {
+		if message.Get("responses_output").Exists() {
+			var err error
+			upstreamBody, err = sjson.DeleteBytes(upstreamBody, fmt.Sprintf("messages.%d.responses_output", i))
+			if err != nil {
+				return nil, fmt.Errorf("remove Chat Responses replay sidecar: %w", err)
+			}
+		}
+	}
 
 	updatedBody, policyErr := s.applyOpenAIFastPolicyToBody(ctx, account, upstreamModel, upstreamBody)
 	if policyErr != nil {

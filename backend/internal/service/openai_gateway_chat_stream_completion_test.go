@@ -22,6 +22,7 @@ func TestChatStreamCompletionRejectsUnusableResponse(t *testing.T) {
 	for _, tc := range []struct{ name, body string }{
 		{"missing_terminal", "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_test\"}}\n\n"},
 		{"empty_with_input_usage", "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_test\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":90000,\"output_tokens\":0}}}\n\n"},
+		{"opaque_state_is_not_output", `data: {"type":"response.completed","response":{"id":"resp_test","status":"completed","output":[{"type":"reasoning","id":"rs_test","encrypted_content":"fixture-state","summary":[]}]}}` + "\n\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rec := httptest.NewRecorder()

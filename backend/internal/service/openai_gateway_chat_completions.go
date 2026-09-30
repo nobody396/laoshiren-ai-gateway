@@ -120,6 +120,9 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	} else {
 		responsesReq, err = apicompat.ChatCompletionsToResponses(&chatReq)
 		if err != nil {
+			if errors.Is(err, apicompat.ErrInvalidChatResponsesOutput) {
+				writeChatCompletionsError(c, http.StatusBadRequest, "invalid_request_error", "Invalid responses_output: replay unchanged native output with its assistant message, or remove it after editing the message.")
+			}
 			return nil, fmt.Errorf("convert chat completions to responses: %w", err)
 		}
 		responsesReq.Model = upstreamModel

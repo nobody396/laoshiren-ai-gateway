@@ -1,10 +1,14 @@
 package apicompat
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
+
+var ErrInvalidChatResponsesOutput = errors.New("invalid responses_output")
 
 type chatMessageContent struct {
 	Text  *string
@@ -99,14 +103,79 @@ func ChatCompletionsToResponses(req *ChatCompletionsRequest) (*ResponsesRequest,
 
 // convertChatMessagesToResponsesInput converts the Chat Completions messages
 // array into a Responses API input items array.
-func convertChatMessagesToResponsesInput(msgs []ChatMessage) ([]ResponsesInputItem, error) {
-	var out []ResponsesInputItem
+func convertChatMessagesToResponsesInput(msgs []ChatMessage) ([]json.RawMessage, error) {
+	var out []json.RawMessage
 	for _, m := range msgs {
+		if len(m.ResponsesOutput) > 0 {
+			items, err := replayChatResponsesOutput(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %v", ErrInvalidChatResponsesOutput, err)
+			}
+			out = append(out, items...)
+			continue
+		}
 		items, err := chatMessageToResponsesItems(m)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, items...)
+		for _, item := range items {
+			raw, err := json.Marshal(item)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, raw)
+		}
+	}
+	return out, nil
+}
+
+// Replay is explicit, not inferred from matching text or a server-side session.
+// Reject stale sidecars after a client edits/compacts an assistant turn instead
+// of replacing the client's visible history with unrelated native output.
+func replayChatResponsesOutput(m ChatMessage) ([]json.RawMessage, error) {
+	if m.Role != "assistant" {
+		return nil, fmt.Errorf("responses_output is only valid on assistant messages")
+	}
+	for _, item := range m.ResponsesOutput {
+		switch item.Type {
+		case "message":
+			if item.Role != "assistant" {
+				return nil, fmt.Errorf("responses_output messages must have the assistant role")
+			}
+		case "function_call":
+		case "reasoning":
+			if item.EncryptedContent == "" {
+				return nil, fmt.Errorf("responses_output reasoning requires encrypted_content")
+			}
+		default:
+			return nil, fmt.Errorf("unsupported responses_output item type")
+		}
+	}
+	projected := ResponsesToChatCompletions(&ResponsesResponse{Output: m.ResponsesOutput}, "").Choices[0].Message
+	// Summaries are presentation, not state. Some clients omit reasoning_content
+	// from history; do not invent <thinking> text alongside the native reasoning.
+	m.ReasoningContent, m.Reasoning = "", ""
+	projected.ReasoningContent, projected.Reasoning = "", ""
+	want, err := chatAssistantToResponses(m)
+	if err != nil {
+		return nil, err
+	}
+	got, err := chatAssistantToResponses(projected)
+	if err != nil {
+		return nil, err
+	}
+	wantJSON, _ := json.Marshal(want)
+	gotJSON, _ := json.Marshal(got)
+	if !bytes.Equal(wantJSON, gotJSON) || m.Refusal != projected.Refusal {
+		return nil, fmt.Errorf("responses_output does not match the assistant message")
+	}
+	out := make([]json.RawMessage, 0, len(m.ResponsesOutput))
+	for _, item := range m.ResponsesOutput {
+		raw, err := json.Marshal(item)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, raw)
 	}
 	return out, nil
 }

@@ -66,6 +66,14 @@ func ResponsesToChatCompletions(resp *ResponsesResponse, model string) *ChatComp
 	}
 
 	msg := ChatMessage{Role: "assistant", Refusal: refusalText}
+	for _, item := range resp.Output {
+		if item.Type == "reasoning" && item.EncryptedContent != "" {
+			// Keep the full native order: reasoning can occur between tool calls,
+			// so collecting only reasoning items at the front is not lossless.
+			msg.ResponsesOutput = resp.Output
+			break
+		}
+	}
 	if len(toolCalls) > 0 {
 		msg.ToolCalls = toolCalls
 	}
@@ -307,6 +315,7 @@ func resToChatHandleCompleted(evt *ResponsesStreamEvent, state *ResponsesEventTo
 		if evt.Response.Status != "failed" {
 			msg := ResponsesToChatCompletions(evt.Response, state.Model).Choices[0].Message
 			delta := ChatDelta{}
+			delta.ResponsesOutput = msg.ResponsesOutput
 			var text string
 			if !state.SawText && json.Unmarshal(msg.Content, &text) == nil && text != "" {
 				delta.Content = &text
@@ -320,7 +329,7 @@ func resToChatHandleCompleted(evt *ResponsesStreamEvent, state *ResponsesEventTo
 				delta.Refusal = &msg.Refusal
 				state.SawRefusal = true
 			}
-			if delta.Content != nil || delta.ReasoningContent != nil || delta.Refusal != nil {
+			if delta.Content != nil || delta.ReasoningContent != nil || delta.Refusal != nil || len(delta.ResponsesOutput) > 0 {
 				chunks = append(chunks, makeChatDeltaChunk(state, delta))
 			}
 			for outputIndex, item := range evt.Response.Output {

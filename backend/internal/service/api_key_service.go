@@ -806,15 +806,12 @@ func (s *APIKeyService) Delete(ctx context.Context, id int64, userID int64) erro
 		return ErrInsufficientPerms
 	}
 
-	// 清除Redis缓存（使用 userID 而非 apiKey.UserID）
-	if s.cache != nil {
-		_ = s.cache.DeleteCreateAttemptCount(ctx, userID)
-	}
-	s.InvalidateAuthCacheByKey(ctx, key)
-
 	if err := s.apiKeyRepo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("delete api key: %w", err)
 	}
+	// Invalidate after the deletion commits so a concurrent lookup cannot refill
+	// the cache with a key that is about to be deleted. Keep creation counters.
+	s.InvalidateAuthCacheByKey(ctx, key)
 	s.lastUsedTouchL1.Delete(id)
 
 	return nil

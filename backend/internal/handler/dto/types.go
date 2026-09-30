@@ -35,7 +35,8 @@ type User struct {
 type AdminUser struct {
 	User
 
-	Notes string `json:"notes"`
+	Notes     string     `json:"notes"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 	// GroupRates 用户专属分组倍率配置
 	// map[groupID]rateMultiplier
 	GroupRates map[int64]float64 `json:"group_rates,omitempty"`
@@ -389,7 +390,8 @@ type RedeemCodeBatch struct {
 type AdminRedeemCode struct {
 	RedeemCode
 
-	Notes string `json:"notes"`
+	Notes     string     `json:"notes"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
 
 // UsageLog 是普通用户接口使用的 usage log DTO（不包含管理员字段）。

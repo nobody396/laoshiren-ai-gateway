@@ -565,3 +565,18 @@ func (s *APIKeyRepoSuite) TestMultiGroupRoundtripFilteringAndLegacyConversion() 
 	s.Require().NoError(err)
 	s.Require().Empty(stored.GroupIDs)
 }
+
+// Key creation now requires PostgreSQL row locks; exercise creation here rather
+// than weakening production locking to accommodate a SQLite fixture.
+func (s *APIKeyRepoSuite) TestCreateWithLastUsedAt() {
+	user := s.mustCreateUser("create-last-used@test.com")
+	lastUsed := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
+	key := &service.APIKey{UserID: user.ID, Key: "sk-create-last-used", Name: "CreateWithLastUsed", Status: service.StatusActive, LastUsedAt: &lastUsed}
+	s.Require().NoError(s.repo.Create(s.ctx, key))
+	s.Require().NotNil(key.LastUsedAt)
+	s.Require().WithinDuration(lastUsed, *key.LastUsedAt, time.Second)
+	got, err := s.repo.GetByID(s.ctx, key.ID)
+	s.Require().NoError(err)
+	s.Require().NotNil(got.LastUsedAt)
+	s.Require().WithinDuration(lastUsed, *got.LastUsedAt, time.Second)
+}

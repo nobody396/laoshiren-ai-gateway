@@ -246,8 +246,8 @@ func TestApiKeyService_Delete_Success(t *testing.T) {
 
 	err := svc.Delete(context.Background(), 42, 7) // API Key ID=42, 调用者 userID=7
 	require.NoError(t, err)
-	require.Equal(t, []int64{42}, repo.deletedIDs)  // 验证正确的 API Key 被删除
-	require.Equal(t, []int64{7}, cache.invalidated) // 验证所有者的缓存被清除
+	require.Equal(t, []int64{42}, repo.deletedIDs) // 验证正确的 API Key 被删除
+	require.Empty(t, cache.invalidated, "deleting a key must not reset creation failure limits")
 	require.Equal(t, []string{svc.authCacheKey("k")}, cache.deleteAuthKeys)
 	_, exists := svc.lastUsedTouchL1.Load(int64(42))
 	require.False(t, exists, "delete should clear touch debounce cache")
@@ -275,7 +275,7 @@ func TestApiKeyService_Delete_NotFound(t *testing.T) {
 // 预期行为：
 //   - GetKeyAndOwnerID 返回正确的所有者 ID
 //   - 所有权验证通过
-//   - 缓存被清除（在删除之前）
+//   - 删除失败不清除认证缓存，也不重置创建计数
 //   - Delete 被调用但返回错误
 //   - 返回包含 "delete api key" 的错误信息
 func TestApiKeyService_Delete_DeleteFails(t *testing.T) {
@@ -289,7 +289,7 @@ func TestApiKeyService_Delete_DeleteFails(t *testing.T) {
 	err := svc.Delete(context.Background(), 3, 3) // API Key ID=3, 调用者 userID=3
 	require.Error(t, err)
 	require.ErrorContains(t, err, "delete api key")
-	require.Equal(t, []int64{3}, repo.deletedIDs)   // 验证删除操作被调用
-	require.Equal(t, []int64{3}, cache.invalidated) // 验证缓存已被清除（即使删除失败）
-	require.Equal(t, []string{svc.authCacheKey("k")}, cache.deleteAuthKeys)
+	require.Equal(t, []int64{3}, repo.deletedIDs) // 验证删除操作被调用
+	require.Empty(t, cache.invalidated, "failed deletion must not reset creation failure limits")
+	require.Empty(t, cache.deleteAuthKeys)
 }

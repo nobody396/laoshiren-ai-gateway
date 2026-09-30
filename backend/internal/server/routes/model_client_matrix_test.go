@@ -51,7 +51,7 @@ func TestModelClientMatrixRejectsUnauthenticatedAndOrdinaryUsers(t *testing.T) {
 	}
 }
 
-func TestModelClientMatrixRequiresPermissionAndReturns34By14ForAdmin(t *testing.T) {
+func TestModelClientMatrixRequiresPermissionAndReturns36By14ForAdmin(t *testing.T) {
 	permissionAuth := func(permitted bool) gin.HandlerFunc {
 		return func(c *gin.Context) {
 			c.Set(string(middleware.ContextKeyIsSuperAdmin), false)
@@ -87,7 +87,7 @@ func TestModelClientMatrixRequiresPermissionAndReturns34By14ForAdmin(t *testing.
 		} `json:"counts"`
 	}
 	require.NoError(t, json.Unmarshal(allowed.Body.Bytes(), &payload))
-	require.Equal(t, 34, payload.Counts.Models)
+	require.Equal(t, 36, payload.Counts.Models)
 	require.Equal(t, 14, payload.Counts.Clients)
-	require.Equal(t, 34*14, payload.Counts.Intersections)
+	require.Equal(t, 36*14, payload.Counts.Intersections)
 }

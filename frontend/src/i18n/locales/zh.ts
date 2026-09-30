@@ -2143,6 +2143,8 @@ export default {
 
     // Users Management
     users: {
+      includeDeleted: '包含已删除用户',
+      deleted: '已删除',
       title: '用户管理',
       description: '管理用户账户和权限',
       createUser: '创建用户',

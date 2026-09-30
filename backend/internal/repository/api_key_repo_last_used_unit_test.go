@@ -45,30 +45,6 @@ func mustCreateAPIKeyRepoUser(t *testing.T, ctx context.Context, client *dbent.C
 	return userEntityToService(u)
 }
 
-func TestAPIKeyRepository_CreateWithLastUsedAt(t *testing.T) {
-	repo, client := newAPIKeyRepoSQLite(t)
-	ctx := context.Background()
-	user := mustCreateAPIKeyRepoUser(t, ctx, client, "create-last-used@test.com")
-
-	lastUsed := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
-	key := &service.APIKey{
-		UserID:     user.ID,
-		Key:        "sk-create-last-used",
-		Name:       "CreateWithLastUsed",
-		Status:     service.StatusActive,
-		LastUsedAt: &lastUsed,
-	}
-
-	require.NoError(t, repo.Create(ctx, key))
-	require.NotNil(t, key.LastUsedAt)
-	require.WithinDuration(t, lastUsed, *key.LastUsedAt, time.Second)
-
-	got, err := repo.GetByID(ctx, key.ID)
-	require.NoError(t, err)
-	require.NotNil(t, got.LastUsedAt)
-	require.WithinDuration(t, lastUsed, *got.LastUsedAt, time.Second)
-}
-
 func TestAPIKeyRepository_UpdateLastUsed(t *testing.T) {
 	repo, client := newAPIKeyRepoSQLite(t)
 	ctx := context.Background()
@@ -80,7 +56,7 @@ func TestAPIKeyRepository_UpdateLastUsed(t *testing.T) {
 		Name:   "UpdateLastUsed",
 		Status: service.StatusActive,
 	}
-	require.NoError(t, repo.Create(ctx, key))
+	key.ID = client.APIKey.Create().SetUserID(user.ID).SetKey(key.Key).SetName(key.Name).SetStatus(key.Status).SetNillableLastUsedAt(key.LastUsedAt).SaveX(ctx).ID
 
 	before, err := repo.GetByID(ctx, key.ID)
 	require.NoError(t, err)
@@ -107,7 +83,7 @@ func TestAPIKeyRepository_UpdateLastUsedDeletedKey(t *testing.T) {
 		Name:   "UpdateLastUsedDeleted",
 		Status: service.StatusActive,
 	}
-	require.NoError(t, repo.Create(ctx, key))
+	key.ID = client.APIKey.Create().SetUserID(user.ID).SetKey(key.Key).SetName(key.Name).SetStatus(key.Status).SetNillableLastUsedAt(key.LastUsedAt).SaveX(ctx).ID
 	require.NoError(t, repo.Delete(ctx, key.ID))
 
 	err := repo.UpdateLastUsed(ctx, key.ID, time.Now().UTC())
@@ -125,32 +101,9 @@ func TestAPIKeyRepository_UpdateLastUsedDBError(t *testing.T) {
 		Name:   "UpdateLastUsedDBError",
 		Status: service.StatusActive,
 	}
-	require.NoError(t, repo.Create(ctx, key))
+	key.ID = client.APIKey.Create().SetUserID(user.ID).SetKey(key.Key).SetName(key.Name).SetStatus(key.Status).SetNillableLastUsedAt(key.LastUsedAt).SaveX(ctx).ID
 
 	require.NoError(t, client.Close())
 	err := repo.UpdateLastUsed(ctx, key.ID, time.Now().UTC())
 	require.Error(t, err)
-}
-
-func TestAPIKeyRepository_CreateDuplicateKey(t *testing.T) {
-	repo, client := newAPIKeyRepoSQLite(t)
-	ctx := context.Background()
-	user := mustCreateAPIKeyRepoUser(t, ctx, client, "duplicate-key@test.com")
-
-	first := &service.APIKey{
-		UserID: user.ID,
-		Key:    "sk-duplicate",
-		Name:   "first",
-		Status: service.StatusActive,
-	}
-	second := &service.APIKey{
-		UserID: user.ID,
-		Key:    "sk-duplicate",
-		Name:   "second",
-		Status: service.StatusActive,
-	}
-
-	require.NoError(t, repo.Create(ctx, first))
-	err := repo.Create(ctx, second)
-	require.ErrorIs(t, err, service.ErrAPIKeyExists)
 }

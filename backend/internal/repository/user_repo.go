@@ -325,6 +325,10 @@ func (r *userRepository) List(ctx context.Context, params pagination.PaginationP
 }
 
 func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.PaginationParams, filters service.UserListFilters) ([]service.User, *pagination.PaginationResult, error) {
+	listCtx := ctx
+	if filters.IncludeDeleted {
+		listCtx = mixins.SkipSoftDelete(ctx)
+	}
 	q := r.client.User.Query()
 
 	if filters.Status != "" {
@@ -359,7 +363,7 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 		q = q.Where(dbuser.IDIn(allowedUserIDs...))
 	}
 
-	total, err := q.Clone().Count(ctx)
+	total, err := q.Clone().Count(listCtx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -368,7 +372,7 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 		Offset(params.Offset()).
 		Limit(params.Limit()).
 		Order(dbent.Desc(dbuser.FieldID)).
-		All(ctx)
+		All(listCtx)
 	if err != nil {
 		return nil, nil, err
 	}

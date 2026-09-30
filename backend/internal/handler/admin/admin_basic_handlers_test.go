@@ -266,3 +266,16 @@ func TestRedeemHandlerEndpoints(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 }
+
+func TestUserListIncludesDeletedOnlyWhenExplicitlyRequested(t *testing.T) {
+	router, svc := setupAdminRouter()
+	for _, tc := range []struct {
+		query string
+		want  bool
+	}{{"", false}, {"?include_deleted=true", true}, {"?include_deleted=false", false}, {"?include_deleted=invalid", false}} {
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/admin/users"+tc.query, nil))
+		require.Equal(t, http.StatusOK, rec.Code)
+		require.Equal(t, tc.want, svc.lastUserFilters.IncludeDeleted)
+	}
+}

@@ -2,8 +2,11 @@ package routes
 
 import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/handler"
+	ratelimit "github.com/bozhouDev/DragonCode-sub2api/internal/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/redis/go-redis/v9"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,6 +54,7 @@ func RegisterUserRoutes(
 	h *handler.Handlers,
 	jwtAuth middleware.JWTAuthMiddleware,
 	settingService *service.SettingService,
+	redisClient *redis.Client,
 ) {
 	v1.GET("/resource-downloads/:token", h.Resource.DownloadWithToken)
 	v1.GET("/public-downloads/cc-switch/latest.json", h.Resource.CCSwitchLatestManifest)
@@ -104,11 +108,15 @@ func RegisterUserRoutes(
 		}
 
 		// API Key管理
+		rateLimiter := ratelimit.NewRateLimiter(redisClient)
 		keys := authenticated.Group("/keys")
 		{
 			keys.GET("", h.APIKey.List)
 			keys.GET("/:id", h.APIKey.GetByID)
-			keys.POST("", h.APIKey.Create)
+			keys.POST("",
+				rateLimiter.LimitWithOptions("key-create-hour", 120, time.Hour, ratelimit.RateLimitOptions{FailureMode: ratelimit.RateLimitFailClose}),
+				rateLimiter.LimitWithOptions("key-create-day", 500, 24*time.Hour, ratelimit.RateLimitOptions{FailureMode: ratelimit.RateLimitFailClose}),
+				h.APIKey.Create)
 			keys.PUT("/:id", h.APIKey.Update)
 			keys.DELETE("/:id", h.APIKey.Delete)
 		}

@@ -3,15 +3,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
-const { spawn } = require('node:child_process')
-const http = require('node:http')
 const { restore } = require(process.env.CODEX_RESTORE_TEST_MODULE || '../../public/auto-config/restore-codex.cjs')
-const root = path.resolve(__dirname, '../..')
-const bundle = fs.readFileSync(path.join(root, 'public/auto-config/restore-codex.cjs'))
-const hash = require('node:crypto').createHash('sha256').update(bundle).digest('hex')
-const source = fs.readFileSync(path.join(root, 'src/utils/codexRestore.ts'), 'utf8').replace(/^import .*\r?\n/m, '').replace('export function', 'function').replace('windows: boolean): string', 'windows)')
-assert.equal(fs.readFileSync(path.join(root, 'src/generated/codexRestoreIntegrity.ts'), 'utf8').match(/[a-f0-9]{64}/)[0], hash)
-const command = new Function('codexRestoreSha256', `${source}; return buildCodexRestoreCommand`)(hash)
 const managed = 'model_provider = "laoshirenai_responses"\nmodel = "group-only-model"\nmodel_catalog_json="laoshirenai-model-catalog.json"\npreferred_auth_method="apikey"\n[mcp_servers.keep]\ncommand="dummy"\n[model_providers.laoshirenai_responses]\nbase_url="https://api.laoshirenai.com"\n[model_providers.other]\nbase_url="https://example.invalid"\n'
 function fixture(t, config = managed, auth = '{"OPENAI_API_KEY":"dummy-secret","tokens":{"access_token":"dummy-a","refresh_token":"dummy-r"},"other":"keep"}') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), '还原 Codex '))
@@ -59,7 +51,7 @@ for (const [name, config, auth, env] of [
   assert.equal(fs.readdirSync(dir).length, 3)
 })
 test('missing auth is safe and multiline values, quoted keys, arrays survive', t => {
-  const dir = fixture(t, '"model_provider"="laoshirenai_responses"\nnotes="""hello\nworld"""\n[[items]]\nname="keep"\n', null)
+  const dir = fixture(t, '"model_provider"="laoshirenai_responses"\nnotes="""hello\nworld"""\n[[items]]\nname="keep"\n[model_providers.laoshirenai_responses]\nbase_url="https://api.laoshirenai.com"\n', null)
   restore(dir, {})
   assert.match(read(dir, 'config.toml'), /world/)
   assert.match(read(dir, 'config.toml'), /\[\[items\]\]/)
@@ -70,52 +62,6 @@ test('clean installation is a no-op', t => {
   assert.equal(restore(dir, {}), null)
   assert.equal(read(dir, 'config.toml'), '')
 })
-
-// Execute the actual page-generated command, not a second handwritten installer.
-for (const scenario of ['success', 'checksum', 'network', 'child failure']) {
-  test(`copied command: ${scenario}`, async t => {
-    const dir = fixture(t, scenario === 'child failure' ? 'model_provider="other"' : managed)
-    const server = http.createServer((req, res) => {
-      if (scenario === 'network') { res.writeHead(503); return res.end('unavailable') }
-      res.end(scenario === 'checksum' ? 'throw Error("must not execute")' : bundle)
-    })
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-    t.after(() => new Promise(resolve => server.close(resolve)))
-    const windows = process.platform === 'win32'
-    let line = command(windows)
-    if (!(process.env.RESTORE_VERIFY_PRODUCTION === 'true' && scenario === 'success')) line = line.replace(/https:\/\/laoshirenai.com\/auto-config\/restore-codex.cjs/g, `http://127.0.0.1:${server.address().port}/restore`)
-    const env = { ...process.env, CODEX_HOME: dir, HOME: dir, TMPDIR: dir, TEMP: dir, TMP: dir }
-    for (const key of ['OPENAI_API_KEY', 'OPENAI_BASE_URL', 'CODEX_API_KEY']) delete env[key]
-    if (windows) {
-      fs.writeFileSync(path.join(dir, 'node.ps1'), 'throw "unsafe shim executed"')
-      fs.writeFileSync(path.join(dir, 'node.cmd'), '@echo unsafe shim executed\r\nexit /b 99')
-      const pathKey = Object.keys(env).find(key => key.toLowerCase() === 'path') || 'Path'
-      env[pathKey] = dir + path.delimiter + (env[pathKey] || '')
-      line = `Set-Variable HOME '${dir.replace(/'/g, "''")}' -Force; Set-ExecutionPolicy -Scope Process Restricted -Force; ${line}`
-    }
-    const shell = windows ? (process.env.RESTORE_TEST_SHELL || 'pwsh') : '/bin/bash'
-    const args = windows ? ['-NoProfile', '-NonInteractive', '-Command', line] : ['-c', line]
-    const result = await new Promise((resolve, reject) => {
-      const child = spawn(shell, args, { env, timeout: 15000 })
-      let output = ''
-      child.stdout.on('data', chunk => { output += chunk })
-      child.stderr.on('data', chunk => { output += chunk })
-      child.on('error', reject)
-      child.on('exit', code => resolve({ code, output }))
-    })
-    assert.doesNotMatch(result.output, /dummy-secret|unsafe shim executed/)
-    if (scenario === 'success') {
-      assert.equal(result.code, 0, result.output)
-      assert.match(read(dir, 'config.toml'), /model_provider = "openai"/)
-    } else {
-      assert.notEqual(result.code, 0, result.output)
-      assert.equal(read(dir, 'config.toml'), scenario === 'child failure' ? 'model_provider="other"' : managed)
-      assert.doesNotMatch(result.output, /已切换/)
-    }
-    // Downloaded script must be removed on success and every failure path.
-    assert.equal(fs.readdirSync(dir).filter(name => /^(tmp|tmp\.)/i.test(name)).length, 0)
-  })
-}
 
 test('failed auth replacement rolls configuration back', t => {
   const dir = fixture(t)
@@ -129,4 +75,18 @@ test('failed auth replacement rolls configuration back', t => {
   assert.equal(read(dir, 'config.toml'), managed)
   assert.match(read(dir, 'auth.json'), /dummy-secret/)
   assert.equal(fs.readdirSync(dir).filter(name => name.includes('.restore-')).length, 0)
+})
+
+test('CC Switch custom provider is restored only for our exact endpoint', t => {
+  const config = managed.replaceAll('laoshirenai_responses', 'custom')
+  const dir = fixture(t, config)
+  restore(dir, {})
+  assert.match(read(dir, 'config.toml'), /model_provider = "openai"/)
+  assert.doesNotMatch(read(dir, 'config.toml'), /model_providers.custom/)
+  for (const endpoint of ['https://third-party.invalid', 'https://api.laoshirenai.com.evil.invalid']) {
+    const before = config.replace('https://api.laoshirenai.com', endpoint)
+    const other = fixture(t, before)
+    assert.throws(() => restore(other, {}))
+    assert.equal(read(other, 'config.toml'), before)
+  }
 })

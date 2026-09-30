@@ -948,7 +948,15 @@ function restore(home = process.env.CODEX_HOME || path.join(os.homedir(), ".code
     throw new Error("\u68C0\u6D4B\u5230 profile\u3001\u5B98\u65B9\u7AEF\u70B9\u6216\u767B\u5F55\u8986\u76D6\u8BBE\u7F6E\uFF0C\u8BF7\u5148\u624B\u52A8\u68C0\u67E5\uFF1B\u672A\u4FEE\u6539\u4EFB\u4F55\u6587\u4EF6");
   }
   if ((!config.model_provider || config.model_provider === "openai") && !config.model_providers?.[provider]) return null;
-  if (config.model_provider !== provider) {
+  const activeProvider = config.model_provider;
+  const endpoint = config.model_providers?.[activeProvider]?.base_url;
+  const gatewayEndpoint = [
+    "https://api.laoshirenai.com",
+    "https://api.laoshirenai.com/",
+    "https://api.laoshirenai.com/v1",
+    "https://api.laoshirenai.com/v1/"
+  ].includes(endpoint);
+  if (![provider, "custom"].includes(activeProvider) || !gatewayEndpoint) {
     throw new Error("\u5F53\u524D\u672A\u4F7F\u7528\u8001\u5B9E\u4EBAAI\u4E00\u952E\u914D\u7F6E\u7684 Codex provider\uFF0C\u672A\u4FEE\u6539\u4EFB\u4F55\u6587\u4EF6\uFF1B\u8BF7\u68C0\u67E5 CODEX_HOME \u6216\u624B\u52A8\u914D\u7F6E");
   }
   const authOriginal = read(authPath);
@@ -958,7 +966,7 @@ function restore(home = process.env.CODEX_HOME || path.join(os.homedir(), ".code
   }
   if (authOriginal !== null && auth === null) throw new Error("\u767B\u5F55\u6587\u4EF6\u4E0D\u80FD\u4E3A null");
   for (const key of owned) delete config[key];
-  delete config.model_providers?.[provider];
+  delete config.model_providers?.[activeProvider];
   if (config.model_providers && Object.keys(config.model_providers).length === 0) delete config.model_providers;
   config.model_provider = "openai";
   const output = stringify(config);

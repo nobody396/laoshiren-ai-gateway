@@ -1,0 +1,366 @@
+{
+  "schema_version": 2,
+  "model": {
+    "id": "grok-4.7",
+    "upstream_id": "grok-4.7",
+    "display_name": "Grok 4.7",
+    "platform": "grok",
+    "context_window": 500000,
+    "max_output_tokens": 500000,
+    "codex_catalog_entry": null
+  },
+  "capabilities": {
+    "protocol": "responses",
+    "streaming": true,
+    "tools": true,
+    "image_input": true,
+    "cache_read": true,
+    "reasoning_efforts": [
+      "medium",
+      "high",
+      "xhigh"
+    ]
+  },
+  "pricing": {
+    "input_per_mtok_usd": 2,
+    "cached_input_per_mtok_usd": 0.5,
+    "output_per_mtok_usd": 6,
+    "evidence_url": "https://docs.x.ai/developers/pricing",
+    "long_context": {
+      "input_threshold": 200000,
+      "input_multiplier": 2,
+      "output_multiplier": 2
+    }
+  },
+  "lifecycle": {
+    "public_status": "public",
+    "introduced_at": "2026-10-01",
+    "deprecated_at": null,
+    "replacement_model_id": null
+  },
+  "protocol_matrix": [
+    {
+      "protocol": "responses",
+      "support": "supported",
+      "recommendation": "preferred",
+      "recommendation_reason": "Complete stream, usage and correlated tool continuation verified on the admitted route. Other upstreams are not activated.",
+      "evidence_ids": [
+        "p-01-default",
+        "p-03-default",
+        "p-05-default"
+      ]
+    }
+  ],
+  "protocol_feature_matrix": [
+    {
+      "protocol": "responses",
+      "features": {
+        "basic_request": "pass",
+        "streaming": "pass",
+        "terminal_event": "pass",
+        "tool_calls": "pass",
+        "tool_result_round_trip": "pass",
+        "reasoning": "pass",
+        "prompt_cache": "pass",
+        "image_input": "pass",
+        "structured_output": "pass",
+        "web_search": "pass",
+        "usage": "pass",
+        "error_passthrough": "fail",
+        "context_window": "pass",
+        "billing": "pass",
+        "disconnect": "pass",
+        "timeout": "pass",
+        "retry": "pass"
+      },
+      "evidence_ids": [
+        "p-01-default",
+        "p-02-default",
+        "p-03-default",
+        "p-04-default",
+        "p-05-default",
+        "p-07-default",
+        "p-08-default",
+        "p-10-default",
+        "p-11-default",
+        "p-12-default",
+        "p-15-default",
+        "p-06-low",
+        "p-06-medium",
+        "p-06-high",
+        "p-06-xhigh",
+        "adapter-regression",
+        "official-spec",
+        "official-price",
+        "exact-id-pricing"
+      ]
+    }
+  ],
+  "reasoning_matrix": [
+    {
+      "protocol": "responses",
+      "effort": "medium",
+      "support": "supported",
+      "wire_value": "medium",
+      "evidence_ids": [
+        "p-06-medium"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "high",
+      "support": "supported",
+      "wire_value": "high",
+      "evidence_ids": [
+        "p-06-high"
+      ]
+    },
+    {
+      "protocol": "responses",
+      "effort": "xhigh",
+      "support": "supported",
+      "wire_value": "xhigh",
+      "evidence_ids": [
+        "p-06-xhigh"
+      ]
+    }
+  ],
+  "price_matrix": [
+    {
+      "scope": "default",
+      "currency": "USD",
+      "unit": "per_mtok",
+      "input": 2,
+      "output": 6,
+      "cached_input": 0.5,
+      "cache_write": null,
+      "long_context": {
+        "input_threshold": 200000,
+        "input_multiplier": 2,
+        "output_multiplier": 2
+      },
+      "effective_from": "2026-10-01",
+      "evidence_ids": [
+        "official-price"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "p-01-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:12.985+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "84c0ab81e866b695d738cb29f341e00b550255eb9eed014afec67a7cdd1fc13f",
+      "artifact_path": "evidence/grok47-20261001/p-01-default.json"
+    },
+    {
+      "id": "p-02-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:16.371+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "8778e185f22d617ee79b3009340aa586fa04583b73b09695f4a2ee579bb8f8b3",
+      "artifact_path": "evidence/grok47-20261001/p-02-default.json"
+    },
+    {
+      "id": "p-03-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:19.191+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "67bdc34c25cd6f2e445595c9316336807b49ba3cc7a8d353b871f8c4a8605f9a",
+      "artifact_path": "evidence/grok47-20261001/p-03-default.json"
+    },
+    {
+      "id": "p-04-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:21.756+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "d2ec48844f94dfc79491aab9de2adea5e323089b62ed49685f2fac2281fe56ea",
+      "artifact_path": "evidence/grok47-20261001/p-04-default.json"
+    },
+    {
+      "id": "p-05-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:24.439+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "c70a9af474eaf3572062e54f12711525b2a1b406d23693ef66257f1184afa3e2",
+      "artifact_path": "evidence/grok47-20261001/p-05-default.json"
+    },
+    {
+      "id": "p-07-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:33.849+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "d71386f36feb2933c347c11d252ad66b0b77bec25efb6f5adc03feea07869d62",
+      "artifact_path": "evidence/grok47-20261001/p-07-default.json"
+    },
+    {
+      "id": "p-08-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:42.601+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "f7e4bf3fe2d05a59d00d6ad60975de0b90be1abe76ac91831e12310ff26fbb6f",
+      "artifact_path": "evidence/grok47-20261001/p-08-default.json"
+    },
+    {
+      "id": "p-10-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:45.559+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "599d967a3a89393e364f9d8add490557a0bc47fbe154a67d6be43f94bf1e8c05",
+      "artifact_path": "evidence/grok47-20261001/p-10-default.json"
+    },
+    {
+      "id": "p-11-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:50.070+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "badabe44401db6605e5638bbdc77516f75133df0c29ab48a0a0763745d550f1e",
+      "artifact_path": "evidence/grok47-20261001/p-11-default.json"
+    },
+    {
+      "id": "p-12-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:52.487+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "bf7a25b08da20fb30413d75acd3bca6500bce5bf39829412d89399d9a675c23b",
+      "artifact_path": "evidence/grok47-20261001/p-12-default.json"
+    },
+    {
+      "id": "p-15-default",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T05:59:56.285+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "fail",
+      "artifact_sha256": "fd5da7bc1dc3570edc3b8913c898034b20579ccb51ffd311270f38df6eca9c00",
+      "artifact_path": "evidence/grok47-20261001/p-15-default.json"
+    },
+    {
+      "id": "p-06-low",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T06:00:03.769+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "fail",
+      "artifact_sha256": "4a62becbbd74ad0553182774fdd58a37d45b750f8e0ebf3ee58677ed2de3d012",
+      "artifact_path": "evidence/grok47-20261001/p-06-low.json"
+    },
+    {
+      "id": "p-06-medium",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T06:00:12.649+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "1b854a3a5182aa039851fe11ad4002019db8067580ce10ae9fdf21ec6b72a3fe",
+      "artifact_path": "evidence/grok47-20261001/p-06-medium.json"
+    },
+    {
+      "id": "p-06-high",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T06:00:20.798+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "5f8a726820ee67b67bd990c54f48cf678f3bbe05c6422f2e082b52fecfc56372",
+      "artifact_path": "evidence/grok47-20261001/p-06-high.json"
+    },
+    {
+      "id": "p-06-xhigh",
+      "kind": "live_probe",
+      "url": null,
+      "observed_at": "2026-10-01T06:00:29.194+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "4c35ac1b9452e94c97a9d0e42135d0832d0aa3dc74bdfdae840bad417e2f72ad",
+      "artifact_path": "evidence/grok47-20261001/p-06-xhigh.json"
+    },
+    {
+      "id": "adapter-regression",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-10-01T06:03:30.765210+00:00",
+      "subject_version": "grok-4.7/responses/20261001",
+      "result": "pass",
+      "artifact_sha256": "a02ff7bbe8e26296c7cbca41d6143e2445371a8d0f5b0950059804e28cfe1bbc",
+      "artifact_path": "evidence/grok47-20261001/adapter-regression.json"
+    },
+    {
+      "id": "official-spec",
+      "kind": "official_docs",
+      "url": "https://docs.x.ai/developers/grok-4-7",
+      "observed_at": "2026-10-01T06:03:30.765210+00:00",
+      "subject_version": "grok-4.7 official specification",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "official-price",
+      "kind": "official_docs",
+      "url": "https://docs.x.ai/developers/pricing",
+      "observed_at": "2026-10-01T06:03:30.765210+00:00",
+      "subject_version": "grok-4.7 standard global USD/MTok tariff",
+      "result": "pass",
+      "artifact_sha256": null
+    },
+    {
+      "id": "exact-id-pricing",
+      "kind": "release_artifact",
+      "url": null,
+      "observed_at": "2026-10-01T06:06:17.909574+00:00",
+      "subject_version": "grok-4.7 local exact-ID regression",
+      "result": "pass",
+      "artifact_sha256": "56a6a5f8da8d6005a4ec7a622db6a4cb3212783f8f7449d9fca55615cbe6ecf8",
+      "artifact_path": "evidence/grok47-20261001/exact-id-pricing-regression.json"
+    }
+  ],
+  "production": {
+    "account_id": 82,
+    "group_id": 34,
+    "group_name": "Grok 标准线路",
+    "legacy_group_names": [],
+    "group_description": "",
+    "client_default": false,
+    "managed_predecessor_ids": [],
+    "aliases": [],
+    "replace_model_id": null
+  },
+  "verification": {
+    "expected_text": "42",
+    "owned_e2e": true,
+    "require_usage_attribution": true,
+    "require_accounting_reconciliation": true,
+    "production_accounting_status": "pending_post_deploy"
+  },
+  "release_notes": {
+    "classification": "catalog-only",
+    "scope": "Only exact grok-4.7; preserve all defaults and legacy models. Activate account 82 only after immutable deploy. Owner authorized standard 34 plus existing monthly 48/49/50.",
+    "context_evidence_scope": "Official 500000 context, not a full-window live test. Official has no independent output cap; catalog maximum is total context ceiling, not a guaranteed output length.",
+    "resilience_evidence_scope": "Existing local adapter unit regressions, not live fault injection.",
+    "billing_evidence_scope": "billing=pass here is the exact-ID local unit tariff and public-price regression (exact-id-pricing evidence), NOT live reconciliation. Production accounting gate remains pending_post_deploy and must pass before announcement.",
+    "limitations": "low reasoning returned content but no reasoning evidence; not admitted as a verified effort. Invalid-parameter probe returned 502 without provider error code, so rich error passthrough not promised.",
+    "upstream_recovery": "Earlier billing_error replies despite positive account balance were not reproduced in this serial suite; no long-term SLA claim.",
+    "protocol_boundary": "Responses preferred. Existing gateway compatibility paths retain prior adapters; direct Chat Completions is not claimed as separately verified."
+  }
+}

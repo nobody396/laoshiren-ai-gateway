@@ -13,7 +13,7 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export const clientAutoConfigVersion = "0.7.35"
+export const clientAutoConfigVersion = "0.7.37"
 
 export const clientAutoConfigDefaults = {
   "anthropic": "claude-opus-5",
@@ -350,6 +350,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     "preset": {
       "from": "grok-4.6",
       "to": "grok-4.6",
+      "color": "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300"
+    }
+  },
+  {
+    "id": "grok-4.7",
+    "upstreamId": "grok-4.7",
+    "displayName": "Grok 4.7",
+    "platform": "grok",
+    "contextWindow": 500000,
+    "maxOutputTokens": 500000,
+    "clientDefault": false,
+    "preferredGroupName": "Grok 标准线路",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "grok-4.7",
+      "to": "grok-4.7",
       "color": "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300"
     }
   },

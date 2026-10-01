@@ -1992,6 +1992,16 @@ export const modelReasoningProfiles: readonly ModelReasoningProfile[] = [
     ],
     "client_levels": [],
     "client_mappings": []
+  },
+  {
+    "model_id": "grok-4.7",
+    "model_levels": [
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client_levels": [],
+    "client_mappings": []
   }
 ]
 export const modelReasoningProfileById: Readonly<Record<string, ModelReasoningProfile>> = Object.fromEntries(modelReasoningProfiles.map(profile => [profile.model_id, profile]))

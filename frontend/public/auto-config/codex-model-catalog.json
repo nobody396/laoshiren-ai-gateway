@@ -925,6 +925,56 @@
       "shell_type": "shell_command",
       "visibility": "list",
       "supported_in_api": true,
+      "supports_reasoning_summaries": false,
+      "default_reasoning_summary": "none",
+      "support_verbosity": true,
+      "truncation_policy": {
+        "mode": "bytes",
+        "limit": 10000
+      },
+      "supports_parallel_tool_calls": false,
+      "supports_image_detail_original": false,
+      "context_window": 500000,
+      "max_context_window": 500000,
+      "effective_context_window_percent": 95,
+      "auto_compact_token_limit": 475000,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "supports_search_tool": false,
+      "use_responses_lite": false,
+      "availability_nux": null,
+      "upgrade": null,
+      "slug": "grok-4.7",
+      "display_name": "Grok 4.7",
+      "description": "Grok 4.7 via the 老实人AI Responses gateway.",
+      "default_reasoning_level": "medium",
+      "supported_reasoning_levels": [
+        {
+          "effort": "medium",
+          "description": "medium reasoning"
+        },
+        {
+          "effort": "high",
+          "description": "high reasoning"
+        },
+        {
+          "effort": "xhigh",
+          "description": "xhigh reasoning"
+        }
+      ],
+      "additional_speed_tiers": [],
+      "service_tiers": [],
+      "priority": 999,
+      "multi_agent_version": "v2"
+    },
+    {
+      "base_instructions": "You are Codex, a coding agent. You and the user share the same workspace and collaborate to achieve the user's goals.",
+      "shell_type": "shell_command",
+      "visibility": "list",
+      "supported_in_api": true,
       "supports_reasoning_summaries": true,
       "default_reasoning_summary": "none",
       "support_verbosity": true,

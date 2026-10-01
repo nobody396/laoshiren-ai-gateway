@@ -379,9 +379,10 @@ name = "stale"
   $CatalogGrokDefaultModel = 'grok-4.6'
   $CatalogGrokManagedModels = @(
     @{ Id = 'grok-4.5'; DisplayName = 'Grok 4.5'; ContextWindow = 500000 },
-    @{ Id = 'grok-4.6'; DisplayName = 'Grok 4.6'; ContextWindow = 500000 }
+    @{ Id = 'grok-4.6'; DisplayName = 'Grok 4.6'; ContextWindow = 500000 },
+    @{ Id = 'grok-4.7'; DisplayName = 'Grok 4.7'; ContextWindow = 500000 }
   )
-  $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
+  $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"', 'model.grok-4.7', 'model."grok-4.7"')
   $script:BaseUrl = 'https://api.example.com'
   $script:GrokApiKey = 'test-owned-key'
 
@@ -396,6 +397,7 @@ name = "stale"
   Assert-True (([regex]::Matches($NormalizedGrokConfig, [regex]::Escape('[model."grok-4.6"]'))).Count -eq 1) 'Grok 4.6 was not written exactly once'
   Assert-True ($NormalizedGrokConfig.Contains('name = "Grok 4.5"')) 'Grok 4.5 display name is missing'
   Assert-True ($NormalizedGrokConfig.Contains('name = "Grok 4.6"')) 'Grok 4.6 display name is missing'
+  Assert-True (([regex]::Matches($NormalizedGrokConfig, [regex]::Escape('[model."grok-4.7"]'))).Count -eq 1) 'Grok 4.7 must be selectable without replacing the default'
   Assert-True (-not $NormalizedGrokConfig.Contains('老实人AI')) 'Provider/group branding leaked into model names'
   Assert-True ([IO.File]::ReadAllText("$GrokConfigPath.bak") -eq $OriginalGrokConfig) 'The original Grok backup was not preserved'
   Assert-True (-not (Get-ChildItem -LiteralPath $GrokDir -Filter 'config.toml.tmp.*')) 'Atomic Grok write left temporary files behind'

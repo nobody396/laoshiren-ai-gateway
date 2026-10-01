@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "scope": "direct_upstream_only",
+  "observed_at": "2026-10-01T06:00:12.649+00:00",
+  "case": {
+    "model_id": "grok-4.7",
+    "protocol": "responses",
+    "p_id": "P-06",
+    "reasoning_level": "medium",
+    "base_url": "https://xingwan.store",
+    "group_id": 0
+  },
+  "probe_output_budget": 4096,
+  "response": {
+    "http_status": 200,
+    "complete": true,
+    "body_sha256": "6867dd0d7594efddf012656c0e60e271e7b62a32353a271638e0dd8d916bd579",
+    "error": null
+  },
+  "usage": {
+    "input_tokens": 3367,
+    "output_tokens": 611,
+    "cached_input_tokens": 3328,
+    "total_tokens": 3978
+  },
+  "result": "pass",
+  "classification": "verified",
+  "offline_verifier": {
+    "status": "passed",
+    "reason": null
+  },
+  "billing_reconciled": false
+}

@@ -1,0 +1,8 @@
+{
+  "observed_at": "2026-10-01T06:03:30.765210+00:00",
+  "kind": "adapter_regression",
+  "source_commit": "141d772b5ca820182d895decf09fa0a000655136",
+  "command": "go test -p 1 -tags unit ./internal/service -run 'Grok46|ClientDisconnect|ContextCanceled|Timeout|Retry' -count=1",
+  "result": "ok  \tgithub.com/bozhouDev/DragonCode-sub2api/internal/service\t133.227s\n",
+  "scope": "local existing adapter/regression and identical Grok 4.6 tariff; new Grok 4.7 exact-price and post-deploy accounting gates still required"
+}

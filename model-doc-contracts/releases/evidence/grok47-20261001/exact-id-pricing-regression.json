@@ -1,0 +1,14 @@
+{
+  "kind": "exact_id_pricing_regression",
+  "observed_at": "2026-10-01T06:06:17.909574+00:00",
+  "model_id": "grok-4.7",
+  "command": "go test -p 1 -tags unit ./internal/service -run 'Grok47|Catalog' -count=1",
+  "result": "ok  \tgithub.com/bozhouDev/DragonCode-sub2api/internal/service\t0.067s\n",
+  "checks": [
+    "exact grok-4.7 standard tariff",
+    "case-insensitive exact lookup",
+    "long-context input/cache/output doubling",
+    "public group multiplier projection"
+  ],
+  "production_accounting_verified": false
+}

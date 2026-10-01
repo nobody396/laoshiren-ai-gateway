@@ -51,6 +51,7 @@ class ModelCatalogTest(unittest.TestCase):
             [
                 {"id": "grok-4.5", "display_name": "Grok 4.5", "context_window": 500000},
                 {"id": "grok-4.6", "display_name": "Grok 4.6", "context_window": 500000},
+                {"id": "grok-4.7", "display_name": "Grok 4.7", "context_window": 500000},
             ],
         )
         self.assertEqual(

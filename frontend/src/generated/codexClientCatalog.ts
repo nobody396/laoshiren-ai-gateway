@@ -217,6 +217,17 @@ export const codexClientModels: readonly CodexClientModel[] = [
     "defaultReasoningLevel": null
   },
   {
+    "model": "grok-4.7",
+    "displayName": "Grok 4.7",
+    "contextWindow": 500000,
+    "reasoningLevels": [
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "defaultReasoningLevel": "medium"
+  },
+  {
     "model": "minimax-m3",
     "displayName": "MiniMax M3",
     "contextWindow": 1048576,

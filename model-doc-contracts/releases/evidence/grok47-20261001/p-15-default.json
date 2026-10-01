@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "kind": "provider_contract_live_case",
+  "network_execution": "explicit_live",
+  "scope": "direct_upstream_only",
+  "observed_at": "2026-10-01T05:59:56.285+00:00",
+  "case": {
+    "model_id": "grok-4.7",
+    "protocol": "responses",
+    "p_id": "P-15",
+    "reasoning_level": null,
+    "base_url": "https://xingwan.store",
+    "group_id": 0
+  },
+  "probe_output_budget": 4096,
+  "response": {
+    "http_status": 502,
+    "complete": false,
+    "body_sha256": "3c9666d93aef4f034ae30c732897b4fabd60fadb1932c579f37a578557b85b71",
+    "error": {
+      "type": "https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/",
+      "status": 502
+    }
+  },
+  "usage": null,
+  "result": "fail",
+  "classification": "unsupported",
+  "offline_verifier": {
+    "status": "failed",
+    "reason": "error passthrough requires provider code and message"
+  },
+  "billing_reconciled": false
+}

@@ -778,7 +778,6 @@ func TestModelPricingGrok47UsesOfficialRateCard(t *testing.T) {
 	assertPrice(t, "cache_read", m.CacheReadPrice, 0.2) // 0.5 x 0.4
 }
 
-
 func TestModelPricingSkipsUnknownModel(t *testing.T) {
 	groups := []Group{{ID: 34, Name: "Grok 4.5 分组", Platform: "anthropic", RateMultiplier: 0.4}}
 	models := map[int64][]string{34: {"grok-4.5", "totally-unknown-model"}}

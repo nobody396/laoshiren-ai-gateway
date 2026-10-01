@@ -233,7 +233,6 @@ func TestCalculateCost_Grok47UsesOfficialRateCardAndLongContextTier(t *testing.T
 	require.InDelta(t, (expectedInput+expectedCacheRead+expectedOutput)*0.4, cost.ActualCost, 1e-10)
 }
 
-
 func TestGetModelPricing_UnknownClaudeModelFallsBackToSonnet(t *testing.T) {
 	svc := newTestBillingService()
 

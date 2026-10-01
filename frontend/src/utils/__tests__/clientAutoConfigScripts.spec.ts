@@ -203,7 +203,7 @@ describe('client auto-config scripts', () => {
       // Keep unsupported/untested optional capabilities conservative instead
       // of copying them from another model's catalog entry.
       expect(typeof model.supports_reasoning_summaries).toBe('boolean')
-      if (['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna', 'gpt-6.1-sol'].includes(model.slug)) {
+      if (['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna', 'gpt-6.1-sol', 'grok-4.7'].includes(model.slug)) {
         expect(model.supports_reasoning_summaries).toBe(false)
       } else {
         expect(model.supports_reasoning_summaries).toBe(true)
